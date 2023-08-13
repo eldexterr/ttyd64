@@ -1,6 +1,6 @@
 # Paper Mario: TTYD64
 
-**What's TTYD64?**
+**What's TTYD64?**\
 TTYD64 is a PM64 romhack that adds TTYD's gameplay, items, badges, and recipes into PM64, plus a bunch of new areas into the game.
 
 **Some of the new content includes:**\
