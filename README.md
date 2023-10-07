@@ -1,5 +1,5 @@
 # Paper Mario: TTYD64
-![TTYD64](https://github.com/eldexterr/ttyd64/assets/44853315/fb72a045-90d0-4d0d-a014-a51ceeffd7eb)
+![TTYD64](https://i.imgur.com/Z3EhBnK.png)
 
 **What's TTYD64?**\
 TTYD64 is a PM64 romhack that adds TTYD's gameplay, items, badges, and recipes into PM64, plus a bunch of new areas into the game.
@@ -50,8 +50,8 @@ https://discord.gg/HZ9zqPK2ax
 No
 
 # Assets
-![Logo](https://github.com/eldexterr/ttyd64/assets/44853315/fa26875a-7297-42b3-ad8d-c70408b9bf92)
+![Logo](https://i.imgur.com/zCdlAqx.png)
 
-![Artwork](https://github.com/eldexterr/ttyd64/assets/44853315/56165f6f-1440-4086-ad26-7452da8ef6f9)
+![Artwork](https://i.imgur.com/4hTnYgj.png)
 
-![Artwork](https://github.com/eldexterr/ttyd64/assets/44853315/8d3feb9a-b4cd-45e8-bb37-d039f95ee53e)
+![Artwork](https://i.imgur.com/JCzkKPo.png)
