@@ -1,0 +1,198 @@
+% Script File: 2C Area OMO2_4.bscr
+% Decoded from: 552440 to 552BB0 (2C Area OMO2_4)
+
+% Origin: HINT
+#new:DefenseTable $DefenseTable_80231000
+{
+	.Element:Normal 00000000
+	.Element:End
+}
+
+% Origin: HINT
+#new:StatusTable $StatusTable_8023100C
+{
+	.Status:Normal      0`
+	.Status:Default     0`
+	.Status:Sleep       0`
+	.Status:Poison      0`
+	.Status:Frozen      0`
+	.Status:Dizzy       0`
+	.Status:Fear        0`
+	.Status:Static      0`
+	.Status:Paralyze    0`
+	.Status:Shrink      0`
+	.Status:Stop        0`
+	.Status:DefaultTurnMod    0`
+	.Status:SleepTurnMod      0`
+	.Status:PoisonTurnMod     0`
+	.Status:FrozenTurnMod     0`
+	.Status:DizzyTurnMod      0`
+	.Status:FearTurnMod       0`
+	.Status:StaticTurnMod     0`
+	.Status:ParalyzeTurnMod   0`
+	.Status:ShrinkTurnMod     0`
+	.Status:StopTurnMod       0`
+	.Status:End
+}
+
+% Origin: HINT
+#new:PartsTable $PartsTable_802310B8
+{
+	20820000 01000000 001800FF $IdleAnimations_80231104 $DefenseTable_80231000 00000000 00000000 FFF60000 00000000
+}
+
+% Origin: HINT
+#new:Actor $ShyGuy
+{
+	% stats
+	[Index]        ACb
+	[Level]         0`b
+	[MaxHP]         8`b
+	[Coins]         0`b
+	[Flags]       02000000
+	[StatusTable] $StatusTable_8023100C
+	% ai
+	[PartsCount]    1`s
+	[PartsTable]  $PartsTable_802310B8
+	[Script]      $Script_Init_80231110
+	% move effectiveness
+	[Escape]        0`b
+	[Item]          0`b
+	[AirLift]       0`b
+	[Hurricane]     0`b % Bow's "Spook" as well
+	[UpAndAway]     0`b
+	[PowerBounce]  80`b
+	[SpinSmash]     4`b % weight (0-4)
+	% ui positions
+	[Size]         30`b  30`b % width height
+	[HealthBar]     0`b   0`b % dx dy
+	[StatusTurn]  -10`b  20`b % dx dy
+	[StatusIcon]   10`b  20`b % dx dy
+}
+
+% Origin: HINT
+#new:IdleAnimations $IdleAnimations_80231104
+{
+	.Status:Normal    006F0001
+	.Status:End
+}
+
+% Origin: HINT
+#new:Script $Script_Init_80231110
+{
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_80231754 )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_8023129C )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_802312D0 )
+   3C:  Call  SetActorPos   ( .Actor:Self  180`  0`  0` )
+   58:  Call  ForceHomePos  ( .Actor:Self  180`  0`  0` )
+   74:  Call  HPBarToHome   ( .Actor:Self )
+   84:  Thread
+   8C:  	Call  SetAnimation  ( .Actor:Self 00000001 006F000F )
+   A4:  	Call  SetActorSpeed ( .Actor:Self *Fixed[5.0] )
+   B8:  	Call  SetGoalPos    ( .Actor:Self  0`  0`  0` )
+   D4:  	Call  RunToGoal     ( .Actor:Self  0` .False )
+   EC:  	Call  SetActorYaw   ( .Actor:Self  180` )
+  100:  	Call  PlaySoundAtActor  ( .Actor:Self .Sound:GeneralWhistle )
+  114:  	Call  SetAnimation  ( .Actor:Self 00000001 006F0004 )
+  12C:  	Wait  20`
+  138:  	Call  SetAnimation  ( .Actor:Self 00000001 006F0005 )
+  150:  	Wait  15`
+  15C:  	Call  SetAnimation  ( .Actor:Self 00000001 006F0009 )
+  174:  EndThread
+  17C:  Return
+  184:  End
+}
+
+% Origin: HINT
+#new:Script $Script_Idle_8023129C
+{
+    0:  Label  0
+    C:  Wait  1`
+   18:  Goto  0
+   24:  Return
+   2C:  End
+}
+
+% Origin: HINT
+#new:Script $Script_HandleEvent_802312D0
+{
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   28:  Switch  *Var0
+   34:  	Case  ==  .Event:BeginFirstStrike % 38
+   40:  	CaseOR  ==  .Event:HitCombo % 9
+   4C:  	CaseOR  ==  .Event:Hit % A
+   58:  	CaseOR  ==  .Event:BurnHit % E
+   64:  	CaseOR  ==  .Event:BurnDeath % 24
+   70:  	CaseOR  ==  .Event:SpinSmashHit % B
+   7C:  	CaseOR  ==  .Event:SpinSmashDeath % 21
+   88:  	CaseOR  ==  .Event:ShockHit % 2F
+   94:  	CaseOR  ==  00000017 % 17
+   A0:  	CaseOR  ==  .Event:Immune % 19
+   AC:  	CaseOR  ==  .Event:SpikeTaunt % 1B
+   B8:  	CaseOR  ==  .Event:Death % 20
+   C4:  		Call  SetAnimation  ( .Actor:Self 00000001 006F000A )
+   DC:  		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.5] )
+   F0:  		Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  10C:  		Sub   *Var0  00000023
+  11C:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  138:  		Call  JumpToGoal    ( .Actor:Self  8` .False .True .False )
+  158:  		Call  SetActorYaw   ( .Actor:Self  0` )
+  16C:  		Call  SetAnimation  ( .Actor:Self 00000001 006F0002 )
+  184:  		Wait  24`
+  190:  		Call  SetAnimation  ( .Actor:Self 00000001 006F0003 )
+  1A8:  		Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  1C4:  		Add   *Var0  00000005
+  1D4:  		Add   *Var1  0000000A
+  1E4:  		Loop  00000004
+  1F0:  			Call  PlayEffect    ( ~FX:Sweat:Small *Var0 *Var1 *Var2 0000000A 0000002D 00000004 00000000 00000000 00000000 00000000 00000000 00000000 )
+  234:  			Wait  6`
+  240:  		EndLoop
+  248:  		Call  SetActorSounds    ( .Actor:Self .ActorSound:Walk 000020BA 000003B4 )
+  264:  		Call  SetActorSounds    ( .Actor:Self .ActorSound:WalkIncrement 0000000A 00000000 )
+  280:  		Call  SetAnimation      ( .Actor:Self 00000001 006F000C )
+  298:  		Call  SetActorSpeed     ( .Actor:Self *Fixed[6.0] )
+  2AC:  		Call  AddActorDecoration    ( .Actor:Self 00000001 00000000 .Decoration:SteamEmitter )
+  2C8:  		Call  SetGoalPos        ( .Actor:Self  -200`  0`  20` )
+  2E4:  		Call  RunToGoal ( .Actor:Self  0` .False )
+  2FC:  		Call  RemoveActorDecoration ( .Actor:Self *Var0 00000000 )
+  314:  		Call  RemoveActor       ( .Actor:Self )
+  324:  		Return
+  32C:  	EndCaseGroup
+  334:  	Case  ==  .Event:EndFirstStrike % 35
+  340:  		Call  HPBarToHome   ( .Actor:Self )
+  350:  	Case  ==  .Event:RecoverStatus % 31
+  35C:  		SetConst  *Var0  00000001
+  36C:  		SetConst  *Var1  006F0001
+  37C:  		ExecWait  DoRecover
+  388:  	Case  ==  00000030 % 30
+  394:  		SetConst  *Var0  00000001
+  3A4:  		SetConst  *Var1  006F000A
+  3B4:  		ExecWait  DoNormalHit
+  3C0:  		Wait  1000`
+  3CC:  	Case  ==  .Event:ScareAway % 39
+  3D8:  		SetConst  *Var0  00000001
+  3E8:  		SetConst  *Var1  006F0001
+  3F8:  		SetConst  *Var2  006F000A
+  408:  		ExecWait  DoScareAway
+  414:  		Return
+  41C:  	Default
+  424:  		SetConst  *Var1  006F000A
+  434:  		Call  SetAnimation  ( .Actor:Self 00000001 *Var1 )
+  44C:  		Wait  20`
+  458:  EndSwitch
+  460:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  474:  Return
+  47C:  End
+}
+
+% Origin: HINT
+#new:Script $Script_TakeTurn_80231754
+{
+    0:  Return
+    8:  End
+}
+
+PADDING: 80231764 to 80231770 (00552BA4 to 00552BB0)
+00000000 00000000 00000000
+

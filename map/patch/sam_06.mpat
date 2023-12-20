@@ -1,0 +1,118 @@
+% Add 2 new hidden items
+
+#define .NpcID:ShiverToad_03             03
+
+@ $Script_Main_EnterWalk
+{
+    [208]  Set   *Var0  $ShakeTreeEvent_ItemTree
+    [218]  Bind  $Script_ShakeTree_80242ACC .Trigger:WallHammer ~Collider:miki2 00000001 00000000
+}
+
+@ $Script_80243230 {
+    Bind  $Script_ExitWalk_802431D4 .Trigger:FloorAbove ~Collider:deilisw 00000001 00000000
+    Exec  $Script_InitNewStuff
+    Return
+    End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Call  MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemPos_Tree .ItemSpawnMode:Fixed_NeverVanish *GF_SAM06_TreeItem )
+    Set   *MapVar[1] *Var0
+    Call  MakeItemEntity ( .Item:Coin ~Vec3d:ItemPos_Coin .ItemSpawnMode:Fixed_NeverVanish .False )
+    %
+    Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+    Set   *MapVar[4] *Var0
+    Call  AssignBlockFlag   ( *GF_SAM06_Shine )
+    Call  AssignScript 	    ( $Script_Entity_Shine1 )
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[4] % entityID
+    SetConst *Var1 *GF_SAM06_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+% Shake tree code (from sam_04.mscr)
+
+#new:ShakeTreeEvent $ShakeTreeEvent_ItemTree
+{
+	00000000
+	$TreeModelList_Tree1_Trunk
+	00000000
+	00000000
+	$Script_ItemTree_Callback
+}
+
+#new:Script $Script_LiftBranches
+{
+    0:  Call  MakeLerp  ( 00000000 000000FF 00000014 .Easing:QuarticIn )
+   1C:  Loop
+   28:  	Call  UpdateLerp ( )
+   34:  	Call  TranslateModel    ( *Var2 00000000 *Var0 00000000 )
+   50:  	Wait  1`
+   5C:  	If  *Var1  ==  00000000
+   6C:  		BreakLoop
+   74:  	EndIf
+   7C:  EndLoop
+   84:  Call  EnableModel   ( *Var2 .False )
+   98:  Return
+   A0:  End
+}
+
+#new:Script $Script_StickItemToNPC
+{
+    0:  Loop
+    C:  	Call  GetNpcPos     ( .NpcID:ShiverToad_03 *Var0 *Var1 *Var2 )
+   28:  	Call  SetItemPos    ( *MapVar[1] *Var0 *Var1 *Var2 )
+   44:  	Wait  1`
+   50:  EndLoop
+   58:  Return
+   60:  End
+}
+
+#new:Script $Script_ItemTree_Callback
+{
+    0:  Switch  *MapVar[3]
+    C:  	Case  ==  00000000
+   18:  		Add   *MapVar[3]  00000001
+   28:  		Set   *Var2  ~Model:ki2_1
+   38:  		ExecWait  $Script_LiftBranches
+   44:  	Case  ==  00000001
+   50:  		Add   *MapVar[3]  00000001
+   60:  		Set   *Var2  ~Model:ki2_2
+   70:  		ExecWait  $Script_LiftBranches
+   7C:  	Case  ==  00000002
+   88:  		Add   *MapVar[3]  00000001
+   98:  		Set   *Var2  ~Model:ki2_3
+   A8:  		ExecWait  $Script_LiftBranches
+   B4:  	Case  ==  00000003
+   C0:  		If  *GF_SAM06_TreeItem  ==  .False
+                    Call    SetNpcFlagBits ( .NpcID:ShiverToad_03 01000000 .True ) % toogle invisibility
+   D0:  			If  *MapVar[2]  ==  00000000
+   E0:  				Set   *MapVar[2]  00000001
+   %F0:  				Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+  108:  				Call  SetNpcPos     ( .NpcID:ShiverToad_03  ~Vec3d:ItemPos_Tree )
+  124:  				Exec  $Script_StickItemToNPC *VarA
+  /%134:  				If  *Var0  <=  FFFFFED9
+  144:  					Set   *Var0  FFFFFEF4
+  154:  				Else
+  15C:  					Set   *Var0  FFFFFEC4
+  16C:  				EndIf%/
+  174:  				Call  SetNpcJumpscale   ( .NpcID:ShiverToad_03 *Fixed[2.0] )
+  188:  				Call  NpcJump0  ( .NpcID:ShiverToad_03 ~Vec3d:ItemPos_Tree2  20` )
+  1A8:  				Kill  *VarA
+  1B4:  				Wait  1`
+  1C0:  				Call  SetNpcPos ( .NpcID:ShiverToad_03  ~Vec3d:NPC_ShiverToad_03 )
+                        Call  SetNpcFlagBits ( .NpcID:ShiverToad_03 01000000 .False ) % toogle invisibility
+  1DC:  			EndIf
+  1E4:  		EndIf
+  1EC:  EndSwitch
+  1F4:  Return
+  1FC:  End
+}

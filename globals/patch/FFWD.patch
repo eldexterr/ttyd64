@@ -1,0 +1,410 @@
+% Add the fast forward function from Persona into PM64's dialog system
+
+% 0x00 - u8 bool
+%
+% 0x01 - u8 show 'FFWD' text (bool)
+%
+% 0x02 - u8 ignore FFWD (bool)
+%
+% 0x03 - unused
+#export:Data $FFWD
+{
+    00b % FFWD is turned on/off (bool)
+    00b % show "FFWD" text (bool)
+    00b % force FFWD to be disabled (bool)
+    00b % unused
+}
+
+% Function called in MiscHooks.patch
+#export:Function $Function_FFWD
+{
+    PUSH    RA, V0, S0
+    % Check if the FFWD can be used
+    LIO     S0, $FFWD
+    % Check if FFWD is locked for this cutscene
+    LBU     V0, 2 (S0)
+    BNE     V0, R0, .NukeData % It is
+    NOP
+    % Check if FFWD is active
+    LBU     V0, 1 (S0)
+    BEQ     V0, R0, .NukeData
+    NOP
+    % FFWD can be used
+    JAL     $Function_FFWD_step
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .NukeData
+    SAW     R0, $FFWD_FX_Data
+    SAW     R0, $FFWD_FX_Pointer
+    .End
+    POP     RA, V0, S0
+    JR      RA
+    NOP
+}
+
+% Show FFWD text and track start button
+#new:Function $Function_FFWD_step
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     S0, $FFWD
+    % Check if FFWD is locked for this cutscene
+    LBU     V0, 2 (S0)
+    BNE     V0, R0, .End % It is
+    NOP
+    % Check if FFWD is active
+    LBU     V0, 1 (S0)
+    BEQ     V0, R0, .End
+    LBU     V0, 0 (S0)
+    % Time to draw the "fast FX" over the screen?
+    BEQ     V0, R0, .SkipFX
+    NOP
+    /%====================
+    % Fast FX % scrapped
+    %====================
+    JAL     $FFWD_PlayFX
+    NOP%/
+    BEQ     R0, R0, .DrawFFWD
+    LBU     V0, 0 (S0)
+    .SkipFX
+    SAW     R0, $FFWD_FX_Pointer
+    %====================
+    % Draw "FFWD"
+    %====================
+    .DrawFFWD
+    % V0 = FFWD is turned on (bool)
+    LIO     A0, $String_FFWD
+    ADDIU   A1, R0, 00F2 % x
+    ADDIU   A2, R0, 00C8 % y
+    SW      R0, 10 (SP) % color
+    CLEAR   V1
+    % Is FFWD turned on?
+    BNEL    V0, R0, .SetTextFX
+    ORI     V1, R0, 2 % rainbow FX
+    .SetTextFX
+    SW      V1, 14 (SP) % tx FX
+    JAL     ~func:draw_string
+    ORI     A3, R0, FF
+    %====================
+    % Track Start Button
+    %====================
+    LAW     A0, 80074034 % one-frame inputs
+    ANDI	A0, A0, 1000 % 00001000 = start button
+    BEQ     A0, R0, .End
+    NOP
+    % player pressed start, toogle fast forward
+    LIO     V1, $FFWD
+    LBU     A0, 0 (V1)
+    BEQL    A0, R0, .ToogleFFWD
+    ORI     A1, R0, 1
+    ORI     A1, R0, 0
+    .ToogleFFWD
+    SB      A1, 0 (V1)
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    JR      RA
+    NOP
+}
+
+#string $String_FFWD
+{
+[START] FFWD[End]
+}
+
+#new:Function $FFWD_PlayFX % unused
+{
+    PUSH    R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, F0, F2, F4, F6, S0, S1
+    LIO     A1, $FFWD_FX_Data
+    LBU     A0, 0 (S0) % is FFWD on?
+    BEQL    A0, R0, .End
+    SW      R0, 0 (A1) % nuke $FFWD_FX_Data
+    % the FX has already been initializated?
+    LAW     V0, $FFWD_FX_Pointer
+    BNE     V0, R0, .StepFX
+    NOP
+    CLEAR   A1 % x
+    CLEAR   A2 % y
+    CLEAR   A3 % z
+    ORI     A0, R0, 6 % FX:EnergyIn:LongStreaks1
+    LIF     F0, 2.5 % scale
+    SWC1    F0, 10 (SP)
+    ORI     V0, R0, 1E % time
+    JAL     800720B0 % playFX_6B
+    SW      V0, 14 (SP)
+    SAW     V0, $FFWD_FX_Pointer
+    % Set the FX to the center of the screen and
+    % lock the FX timer to be always true so the FX
+    % never dissapears
+    .StepFX
+    LAW     V0, $FFWD_FX_Pointer
+    LW      V0, C (V0) % load FX's data
+    ORI     A0, R0, A
+    SW      A0, 10 (V0) % lock FX's frame animation so the FX never dissapears
+    % set FX's position
+    % get camera pos
+    LIO     S1, 800B1D80
+    LWC1    F0, 003C (S1) % cam x pos
+    LWC1    F2, 0040 (S1) % cam y pos
+    ORI     AT, R0, 80` % sub 80
+    MTC1    AT, F6
+    CVT.S.W F6, F6
+    SUB.S   F2, F2, F6
+    LWC1    F4, 0044 (S1) % cam z pos
+    ORI     AT, R0, 416` % sub 416
+    MTC1    AT, F6
+    CVT.S.W F6, F6
+    SUB.S   F4, F4, F6
+    SWC1    F0, 4 (V0) % fx's X pos
+    SWC1    F2, 8 (V0) % fx's Y pos
+    SWC1    F4, C (V0) % fx's Z pos
+    .End
+    POP     R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, F0, F2, F4, F6, S0, S1
+    JR      RA
+    NOP
+}
+
+#new:Data $FFWD_FX_Data
+{ 00000000 }
+
+#new:Data $FFWD_FX_Pointer
+{ 00000000 }
+
+%=======================
+% Init and disable FFWD
+%=======================
+
+% Init FFWD every time a new dialog get initializated
+%
+% From ~Func:_get_printer_for_string
+@Hook BC09C % 8012599C
+{
+    LIO     A0, $FFWD
+    LBU     A1, 2 (A0) % ignore FFWD
+    BNEL    A1, R0, .End
+    SB      R0, 1 (A0) % don't show FFWD text
+    ORI     A1, R0, 1
+    SB      A1, 1 (A0) % show FFWD text
+    % restore vanilla code
+    .End
+    COPY    A0, S0
+    J       801259A4
+    LW	    A2, 0068 (SP)
+}
+
+% Nuke $FFWD everytime the player goes back to the
+% title screen.
+%
+% From ~Func:state_init_title_screen
+@Hook 121F8 % 80036DF8
+{
+    SAW     R0, $FFWD
+    % restore vanilla code
+    LIO     S2, 8009A650
+    J       80036E00
+    RESERVED
+}
+
+% Overworld - Disable FFWD everytime player's input get unlocked once again
+%
+% From ~func:enable_player_input
+@Hook 79654 % 800E01A4
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LIO     A0, $FFWD
+    SB      R0, 1 (A0) % don't show "FFWD" anymore
+    LIO     A1, *Flag_Settings_FFWD
+    JAL     ~Func:get_variable
+    RESERVED
+    BNE     V0, R0, .End
+    NOP
+    SAW     R0, $FFWD % reset FFWD
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    % restore vanilla code
+    LIO     A0, 8010EFC8
+    J       800E01AC
+    RESERVED
+}
+
+% Battle - Disable FFWD everytime battle status get updated
+%
+% From ~func:btl_set_state
+@Hook 16FA70 % 80241190
+{
+    %======Buffs & Debuffs====
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    JAL     $UpdateNewStatuses_Visibility % from Battle_NewStatuses.patch
+    NOP
+    %======Enemies Items Drops====
+    % check if battle status is 0x01
+    LAW     V1, 800DC068 % battleState
+    ORI     RA, R0, 1 % .BattleState:BeginNormal
+    BNE     RA, V1, .SkipUpdatingInFrontData
+    NOP
+    JAL     $enemy_item_table_data_update_actorMostInFront % from Battle_ItemDropsHoldTables.patch
+    NOP
+    .SkipUpdatingInFrontData
+    LIO     A1, *Flag_Settings_FFWD
+    JAL     ~Func:get_variable
+    RESERVED
+    BNE     V0, R0, .End
+    NOP
+    SAW     R0, $FFWD % reset FFWD
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    %=========================
+    LIO     V1, $FFWD
+    SB      R0, 1 (V1) % don't show "FFWD" anymore
+    % restore vanilla code
+    LAW     V1, 800DC074
+    J       80241198
+    RESERVED
+}
+
+% Battle - Disable FFWD everytime an action command will appear on screen
+%
+% LoadActionCommand(API)
+@Hook:Battle 80268214
+{
+    LIO     V0, $FFWD
+    SB      R0, 1 (V0) % don't show "FFWD" anymore
+    % restore vanilla code
+    LW	    RA, 0010 (SP)
+    J       8026821C
+    ADDIU	V0, R0, 0002
+}
+
+%=============================
+% Patch ~Func:_update_message
+%=============================
+
+% Check if A button is being hold
+%
+% From ~Func:_update_message
+@Hook BA5E4 % 80123EE4
+{
+    PUSH    V0
+    LIO     V0, $FFWD
+    LBU     V0, 0 (V0)
+    BEQ     V0, R0, .End
+    NOP
+    % FFWD is turned on
+    %
+    % check if FFWD should be ignored
+    LIO     V0, $FFWD
+    LBU     V0, 2 (V0)
+    BNE     V0, R0, .End
+    NOP
+    POP     V0
+    ADDIU	A1, R0, 0032 % printing speed % was 0x06
+    SH	    R0, 000E (S0)
+    J       80123EFC
+    NOP
+    .End
+    POP     V0
+    % restore vanilla code
+    LW	    V0, 0000 (V0) % load inputs
+    J       80123EEC
+    ANDI	V0, V0, 8000 % A button
+}
+
+% Check if A or B got pressed (First page of the string has been already printed)
+%
+% From ~Func:_update_message
+@Hook BA114 % 80123A14
+{
+    LIO     V1, $FFWD
+    LBU     V1, 0 (V1)
+    BEQ     V1, R0, .End
+    NOP
+    % check if FFWD should be ignored
+    LIO     V1, $FFWD
+    LBU     V1, 2 (V1)
+    BNE     V1, R0, .End
+    NOP
+    % skip checking if any button was pressed if FFWD is active
+    LIO     V1, 8007419C
+    J       80123A40
+    RESERVED
+    .End
+    % restore vanilla code
+    LIO     V1, 8007419C
+    J       80123A1C
+    RESERVED
+}
+
+% Check if B button was pressed
+@Hook BA15C % 80123A5C
+{
+    LIO     V0, $FFWD
+    LBU     V0, 0 (V0)
+    BEQ     V0, R0, .End
+    NOP
+    % check if FFWD should be ignored
+    LIO     V0, $FFWD
+    LBU     V0, 2 (V0)
+    BNE     V0, R0, .End
+    NOP
+    % go directly to B's code if FFWD is active
+    J       80123A74
+    NOP
+    .End
+    % restore vanilla code
+    LW	    V0, 0010 (V1)
+    J       80123A64
+    ANDI	V0, V0, 8004
+}
+
+% Use a faster text speed when FFWD is active
+@Hook BA5C4 % 80123EC4
+{
+    % check if FFWD should be ignored
+    LIO     A1, $FFWD
+    LBU     A1, 2 (A1)
+    BNE     A1, R0, .End
+    ADDIU	A1, R0, 000C % Hold A/B text speed
+    % check if FFWD is active
+    LIO     A1, $FFWD
+    LBU     A1, 0 (A1)
+    BEQ     A1, R0, .End
+    ADDIU	A1, R0, 000C % Hold A/B text speed
+    ADDIU	A1, R0, 0032 % FFWD speed
+    .End
+    J	    80123EF8
+    NOP
+    
+}
+
+/% Scrapped, caused a bunch of problems
+
+% Make the game run faster when FFWD is turned on
+%
+% From ~Func:gfxRetrace_Callback
+@Hook 001514 % 80026114
+{
+    SH	    V0, 0000 (V1) % restore vanilla code
+    PUSH    A0, A1
+    LIO     A0, $FFWD
+    LBU     A1, 1 (A0) % FFWD text (bool)
+    BEQ     A1, R0, .SkipFFWD
+    LBU     A1, 2 (A0) % ignore FFWD byteflag
+    BNE     A1, R0, .SkipFFWD
+    LBU     A1, 0 (A0) % FFWD on/off (bool)
+    BNE     A1, R0, .FFWD
+    NOP
+    .SkipFFWD
+    % FFWD is off
+    POP     A0, A1
+    % vanilla code
+    BNE 	V0, R0, .80026150
+    NOP
+    J       8002611C
+    NOP
+    .80026150
+    J       80026150
+    NOP
+    .FFWD
+    POP     A0, A1
+    J       8002611C
+    NOP
+}%/

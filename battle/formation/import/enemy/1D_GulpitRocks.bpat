@@ -1,0 +1,168 @@
+% Automatically dumped from section 1D
+
+#new:Actor $1D_GulpitRocks {
+% stats
+[Index]        37b 
+[Level]         0`b 
+[MaxHP]         1`b 
+[Coins]         0`b 
+[Flags]       00244004 
+[StatusTable] $StatusTable_802294F4_1D 
+% ai
+[PartsCount]    1`s 
+[PartsTable]  $PartsTable_802295A0_1D 
+[Script]      $Script_Init_802295EC_1D 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]     100`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]    95`b 
+[PowerBounce] 100`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         32`b  18`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  20`b % dx dy
+[StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:IdleAnimations $IdleAnimations_802294D0_1D {
+.Status:Normal    00520010
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_802294DC_1D {
+.Status:Normal    00520012
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_802294E8_1D {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_802294F4_1D {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep       0`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy       0`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze    0`
+.Status:Shrink      0`
+.Status:Stop        0`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_802295A0_1D {
+00800000 01000000 000E00FF $IdleAnimations_802294D0_1D $DefenseTable_802294E8_1D 00000000 00000000 00FA0000 00000000 
+}
+
+#new:Script $Script_Init_802295EC_1D {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_80229AAC_1D )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_8022973C_1D )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_802297B0_1D )
+   3C:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   54:  Switch  *Var0 
+   60:  	Case  ==  00000000 
+   6C:  		Call  SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_802294D0_1D )
+   84:  		Call  SetAnimation  ( .Actor:Self 00000001 00520010 )
+   9C:  		Call  GetActorVar   ( .Actor:Self 00000000 00000000 )
+   B4:  		Call  SetActorSize  ( .Actor:Self 00000018 0000000F )
+   CC:  	Case  ==  00000001 
+   D8:  		Call  SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_802294DC_1D )
+   F0:  		Call  SetAnimation  ( .Actor:Self 00000001 00520012 )
+  108:  		Call  GetActorVar   ( .Actor:Self 00000000 00000001 )
+  120:  		Call  SetActorSize  ( .Actor:Self 0000000A 00000008 )
+  138:  EndSwitch
+  140:  Return
+  148:  End
+}
+
+#new:Script $Script_Idle_8022973C_1D {
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_8022974C_1D {
+    0:  Call  GetActorVar   ( .Actor:Self 00000000 *VarA )
+   18:  Switch  *VarA 
+   24:  	Case  ==  00000000 
+   30:  	Case  ==  00000001 
+   3C:  		SetConst  *Var1  *Var2 
+   4C:  EndSwitch
+   54:  Return
+   5C:  End
+}
+
+#new:Script $Script_HandleEvent_802297B0_1D {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   3C:  Switch  *Var0 
+   48:  	CaseOR  ==  .Event:HitCombo % 9
+   54:  	CaseOR  ==  .Event:Hit % A
+   60:  	CaseOR  ==  .Event:BurnHit % E
+   6C:  		SetConst  *Var0  00000001 
+   7C:  		SetConst  *Var1  00520010 
+   8C:  		SetConst  *Var2  00520012 
+   9C:  		ExecWait  $Script_8022974C_1D 
+   A8:  		ExecWait  DoNormalHit 
+   B4:  	EndCaseGroup
+   BC:  	CaseOR  ==  00000017 % 17
+   C8:  	CaseOR  ==  .Event:Immune % 19
+   D4:  	CaseOR  ==  .Event:BeginAirLift % 3A
+   E0:  	CaseOR  ==  .Event:AirLiftFailed % 1F
+   EC:  		SetConst  *Var0  00000001 
+   FC:  		SetConst  *Var1  00520010 
+  10C:  		SetConst  *Var2  00520012 
+  11C:  		ExecWait  $Script_8022974C_1D 
+  128:  		ExecWait  DoImmune 
+  134:  	EndCaseGroup
+  13C:  	CaseOR  ==  .Event:BurnDeath % 24
+  148:  	CaseOR  ==  .Event:Death % 20
+  154:  		SetConst  *Var0  00000001 
+  164:  		SetConst  *Var1  00520010 
+  174:  		SetConst  *Var2  00520012 
+  184:  		ExecWait  $Script_8022974C_1D 
+  190:  		ExecWait  DoNormalHit 
+  19C:  		Call  SetActorFlagBits  ( .Actor:Self 00000004 .True )
+  1B4:  		Call  GetActorVar       ( .Actor:Self 00000000 *Var0 )
+  1CC:  		Switch  *Var0 
+  1D8:  			Case  ==  00000000 
+  1E4:  				Call  SetAnimation  ( .Actor:Self 00000001 00520011 )
+  1FC:  			Case  ==  00000001 
+  208:  				Call  SetAnimation  ( .Actor:Self 00000001 00520013 )
+  220:  		EndSwitch
+  228:  		Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  244:  		Call  PlayEffect    ( ~FX:Steam:SmallOutward *Var0 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  288:  		Wait  30`
+  294:  		Call  RemoveActor   ( .Actor:Self )
+  2A4:  		Return
+  2AC:  	EndCaseGroup
+  2B4:  	Default
+  2BC:  EndSwitch
+  2C4:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  2D8:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  2EC:  Return
+  2F4:  End
+}
+
+#new:Script $Script_TakeTurn_80229AAC_1D {
+    0:  Return
+    8:  End
+}
+

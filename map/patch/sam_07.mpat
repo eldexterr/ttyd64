@@ -1,0 +1,193 @@
+% Add new exit
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  80200000
+    [MapTattle]   00190131
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 % -1500.0 -120.0  -75.0   90.0
+    ~Vec4f:Entry1 % 1085.0  270.0  -80.0  270.0
+    ~Vec4f:Entry2
+}
+
+@ $Script_Main
+{
+    [94]  ExecWait  $Script_MakeEntities_New
+    [AC]  ExecWait  $Script_InitModels % Script_80242AA0
+}
+
+#delete $Script_MakeEntities
+#delete $Script_80242784
+#delete $Script_80242AA0
+#alias  $Function_80240448 $Function_SetEntityPos
+
+#new:Script $Script_MakeEntities_New
+{
+        If  *GF_SAM07_IceBroken  ==  .False
+            Set   *GB_SAM07_Floor 1 % mid level
+        EndIf
+        Call    GetEntryID ( *Var0 )
+        If *Var0 == ~Entry:Entry2
+            Set *GB_SAM07_Floor 2 % lowest level
+        EndIf
+        Switch *GB_SAM07_Floor
+            Case == 0 % highest level
+   5C:  	    Call  MakeEntity    ( .Entity:GreenStompSwitch ~Vec4d:Entity802423DC 80000000 )
+   80:  	    Set   *MapVar[0]  *Var0
+   90:  	    Call  AssignScript  ( $Script_GreenSwitch )
+            Case == 1 % mid
+   10:  	    Call  MakeEntity    ( .Entity:GreenStompSwitch ~Vec4d:Entity80242390 80000000 )
+   34:  	    Set   *MapVar[0]  *Var0
+   44:  	    Call  AssignScript  ( $Script_GreenSwitch )
+            Case == 2 % lowest level
+                Call  MakeEntity    ( .Entity:GreenStompSwitch ~Vec4d:Entity_GreenButton3 80000000 )
+                Set   *MapVar[0]  *Var0
+                Call  AssignScript  ( $Script_GreenSwitch )
+        EndSwitch
+   A8:  Call  MakeEntity    ( .Entity:BrickBlock ~Vec4d:Entity80242428 80000000 )
+   CC:  Call  MakeEntity    ( .Entity:HiddenYellowBlock ~Vec4d:Entity8024244C .Item:UltraShroom 80000000 )
+   F4:  Call  AssignBlockFlag   ( *GF_SAM07_HiddenItem_UltraShroom )
+  104:  Call  MakeEntity    ( .Entity:SavePoint ~Vec4d:Entity80242484 80000000 )
+  128:  Return
+  130:  End
+}
+
+#new:Script $Script_GreenSwitch % Script_80242784
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  $Function_80240510    ( *MapVar[0] *Var7 *Var8 *Var9 )
+        Switch *GB_SAM07_Floor
+            Case == 0 % highest level
+  19C:  	    Call  EnableModel   ( ~Model:o137 .True )
+  1B0:  	    Call  EnableModel   ( ~Model:o135 .False )
+  1C4:  	    Call  PlaySoundAtCollider   ( ~Collider:m1_yuka 0000039A 00000000 )
+  1DC:  	    Call  MakeLerp  ( 00000000 -180` 00000078 .Easing:CosInOut )
+                Label  0
+  204:  	    Call  UpdateLerp ( )
+  210:  	    Call  TranslateModel        ( ~Model:m1_yuka 00000000 *Var0 00000000 )
+  22C:  	    Call  TranslateModel        ( ~Model:m1_kabe 00000000 *Var0 00000000 )
+  248:  	    Call  UpdateColliderTransform   ( ~Collider:m1_yuka )
+  258:  	    Add   *Var0  *Var8
+  268:  	    Call  $Function_SetEntityPos    ( *MapVar[0] *Var7 *Var0 *Var9 )
+  284:  	    Call  $Function_80240634 ( )
+  290:  	    Wait  1`
+  29C:  	    Call  $Function_802405B0    ( 00000016 00004000 )
+  2B0:  	    If  *Var1  ==  00000001
+          	    	Goto  0
+  2CC:  	    EndIf
+                Set *GB_SAM07_Floor 1
+            Case == 1 % mid
+                Call  EnableModel   ( ~Model:o137 .True )
+                Call  EnableModel   ( ~Model:o135 .False )
+                Sub   *Var8  -180`
+                Call  PlaySoundAtCollider   ( ~Collider:m1_yuka 0000039A 00000000 )
+                Call  MakeLerp  ( -180` -278` 00000078 .Easing:CosInOut )
+                Label  1
+                Call  UpdateLerp ( )
+                Call  TranslateModel        ( ~Model:m1_yuka 00000000 *Var0 00000000 )
+                Call  TranslateModel        ( ~Model:m1_kabe 00000000 *Var0 00000000 )
+                Call  UpdateColliderTransform   ( ~Collider:m1_yuka )
+                Add   *Var0  *Var8
+                Call  $Function_SetEntityPos    ( *MapVar[0] *Var7 *Var0 *Var9 )
+                Call  $Function_80240634 ( )
+                Wait  1`
+                Call  $Function_802405B0    ( 00000016 00004000 )
+                If  *Var1  ==  00000001
+                	Goto  1
+                EndIf
+                Set *GB_SAM07_Floor 2
+            Case == 2 % lowest level
+  3C:  	        Call  PlaySoundAtCollider   ( ~Collider:m1_yuka 00000399 00000000 )
+                Sub   *Var8  -278`
+  64:  	        Call  MakeLerp  ( -278` 00000000 00000078 .Easing:CosInOut )
+      	        Label  2
+  8C:  	        Call  UpdateLerp ( )
+  98:  	        Call  TranslateModel        ( ~Model:m1_yuka 00000000 *Var0 00000000 )
+  B4:  	        Call  TranslateModel        ( ~Model:m1_kabe 00000000 *Var0 00000000 )
+  D0:  	        Call  UpdateColliderTransform   ( ~Collider:m1_yuka )
+  E0:  	        Add   *Var0  *Var8
+  F0:  	        Call  $Function_SetEntityPos    ( *MapVar[0] *Var7 *Var0 *Var9 )
+  10C:  	    Call  $Function_80240634 ( )
+  118:  	    Wait  1`
+  124:  	    Call  $Function_802405B0    ( 00000016 00004000 )
+  138:  	    If  *Var1  ==  00000001
+          	    	Goto  2
+  154:  	    EndIf
+  15C:  	    Call  EnableModel   ( ~Model:o135 .True )
+  170:  	    Call  EnableModel   ( ~Model:o137 .False )
+                Set *GB_SAM07_Floor 0
+        EndSwitch
+  2EC:  Call  DisablePlayerInput    ( .False )
+  2FC:  Return
+  304:  End
+}
+
+#new:Script $Script_InitModels % Script_80242AA0
+{
+    0:  Call  EnableGroup   ( ~Model:g72 .True )
+   14:  Call  ModifyColliderFlags   ( 00000000 ~Collider:m1_kabe 7FFFFE00 )
+   2C:  Call  ParentColliderToModel ( ~Collider:m1_yuka ~Model:m1_yuka )
+   40:  Call  ParentColliderToModel ( ~Collider:o116 ~Model:m1_yuka )
+   54:  If  *GF_SAM07_IceBroken  ==  .False
+   64:  	Call  EnableModel   ( ~Model:o137 .True )
+            Switch  *GB_SAM07_Floor
+                Case  ==  0 % highest level
+                    Set *Var0 0
+                Case  ==  1 % mid
+                    Set *Var0 -180`
+                Case  ==  2 % lowest
+                    Set *Var0 -278`
+            EndSwitch
+   78:  	Call  TranslateGroup    ( ~Model:move1 00000000 *Var0 00000000 )
+   94:  	Call  UpdateColliderTransform   ( ~Collider:m1_yuka )
+   A4:  	Call  UpdateColliderTransform   ( ~Collider:o116 )
+   B4:  	Bind  $Script_8024264C .Trigger:FloorTouch ~Collider:o116 00000001 00000000
+   D0:  	Bind  $Script_8024270C .Trigger:PointBomb $TriggerCoord_80242A90 00000001 00000000
+   EC:  Else
+   F4:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:o116 7FFFFE00 )
+  10C:  	Call  SetGroupEnabled   ( ~Model:move1 00000000 )
+  120:  	Call  EnableModel       ( ~Model:m1_yuka .True )
+  134:  	Call  EnableModel       ( ~Model:m1_kabe .True )
+  148:  	Call  EnableModel       ( ~Model:o135 .True )
+            Switch  *GB_SAM07_Floor
+                Case  ==  0 % highest level
+  1B4:  		    Call  EnableModel   ( ~Model:o135 .True )
+                Case  ==  1 % mid
+  16C:  		    Call  EnableModel   ( ~Model:o137 .True )
+  180:  		    Call  TranslateGroup    ( ~Model:move1 00000000 -180` 00000000 )
+  19C:  		    Call  UpdateColliderTransform   ( ~Collider:m1_yuka )
+                Case  ==  2 % lowest
+                    Call  EnableModel   ( ~Model:o137 .True )
+                    Call  TranslateGroup    ( ~Model:move1 00000000 -278` 00000000 )
+                    Call  UpdateColliderTransform   ( ~Collider:m1_yuka )
+  1C8:  	EndSwitch
+  1D0:  EndIf
+  1D8:  Return
+  1E0:  End
+}
+
+%
+
+@ $Script_80242148 {
+    Bind  $Script_ExitWalk_80242090 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Bind  $Script_ExitWalk_802420EC .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+    %
+    Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit2
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "sam_13" 00000000 )
+    Wait  100`
+    Return
+    End
+}

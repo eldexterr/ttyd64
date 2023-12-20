@@ -1,0 +1,78 @@
+% Add entrance to pit_00
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000002
+    [Background]  00000000
+    [MapTattle]   00190024
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 % -360.0  -10.0    0.0   90.0
+    ~Vec4f:Entry1
+}
+
+@ $Script_80241B48
+{
+    0:  Set   *Var0  $???_80241B04
+   10:  Exec  $Script_80241958
+        Exec  $Script_InitNewStuff
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    If *GF_TIK02_Crack == .True
+        Exec    $Script_HideCrack
+    Else
+        Bind    $Script_BlastWall .Trigger:PointBomb $TriggerCoord_Wall 00000001 00000000
+    EndIf
+    Call    SetCamSpeed ( .Cam:Default 3 )
+    Return
+    End
+}
+
+#new:Script $Script_BlastWall
+{
+    Call    PlayEffect  	( 66` 0 ~Model:pseudoWall ~Model:pseudoWall 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Exec    $Script_HideCrack
+    Set     *GF_TIK02_Crack .True
+    Unbind
+    Return
+    End
+}
+
+#new:Script $Script_HideCrack
+{
+    Call    EnableGroup ( ~Model:cracked_wall .False )
+    Call    ModifyColliderFlags 	( .False ~Collider:crack 7FFFFE00 )
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Wall
+{
+	~BombPos:BombPos
+}
+
+@ $Script_80240B48
+{
+    0:  Bind  $Script_ExitWalk_80240AEC .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+        Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_Exit1
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "pit_00" 00000000 )
+    Wait  100`
+    Return
+    End
+}

@@ -1,0 +1,296 @@
+% Same as Battle_PartnersExtraActorData.patch, but adds data for all enemies plus Mario.
+
+%==Struct==
+%
+%   [0x00-0x03]= unused
+%
+%=Boosts & Debuffs=
+%
+%   [0x04]= Defense Boosts
+%
+%   [0x05]= Defense boosts - turns left
+%
+%   [0x06]= Offensive boosts
+%
+%   [0x07]= Offensive boosts - turns left
+%
+%   [0x08]= HP boosts
+%
+%   [0x09]= HP boosts - turns left
+%
+%   [0x0A]= FP boosts
+%
+%   [0x0B]= FP boosts - turns left
+%
+%==Misc====
+%
+%   [0x0C]= actor flipped byteflag (only used by Kooper)
+%
+%   [0x0D]= unused
+%
+%   [0x0E]= Defend (only used by the player team)
+%
+%   [0x0F]= Charge
+#export:Data $ExtraActorData_Everyone
+{
+    00000000 00000000 00000000 00000000 % Mario
+    %
+    00000000 00000000 00000000 00000000 % Enemy0
+    00000000 00000000 00000000 00000000 % Enemy1
+    00000000 00000000 00000000 00000000 % Enemy2
+    00000000 00000000 00000000 00000000 % Enemy3
+    00000000 00000000 00000000 00000000 % Enemy4
+    00000000 00000000 00000000 00000000 % Enemy5
+    00000000 00000000 00000000 00000000 % Enemy6
+    00000000 00000000 00000000 00000000 % Enemy7
+    00000000 00000000 00000000 00000000 % Enemy8
+    00000000 00000000 00000000 00000000 % Enemy9
+    00000000 00000000 00000000 00000000 % Enemy10
+    00000000 00000000 00000000 00000000 % Enemy11
+    00000000 00000000 00000000 00000000 % Enemy12
+    00000000 00000000 00000000 00000000 % Enemy13
+    00000000 00000000 00000000 00000000 % Enemy14
+    00000000 00000000 00000000 00000000 % Enemy15
+    00000000 00000000 00000000 00000000 % Enemy16
+    00000000 00000000 00000000 00000000 % Enemy17
+    00000000 00000000 00000000 00000000 % Enemy18
+    00000000 00000000 00000000 00000000 % Enemy19
+    00000000 00000000 00000000 00000000 % Enemy20
+    00000000 00000000 00000000 00000000 % Enemy21
+    00000000 00000000 00000000 00000000 % Enemy22
+    00000000 00000000 00000000 00000000 % Enemy23
+    FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+% Clear everyone data except for Partners.
+#export:Function $Function_ClearExtraActorData_Everyone
+{
+    % This function is called in `Battle_PartnersExtraActorData.patch` - Hook `16CA18`
+    PUSH    T0, T1, T2
+    LIO     T0, $ExtraActorData_Everyone
+    CLEAR   T1
+    .Loop
+	SW      R0, 0 (T0)
+    SW      R0, 4 (T0)
+    SW      R0, 8 (T0)
+    SW      R0, C (T0)
+    ADDIU   T0, T0, 10 % read next actor data
+    LW      T1, 0 (T0)
+    ADDI    T2, R0, -1
+    BNE     T1, T2, .Loop
+    NOP
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+% A0 = actorID
+#export:Function $GetActorExtraBattleData_Pointer
+{
+    PUSH    RA, A0, A1, A2, A3, V1
+    COPY    V0, A0
+    LIO     A0, $ExtraActorData_Everyone
+    % check if actor is Partner
+    ORI     A1, R0, 0100 % .Actor:Partner
+    BEQ     V0, A1, .Partner
+    NOP
+    % actor is the player?
+    BEQ     V0, R0, .FindActorData
+    CLEAR   A2
+    % It's an enemy, format actorID
+    ANDI    A2, V0, FDFF % remove 0X00 from the ID (number 2)
+    ADDIU   A2, A2, 2
+    .FindActorData
+    % clear extra data's buffs data
+    %
+    % get data offset
+    ORI     V1, R0, 10
+    MULT    A2, V1
+    MFLO    V1
+    %
+    ORI     A2, R0, 1 % Isn't partner?
+    BEQ     V0, R0, .CopyToV0 % Player
+    ADDU    A3, A0, V1
+    BNE     V0, A2, .CopyToV0 % Enemies
+    ADDI    A3, A3, -10 % because enemies' extraActorData starts at index 0x01 unlike the FX data.
+    .Partner
+    % It's partner
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    COPY    A3, V0
+    .CopyToV0
+    COPY    V0, A3
+    .End
+    POP     RA, A0, A1, A2, A3, V1
+    JR      RA
+    NOP
+}
+
+% Call  $SetActorExtraData ( actorID offset amount )
+%
+% Save as single byte.
+#export:Function $SetActorExtraData
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    COPY    S0, A0
+    % arg0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % arg0
+    % .Actor:Self was used?
+    LIO     A0, FFFFFF81
+    BEQL    V0, A0, .GetPointer
+    LW	    V0, 0148 (S0) % load self id
+    .GetPointer
+    JAL     $GetActorExtraBattleData_Pointer
+    COPY    A0, V0
+    COPY    S1, V0
+    % arg1
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1) % arg1
+    COPY    S2, V0
+    % arg2
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1) % arg2
+    % get offset
+    ADD     S1, S1, S2
+    SB      V0, 0 (S1)
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call  $GetActorExtraData ( actorID offset *out )
+%
+% Get a single byte.
+#export:Function $GetActorExtraData
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    COPY    S0, A0
+    % arg0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % arg0
+    % .Actor:Self was used?
+    LIO     A0, FFFFFF81
+    BEQL    V0, A0, .GetPointer
+    LW	    V0, 0148 (S0) % load self id
+    .GetPointer
+    JAL     $GetActorExtraBattleData_Pointer
+    COPY    A0, V0
+    COPY    S1, V0
+    % arg1
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1) % arg1
+    COPY    S2, V0
+    % arg2
+    COPY    A0, S0
+    LW      A1, C (A0)
+    % get offset
+    ADD     S1, S1, S2
+    LB      A2, 0 (S1)
+    JAL     ~Func:set_variable
+    LW      A1, 8 (A1) % arg2
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Player - Set flipped byteflag (extraData(0x0C)) as true when .Event:FlipTrigger gets dispatched
+%
+% ~func:calc_player_damage_enemy
+@Hook:Battle 80272AAC
+{
+    PUSH    A0
+    ORI     A0, R0, D % .Event:FlipTrigger
+    BNE     A0, A1, .End
+    NOP
+    LW      A0, 10 (SP) % pop A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (A0) % actorID
+    ORI     A0, R0, 1
+    SB      A0, C (V0) % flipped byteflag
+    .End
+    POP     A0
+    % restore code
+    JAL	    ~Func:dispatch_event_actor
+    SB	    S7, 0199 (S4)
+    J       80272AB4
+    NOP
+}
+
+% Partner - Set flipped byteflag (extraData(0x0C)) as true when .Event:FlipTrigger gets dispatched
+%
+% ~func:calc_partner_damage_enemy
+@Hook:Battle 8027F2D4
+{
+    PUSH    A0
+    ORI     A0, R0, D % .Event:FlipTrigger
+    BNE     A0, A1, .End
+    NOP
+    LW      A0, 10 (SP) % pop A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (A0) % actorID
+    ORI     A0, R0, 1
+    SB      A0, C (V0) % flipped byteflag
+    .End
+    POP     A0
+    % restore code
+    JAL	    ~Func:dispatch_event_actor
+    SB	    S5, 0199 (S4)
+    J       8027F2DC
+    NOP
+}
+
+% Items - Set flipped byteflag (extraData(0x0C)) as true when .Event:FlipTrigger gets dispatched
+%
+% ~func:dispatch_event_general
+@Hook:Battle 80276FF0
+{
+    PUSH    A0
+    ORI     A0, R0, D % .Event:FlipTrigger
+    BNE     A0, A1, .End
+    NOP
+    LW      A0, 10 (SP) % pop A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (A0) % actorID
+    ORI     A0, R0, 1
+    SB      A0, C (V0) % flipped byteflag
+    .End
+    POP     A0
+    % restore code
+    JAL	    ~Func:dispatch_event_actor
+    NOP
+    J       80276FF8
+    NOP
+}
+
+% Misc - Set flipped byteflag (extraData(0x0C)) as true when .Event:FlipTrigger gets dispatched
+%
+% DispatchEvent(API)
+@Hook:Battle 8027D2B8
+{
+    PUSH    A0, V0
+    COPY    A1, V0
+    ORI     A0, R0, D % .Event:FlipTrigger
+    BNE     A0, A1, .End
+    NOP
+    LW      A0, 10 (SP) % pop A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (A0) % actorID
+    ORI     A0, R0, 1
+    SB      A0, C (V0) % flipped byteflag
+    .End
+    POP     A0, V0
+    % restore code
+    JAL	    ~Func:dispatch_event_actor
+    COPY    A1, V0
+    J       8027D2C0
+    NOP
+}

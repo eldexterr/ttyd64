@@ -1,0 +1,340 @@
+% Script File: arn_11.mscr
+% Decoded from: 0 to 1110 (arn_11)
+
+#define .NpcID:TubbasHeart_00       00
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -165.0    0.0    0.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000001
+	[Background]  00000000
+	[MapTattle]   001900D8
+}
+
+#new:Script $Script_80240050
+{
+    0:  Switch  *GB_StoryProgress
+    C:  	Case  <  .Story:Ch3_WentDownTheWell % FFFFFFE9
+   18:  		Call  SetMusicTrack ( 00000000 .Song:TubbaEscape 00000000 00000008 )
+   34:  	Case  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+   40:  		Call  SetMusicTrack ( 00000000 .Song:TubbaBlubbaTheme 00000000 00000008 )
+   5C:  	Default
+   64:  		Call  SetMusicTrack ( 00000000 .Song:GustyGulch 00000000 00000008 )
+   80:  EndSwitch
+   88:  Return
+   90:  End
+}
+
+PADDING: 802400E8 to 802400F0 (000000E8 to 000000F0)
+00000000 00000000
+
+#new:Script $Script_802400F0
+{
+    0:  Call  SetCamType    ( .Cam:Default 00000006 .True )
+   18:  Call  SetCamSpeed   ( .Cam:Default *Fixed[3.0] )
+   2C:  Call  UseSettingsFrom   ( .Cam:Default  60`  30`  0` )
+   48:  Call  SetPanTarget  ( .Cam:Default  60`  30`  0` )
+   64:  Call  SetCamPitch   ( .Cam:Default *Fixed[20.0] *Fixed[-13.0] )
+   7C:  Call  SetCamDistance    ( .Cam:Default  275` )
+   90:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+   A8:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+   BC:  Return
+   C4:  End
+}
+
+#new:Script $Script_802401BC
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Wait  30`
+   1C:  Call  SetPlayerSpeed        ( *Fixed[3.0] )
+   2C:  Call  PlayerMoveTo  (  6`  0`  0` )
+   44:  Call  SpeakToPlayer ( .NpcID:TubbasHeart_00 006C000B 006C0001 00000000 000E00BF ) % Who are you?
+   64:  Wait  10`
+   70:  Call  SetPlayerAnimation    ( 00080007 )
+   80:  Wait  40`
+   8C:  Call  SpeakToPlayer ( .NpcID:TubbasHeart_00 006C000B 006C0001 00000000 000E00C0 ) % What!? Mario!? Did someone... ...tell you that I'm ...
+   AC:  Call  SetPlayerAnimation    ( 00010002 )
+   BC:  Wait  10`
+   C8:  Call  SetPlayerAnimation    ( 00090000 )
+   D8:  Wait  30`
+   E4:  Call  SpeakToPlayer ( .NpcID:TubbasHeart_00 006C000B 006C0001 00000000 000E00C1 ) % Someone spilled the beans that the Tubba Blubba in ...
+  104:  Call  SetPlayerAnimation    ( 00010002 )
+  114:  Wait  20`
+  120:  Call  SetPlayerAnimation    ( 00090000 )
+  130:  Thread
+  138:  	Call  SetNpcJumpscale   ( .NpcID:TubbasHeart_00 *Fixed[2.5] )
+  14C:  	Call  GetNpcPos ( .NpcID:TubbasHeart_00 *Var0 *Var1 *Var2 )
+  168:  	Call  PlaySoundAtNpc    ( .NpcID:TubbasHeart_00 000020C8 00000000 )
+  180:  	Call  NpcJump0  ( .NpcID:TubbasHeart_00 *Var0 *Var1 *Var2  10` )
+  1A0:  	Wait  1`
+  1AC:  	Call  PlaySoundAtNpc    ( .NpcID:TubbasHeart_00 000020C8 00000000 )
+  1C4:  	Call  NpcJump0  ( .NpcID:TubbasHeart_00 *Var0 *Var1 *Var2  10` )
+  1E4:  EndThread
+  1EC:  Wait  40`
+  1F8:  Call  SpeakToPlayer ( .NpcID:TubbasHeart_00 006C000B 006C0001 00000000 000E00C2 ) % You can't trust anybody! I can't let you out of he ...
+  218:  Call  SetPlayerAnimation    ( 00090000 )
+  228:  Wait  10`
+  234:  Call  SetNpcVar ( .NpcID:TubbasHeart_00 00000000 00000001 )
+  24C:  Call  DisablePlayerInput    ( .False )
+  25C:  Return
+  264:  End
+}
+
+#new:Script $Script_ExitSingleDoor_80240428
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  ~Entry:Entry0
+   2C:  Set   *Var1  ~Collider:ttw
+   3C:  Set   *Var2  ~Model:o37
+   4C:  Set   *Var3  .DoorSwing:Out % FFFFFFFF
+   5C:  Exec  ExitSingleDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_80241100 00000001 ) % arn_13
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_802404CC
+{
+    0:  Bind  $Script_ExitSingleDoor_80240428 .Trigger:WallPressA ~Collider:ttw 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_EnterSingleDoor_802404F8
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Set   *Var2  ~Model:o37
+   20:  Set   *Var3  .DoorSwing:Out % FFFFFFFF
+   30:  ExecWait  EnterSingleDoor
+   3C:  Exec  $Script_802404CC
+   48:  If  *GB_StoryProgress  <  .Story:Ch3_HeartFledFirstTunnel % FFFFFFEA
+   58:  	Wait  10`
+   64:  	Exec  $Script_802400F0
+   70:  	Exec  $Script_802401BC
+   7C:  	Wait  1`
+   88:  EndIf
+   90:  Call  DisablePlayerInput    ( .False )
+   A0:  Return
+   A8:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:WindyMill
+   10:  Call  SetSpriteShading  ( .Shading:arn_11 )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  Call  MakeNpcs  ( .False $NpcGroupList_802410DC )
+   98:  Exec  $Script_80240050
+   A4:  Exec  $Script_EnterSingleDoor_802404F8
+   B0:  Wait  1`
+   BC:  Return
+   C4:  End
+}
+
+PADDING: 80240674 to 80240680 (00000674 to 00000680)
+00000000 00000000 00000000
+
+#new:Script $Script_80240680
+{
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_80240690
+{
+    0:  Return
+    8:  End
+}
+
+#new:NpcSettings $NpcSettings_802406A0
+{
+	00000000 00180018 $Script_80240680 00000000 00000000 00000000 00000000 $Script_80240690
+	00000000 00000000 000D0000
+}
+
+#new:Script $Script_Idle_802406CC
+{
+    0:  Loop
+    C:  	Call  GetSelfVar    ( 00000000 *Var0 )
+   20:  	If  *Var0  !=  00000000
+   30:  		BreakLoop
+   38:  	EndIf
+   40:  	Wait  1`
+   4C:  EndLoop
+   54:  Thread
+   5C:  	Call  SetCamType    ( .Cam:Default 00000006 .True )
+   74:  	Call  SetCamSpeed   ( .Cam:Default *Fixed[4.0] )
+   88:  	Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+   A0:  	Add   *Var0  00000032
+   B0:  	Call  UseSettingsFrom   ( .Cam:Default *Var0 *Var1 *Var2 )
+   CC:  	Call  SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+   E8:  	Call  SetCamDistance    ( .Cam:Default  3000` )
+   FC:  	Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  114:  	Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  128:  EndThread
+  130:  Call  StartBossBattle   ( .Song:TubbaBlubbaBattle )
+  140:  Return
+  148:  End
+}
+
+#new:Script $Script_8024081C
+{
+    0:  Wait  15`
+    C:  Call  PlaySoundAtCollider   ( ~Collider:ttw .Sound:BasicDoorOpen 00000000 )
+   24:  Call  MakeLerp  ( 00000000 00000050 0000000A .Easing:Linear )
+   40:  Loop
+   4C:  	Call  UpdateLerp ( )
+   58:  	Call  RotateModel   ( ~Model:o37 *Var0 00000000 FFFFFFFF 00000000 )
+   78:  	Wait  1`
+   84:  	If  *Var1  ==  00000000
+   94:  		BreakLoop
+   9C:  	EndIf
+   A4:  EndLoop
+   AC:  Return
+   B4:  End
+}
+
+#new:Script $Script_802408D8
+{
+    0:  Call  MakeLerp  ( 00000050 00000000 0000000A .Easing:Linear )
+   1C:  Loop
+   28:  	Call  UpdateLerp ( )
+   34:  	Call  RotateModel   ( ~Model:o37 *Var0 00000000 FFFFFFFF 00000000 )
+   54:  	Wait  1`
+   60:  	If  *Var1  ==  00000000
+   70:  		BreakLoop
+   78:  	EndIf
+   80:  EndLoop
+   88:  Call  PlaySoundAtCollider   ( ~Collider:ttw .Sound:BasicDoorClose 00000000 )
+   A0:  Return
+   A8:  End
+}
+
+#new:IntTable $IntTable_80240988
+{
+	00000064 0000001E 00000046 00000019 0000001E 00000050 FFFFD8F0 00000000
+	00000000 FFFFFFBA 0000000A 00000014 FFFFFF4C 00000000 00000000 FFFFFED4
+	00000000 00000000 FFFFD8F0 00000000 00000000
+}
+
+#new:Script $Script_Defeat_802409DC
+{
+    0:  Thread
+    8:  	Call  SetCamType    ( .Cam:Default 00000006 .True )
+   20:  	Call  SetCamSpeed   ( .Cam:Default *Fixed[90.0] )
+   34:  	Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+   4C:  	Add   *Var0  00000032
+   5C:  	Call  UseSettingsFrom   ( .Cam:Default *Var0 *Var1 *Var2 )
+   78:  	Call  SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+   94:  	Call  SetCamDistance    ( .Cam:Default  450` )
+   A8:  	Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+   C0:  EndThread
+   C8:  Wait  10`
+   D4:  Call  PlayerFaceNpc ( .NpcID:TubbasHeart_00 .True )
+   E8:  Loop  00000002
+   F4:  	Call  GetNpcPos ( .NpcID:TubbasHeart_00 *Var0 *Var1 *Var2 )
+  110:  	Call  SetNpcJumpscale   ( .NpcID:TubbasHeart_00 *Fixed[2.5] )
+  124:  	Call  PlaySoundAtNpc    ( .Npc:Self 000020C8 00000000 )
+  13C:  	Call  NpcJump0  ( .NpcID:TubbasHeart_00 *Var0 *Var1 *Var2  12` )
+  15C:  	Wait  1`
+  168:  EndLoop
+  170:  Thread
+  178:  	Wait  10`
+  184:  	Call  SetCamType    ( .Cam:Default 00000004 .True )
+  19C:  	Call  SetCamSpeed   ( .Cam:Default *Fixed[2.0] )
+  1B0:  	Call  SetCamPitch   ( .Cam:Default *Fixed[17.0] *Fixed[-7.0] )
+  1C8:  	Call  SetCamDistance    ( .Cam:Default  450` )
+  1DC:  	Call  SetCamPosA    ( .Cam:Default  -56`  70` )
+  1F4:  	Call  SetCamPosB    ( .Cam:Default  -90`  40` )
+  20C:  	Call  SetCamPosC    ( .Cam:Default  0`  0` )
+  224:  	Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  23C:  EndThread
+  244:  Call  PlayerFaceNpc ( .NpcID:TubbasHeart_00 .True )
+  258:  UseIntBuffer  $IntTable_80240988
+  264:  Loop
+  270:  	Get3Int  *Var0 *Var1 *Var2
+  284:  	If  *Var0  ==  FFFFD8F0
+  294:  		BreakLoop
+  29C:  	EndIf
+  2A4:  	Call  PlaySoundAtNpc    ( .Npc:Self 000020C8 00000000 )
+  2BC:  	Call  NpcJump0  ( .NpcID:TubbasHeart_00 *Var0 *Var1 *Var2  12` )
+  2DC:  	Wait  1`
+  2E8:  EndLoop
+  2F0:  Exec  $Script_8024081C
+  2FC:  Loop
+  308:  	Get3Int  *Var0 *Var1 *Var2
+  31C:  	If  *Var0  ==  FFFFD8F0
+  32C:  		BreakLoop
+  334:  	EndIf
+  33C:  	Call  PlaySoundAtNpc    ( .Npc:Self 000020C8 00000000 )
+  354:  	Call  NpcJump0  ( .NpcID:TubbasHeart_00 *Var0 *Var1 *Var2  12` )
+  374:  	Wait  1`
+  380:  EndLoop
+  388:  Exec  $Script_802408D8
+  394:  Wait  30`
+  3A0:  Call  SetCamType    ( .Cam:Default 00000006 .True )
+  3B8:  Call  SetCamSpeed   ( .Cam:Default *Fixed[90.0] )
+  3CC:  Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+  3E4:  Call  UseSettingsFrom   ( .Cam:Default *Var0 *Var1 *Var2 )
+  400:  Call  SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+  41C:  Call  SetCamDistance    ( .Cam:Default  450` )
+  430:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  448:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  45C:  Call  PanToTarget   ( .Cam:Default 00000000 00000000 )
+  474:  Set   *GB_StoryProgress  .Story:Ch3_HeartFledFirstTunnel
+  484:  Return
+  48C:  End
+}
+
+#new:Script $Script_Init_80240E70
+{
+    0:  If  *GB_StoryProgress  >=  .Story:Ch3_HeartFledFirstTunnel % FFFFFFEA
+   10:  	Call  RemoveNpc ( .Npc:Self )
+   20:  Else
+   28:  	Call  SetSelfVar    ( 00000000 00000000 )
+   3C:  	Call  BindNpcIdle   ( .Npc:Self $Script_Idle_802406CC )
+   50:  	Call  BindNpcDefeat ( .Npc:Self $Script_Defeat_802409DC )
+   64:  EndIf
+   6C:  Return
+   74:  End
+}
+
+#new:NpcGroup $NpcGroup_80240EEC
+{
+	.NpcID:NPC_TubbasHeart_00 $NpcSettings_802406A0 ~Vec3f:NPC_TubbasHeart_00 % 119 60 0
+	00040B05 $Script_Init_80240E70 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_TubbasHeart_00
+	~AnimationTable:NPC_TubbasHeart_00 % .Sprite:TubbasHeart
+	00000000 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroupList $NpcGroupList_802410DC
+{
+	00000001 $NpcGroup_80240EEC 0E0F0000
+	00000000 00000000 00000000
+}
+
+PADDING: 802410F4 to 80241100 (000010F4 to 00001100)
+00000000 00000000 00000000
+
+#new:ASCII $ASCII_80241100
+{
+	"arn_13"
+}
+
+PADDING: 80241108 to 80241110 (00001108 to 00001110)
+00000000 00000000
+

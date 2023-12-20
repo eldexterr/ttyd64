@@ -1,0 +1,96 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:BoosMansion
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Call  $WriteBitFlag ( 8010EFCC .False 2 6 .True ) % PlayerFlags2(0x02)(bit6) - Activate 8bit Mario
+	Exec  $Script_SetupMusic
+    Exec  $Script_MakeEntities
+	Exec  $Script_EnterMap
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	If  *GB_StoryProgress  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+        Call  SetMusicTrack ( 00000000 .Song:BoosMansion 00000000 00000008 )
+    Else
+        Call  SetMusicTrack ( 00000000 .Song:CheerfulBoosMansion 00000000 00000008 )
+    EndIf
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+% Entities
+
+#new:Script $Script_MakeEntities
+{
+	Call  MakeEntity    ( .Entity:SingleTriggerBlock ~Vec4d:Entity_Block 80000000 )
+    Call  AssignScript  ( $Script_MakeCoins )
+	Return
+	End
+}
+
+#new:Script $Script_MakeCoins {
+    Call    PlaySound ( 008E )
+    Call    DropItemEntity ( .Item:Coin ~Vec3d:Entity_Coin1 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Wait    8
+    Call    DropItemEntity ( .Item:Coin ~Vec3d:Entity_Coin2 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Wait    8
+    Call    DropItemEntity ( .Item:Coin ~Vec3d:Entity_Coin3 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Wait    8
+    Call    DropItemEntity ( .Item:Coin ~Vec3d:Entity_Coin4 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Wait    8
+    Call    DropItemEntity ( .Item:Coin ~Vec3d:Entity_Coin5 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Wait    8
+    Call    DropItemEntity ( .Item:Coin ~Vec3d:Entity_Coin6 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Wait    8
+    Call    DropItemEntity ( .Item:Coin ~Vec3d:Entity_Coin7 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Wait    8
+    Call    StopSound ( 008E )
+    Return
+    End
+}
+
+#new:Script $Script_EnterMap
+{
+    Exec $Script_CreateExitTriggers
+    Call DisablePlayerInput ( .True )
+    Wait 5
+    Call DisablePlayerInput ( .False )
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind     $Script_Exit0 .Trigger:WallPressA ~Collider:Exit0 00000001 00000000 
+	Return
+	End
+}
+
+#new:Script $Script_Exit0 {
+    Call    StopSound ( 008E )
+    Call    DisablePlayerInput ( .True )
+    Call    PlaySound ( 01C1 ) % door sfx
+    Call    GotoMap ( "obk_12" 0 )
+    Return
+    End
+}

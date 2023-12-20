@@ -1,0 +1,28 @@
+% Make Hustle Drink's byte (battleStatus(0x8B)(800DC0FB)) to work the same as TTYD's Rally Wink.
+
+% Make possible to swap to partner if the hustle byte it's true
+%
+% Patch ~Func:btl_state_update_player_menu
+@Function:Battle 802A6214
+{
+    NOP
+}
+
+% Reverd player's turn as unused if the hustle byte isn't false.
+%
+% Patch ~Func:btl_state_update_end_player_turn
+@Hook:Battle 80246A94
+{
+    LABU    V0, 800DC0FB % hustleByte
+    ADDI    V0, V0, -1 % decrease hustleByte
+    SAB     V0, 800DC0FB
+    % Set Mario turn as unused
+    %
+    % disable battleFlags2(0x03)(bit1)
+    LW	    V0, 0004 (A1) % battleFlags2
+    ADDIU	V1, R0, FFFD
+    AND	    V0, V0, V1
+    SW	    V0, 0004 (A1)
+    J       80246AEC
+    ADDIU	A0, R0, C % .BattleStatus:PrepareMenu
+}

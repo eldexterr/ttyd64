@@ -1,0 +1,71 @@
+% Swap between the new songs or the original ones according to *Byte_Settings_BGM
+
+% ~Func:_bgm_set_song
+@Hook 8014A8DC
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % 02 - NormalBattle
+    % 03 - SpecialBattle
+    % 69 - FileSelect
+    % 6A - MainTheme
+    % 8B - BattleEnd
+    % 8E - LevelUp
+    %
+    % S2=newSongID
+    %
+    % Songs that can't be changed
+    ORI     S4, R0, 69 % .Song:FileSelect
+    BEQL    S2, S4, .End
+    ORI     S2, R0, A5 % .Song:TTYD_FileSelect
+    %
+    ORI     S4, R0, 6A % .Song:MainTheme
+    BEQL    S2, S4, .End
+    ORI     S2, R0, A4 % .Song:TTYD_MainTheme
+    %======================================
+    % Change between original or new songs
+    %======================================
+    LIO     A1, *Byte_Settings_BGM
+    JAL     ~Func:get_variable
+    RESERVED
+    BNE     V0, R0, .End % Use original tracks
+    NOP
+    % Use new songs
+    ORI     S4, R0, 2 % .Song:NormalBattle
+    BEQL    S2, S4, .End
+    ORI     S2, R0, A0 % .Song:TTYD_NormalBattle
+    %
+    ORI     S4, R0, 3 % .Song:SpecialBattle
+    BEQL    S2, S4, .End
+    ORI     S2, R0, A1 % .Song:TTYD_SpecialBattle
+    %
+    ORI     S4, R0, 8B % .Song:BattleEnd
+    BEQL    S2, S4, .End
+    ORI     S2, R0, A2 % .Song:TTYD_BattleEnd
+    %
+    ORI     S4, R0, 8E % .Song:LevelUp
+    BEQL    S2, S4, .End
+    ORI     S2, R0, A3 % .Song:TTYD_LevelUp
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    SW	    S2, 0010 (S0) % save new songID
+    J       8014A8E4
+    SW	    S1, 0014 (S0)
+}
+
+% Don't play the little gingle sound when you win a battle.
+% If *Byte_Settings_BGM is false .
+%
+% ~Func:btl_state_update_celebration
+@Hook:Battle 8025E260
+{
+    LIO     A1, *Byte_Settings_BGM
+    JAL     ~Func:get_variable
+    RESERVED
+    BEQ     V0, R0, .End
+    NOP
+    JAL     ~Func:sfx_play_sound
+    ADDIU	A0, R0, 00D4
+    .End
+    J       8025E268
+    NOP
+}

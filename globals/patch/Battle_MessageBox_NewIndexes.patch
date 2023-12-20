@@ -1,0 +1,388 @@
+% Add new messages to the ~Func:btl_show_battle_message function
+%
+% Plus make it possible to do it in the overworld with ~func:show_merlee_message
+
+% Original message table at 80283770
+
+% Message Index need to be >=100 to read this strings table
+#new:Data $StringTable_BattlePopUp_NewStrings
+{
+    $String_PartnerDead % 100
+    $String_Defense_Boost % 101
+    $String_Attack_Boost % 102
+    $String_HPBoost_Buff % 103
+    $String_FPBoost_Buff % 104
+    $String_ParcelCheck_Item % 105
+    $String_GoombariosPonder % 106
+    $String_TooManyBadges % 107
+    $String_Defense % 108
+    $String_Defense_Debuff % 109
+    $String_Attack_Debuff % 10A
+    % Glitz Pit
+    $String_Glitz_UseStarPower % 10B
+    $String_Glitz_DontStarPower % 10C
+    $String_Glitz_DontJump % 10D
+    $String_Glitz_DontHammer % 10E
+    $String_Glitz_DontItems % 10F
+    $String_Glitz_Focus1Time % 110
+    $String_Glitz_Focus3Times % 111
+    $String_Glitz_OnlyMario % 112
+    $String_Glitz_OnlyPartner % 113
+    $String_Glitz_TakeDamage3Times % 114
+    $String_Glitz_TakeDamage5Times % 115
+    $String_Glitz_Wait3Turns % 116
+    $String_Glitz_DontSwap % 117
+    $String_Glitz_WinIn5Turns % 118
+    $String_Glitz_DontTake20Damage % 119
+    $String_Glitz_DontUseFP % 11A
+}
+
+% Strings
+
+#string $String_PartnerDead % 100
+{
+This partner is[BR]
+unavailable![End]
+}
+
+#string $String_Defense_Boost % 101
+{
+Defense is boosted![End]
+}
+
+#string $String_Attack_Boost % 102
+{
+Attack is boosted![End]
+}
+
+#string $String_HPBoost_Buff % 103
+{
+HP will briefly recover![End]
+}
+
+#string $String_FPBoost_Buff % 104
+{
+FP will briefly recover![End]
+}
+
+#string $String_ParcelCheck_Item % 105
+{
+You got a [SaveColor][Color:28][Var 0][RestoreColor]![End]
+}
+
+#string $String_GoombariosPonder % 106
+{
+Mario's attack turns[BR]
+increased by one![End]
+}
+
+#string $String_TooManyBadges % 107
+{
+You can't carry any more badges![End]
+}
+
+#string $String_Defense % 108
+{
+Defense will get boosted[BR]
+this turn![End]
+}
+
+#string $String_Defense_Debuff % 109
+{
+Defense has dropped![End]
+}
+
+#string $String_Attack_Debuff % 10A
+{
+Attack has dropped![End]
+}
+
+% Glitz Pit
+
+#string $String_Glitz_UseStarPower % 10B
+{
+Use a Star Power move at least once.[End]
+}
+
+#string $String_Glitz_DontStarPower % 10C
+{
+Don't use any Star Power moves.[End]
+}
+
+#string $String_Glitz_DontJump % 10D
+{
+Don't jump.[End]
+}
+
+#string $String_Glitz_DontHammer % 10E
+{
+Don't use the hammer.[End]
+}
+
+#string $String_Glitz_DontItems % 10F
+{
+Don't use items.[End]
+}
+
+#string $String_Glitz_Focus1Time % 110
+{
+Use Focus at least once.[End]
+}
+
+#string $String_Glitz_Focus3Times % 111
+{
+Use Focus at least 3 times.[End]
+}
+
+#string $String_Glitz_OnlyMario % 112
+{
+Only Mario can attack.[End]
+}
+
+#string $String_Glitz_OnlyPartner % 113
+{
+Only Partner can attack.[End]
+}
+
+#string $String_Glitz_TakeDamage3Times % 114
+{
+Take damage at least three times.[End]
+}
+
+#string $String_Glitz_TakeDamage5Times % 115
+{
+Take damage at least five times.[End]
+}
+
+#string $String_Glitz_Wait3Turns % 116
+{
+Wait three turns before attacking.[End]
+}
+
+#string $String_Glitz_DontSwap % 117
+{
+Don't swap partners.[End]
+}
+
+#string $String_Glitz_WinIn5Turns % 118
+{
+Defeat your foe in 5 turns or less.[End]
+}
+
+#string $String_Glitz_DontTake20Damage % 119
+{
+Win before taking 20 HP of damage.[End]
+}
+
+#string $String_Glitz_DontUseFP % 11A
+{
+Don't use FP.[End]
+}
+
+%============
+% Get string
+%============
+
+% Remove 0x55 message index cap
+%
+% Patch ~Func:btl_show_message_popup
+@Hook 17F7A8 % 80250EC8
+{
+    % Is index >=0x100?
+    SLTIU   V0, V1, 0100
+    BNE     V0, R0, .End
+    NOP
+    % It is
+    J       80250EEC
+    ADDIU	S4, R0, 0050
+    .End
+    % restore vanilla code
+    SLTIU	V0, V1, 0055
+    BEQ     V0, R0, .80251294
+    ADDIU	S4, R0, 0050
+    J       80250ED4
+    NOP
+    .80251294
+    J       80251294
+    NOP
+}
+
+% Get string
+%
+% Patch ~Func:btl_show_message_popup
+@Function 17F7E0 % 80250F00
+{
+    J   $Function_Hook_17F7E0
+    NOP
+}
+
+#new:Function $Function_Hook_17F7E0
+{
+    LIO     A1, 80250F10
+    LIO     A2, 80250F08
+    J       $Function_BattlePopUpGetString
+    RESERVED
+}
+
+% A1 = Index is >=0x100 jump pointer
+%
+% A2 = Index is below 0x100 jump pointer
+#new:Function $Function_BattlePopUpGetString
+{
+    % V0 = messageIndex
+    SLTIU   V1, V0, 100
+    BNE     V1, R0, .End
+    NOP
+    % get string from the new string table
+    %
+    % leave the first two digits only
+    SLL     V0, V0, 24`
+    SRL     V0, V0, 24`
+    SLL     V0, V0, 2
+    LIO     A0, $StringTable_BattlePopUp_NewStrings
+    ADDU    A0, A0, V0
+    JR      A1
+    LW      S0, 0 (A0) % load string
+    .End
+    % restore vanilla code
+    SLL	    V0, V0, 2
+    JR      A2
+    LUI	    S0, 8028
+}
+
+%============
+% Get string lines
+%============
+
+% Remove 0x55 message index cap
+%
+% Patch func_80250818
+@Hook 17F124 % 80250844
+{
+    % Is index >=0x100?
+    SLTIU   V0, V1, 0100
+    BNE     V0, R0, .End
+    NOP
+    % It is
+    J       80250868
+    ADDIU	S1, A2, 0006
+    .End
+    % restore vanilla code
+    SLTIU	V0, V1, 0055
+    BEQ     V0, R0, .80250E80
+    ADDIU	S1, A2, 0006
+    J       80250850
+    NOP
+    .80250E80
+    J       80250E80
+    NOP
+}
+
+% Get string
+%
+% Patch func_80250818
+@Function 17F14C % 8025086C
+{
+    J   $Function_Hook_17F14C
+    NOP
+}
+
+#new:Function $Function_Hook_17F14C
+{
+    LIO     A1, 8025087C
+    LIO     A2, 80250874
+    J       $Function_BattlePopUpGetString
+    RESERVED
+}
+
+%============
+% Popup - update inputs
+%============
+
+% Remove 0x55 message index cap
+%
+% Patch func_8024FB3C
+@Hook 17E440 % 8024FB60
+{
+    % Is index >=0x100?
+    SLTIU   V0, V1, 0100
+    BNE     V0, R0, .End
+    NOP
+    % It is
+    ORI     V1, R0, 50
+    J       8024FB6C
+    CLEAR   S2
+    .End
+    % restore vanilla code
+    SLTIU	V0, V1, 0055
+    BEQ     V0, R0, .802507DC
+    CLEAR   S2
+    J       8024FB6C
+    NOP
+    .802507DC
+    J       802507DC
+    NOP
+}
+
+% Overworld - Make possible to show this messages, it needs to be 
+% dispatched with ~func:show_merlee_message.
+%
+% Get string width
+%
+% ~func:draw_merlee_message
+@Hook 80045F04
+{
+    % get index
+    ORI     A1, R0, 4
+    DIV     V0, A1
+    MFLO    A1
+    % Is index >=0x100?
+    SLTIU   A0, A1, 0100
+    BNE     A0, R0, .VanillaMessage
+    NOP
+    % leave the first two digits only
+    SLL     A1, A1, 24`
+    SRL     A1, A1, 24`
+    SLL     A1, A1, 2
+    LIO     A0, $StringTable_BattlePopUp_NewStrings
+    ADDU    A0, A0, A1
+    BEQ     R0, R0, .End
+    LW	    S0, 0 (A0)
+    .VanillaMessage
+    ADDU	S0, S0, V0
+    LW	    S0, 8168 (S0)
+    .End
+    J       80045F0C
+    NOP
+}
+
+% Read from the new string table if message index is >=0x100
+%
+% Draw string
+%
+% ~Func:draw_merlee_message_string
+@Hook 80045E70
+{
+    % get index
+    ORI     A0, R0, 4
+    DIV     V0, A0
+    MFLO    A0
+    % Is index >=0x100?
+    SLTIU   A3, A0, 0100
+    BNE     A3, R0, .VanillaMessage
+    NOP
+    % leave the first two digits only
+    SLL     A0, A0, 24`
+    SRL     A0, A0, 24`
+    SLL     A0, A0, 2
+    LIO     V0, $StringTable_BattlePopUp_NewStrings
+    ADDU    A0, V0, A0
+    BEQ     R0, R0, .End
+    LW	    S2, 0 (A0)
+    .VanillaMessage
+    ADDU	S2, S2, V0
+    LW	    S2, 8168 (S2)
+    .End
+    J       80045E78
+    NOP
+}

@@ -1,0 +1,41 @@
+% This patch make possible for hammer attacks to inflict the
+% frozen and dizzy statuses too, instead of only Shrink
+
+% Add frozen status to hammer attacks
+%
+% From ~func:calc_player_damage_enemy
+@Hook 1A11C8 % 802728E8
+{
+    % check if status trying to inflict is shrink or frozen
+    LIO     V1, 000C4000 % 00040000 = Dizzy / 00080000 = Shrink / 00004000 = Frozen
+    LW	    V0, 0190 (S4) % load currentAttackStatus
+    AND	    V0, V0, V1
+    BEQ	    V0, R0, .SkipStatuses
+    DADDU	A0, S3, R0
+    % get status to inflict
+    %
+    % shrink
+    LIO     V1, 00080000 % Shrink
+    LW	    V0, 0190 (S4) % load currentAttackStatus
+    AND	    A1, V0, V1
+    BNEL    A1, R0, .TryToInflictStatus
+    ADDIU	A1, R0, 000A % .Status:Shrink
+    % frozen
+    LIO     V1, 00004000 % Frozen
+    AND	    A1, V0, V1
+    BNEL    A1, R0, .TryToInflictStatus
+    ADDIU	A1, R0, 0007 % .Status:Frozen
+    % dizzy
+    LIO     V1, 00040000 % Dizzy
+    LW	    V0, 0190 (S4) % load currentAttackStatus
+    AND	    A1, V0, V1
+    BNEL    A1, R0, .TryToInflictStatus
+    ADDIU	A1, R0, 0004 % .Status:Dizzy
+    % try to inflict status
+    .TryToInflictStatus
+    J       802728FC
+    NOP
+    .SkipStatuses
+    J       80272914
+    NOP
+}

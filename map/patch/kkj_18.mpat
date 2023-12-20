@@ -1,0 +1,171 @@
+% Add new hidden item
+
+@ $Script_80240870
+{
+    0:  If  *GB_StoryProgress  ==  .Story:Ch4_BeganPeachMission % 6
+   10:  	Call  SetMusicTrack ( 00000000 .Song:PeachMission 00000000 00000008 )
+   2C:  EndIf
+        %
+        Exec $Script_NewStuff
+   34:  Return
+   3C:  End
+}
+
+#new:Script $Script_NewStuff
+{
+    Call  ParentColliderToModel ( ~Collider:ClockLeft ~Model:o31 )
+    Call  ParentColliderToModel ( ~Collider:ClockRight ~Model:o31 )
+    Call  ParentColliderToModel ( ~Collider:o57 ~Model:o31 )
+    Switch *GB_KKJ18_Clock
+        Case == .False
+            Bind  $Script_MoveClock_InitLeft .Trigger:WallPush ~Collider:ClockLeft 00000001 00000000
+            Bind  $Script_MoveClock_InitRight .Trigger:WallPush ~Collider:ClockRight 00000001 00000000
+        CaseOR == 1 % Right
+        CaseOR == 2 % Left
+            If *GB_KKJ18_Clock == 1
+                Call    TranslateGroup ( ~Model:g10 35` 0 0 )
+            Else
+                Call    TranslateGroup ( ~Model:g10 -35` 0 0 )
+            EndIf
+            Call    UpdateColliderTransform ( ~Collider:ClockLeft )
+            Call    UpdateColliderTransform ( ~Collider:ClockRight )
+            Call    UpdateColliderTransform ( ~Collider:o57 )   
+        EndCaseGroup
+    EndSwitch
+    Call  MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_KKJ18_Item )
+    Return
+    End
+}
+
+#new:Script $Script_MoveClock_InitLeft
+{
+    Set *Var0 1
+    ExecWait $Script_MoveClock
+    Return
+    End
+}
+
+
+#new:Script $Script_MoveClock_InitRight
+{
+    Set *Var0 -1
+    ExecWait $Script_MoveClock
+    Return
+    End
+}
+
+#new:Script $Script_MoveClock
+{
+    If *GB_KKJ18_Clock != .False
+        Unbind
+        Return
+    EndIf
+    % Check if player isn't Peach
+    Call 	$ReadAddress ( 800740A2 0 *Var1 .False .False ) % peach byte
+    If *Var1 != .False
+        Return
+    EndIf
+    Thread % shake camera
+        Call  ShakeCam  ( .Cam:Default 00000000  100` *Fixed[0.3] )
+    EndThread
+    Thread % move camera
+        Call    GetModelCenter ( ~Model:o31 )
+        Call    UseSettingsFrom ( .Cam:Default *Var0 .False *Var2 )
+        Call    GetPlayerPos ( .False *Var1 .False )
+        Call    SetCamSpeed 	( .Cam:Default *Fixed[3.0] )
+        Call    SetPanTarget 	( .Cam:Default *Var0 *Var1 *Var2 )
+        Call    PanToTarget 	( .Cam:Default .Easing:Linear 00000001 )
+    EndThread
+    Set     *Var3 *Var0
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePlayerPhysics ( .True )
+    Call    PlaySound ( 80000010 )
+    % move clock
+    Set     *Var0 35`
+    Mul     *Var0 *Var3
+    Call     MakeLerp    	( 0 *Var0 100` .Easing:Linear )
+    Loop     
+        Call    UpdateLerp
+        Call    TranslateGroup ( ~Model:g10 *Var0 0 0 )
+        Call    UpdateColliderTransform ( ~Collider:o57 )
+        Call    UpdateColliderTransform ( ~Collider:ClockLeft )
+        Call    UpdateColliderTransform ( ~Collider:ClockRight )
+        Set     *Var4 *Var1
+        % check if player finished moving the clock
+        Call    GetModelCenter ( ~Model:o31 )
+        Set     *Var5 -17`
+        Mul     *Var5 *Var3
+        Add     *Var0 *Var5
+        Call    GetPlayerPos ( .False *Var1 *Var2 )
+        Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+        Call    SetPlayerActionState  ( 00000014 )
+        Wait    1
+        If  *Var4  ==  .False
+            If *Var3 == 1 % clock was moved to the right
+                Set *GB_KKJ18_Clock 1
+            Else
+                Set *GB_KKJ18_Clock 2
+            EndIf
+            If *GB_KKJ18_Clock == 1
+                Call    TranslateGroup ( ~Model:g10 35` 0 0 )
+            Else
+                Call    TranslateGroup ( ~Model:g10 -35` 0 0 )
+            EndIf
+            BreakLoop
+        EndIf
+    EndLoop
+    Call    StopSound ( 80000010 )
+    Call    SetPlayerActionState  ( .ActionState:Idle )
+    Wait    10`
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    DisablePlayerInput ( .False )
+    Call    DisablePlayerPhysics ( .False )
+    Call    ResetCam ( .Cam:Default *Fixed[5.0] )
+    Unbind
+    Return
+    End
+}
+
+% Update pendulum pos
+@ $Script_802409E0
+{
+    0:  Set   *Var0  *GB_KKJ_LastPartner
+   10:  Call  $Function_8024030C ( )
+   1C:  Call  PlaySound ( 000000DC )
+   2C:  Call  GotoMapSpecial    ( $ASCII_80244C80 00000005 0000000C ) % mac_04
+   44:  Wait  100`
+   50:  Loop
+   5C:  	Call  MakeLerp  ( FFFFFFF8 00000008 0000001E .Easing:Linear )
+   78:  	Loop
+   84:  		Call  UpdateLerp ( )
+   90:  		Call  RotateGroup   ( ~Model:g13 *Var0 00000000 00000000 00000001 )
+                Switch *GB_KKJ18_Clock
+                    Case == 1 % Right
+                        Call    TranslateGroup ( ~Model:g13 35` 0 0 )
+                    Case == 2 % Left
+                        Call    TranslateGroup ( ~Model:g13 -35` 0 0 )
+                EndSwitch
+   B0:  		Wait  1`
+   BC:  		If  *Var1  ==  00000000
+   CC:  			BreakLoop
+   D4:  		EndIf
+   DC:  	EndLoop
+   E4:  	Call  MakeLerp  ( 00000008 FFFFFFF8 0000001E .Easing:Linear )
+  100:  	Loop
+  10C:  		Call  UpdateLerp ( )
+  118:  		Call  RotateGroup   ( ~Model:g13 *Var0 00000000 00000000 00000001 )
+                Switch *GB_KKJ18_Clock
+                    Case == 1 % Right
+                        Call    TranslateGroup ( ~Model:g13 35` 0 0 )
+                    Case == 2 % Left
+                        Call    TranslateGroup ( ~Model:g13 -35` 0 0 )
+                EndSwitch
+  138:  		Wait  1`
+  144:  		If  *Var1  ==  00000000
+  154:  			BreakLoop
+  15C:  		EndIf
+  164:  	EndLoop
+  16C:  EndLoop
+  174:  Return
+  17C:  End
+}

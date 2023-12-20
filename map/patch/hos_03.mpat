@@ -1,0 +1,295 @@
+% Add new exit and new item.
+
+#define .NpcID:StarKid_00           00
+#define .NpcID:StarKid_01           01
+#define .NpcID:StarKid_02           02
+#define .NpcID:StarKid_03           03
+#define .NpcID:StarKid_04           04
+#define .NpcID:StarKid_05           05
+#define .NpcID:StarKid_06           06
+#define .NpcID:ChuckQuizmo_07       07
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  0000000C
+    [Background]  80200000
+    [MapTattle]   0019001F
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 % -497.0    0.0  479.0   45.0
+	~Vec4f:Entry1 %  705.0    0.0    0.0  270.0
+	~Vec4f:Entry2 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry3 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry4 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry5 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry6 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry7 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry8 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry9 %    0.0    0.0    0.0    0.0
+	~Vec4f:EntryA %  354.0    0.0  294.0  117.0
+    ~Vec4f:EntryB
+}
+
+%
+
+@ $Function_802425E0
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_802425E0[1E4]
+}
+
+% swap super soda for fresh pasta
+
+@ $ShopInventory_8024BB5C
+{
+	.Item:StopWatch      0000000F 00240028 % If it works, paralyzes all enemies for a short tim ...
+	.Item:ShootingStar   0000000F 00240004 % Shooting stars that hit all enemies. Attack Power: ...
+	.Item:FreshPasta     0000000F 00230136
+	.Item:MapleSyrup     0000000A 00240017 % Delicious maple syrup. Restores 10 FP.
+	.Item:LifeShroom     00000019 0024000C % A life-giving Mushroom. Restores 10 HP when Mario' ...
+	.Item:SuperShroom    0000000A 0024000A % A truly super Mushroom. Restores 10 HP.
+	00000000 00000000 00000000
+}
+
+%
+
+@ $Script_Main_EnterWalk {
+	[BC]  	Call  MakeNpcs  ( .False $NpcGroupList_hos03 )
+    [120]  	Exec  $Script_MakeExits
+    [134]  	Set   *Var0  $Script_MakeExits
+}
+
+#delete $Script_80243748
+
+#new:Script $Script_MakeExits % Script_80243748
+{
+    0:  Bind  $Script_ExitWalk_80243690 .Trigger:FloorAbove ~Collider:deilisw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802436EC .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+		Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+		% New stuff
+		Bind  $Script_TogglePosTracker_On .Trigger:FloorAbove ~Collider:o193 00000001 00000000
+		Bind  $Script_TogglePosTracker_Off .Trigger:FloorAbove ~Collider:o6 00000001 00000000
+		Exec $Script_TrackDeathTrigger
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_TogglePosTracker_On
+{
+	Set *MapVar[0] .True
+	Return
+	End
+}
+
+#new:Script $Script_TogglePosTracker_Off
+{
+	Set *MapVar[0] .False
+	Return
+	End
+}
+
+#new:Script $Script_TrackDeathTrigger
+{
+    Loop
+		If *MapVar[0] == .True
+			Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+			If *Var1 < ~PosYd:respawnTrigger
+				ExecWait $Script_Respawn
+			EndIf
+		EndIf
+        Wait    1
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_Exit2
+{
+	SetGroup  0000001B
+	Call  UseExitHeading    ( 0000003C ~Entry:EntryB )
+	Exec  ExitWalk
+	Call  GotoMap   ( "hos_25" 00000000 )
+	Wait  100`
+	Return
+	End
+}
+
+%=============
+% NPC Data
+%=============
+
+#delete $NpcGroupList_8024BAE4
+#delete $NpcGroup_8024AB64
+
+#new:NpcGroupList $NpcGroupList_hos03
+{
+	00000009 $NpcGroup_hos03 00000000
+	00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_hos03
+{
+	.NpcID:StarKid_00 $NpcSettings_802457C8 ~Vec3f:NPC_StarKid_00 % -463 10 400
+	00000D09 $Script_Init_8024A674 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_00
+	~AnimationTable:NPC_StarKid_00 % .Sprite:StarKid
+	00000000 00000000 00000000 001A010E % He's a Star Haven resident. He doesn't look well.  ...
+	%
+	% $NpcGroup_8024AB64[1F0]
+	.NpcID:StarKid_01 $NpcSettings_802457C8 ~Vec3f:NPC_StarKid_01 % -325 10 600
+	00000D09 $Script_Init_8024A6C8 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_01
+	~AnimationTable:NPC_StarKid_01 % .Sprite:StarKid
+	00000000 00000000 00000000 001A010F % He's a Star Haven resident. He looks like he doesn ...
+	%
+	% $NpcGroup_8024AB64[3E0]
+	.NpcID:StarKid_02 $NpcSettings_80245904 ~Vec3f:NPC_StarKid_02 % 0 10 300
+	00000D09 $Script_Init_8024A71C 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_02
+	~AnimationTable:NPC_StarKid_02 % .Sprite:StarKid
+	00000000 00000000 00000000 001A0110 % It's a Star Haven resident. It's sad that these wi ...
+	%
+	% $NpcGroup_8024AB64[5D0]
+	.NpcID:StarKid_03 $NpcSettings_80245904 ~Vec3f:NPC_StarKid_03 % 250 10 500
+	00000D09 $Script_Init_8024A770 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_03
+	~AnimationTable:NPC_StarKid_03 % .Sprite:StarKid
+	00000000 00000000 00000000 001A0111 % It's a Star Haven resident. These guys believe tha ...
+	%
+	% $NpcGroup_8024AB64[7C0]
+	.NpcID:StarKid_04 $NpcSettings_802457C8 ~Vec3f:NPC_StarKid_04 % -485 335 -100
+	00000D09 $Script_Init_8024A7C4 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_04
+	~AnimationTable:NPC_StarKid_04 % .Sprite:StarKid
+	00000000 00000000 00000000 001A0112 % It's a Star Haven resident. He's filled with hope, ...
+	%
+	% $NpcGroup_8024AB64[9B0]
+	.NpcID:StarKid_05 $NpcSettings_802457C8 ~Vec3f:NPC_StarKid_05 % 458 35 233
+	00000D09 $Script_Init_8024AB00 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_05
+	~AnimationTable:NPC_StarKid_05 % .Sprite:StarKid
+	00000000 00000000 00000000 001A010D % He's running an inn. It's just like a Toad House.  ...
+	%
+	% $NpcGroup_8024AB64[BA0]
+	.NpcID:StarKid_06 $NpcSettings_802457C8 ~Vec3f:NPC_StarKid_06 % 140 285 -315
+	00000D09 $Script_Init_8024AB40 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_06
+	~AnimationTable:NPC_StarKid_06 % .Sprite:StarKid
+	00000000 00000000 00000000 001A010C % This Star sells things in this shop. He also check ...
+	%
+	% $NpcGroup_8024AB64[D90]
+	.NpcID:ChuckQuizmo_07 $NpcSettings_8024A5EC ~Vec3f:NPC_ChuckQuizmo_07 % -200 0 400
+	00002D09 00000000 00000001 00060100 0000005A
+	~NoDrops
+	~Movement:NPC_ChuckQuizmo_07
+	~AnimationTable:NPC_ChuckQuizmo_07 % .Sprite:ChuckQuizmo
+	00000000 00000000 00000000 001A0002 % He's Chuck Quizmo. He tries to quiz anybody who sp ...
+	%=====
+	% NEW
+	%=====
+	00000008 $NpcSettings_802457C8 ~Vec3f:NPC_StarKid_Hide % -463 10 400
+	00000D09 $Script_Init_StarKid 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_StarKid_00
+	~AnimationTable:NPC_StarKid_00 % .Sprite:StarKid
+	00000000 00000000 00000000 001A010E % He's a Star Haven resident. He doesn't look well.  ...
+}
+
+#new:Script $Script_Init_StarKid
+{
+	Call  BindNpcInteract   ( .Npc:Self $Script_Interact_StarKid )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_StarKid
+{
+
+	Call  SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_StarKid_Found )
+	If *GF_HOS03_Item == .False
+		Call    AddBadge ( .Item:HammerThrow 00000000 )
+    	Call    ShowGotItem ( .Item:HammerThrow .True 00000000 )
+		Set 	*GF_HOS03_Item .True
+	EndIf
+	Return
+	End
+}
+
+#new:Script $Script_Respawn
+{
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePlayerPhysics ( .True )
+    Thread
+        Loop 8
+            Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+            Sub     *Var1 8
+            Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+            Wait    1
+        EndLoop
+    EndThread
+	Thread
+		Call	SetPlayerActionState ( .ActionState:Falling )
+		Wait	1
+		Call    SetPlayerAnimation ( 00010002 )
+    	Call    SetPlayerAnimation ( 0001001B )
+	EndThread
+    SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[255.0]  % dark
+    ExecWait $Script_FadeScreenOut
+    Call    DisablePlayerPhysics ( .False )
+    Call    GetCurrentPartner ( *Var0 )
+    Switch *Var0
+        CaseOR == .Partner:Bow
+        CaseOR == .Partner:Watt
+        CaseOR == .Partner:Lakilester
+            Call    $WriteBitFlag ( 8010EFCC .False 3 2 .True ) % stop using partner
+        EndCaseGroup
+    EndSwitch
+    Call    SetPlayerPos ( ~Vec3d:Respawn )
+	Wait	1
+    Call    TeleportPartnerToPlayer
+    Call    InterpPlayerYaw ( -90` 0 )
+    Wait    5
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( 0001000F )
+    SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[5.0]  % fully bright
+    Exec    $Script_FadeScreenIn
+    Wait    10`
+    Call    SetPlayerAnimation ( 00010030 )
+    Wait    15`
+    Call    SetPlayerAnimation ( 00010031 )
+    Thread
+        Call    PlaySound ( 0172 )
+        Wait    12`
+        Call    PlaySound ( 0172 )
+    EndThread
+    Wait    25`
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+% Strings
+
+#string $String_StarKid_Found
+{
+[Style Right]
+Hey Mario, looks like you finally[br]
+found me![br]
+[Wait][Next]
+I really wasn't expecting anyone[br]
+to do it.
+[Wait][End]
+}

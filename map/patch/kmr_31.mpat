@@ -1,0 +1,805 @@
+% Game start map, this map works along with `World_kmr31_ExtraData.patch`
+
+#define .Npc:Mario 1
+#define .Npc:Luigi 2
+#define .Npc:Goompapa 3
+#define .Npc:JrTroopa 4
+#define .Npc:Bow 5
+#define .Npc:Chuck 6
+
+#new:Header $Header
+{
+[MainScript] $Script_Main
+[Background] 80200000
+[EntryList] $EntryList
+[EntryCount] 1
+[MapTattle]  00000000
+}
+
+#new:EntryList $EntryList
+{
+~Vec4f:Entry0
+}
+
+#new:Function_Init $Function_Init
+{
+PUSH    RA, A0, A1
+LIA 	A0, 800B0CF0
+LIA 	A1, "kmr_tex" 
+JAL 	~Func:sprintf
+RESERVED
+CLEAR 	V0
+JPOP 	RA, A0, A1
+}
+
+#new:Script_Main $Script_Main
+{
+Call    SetSpriteShading  	( -1 )
+Call    SetCamPerspective 	( .Cam:Default 00000003 00000019 00000010 00001000 )
+Call    SetCamBGColor     	( .Cam:Default 0 0 0 )
+Call    SetCamEnabled       ( .Cam:Default .True )
+Call    SetCamLeadPlayer    ( .Cam:Default .False )
+Call    DisablePlayerInput ( .True )
+Call    $WriteAddress ( $FFWD 0 .True 2 0 ) % disable FFWD
+Exec    $Script_WelcomeMessage
+Call    MakeNpcs ( 0 $NpcGroupList )
+Exec    $Script_SetNpcs
+Return
+End
+}
+
+#new:Script $Script_SetNpcs
+{
+    Set     *MapVar[2] *Byte_Settings_Difficulty
+    ExecWait $Script_Difficulty_UpdateSprite
+    Set     *MapVar[2] 0
+    ExecWait $Script_Start_UpdateSprite
+    Set     *MapVar[2] *GameMode
+    ExecWait $Script_Mode_UpdateSprite
+    Return
+    End
+}
+
+#new:Script $Script_WelcomeMessage
+{
+    If *NewGamePlus == 0 % First playthrough
+        Set     *Byte_Settings_Difficulty 1 % Normal
+        Set     *Flag_Settings_FFWD .True % turn FFWD memory
+    EndIf
+    Call    SetMusicTrack ( 00000000 .Song:MarioBrosHouse 00000000 00000008 )
+    Call	SetCamSpeed ( .Cam:Default *Fixed[7.0] )
+    Call    ShowMessageAtScreenPos ( $String_Welcome A0 28 )
+    Wait    10`
+    Call    SetPlayerPos ( ~Vec3d:zone_01 )
+    Wait    10`
+    ExecWait $Script_OpenDoor
+    Wait    5
+    Call    SetPlayerPos ( ~Vec3d:zone_02 )
+    Wait    20`
+    Exec    $Script_CloseDoor
+    Call    SetPlayerPos ( ~Vec3d:zone_03 )
+    Wait    20`
+    Set     *MapVar[0] .False
+    Exec    $Script_InitPlaythough_Step
+    Return
+    End
+}
+
+#new:Script $Script_OpenDoor
+{
+    Call    PlaySound ( .Sound:BasicDoorOpen )
+    Call    MakeLerp ( 0 105` 20` .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Call    RotateGroup ( ~Model:g14 *Var0 0 -1 0 )
+        Wait    1
+        If *Var1 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_CloseDoor
+{
+    Call    PlaySound ( .Sound:BasicDoorClose )
+    Call    MakeLerp ( 105` 0 20` .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Call    RotateGroup ( ~Model:g14 *Var0 0 -1 0 )
+        Wait    1
+        If *Var1 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_InitPlaythough_Step
+{
+    Exec    $Script_InitPlaythough_Inputs_Step
+    Call    ShowMessageAtScreenPos ( $String_Empty A0 28 )
+    Call    SwitchMessage ( $String_Difficulty )
+    % Move the camera according to the cursor position
+	Call	SetCamSpeed ( .Cam:Default *Fixed[3.0] )
+	Thread
+		Loop
+			Switch *MapVar[0]
+				Case == 0 % Difficulty
+					Call	SetPlayerPos ( ~Vec3d:zone_04 )
+				Case == 1 % Start
+					Call	SetPlayerPos ( ~Vec3d:zone_05 )
+                Case == 2 % Mode
+					Call	SetPlayerPos ( ~Vec3d:zone_06 )
+                Case == 3 % Confirmation
+					Call	SetPlayerPos ( ~Vec3d:zone_07 )
+                Case == 4 % game started
+					Call	SetPlayerPos ( ~Vec3d:zone_08 )
+			EndSwitch
+			Wait 1
+		EndLoop
+	EndThread
+    Return
+    End
+}
+
+% kmr_31 - update inputs
+%
+% MapVar[0] = Cursor pos
+% MapVar[1] = Current Menu state
+% MapVar[2] = Cursor 2 pos
+#new:Script $Script_InitPlaythough_Inputs_Step
+{
+    % clear data
+    Call    $WriteAddress ( $AnimationData 2 0 0 .False )
+    Call    $WriteAddress ( $AnimationData 2 0 4 .False )
+    Call    $WriteAddress ( $AnimationData 2 0 8 .False )
+    Loop
+        Switch *MapVar[0]
+            Case == 0 % Difficulty
+                Switch *MapVar[1]
+                    Case == 0
+                        Exec $Script_UpdateCursorPos
+                    Case == 1 % wait 1 frame
+                        Wait 1
+                        Set *MapVar[1] 2
+                    Case == 2 % Player is inside this option
+                        Exec $Script_Difficulty_InputsStep
+                EndSwitch
+            Case == 1 % Start
+                Switch *MapVar[1]
+                    Case == 0
+                        Exec $Script_UpdateCursorPos
+                    Case == 1 % wait 1 frame
+                        Wait 1
+                        Set *MapVar[1] 2
+                    Case == 2 % Player is inside this option
+                        Exec $Script_Start_InputsStep
+                EndSwitch
+            Case == 2 % Mode
+                Switch *MapVar[1]
+                    Case == 0
+                        Exec $Script_UpdateCursorPos
+                    Case == 1 % wait 1 frame
+                        Wait 1
+                        Set *MapVar[1] 2
+                    Case == 2 % Player is inside this option
+                        Exec $Script_Mode_InputsStep
+                EndSwitch
+            Case == 3 % Confirmation
+                Switch *MapVar[1]
+                    Case == 1 % wait 1 frame
+                        Wait 1
+                        Set *MapVar[1] 2
+                    Case == 2 % Player is inside this option
+                        ExecWait $Script_Confirm_InputsStep
+                EndSwitch
+        EndSwitch
+        Wait 1
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_UpdateCursorPos
+{
+    Call    $ReadAddress ( 80074034 2 *Var0 .False .False ) % load 1-frame inputs
+    If *Var0 & 00040000 % Joystick Left
+        If *MapVar[0] == 0
+            Set *MapVar[0] 2 % Mode
+        Else
+            Add *MapVar[0] -1
+        EndIf
+        Exec    $Script_UpdateString
+        Call    PlaySound ( 00C7 ) % move cursor
+    EndIf
+    If *Var0 & 00080000 % Joystick Right
+        If *MapVar[0] == 2
+            Set *MapVar[0] 0 % Difficulty
+        Else
+            Add *MapVar[0] 1
+        EndIf
+        Exec    $Script_UpdateString
+        Call    PlaySound ( 00C7 ) % move cursor
+    EndIf
+    If *Var0 & 00008000 % A button
+        Switch *MapVar[0]
+            Case == 0 % Difficulty
+                Set *MapVar[2] *Byte_Settings_Difficulty
+            Case == 1 % Start
+                Set *MapVar[2] *MapVar[4]
+            Case == 2 % Mode
+                Set *MapVar[2] *GameMode
+        EndSwitch
+        Set     *MapVar[1] 1
+        Call    PlaySound ( 00C9 ) % accept
+    EndIf
+    If *Var0 & 00001000 % Start button
+        Set     *MapVar[0] 3 % confirm
+        Set     *MapVar[1] 1
+        Call    PlaySound ( 00C9 ) % accept
+    EndIf
+    Return
+    End
+}
+
+%============
+% difficulty
+%============
+
+#new:Script $Script_Difficulty_InputsStep
+{
+    Exec    $Script_Difficulty_UpdateSprite
+    % Update description box
+    Call    $ReadAddress ( $AnimationData 0 *Var1 .False .False )
+    Switch *Var1
+        Case == 0 % Invisible
+            Call    $WriteAddress ( $AnimationData 0 1 .False .False )
+            Return
+        Case == 1 % Fade Animation
+            Call    $ReadAddress ( $AnimationData 0 *Var1 1 .False )
+            Add *Var1 40
+            If *Var1 >= FF
+                Set     *Var1 FF
+                Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+                Call    $WriteAddress ( $AnimationData 0 3 .False .False )
+            EndIf
+            Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+            Return
+        Case == 2 % Unfade Animation
+            Call    $ReadAddress ( $AnimationData 0 *Var1 1 .False )
+            Sub *Var1 40
+            If *Var1 <= 0
+                Set     *Var1 0
+                Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+                Call    $WriteAddress ( $AnimationData 0 0 .False .False )
+                Set     *MapVar[1] 0
+            EndIf
+            Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+            Return
+        Case == 3 % Visible
+    EndSwitch
+    Call    $ReadAddress ( 80074034 2 *Var0 .False .False ) % load 1-frame inputs
+    If *Var0 & 00040000 % Joystick Left
+        Call    PlaySound ( 00C7 ) % move cursor
+        If *MapVar[2] == 0
+            Set *MapVar[2] 3
+        Else
+            Add *MapVar[2] -1
+        EndIf
+    EndIf
+    If *Var0 & 00080000 % Joystick Right
+        Call    PlaySound ( 00C7 ) % move cursor
+        If *MapVar[2] == 3
+            Set *MapVar[2] 0
+        Else
+            Add *MapVar[2] 1
+        EndIf
+    EndIf
+    If *Var0 & 00008000 % A button
+        Set *Byte_Settings_Difficulty *MapVar[2]
+        Call PlaySound ( 0010 ) % save
+        Call $WriteAddress ( $AnimationData 0 2 .False .False ) % Unfade description box
+    EndIf
+    If *Var0 & 00004000 % B button
+        Call PlaySound ( 00CA ) % cancel
+        Set *MapVar[2] *Byte_Settings_Difficulty
+        Call $WriteAddress ( $AnimationData 0 2 .False .False ) % Unfade description box
+    EndIf
+    Return
+    End
+}
+
+% Update Mario sprite and box's string, according to the cursor pos
+#new:Script $Script_Difficulty_UpdateSprite
+{
+    Switch *MapVar[2]
+        Case == 0 % Easy
+            Set     *Var2 $String_Difficulty_Easy_Description
+            Call    SetNpcAnimation ( .Npc:Mario 00E6000B )
+        Case == 1 % Normal
+            Set     *Var2 $String_Difficulty_Normal_Description
+            Call    SetNpcAnimation ( .Npc:Mario 00E6000C )
+        Case == 2 % Hard
+            Set     *Var2 $String_Difficulty_Hard_Description
+            Call    SetNpcAnimation ( .Npc:Mario 00E6000D )
+        Case == 3 % Master Quest
+            Set     *Var2 $String_Difficulty_MQ_Description
+            Call    SetNpcAnimation ( .Npc:Mario 00E6000E )
+    EndSwitch
+    Call    $ReadAddress ( $AnimationData 0 *Var1 .False .False )
+    If *Var1 != 2 % Unfade Animation
+        Call    $WriteAddress ( $AnimationData 2 *Var2 8 .False )
+    EndIf
+    Return
+    End
+}
+
+%============
+% Start
+%============
+
+#new:Script $Script_Start_InputsStep
+{
+    Exec    $Script_Start_UpdateSprite
+    % Update description box
+    Call    $ReadAddress ( $AnimationData 0 *Var1 .False .False )
+    Switch *Var1
+        Case == 0 % Invisible
+            Call    $WriteAddress ( $AnimationData 0 1 .False .False )
+            Return
+        Case == 1 % Fade Animation
+            Call    $ReadAddress ( $AnimationData 0 *Var1 1 .False )
+            Add *Var1 40
+            If *Var1 >= FF
+                Set     *Var1 FF
+                Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+                Call    $WriteAddress ( $AnimationData 0 3 .False .False )
+            EndIf
+            Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+            Return
+        Case == 2 % Unfade Animation
+            Call    $ReadAddress ( $AnimationData 0 *Var1 1 .False )
+            Sub *Var1 40
+            If *Var1 <= 0
+                Set     *Var1 0
+                Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+                Call    $WriteAddress ( $AnimationData 0 0 .False .False )
+                Set     *MapVar[1] 0
+            EndIf
+            Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+            Return
+        Case == 3 % visible
+    EndSwitch
+    Call    $ReadAddress ( 80074034 2 *Var0 .False .False ) % load 1-frame inputs
+    If *Var0 & 00040000 % Joystick Left
+        Call    PlaySound ( 00C7 ) % move cursor
+        If *MapVar[2] == 0
+            Set *MapVar[2] 2
+        Else
+            Add *MapVar[2] -1
+        EndIf
+    EndIf
+    If *Var0 & 00080000 % Joystick Right
+        Call    PlaySound ( 00C7 ) % move cursor
+        If *MapVar[2] == 2
+            Set *MapVar[2] 0
+        Else
+            Add *MapVar[2] 1
+        EndIf
+    EndIf
+    If *Var0 & 00008000 % A button
+        Set *MapVar[4] *MapVar[2]
+        Call PlaySound ( 0010 ) % save
+        Call $WriteAddress ( $AnimationData 0 2 .False .False ) % Unfade description box
+    EndIf
+    If *Var0 & 00004000 % B button
+        Call PlaySound ( 00CA ) % cancel
+        Set *MapVar[2] *MapVar[4]
+        Call $WriteAddress ( $AnimationData 0 2 .False .False ) % Unfade description box
+    EndIf
+    Return
+    End
+}
+
+% Update sprite and box's string, according to the cursor pos
+#new:Script $Script_Start_UpdateSprite
+{
+    Call    SetNpcPos ( .Npc:Luigi 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Goompapa 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:JrTroopa 0 -1000` 0 )
+    Switch *MapVar[2]
+        Case == 0
+            Set     *Var2 $String_Start_Original
+            Call    SetNpcPos ( .Npc:Luigi ~Vec3d:NPC_Luigi )
+        Case == 1
+            Set     *Var2 $String_Start_Goomba
+            Call    SetNpcPos ( .Npc:Goompapa ~Vec3d:NPC_Goompapa )
+        Case == 2
+            Set     *Var2 $String_Start_JrTroopa
+            Call    SetNpcPos ( .Npc:JrTroopa ~Vec3d:NPC_JrTroopa )
+    EndSwitch
+    Call    $ReadAddress ( $AnimationData 0 *Var1 .False .False )
+    If *Var1 != 2 % Unfade Animation
+        Call    $WriteAddress ( $AnimationData 2 *Var2 8 .False )
+    EndIf
+    Return
+    End
+}
+
+%============
+% Mode
+%============
+
+#new:Script $Script_Mode_InputsStep
+{
+    Exec    $Script_Mode_UpdateSprite
+    % Update description box
+    Call    $ReadAddress ( $AnimationData 0 *Var1 .False .False )
+    Switch *Var1
+        Case == 0 % Invisible
+            Call    $WriteAddress ( $AnimationData 0 1 .False .False )
+            Return
+        Case == 1 % Fade Animation
+            Call    $ReadAddress ( $AnimationData 0 *Var1 1 .False )
+            Add *Var1 40
+            If *Var1 >= FF
+                Set     *Var1 FF
+                Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+                Call    $WriteAddress ( $AnimationData 0 3 .False .False )
+            EndIf
+            Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+            Return
+        Case == 2 % Unfade Animation
+            Call    $ReadAddress ( $AnimationData 0 *Var1 1 .False )
+            Sub *Var1 40
+            If *Var1 <= 0
+                Set     *Var1 0
+                Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+                Call    $WriteAddress ( $AnimationData 0 0 .False .False )
+                Set     *MapVar[1] 0
+            EndIf
+            Call    $WriteAddress ( $AnimationData 0 *Var1 1 .False )
+            Return
+        Case == 3 % Visible
+    EndSwitch
+    Call    $ReadAddress ( 80074034 2 *Var0 .False .False ) % load 1-frame inputs
+    If *Var0 & 00040000 % Joystick Left
+        Call    PlaySound ( 00C7 ) % move cursor
+        If *MapVar[2] == 0
+            Set *MapVar[2] 2
+        Else
+            Add *MapVar[2] -1
+        EndIf
+    EndIf
+    If *Var0 & 00080000 % Joystick Right
+        Call    PlaySound ( 00C7 ) % move cursor
+        If *MapVar[2] == 2
+            Set *MapVar[2] 0
+        Else
+            Add *MapVar[2] 1
+        EndIf
+    EndIf
+    If *Var0 & 00008000 % A button
+        Set *GameMode *MapVar[2]
+        Call PlaySound ( 0010 ) % save
+        Call $WriteAddress ( $AnimationData 0 2 .False .False ) % Unfade description box
+    EndIf
+    If *Var0 & 00004000 % B button
+        Call PlaySound ( 00CA ) % cancel
+        Set *MapVar[2] *GameMode
+        Call $WriteAddress ( $AnimationData 0 2 .False .False ) % Unfade description box
+    EndIf
+    Return
+    End
+}
+
+% Update sprite and box's string, according to the cursor pos
+#new:Script $Script_Mode_UpdateSprite
+{
+    Call    SetNpcPos ( .Npc:Bow 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Chuck 0 -1000` 0 )
+    Switch *MapVar[2]
+        Case == 0
+            Set     *Var2 $String_Mode_Original
+        Case == 1
+            Set     *Var2 $String_Mode_Bow
+            Call    SetNpcPos ( .Npc:Bow ~Vec3d:NPC_Bow )
+        Case == 2
+            Set     *Var2 $String_Mode_Rando
+            Call    SetNpcPos ( .Npc:Chuck ~Vec3d:NPC_Chuck )
+    EndSwitch
+    Call    $ReadAddress ( $AnimationData 0 *Var1 .False .False )
+    If *Var1 != 2 % Unfade Animation
+        Call    $WriteAddress ( $AnimationData 2 *Var2 8 .False )
+    EndIf
+    Return
+    End
+}
+
+%
+
+#new:Script $Script_UpdateString
+{
+    % reset string buffer
+    Call    $ReadAddress ( 802DB260 2 *Var1 .False .False ) % get printer*
+    Call    $WriteAddress ( *Var1 1 2 4 .False ) % go to the beginning of the printer pos
+    % update string
+    Switch *MapVar[0]
+        Case == 0 % Difficulty
+            Call    SwitchMessage ( $String_Difficulty )
+        Case == 1 % Start
+            Call    SwitchMessage ( $String_Prologue )
+        Case == 2 % Mode
+            Call    SwitchMessage ( $String_Mode )
+    EndSwitch
+    % Reset this data
+    Call    $WriteAddress ( *Var1 2 0 460 .False ) % printer(0x450) = printerStatus, printerStatus(0x10)= printer buffer pos
+    Call    $WriteAddress ( *Var1 1 0 466 .False ) % printer(0x450) = printerStatus, printerStatus(0x16)= printer current pos
+    Call    $WriteAddress ( *Var1 0 0 486 .False ) % printer(0x450) = printerStatus, printerStatus(0x36)= string page
+    Return
+    End
+}
+
+%============
+% Confirm
+%============
+
+#new:Script $Script_Confirm_InputsStep
+{
+    Call    CloseMessage
+    Call    ShowMessageAtScreenPos ( $String_Confirmation A0 28 )
+    Call  	ShowChoice    ( 001E000D ) % Yes No
+    If *Var0 == 0 % Yes
+        Call    CloseMessage
+        ExecWait $Script_OpenDoor
+        Wait    10`
+        Set     *MapVar[0] 4 % game started
+        Call    PlaySound ( 0188 )
+        Set     *GB_StoryProgress .Story:Intro
+        Switch *MapVar[4]
+            Case == 0 % start as the original PM64
+                Call    GotoMapSpecial ( "kmr_20" 0 6 )
+            Case == 1 % start after you fall into Goomba Village
+                Call    GotoMapSpecial ( "kmr_00" 0 6 )
+            Case == 2 % start after you and Goompa fall.
+                Set     *GB_StoryProgress .Story:Ch0_FellOffCliff
+                Set     *GF_KMR02_Met_Goompa .True
+                Set     *GF_KMR02_Met_Gooma .True
+                Set     *GF_KMR02_Met_Goompapa .True
+                Set     *GF_KMR02_Goombario_RelayedMessage .True
+                Set     *GF_Map_GoombaVillage .True
+                Call    GotoMapSpecial ( "kmr_03" 2 6 )
+        EndSwitch
+        Set     *GF_Tutorial_SaveBlock .True
+        Set     *GF_Tutorial_GotItem .True
+        Set     *GF_Tutorial_HeartBlock .True
+        Call    $WriteAddress ( 8010F290 0 .True A .False ) % enable action commands
+        Call    $WriteAddress ( $FFWD 2 .False 0 0 ) % enable FFWD once again
+        Call    $Function_ClearData_KMR31_ExtraData
+        Wait    1000`
+    Else
+        Call    CloseMessage
+        Wait    5
+        Call    ShowMessageAtScreenPos ( $String_Empty A0 28 )
+        Call    SwitchMessage ( $String_Difficulty )
+        Set     *MapVar[1] .False
+        Set     *MapVar[0] 0 % difficulty
+        Wait    10`
+    EndIf
+    Return
+    End
+}
+
+%=============
+
+%% NPCS %%
+#new:NpcGroupList $NpcGroupList
+{
+00000006 $NpcGroup_InitPlaythrough 	00000000
+00000000 00000000 00000000 
+}
+
+#new:NpcGroup $NpcGroup_InitPlaythrough
+{
+% Mario
+.Npc:Mario $NpcSettings_Generic ~vec3f:mario
+00A40D20 $ScriptNull 00000000 00000000 00000000 
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:mario
+00000000 00000000 00000000 00000000
+% Luigi
+.Npc:Luigi $NpcSettings_Generic ~vec3f:NPC_Luigi
+00A40D20 $ScriptNull 00000000 00000000 0000010E 
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_Luigi
+00000000 00000000 00000000 00000000
+% Goompapa
+.Npc:Goompapa $NpcSettings_Generic ~vec3f:NPC_Goompapa
+00A40D20 $ScriptNull 00000000 00000000 0000010E 
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_Goompapa
+00000000 00000000 00000000 00000000
+% JrTroopa
+.Npc:JrTroopa $NpcSettings_Generic ~vec3f:NPC_JrTroopa
+00A40D20 $ScriptNull 00000000 00000000 0000010E 
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_JrTroopa
+00000000 00000000 00000000 00000000
+% Bow
+.Npc:Bow $NpcSettings_Generic ~vec3f:NPC_Bow
+00A40D20 $ScriptNull 00000000 00000000 0000010E 
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_Bow
+00000000 00000000 00000000 00000000
+% Chuck
+.Npc:Chuck $NpcSettings_Generic ~vec3f:NPC_Chuck
+00A40D20 $ScriptNull 00000000 00000000 0000010E 
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_Chuck
+00000000 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Generic
+{
+00000000 00200025 00000000 00000000 00000000 00000000 00000000 00000000
+00000000 00000000 00630000 
+}
+
+#new:Script $ScriptNull
+{
+    Return
+    End
+}
+
+%% STRINGS %%
+
+#string $String_Welcome
+{
+[Style Inspect]
+Welcome to TTYD64.[BR]
+[Wait][Next]
+Before starting the game, first[BR]
+take a look at some settings.[BR]
+[Wait][End]
+}
+
+#string $String_Empty
+{
+[Style Inspect]
+[Yield][End]
+}
+
+#string $String_Difficulty
+{
+[Next][DelayOff]
+Change the game difficulty.[BR]
+[BR]
+[Yield][End]
+}
+
+#string $String_Mode
+{
+[Next][DelayOff]
+Play the game in a mode in[BR]
+particular.[BR]
+[Yield][End]
+}
+
+#string $String_Prologue
+{
+[Next][DelayOff]
+From which part do you want to[BR]
+start this playthrough?[BR]
+[Yield][End]
+}
+
+#string $String_Difficulty_Easy_Title
+{
+Easy[End]
+}
+
+#string $String_Difficulty_Normal_Title
+{
+Normal[End]
+}
+
+#string $String_Difficulty_Hard_Title
+{
+Hard[End]
+}
+
+#string $String_Difficulty_MQ_Title
+{
+Master Quest[End]
+}
+
+#string $String_Difficulty_Easy_Description
+{
+[Color 0x0A]Recommended for more casual[BR]
+players.[End]
+}
+
+#string $String_Difficulty_Normal_Description
+{
+[Color 0x0A]Recommended for players who[BR]
+want a fair challenge.[End]
+}
+
+#string $String_Difficulty_Hard_Description
+{
+[Color 0x0A]Recommended for players that[BR]
+find PM a little too easy.[End]
+}
+
+#string $String_Difficulty_MQ_Description
+{
+[Color 0x0A]Recommended for players really[BR]
+familiar with PM.[End]
+}
+
+% unused, wanted this warning to appear but I got lazy to implement it...
+#string $String_MQ_Confirmation
+{
+[Style Inspect]
+Are you sure you want to play in[BR]
+the [SaveColor][Color:07]Master Quest[RestoreColor] difficulty?[BR]
+[Wait][Next]
+Super Guards are disabled.[BR]
+[Wait][Next]
+And you [SaveColor][Color:07]can't reduce the[BR]
+difficulty[RestoreColor] after this.[BR]
+[Wait][Next]
+Are you sure about this?
+[Yield][End]
+}
+
+#string $String_Confirmation
+{
+[Style Inspect]
+Are you ready to start this[BR]
+playthrough?
+[Yield][End]
+}
+
+%
+
+#string $String_Mode_Original
+{
+[Color 0x0A]Play the original TTYD64[BR]
+experience.[End]
+}
+
+#string $String_Mode_Bow
+{
+[Color 0x0A]In this mode Bow is the only[BR]
+partner, but she is... stronger?[End]
+}
+
+#string $String_Mode_Rando
+{
+[Color 0x0A]In this mode items from chests,[BR]
+blocks and enemies are randomized[End]
+}
+
+%
+
+#string $String_Start_Original
+{
+[Color 0x0A]Start the game as the original[BR]
+game.[End]
+}
+
+#string $String_Start_Goomba
+{
+[Color 0x0A]Start the game after you fall[BR]
+into Goomba village.[End]
+}
+
+#string $String_Start_JrTroopa
+{
+[Color 0x0A]Start the game after you and[BR]
+Goompa fall.[End]
+}

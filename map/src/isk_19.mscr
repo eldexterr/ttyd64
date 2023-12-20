@@ -1,0 +1,138 @@
+% Script File: isk_19.mscr
+% Decoded from: 0 to 530 (isk_19)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  548.0 -910.0  182.0   21.0
+	~Vec4f:Entry1 %  573.0 -910.0   21.0  186.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  00000000
+	[MapTattle]   001900A5
+}
+
+#new:Script $Script_80240060
+{
+    0:  If  *GF_ISK19_FinalWarning  ==  .False
+   10:  	Thread
+   18:  		Call  FadeInMusic       ( 00000001 .Song:TutankoopaWarning 00000000 000007D0 00000000 0000007F )
+   3C:  		Call  FadeOutMusic      ( 00000000 000007D0 )
+   50:  		Call  DisablePlayerInput        ( .True )
+   60:  		Wait  20`
+   6C:  		SetGroup  00000000
+   78:  		Call  SetTimeFreezeMode ( 00000001 )
+   88:  		Call  ShowMessageAtScreenPos    ( 000D00E1  160`  40` ) % This is your final warning! Enough of this foolish ...
+   A0:  		Set   *GF_ISK19_FinalWarning  .True
+   B0:  		Call  DisablePlayerInput        ( .False )
+   C0:  		Call  SetTimeFreezeMode ( 00000000 )
+   D0:  		Call  FadeInMusic       ( 00000000 .Song:RuinsBasement 00000000 000007D0 00000000 0000007F )
+   F4:  		Call  FadeOutMusic      ( 00000001 000007D0 )
+  108:  	EndThread
+  110:  	Return
+  118:  EndIf
+  120:  Switch  *GB_StoryProgress
+  12C:  	Case  <  .Story:Ch2_SolvedArtifactPuzzle % FFFFFFC7
+  138:  		Call  SetMusicTrack ( 00000000 .Song:DryDryRuins 00000000 00000008 )
+  154:  	Case  <  .Story:Ch2_DefeatedTutankoopa % FFFFFFC8
+  160:  		Call  SetMusicTrack ( 00000000 .Song:RuinsBasement 00000000 00000008 )
+  17C:  	Case  >=  .Story:Ch2_DefeatedTutankoopa % FFFFFFC8
+  188:  		Call  SetMusicTrack ( 00000000 .Song:DryDryRuins 00000000 00000008 )
+  1A4:  EndSwitch
+  1AC:  Return
+  1B4:  End
+}
+
+PADDING: 8024021C to 80240220 (0000021C to 00000220)
+00000000
+
+#new:Script $Script_ExitWalk_80240220
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 00000028 ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240520 00000003 ) % isk_11
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_8024027C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 00000028 ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240528 00000000 ) % isk_16
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_802402D8
+{
+    0:  Bind  $Script_ExitWalk_80240220 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024027C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_EnterWalk_80240320
+{
+    0:  Call  GetLoadType   ( *Var1 )
+   10:  If  *Var1  ==  00000001
+   20:  	Exec  EnterSavePoint
+   2C:  	Exec  $Script_802402D8
+   38:  	Return
+   40:  EndIf
+   48:  Set   *Var0  $Script_802402D8
+   58:  Exec  EnterWalk
+   64:  Return
+   6C:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:DryDryRuins
+   10:  Call  SetSpriteShading  ( .Shading:isk_19 )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   84:  ExecWait  $Script_MakeEntities
+   90:  Exec  $Script_80240060
+   9C:  Exec  $Script_EnterWalk_80240320
+   A8:  Wait  1`
+   B4:  Return
+   BC:  End
+}
+
+PADDING: 80240458 to 80240460 (00000458 to 00000460)
+00000000 00000000
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  PlayEffect    ( ~FX:Fire:LargeRed 000001E6 FFFFFCB3 00000082 *Fixed[0.3] *Var0 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+   44:  Call  PlayEffect    ( ~FX:Fire:LargeRed 000001F3 FFFFFCB3 0000002A *Fixed[0.3] *Var0 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+   88:  Call  MakeEntity    ( .Entity:SavePoint ~Vec4d:Entity802404E8 80000000 )
+   AC:  Return
+   B4:  End
+}
+
+PADDING: 8024051C to 80240520 (0000051C to 00000520)
+00000000
+
+#new:ASCII $ASCII_80240520
+{
+	"isk_11"
+}
+
+#new:ASCII $ASCII_80240528
+{
+	"isk_16"
+}
+

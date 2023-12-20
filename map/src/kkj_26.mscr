@@ -1,0 +1,275 @@
+% Script File: kkj_26.mscr
+% Decoded from: 0 to C50 (kkj_26)
+
+
+#new:Function $Function_80240000
+{
+    0:  LAW       V0, 8007419C
+    8:  LBU       V1, 7E (V0)
+    C:  ANDI      V1, V1, FE
+   10:  SB        V1, 7E (V0)
+   14:  LBU       V0, 87 (A0)
+   18:  SAB       V0, 8010F2A2
+   20:  JR        RA
+   24:  LI        V0, 2
+}
+
+PADDING: 80240028 to 80240030 (00000028 to 00000030)
+00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  472.0   30.0  -26.0   90.0
+	~Vec4f:Entry1 %  540.0   30.0  -20.0   90.0
+	~Vec4f:Entry2 %  400.0   30.0  -20.0   90.0
+	~Vec4f:Entry3 %  483.0   30.0    8.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000004
+	[Background]  80200000
+	[MapTattle]   0019001B
+}
+
+#new:Script $Script_802400B0
+{
+    0:  Set   *Var0  *GB_KKJ_LastPartner
+   10:  Call  $Function_80240000 ( )
+   1C:  Call  PlaySound ( 000000DC )
+   2C:  Call  GotoMapSpecial    ( $ASCII_80240C30 00000001 0000000C ) % hos_00
+   44:  Wait  100`
+   50:  SetGroup  0000001B
+   5C:  Call  DisablePlayerInput    ( .True )
+   6C:  Set   *Var0  ~Entry:Entry0
+   7C:  Set   *Var1  ~Collider:ttw
+   8C:  Set   *Var2  ~Model:o85
+   9C:  Set   *Var3  ~Model:o83
+   AC:  Set   *Var4  ~Model:o86
+   BC:  Set   *Var5  ~Model:o84
+   CC:  Exec  ExitSplitDoubleDoor
+   D8:  Wait  17`
+   E4:  Call  GotoMap   ( $ASCII_80240C38 00000001 ) % kkj_14
+   F8:  Wait  100`
+  104:  Return
+  10C:  End
+}
+
+#new:Script $Script_802401C4
+{
+    0:  Bind  $Script_802400B0[50] .Trigger:WallPressA ~Collider:ttw 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_802401F0
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Set   *Var2  ~Model:o85
+   38:  		Set   *Var3  ~Model:o83
+   48:  		Set   *Var4  ~Model:o86
+   58:  		Set   *Var5  ~Model:o84
+   68:  		ExecWait  EnterSplitDoubleDoor
+   74:  		Exec  $Script_802401C4
+   80:  	Case  ==  ~Entry:Entry1
+   8C:  		Exec  $Script_80240640
+   98:  	Case  ==  ~Entry:Entry2
+   A4:  		Exec  $Script_802403E0
+   B0:  EndSwitch
+   B8:  Return
+   C0:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:PeachsCastle
+   10:  Call  SetSpriteShading  ( .Shading:kkj_26 )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  GetEntryID        ( *Var0 )
+   80:  If  *Var0  ==  ~Entry:Entry1
+   90:  	Set   *GB_StoryProgress  .Story:Ch7_BeganPeachMission
+   A0:  EndIf
+   A8:  Call  UseDoorSounds ( 00000005 )
+   B8:  Call  GetDemoState  ( *Var0 )
+   C8:  If  *Var0  !=  00000000
+   D8:  	ExecWait  $Script_80240B78
+   E4:  	Return
+   EC:  EndIf
+   F4:  Exec  $Script_802401F0
+  100:  Wait  1`
+  10C:  Return
+  114:  End
+}
+
+PADDING: 802403D4 to 802403E0 (000003D4 to 000003E0)
+00000000 00000000 00000000
+
+#new:Script $Script_802403E0
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  DisablePlayerPhysics  ( .True )
+   20:  Call  SetMusicTrack ( 00000000 .Song:PrisonerPeachTheme 00000001 00000008 )
+   3C:  Call  DisablePartnerAI      ( 00000000 )
+   4C:  Call  SetNpcPos     ( .Npc:Partner  0`  -500`  0` )
+   68:  Call  RotateModel   ( ~Model:o85 00000050 00000000 FFFFFFFF 00000000 )
+   88:  Call  RotateModel   ( ~Model:o83 00000050 00000000 00000001 00000000 )
+   A8:  Call  RotateModel   ( ~Model:o86 00000050 00000000 FFFFFFFF 00000000 )
+   C8:  Call  RotateModel   ( ~Model:o84 00000050 00000000 00000001 00000000 )
+   E8:  Call  UseSettingsFrom       ( .Cam:Default  550`  30`  -20` )
+  104:  Call  SetCamDistance        ( .Cam:Default *Fixed[200.0] )
+  118:  Call  SetCamPitch   ( .Cam:Default *Fixed[17.5] *Fixed[-10.0] )
+  130:  Call  SetCamPosB    ( .Cam:Default *Fixed[570.0]  0` )
+  148:  Call  SetCamSpeed   ( .Cam:Default *Fixed[90.0] )
+  15C:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  174:  Wait  50`
+  180:  Call  802D1270      ( 00000226 FFFFFFEC *Fixed[2.0] )
+  198:  Wait  30`
+  1A4:  Call  SetPlayerAnimation    ( 000C0000 )
+  1B4:  Wait  10`
+  1C0:  Call  SetPlayerAnimation    ( 000C0026 )
+  1D0:  Call  SpeakToPlayer ( .Npc:Player 000C0001 000C0026 00000005 00140032 ) % Mario... Where are you...
+  1F0:  Call  FadeOutMusic  ( 00000000 00000FA0 )
+  204:  Call  ResetCam      ( .Cam:Default *Fixed[1.0] )
+  218:  ExecWait  $Script_802400B0
+  224:  Call  EnablePartnerAI ( )
+  230:  Call  DisablePlayerPhysics  ( .False )
+  240:  Call  DisablePlayerInput    ( .False )
+  250:  Return
+  258:  End
+}
+
+#new:Script $Script_80240640
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  DisablePartnerAI      ( 00000000 )
+   20:  Call  SetMusicTrack ( 00000000 .Song:PrisonerPeachTheme 00000001 00000008 )
+   3C:  Call  InterpPlayerYaw       (  90`  0` )
+   50:  Call  SetNpcPos     ( .Npc:Partner  500`  50`  0` )
+   6C:  Call  SetNpcYaw     ( .Npc:Partner  90` )
+   80:  Wait  30`
+   8C:  Call  UseSettingsFrom       ( .Cam:Default  500`  30`  -20` )
+   A8:  Call  SetCamDistance        ( .Cam:Default *Fixed[300.0] )
+   BC:  Call  SetCamPitch   ( .Cam:Default *Fixed[15.0] *Fixed[-7.0] )
+   D4:  Call  SetCamSpeed   ( .Cam:Default *Fixed[3.0] )
+   E8:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  100:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  114:  Call  SetPlayerAnimation    ( 000C0000 )
+  124:  Wait  10`
+  130:  Call  SetPlayerAnimation    ( 000C0026 )
+  140:  Call  SpeakToPlayer ( .Npc:Player 000C0001 000C0026 00000005 0014015E ) % Oh, Mario... I wonder what he's doing now? I wish  ...
+  160:  Call  SetPlayerAnimation    ( 000C0002 )
+  170:  Wait  10`
+  17C:  Call  SetPlayerAnimation    ( 000A0001 )
+  18C:  Call  SpeakToPlayer ( .Npc:Partner 00200009 00200001 00000005 0014015F ) % Of course you are! Mario will be fine! You should  ...
+  1AC:  Call  PlayerFaceNpc ( .Npc:Partner 00000005 )
+  1C0:  Call  SpeakToPlayer ( .Npc:Player 000D0004 000A0001 00000005 00140160 ) % ...Tee hee hee... I hope you're right, Twink. Than ...
+  1E0:  Wait  10`
+  1EC:  Call  EnablePartnerAI ( )
+  1F8:  Call  802D1270      ( 000001E0 FFFFFFEC *Fixed[2.0] )
+  210:  Call  SetPlayerAnimation    ( 000C000B )
+  220:  Set   *Var0  ~Entry:Entry0
+  230:  Set   *Var1  ~Collider:ttw
+  240:  Set   *Var2  ~Model:o85
+  250:  Set   *Var3  ~Model:o83
+  260:  Set   *Var4  ~Model:o86
+  270:  Set   *Var5  ~Model:o84
+  280:  Exec  ExitSplitDoubleDoor
+  28C:  Wait  17`
+  298:  Call  GotoMap       ( $ASCII_80240C40 0000000A ) % kkj_14
+  2AC:  Wait  100`
+  2B8:  Call  DisablePlayerInput    ( .False )
+  2C8:  Return
+  2D0:  End
+}
+
+PADDING: 80240918 to 80240920 (00000918 to 00000920)
+00000000 00000000
+
+#new:Script $Script_80240920
+{
+    0:  Call  EnableStatusMenu  ( .False )
+   10:  Call  UseSettingsFrom   ( .Cam:Default  550`  30`  -20` )
+   2C:  Call  SetCamDistance    ( .Cam:Default *Fixed[200.0] )
+   40:  Call  SetCamPitch       ( .Cam:Default *Fixed[17.5] *Fixed[-10.0] )
+   58:  Call  SetCamPosB        ( .Cam:Default *Fixed[570.0]  0` )
+   70:  Call  SetCamSpeed       ( .Cam:Default *Fixed[90.0] )
+   84:  Call  PanToTarget       ( .Cam:Default 00000000 00000001 )
+   9C:  Wait  60`
+   A8:  Call  DemoJoystickXY    ( 0000000A 00000000 )
+   BC:  Wait  40`
+   C8:  Call  DemoJoystickXY    ( 00000000 00000000 )
+   DC:  Wait  10`
+   E8:  Call  SetPlayerAnimation    ( 000C0000 )
+   F8:  Wait  10`
+  104:  Call  SetPlayerAnimation    ( 000C0026 )
+  114:  Wait  20`
+  120:  Call  ResetCam  ( .Cam:Default *Fixed[1.0] )
+  134:  If  *GF_DemoSceneDone  ==  .True
+  144:  	Return
+  14C:  EndIf
+  154:  Set   *GF_DemoSceneDone  .True
+  164:  Call  GotoMapSpecial    ( $ASCII_80240C48 00000002 00000007 ) % kkj_26
+  17C:  Wait  110`
+  188:  Return
+  190:  End
+}
+
+#new:Script $Script_80240AB8
+{
+    0:  Wait  10`
+    C:  Loop
+   18:  	Call  GetDemoState  ( *Var0 )
+   28:  	If  *Var0  ==  00000002
+   38:  		BreakLoop
+   40:  	EndIf
+   48:  	Wait  1`
+   54:  EndLoop
+   5C:  If  *GF_DemoSceneDone  ==  .True
+   6C:  	Return
+   74:  EndIf
+   7C:  Set   *GF_DemoSceneDone  .True
+   8C:  Call  GotoMapSpecial    ( $ASCII_80240C48 00000002 00000007 ) % kkj_26
+   A4:  Wait  100`
+   B0:  Return
+   B8:  End
+}
+
+#new:Script $Script_80240B78
+{
+    0:  Call  RotateModel   ( ~Model:o85 00000050 00000000 FFFFFFFF 00000000 )
+   20:  Call  RotateModel   ( ~Model:o83 00000050 00000000 00000001 00000000 )
+   40:  Call  RotateModel   ( ~Model:o86 00000050 00000000 FFFFFFFF 00000000 )
+   60:  Call  RotateModel   ( ~Model:o84 00000050 00000000 00000001 00000000 )
+   80:  Set   *GF_DemoSceneDone  .False
+   90:  Exec  $Script_80240AB8
+   9C:  Exec  $Script_80240920
+   A8:  Return
+   B0:  End
+}
+
+#new:ASCII $ASCII_80240C30
+{
+	"hos_00"
+}
+
+#new:ASCII $ASCII_80240C38
+{
+	"kkj_14"
+}
+
+#new:ASCII $ASCII_80240C40
+{
+	"kkj_14"
+}
+
+#new:ASCII $ASCII_80240C48
+{
+	"kkj_26"
+}
+

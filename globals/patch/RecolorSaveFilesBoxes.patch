@@ -1,0 +1,113 @@
+% This file recolor each save file box according to TTYD file select menu
+
+%8024A09B = Cursor Pos
+%00-03=Save Files
+
+%8024C097 = File about to by Copied
+%8024A09C = Current Mode % 04=Copy to which File
+%/
+@Hook 8E8B4 % 800F5404
+{
+LABU    T6, 80074094 % game state / 0 == title screen
+BNE     T6, R0, .End
+NOP
+LABU    T6, 8024A09C % Current Mode
+ORI     V0, R0, 4 % Copying a save file
+BNE     T6, V0, .CheckCursorPos
+NOP
+LABU    T6, 8024C097 % File about to be copied
+BEQ     R0, R0, .UseFileAboutToBeCopied
+RESERVED
+.CheckCursorPos
+LABU    T6, 8024A09B % Cursor Pos
+.UseFileAboutToBeCopied
+BNE     T6, R0, .CheckFile2
+NOP
+BEQ     R0, R0, .File1
+NOP
+.CheckFile2
+ORI     V0, R0, 1
+BNE     T6, V0, .CheckFile3
+NOP
+BEQ     R0, R0, .File2
+NOP
+.CheckFile3
+ORI     V0, R0, 2
+BNE     T6, V0, .CheckFile4
+NOP
+BEQ     R0, R0, .File3
+NOP
+.CheckFile4
+ORI     V0, R0, 3
+BNE     T6, V0, .LoadDefaultColors
+NOP
+BEQ     R0, R0, .File4
+NOP
+.File1 % Orange
+% Main Box
+LIO     T6, FFFFFFFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE10
+LIO     T6, C7BFA9FF % Color 2 - RGBAlpha
+SAW     T6, 8024BE14
+% Top Box
+LIO     T6, FFD86CFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE80
+LIO     T6, 92761AFF % Color 2 - RGBAlpha
+SAW     T6, 8024BE84
+BEQ     R0, R0, .End
+NOP
+.File2 % Red
+ % Main Box
+LIO     T6, FFFFFFFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE10
+LIO     T6, C7A9A9FF % Color 2 - RGBAlpha
+SAW     T6, 8024BE14
+% Top Box
+LIO     T6, FF6C6CFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE80
+LIO     T6, 921A1AFF % Color 2 - RGBAlpha
+SAW     T6, 8024BE84
+BEQ     R0, R0, .End
+NOP
+.File3 % Green
+ % Main Box
+LIO     T6, FFFFFFFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE10
+LIO     T6, B0C7A9FF % Color 2 - RGBAlpha
+SAW     T6, 8024BE14
+% Top Box
+LIO     T6, 6CFF71FF % Color 1 - RGBAlpha
+SAW     T6, 8024BE80
+LIO     T6, 1A921CFF % Color 2 - RGBAlpha
+SAW     T6, 8024BE84
+BEQ     R0, R0, .End
+NOP
+.File4 % Blue
+ % Main Box
+LIO     T6, FFFFFFFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE10
+LIO     T6, ACA9C7FF % Color 2 - RGBAlpha
+SAW     T6, 8024BE14
+% Top Box
+LIO     T6, 806CFFFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE80
+LIO     T6, 1A4292FF % Color 2 - RGBAlpha
+SAW     T6, 8024BE84
+BEQ     R0, R0, .End
+NOP
+.LoadDefaultColors
+ % Top Box
+LIO     T6, FFFFFFFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE10
+LIO     T6, C8C8AAFF % Color 2 - RGBAlpha
+SAW     T6, 8024BE14
+% Box 2
+LIO     T6, FFEE6AFF % Color 1 - RGBAlpha
+SAW     T6, 8024BE80
+LIO     T6, 92641AFF % Color 2 - RGBAlpha
+SAW     T6, 8024BE84
+.End
+LBU	    T6, 0030 (S4)
+J       800F540C
+LBU	    V0, 0033 (S4)
+}

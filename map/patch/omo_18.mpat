@@ -1,0 +1,467 @@
+#define .Npc:ShyGuy 00000001
+
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:ShyGuysToybox
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Call  MakeNpcs  ( .False $NpcGroupList_omo18 )
+	Exec  $Script_SetupMusic
+    Set   *Var0 $Script_CreateExitTriggers
+    Exec  EnterWalk
+    Exec  $Script_InitMinigame
+    Exec  $Script_DisableLightModels
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:ShyGuyToybox 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_Exit_Entry0
+{
+	SetGroup 0000001B
+	Call    UseExitHeading ( 60` ~Entry:Entry0 )
+	Exec    ExitWalk
+	Call    GotoMap   ( "omo_09" 00000001 )
+	Wait    100`
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+	Bind  $Script_Exit_Entry0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_InitMinigame
+{
+    Call  MakeItemEntity ( .Item:IceSmash ~Vec3d:reward .ItemSpawnMode:Fixed_NeverVanish *GF_OMO18_Item )
+    Set   *MapVar[0] *Var0 % save itemEntityIndex
+    If *GB_OMO09_GameByte < 4
+        Bind  $Script_Minigame_Input_Green  .Trigger:WallHammer ~Collider:box_green 00000001 00000000
+        Bind  $Script_Minigame_Input_Yellow .Trigger:WallHammer ~Collider:box_yellow 00000001 00000000
+        Bind  $Script_Minigame_Input_Red    .Trigger:WallHammer ~Collider:box_red   00000001 00000000
+        Bind  $Script_Minigame_Input_Blue   .Trigger:WallHammer ~Collider:box_blue  00000001 00000000
+    EndIf
+    Switch *GB_OMO09_GameByte
+        Case == 0
+            Call    DisablePlayerInput ( .True )
+            Loop
+                Call    GetPlayerActionState ( *Var0 )
+                If *Var0 == .ActionState:Idle
+                    BreakLoop
+                EndIf
+                Wait    1
+            EndLoop
+            % move camera
+            Call    GetNpcPos ( .Npc:ShyGuy *Var0 *Var1 *Var2 )
+            Add     *Var0 90` % x
+            Call    UseSettingsFrom ( .Cam:Default *Var0 *Var1 *Var2 )
+            Call    SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+            Call    SetCamSpeed   ( .Cam:Default *Fixed[2.5] )
+            Call    PanToTarget   ( .Cam:Default 00000000 00000001 )
+            Call    WaitForCam    ( .Cam:Default *Fixed[1.0] )
+            Call    InterpNpcYaw ( .Npc:ShyGuy -90` 0 )
+            Wait    15`
+            % !
+            Call    PlaySoundAtNpc ( .Npc:ShyGuy 0262 0 ) % !
+            Call    ShowEmote       ( .Npc:ShyGuy .Emote:Exclamation -45` 20` .True 0 0 0 0 )
+            Wait    10`
+            Call    InterpNpcYaw ( .Npc:ShyGuy 90` 0 )
+            Wait    20`
+            Call    SetItemPos ( *MapVar[0] 0 -1000` 0 )
+            Call    PlaySoundAtNpc ( .Npc:ShyGuy 021B 0 )
+            Wait    10`
+            % jumps
+            Call    SetNpcAnimation ( .Npc:ShyGuy 003B000A ) % jump
+            Call    PlaySoundAtNpc ( .Npc:ShyGuy 03E2 0 ) % jump sfx
+            Call    SetNpcJumpscale ( .Npc:ShyGuy *Fixed[0.68] )
+            Call    NpcJump0 ( .Npc:ShyGuy ~Vec3d:JumpPos_ShyGuy_1 20` )
+            Call    SetNpcAnimation ( .Npc:ShyGuy 003B0001 ) % idle
+            Wait    5
+            Call    PlaySoundAtNpc ( .Npc:ShyGuy 03E2 0 ) % jump sfx
+            Call    SetNpcAnimation ( .Npc:ShyGuy 003B000A ) % jump
+            Call    NpcJump0 ( .Npc:ShyGuy ~Vec3d:JumpPos_ShyGuy_2 15` )
+            Call    SetNpcAnimation ( .Npc:ShyGuy 003B0001 ) % idle
+            Wait    5
+            Call    PlaySoundAtNpc ( .Npc:ShyGuy 03E2 0 ) % jump sfx
+            Call    SetNpcAnimation ( .Npc:ShyGuy 003B000A ) % jump
+            Call    NpcJump0 ( .Npc:ShyGuy ~Vec3d:JumpPos_ShyGuy_3 20` )
+            Call    SetNpcAnimation ( .Npc:ShyGuy 003B0001 ) % idle
+            Wait    5
+            %
+            Call    GetModelCenter ( ~Model:b3_1 )
+            Add     *Var0 -43` % x
+            Call    UseSettingsFrom ( .Cam:Default *Var0 *Var1 *Var2 )
+            Call    SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+            Call    SetCamSpeed   ( .Cam:Default *Fixed[2.5] )
+            Call    PanToTarget   ( .Cam:Default 00000000 00000001 )
+            Call    WaitForCam    ( .Cam:Default *Fixed[1.0] )
+            Call    SpeakToPlayer ( .Npc:ShyGuy 003B0011 003B0001 00000000 $String_ShyGuy_1 )
+            Set     *GB_OMO09_GameByte 1
+            ExecWait $Script_ShowSolution
+            Call    DisablePlayerInput ( .False )
+        CaseOR == 1
+        CaseOR == 2
+        CaseOR == 3
+            Call    SetNpcPos ( .Npc:ShyGuy 0 -1000` 0 )
+            Call    SetItemPos ( *MapVar[0] 0 -1000` 0 )
+        EndCaseGroup
+        Case == 4
+            Call    SetNpcPos ( .Npc:ShyGuy 0 -1000` 0 )
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_ShowSolution
+{
+    Call    GetModelCenter ( ~Model:b3_1 )
+    Add     *Var0 -43` % x
+    Call    UseSettingsFrom ( .Cam:Default *Var0 *Var1 *Var2 )
+    Call    SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+    Call    SetCamSpeed   ( .Cam:Default *Fixed[2.5] )
+    Call    PanToTarget   ( .Cam:Default 00000000 00000001 )
+    Call    WaitForCam    ( .Cam:Default *Fixed[1.0] )
+    Wait    10`
+    Set     *Var1 25`
+    Switch *GB_OMO09_GameByte
+        Case  == 1
+            Set *Var0 1 % green
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 3 % red
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 4 % blue
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 2 % yellow
+            ExecWait $Script_ToggleBoxesModels
+        Case  == 2
+            Set *Var0 3
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 1
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 4
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 1
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 4
+            ExecWait $Script_ToggleBoxesModels
+        Case  == 3
+            Set *Var0 1
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 3
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 2
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 4
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 1
+            ExecWait $Script_ToggleBoxesModels
+            Set *Var0 1
+            ExecWait $Script_ToggleBoxesModels
+        Case  == 4
+            ExecWait $Script_Minigame_Completed
+    EndSwitch
+    Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Call    UseSettingsFrom ( .Cam:Default *Var0 *Var1 *Var2 )
+    Call    ResetCam ( .Cam:Default *Fixed[2.0] )
+    Call    WaitForCam ( .Cam:Default *Fixed[1.0] )
+    Return
+    End
+}
+
+#new:Script $Script_DisableLightModels
+{
+    Call    EnableGroup ( ~Model:box .False )
+    Call    EnableModel ( ~Model:b1_1 .True )
+    Call    EnableModel ( ~Model:bm1_1 .True )
+    Call    EnableModel ( ~Model:b2_1 .True )
+    Call    EnableModel ( ~Model:bm2_1 .True )
+    Call    EnableModel ( ~Model:b3_1 .True )
+    Call    EnableModel ( ~Model:bm3_1 .True )
+    Call    EnableModel ( ~Model:b4_1 .True )
+    Call    EnableModel ( ~Model:bm4_1 .True )
+    Return
+    End
+}
+
+% Var0 = boxIndex
+%
+% Var1 = frames
+#new:Script $Script_ToggleBoxesModels
+{
+    Switch *Var0
+        Case == 1 % green
+            Call    EnableGroup ( ~Model:b1 .False )
+            Call    EnableModel ( ~Model:b1_2 .True )
+            Call    EnableModel ( ~Model:bm1_2 .True )
+        Case == 2 % yellow
+            Call    EnableGroup ( ~Model:b2 .False )
+            Call    EnableModel ( ~Model:b2_2 .True )
+            Call    EnableModel ( ~Model:bm2_2 .True )
+        Case == 3 % red
+            Call    EnableGroup ( ~Model:b3 .False )
+            Call    EnableModel ( ~Model:b3_2 .True )
+            Call    EnableModel ( ~Model:bm3_2 .True )
+        Case == 4 % blue
+            Call    EnableGroup ( ~Model:b4 .False )
+            Call    EnableModel ( ~Model:b4_2 .True )
+            Call    EnableModel ( ~Model:bm4_2 .True )
+    EndSwitch
+    Switch *GB_OMO09_GameByte
+        Case == 1
+            Call    PlaySound ( 01A1 )
+        Case == 2
+            Call    PlaySound ( 01A2 )
+        Case == 3
+            Call    PlaySound ( 01A3 )
+    EndSwitch
+    Wait    *Var1
+    Switch *Var0
+        Case == 1 % green
+            Call    EnableGroup ( ~Model:b1 .False )
+            Call    EnableModel ( ~Model:b1_1 .True )
+            Call    EnableModel ( ~Model:bm1_1 .True )
+        Case == 2 % yellow
+            Call    EnableGroup ( ~Model:b2 .False )
+            Call    EnableModel ( ~Model:b2_1 .True )
+            Call    EnableModel ( ~Model:bm2_1 .True )
+        Case == 3 % red
+            Call    EnableGroup ( ~Model:b3 .False )
+            Call    EnableModel ( ~Model:b3_1 .True )
+            Call    EnableModel ( ~Model:bm3_1 .True )
+        Case == 4 % blue
+            Call    EnableGroup ( ~Model:b4 .False )
+            Call    EnableModel ( ~Model:b4_1 .True )
+            Call    EnableModel ( ~Model:bm4_1 .True )
+    EndSwitch
+    Return
+    End
+}
+
+% 01 == green
+% 02 == yellow
+% 03 == red
+% 04 == blue
+#new:Unknown $Data_Solution1
+{
+    00000001 00000003 00000004 00000002 FFFFFFFF
+}
+
+#new:Unknown $Data_Solution2
+{
+    00000003 00000001 00000004 00000001 00000004 FFFFFFFF
+}
+
+#new:Unknown $Data_Solution3
+{
+    00000001 00000003 00000002 00000004 00000001 00000001 FFFFFFFF
+}
+
+#new:Script $Script_Minigame_Input_Green
+{
+    Set     *Var0 1
+    ExecWait $Script_InputBox
+    Return
+    End
+}
+
+#new:Script $Script_Minigame_Input_Yellow
+{
+    Set     *Var0 2
+    ExecWait $Script_InputBox
+    Return
+    End
+}
+
+#new:Script $Script_Minigame_Input_Red
+{
+    Set     *Var0 3
+    ExecWait $Script_InputBox
+    Return
+    End
+}
+
+#new:Script $Script_Minigame_Input_Blue
+{
+    Set     *Var0 4
+    ExecWait $Script_InputBox
+    Return
+    End
+}
+
+#new:Script $Script_InputBox
+{
+    If *GB_OMO09_GameByte == 4 % minigame completed
+        Return
+    EndIf
+    Set     *Var8 *Var0
+    Set     *Var0 *Var8
+    Set     *Var1 10`
+    ExecWait $Script_ToggleBoxesModels
+    Call    DisablePlayerInput ( .True )
+    Switch *GB_OMO09_GameByte
+        Case == 1
+            UseIntBuffer $Data_Solution1
+        Case == 2
+            UseIntBuffer $Data_Solution2
+        Case == 3
+            UseIntBuffer $Data_Solution3
+    EndSwitch
+    Set *Var1 *MapVar[1]
+    GetIntN *Var0 *Var1
+    If *Var0 == *Var8 % Correct Box
+        % check if this is the last box for this level
+        Add *Var1 1
+        GetIntN *Var0 *Var1
+        If *Var0 == -1 % Level completed!
+            Set *MapVar[1] 0
+            Add *GB_OMO09_GameByte 1
+            Call PlaySound ( 000B )
+            ExecWait $Script_ShowSolution
+        Else
+            Add *MapVar[1] 1
+        EndIf
+    Else % Wrong
+        Call PlaySound ( 021D ) % error
+        Set *MapVar[1] 0
+        ExecWait $Script_ShowSolution
+    EndIf
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+#new:Script $Script_Minigame_Completed
+{
+    Call    SpeakToPlayer ( .Npc:ShyGuy 003B0011 003B0001 00000000 $String_ShyGuy_2 )
+    Call    SetNpcPos ( .Npc:ShyGuy ~Vec3d:JumpPos_ShyGuy_3 )
+    Call    SetNpcFlagBits ( .Npc:ShyGuy C0000000 .True )
+    Thread % Attach item to shy guy's pos
+        Loop
+            Call    GetNpcPos ( .Npc:ShyGuy *Var0 *Var1 *Var2 )
+            Call    SetItemPos ( *MapVar[0] *Var0 *Var1 *Var2 )
+            Call    GetNpcVar ( .Npc:ShyGuy 00000000 *Var0 )
+            If *Var0 == .True
+                BreakLoop
+            EndIf
+            Wait    1
+        EndLoop
+    EndThread
+    Call    SetNpcJumpscale ( .Npc:ShyGuy *Fixed[0.68] )
+    Call    PlaySoundAtNpc ( .Npc:ShyGuy 021B 0 )
+    Call    NpcJump0 ( .Npc:ShyGuy ~Vec3d:JumpPos_ShyGuy_2 20` )
+    Call    PlaySoundAtNpc ( .Npc:ShyGuy 021B 0 )
+    Call    NpcJump0 ( .Npc:ShyGuy ~Vec3d:JumpPos_ShyGuy_4 20` )
+    Call    PlaySoundAtNpc ( .Npc:ShyGuy 021B 0 )
+    Call    NpcJump0 ( .Npc:ShyGuy ~Vec3d:JumpPos_ShyGuy_5 20` )
+    Call    SetNpcVar ( .Npc:ShyGuy 00000000 .True )
+    Wait    2
+    Call    SetNpcPos ( .Npc:ShyGuy 0 -1000` 0 )
+    Return
+    End
+}
+
+% NPC data
+
+#new:NpcGroupList $NpcGroupList_omo18
+{
+	00000001 $NpcGroup_ShyGuy 00000000
+	00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_ShyGuy
+{
+	.Npc:ShyGuy $NpcSettings_ShyGuy ~Vec3f:NPC_ShyGuy_01
+	00110D09 $Script_InitNPC_ShyGuy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_ShyGuy_01
+	~AnimationTable:NPC_ShyGuy_01
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_ShyGuy
+{
+	00000000 001E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_InitNPC_ShyGuy
+{
+    Call    EnableNpcShadow ( .Npc:Self .False )
+    Call    BindNpcIdle ( .Npc:Self $Script_NPCIdle_UpdateMinigame )
+    Return
+    End
+}
+
+#new:Script $Script_NPCIdle_UpdateMinigame
+{
+    Return
+    End
+}
+
+% Strings
+
+#string $String_ShyGuy_1
+{
+[Style Right]
+You know what? I'm bored![BR]
+What if you play a little bit[BR]
+with me?[BR]
+[Wait][Next]
+And then I can think if I give[BR]
+you this or not.
+[Wait][End]
+}
+
+#string $String_ShyGuy_2
+{
+[Style Right]
+You know what?[BR]
+[Wait][Next]
+If you want it that much, you[BR]
+can keep it, I didn't even want[BR]
+it anyways...
+[Wait][End]
+}
+
+% Tattle
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Mario it's time to see if your memory[BR]
+is as good as you think, we need to[BR]
+beat that Shy Guy!
+[Wait][End]      
+}

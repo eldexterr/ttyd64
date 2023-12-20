@@ -1,0 +1,223 @@
+% Script File: kkj_02.mscr
+% Decoded from: 0 to 9F0 (kkj_02)
+
+#define .NpcID:Toad_00              00
+#define .NpcID:ToadGuard_01         01
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  -75.0    0.0    0.0   90.0
+	~Vec4f:Entry1 % 1175.0  110.0    0.0  270.0
+	~Vec4f:Entry2 %  354.0    0.0  294.0  117.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000003
+	[Background]  00000000
+	[MapTattle]   00000000
+}
+
+#new:Script $Script_80240070
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Call  SetMusicTrack ( 00000000 .Song:PeachsCastleParty 00000001 00000007 )
+   44:  	Case  ==  ~Entry:Entry1
+   50:  		Call  SetMusicTrack ( 00000000 .Song:PeachsCastleParty 00000001 00000005 )
+   6C:  EndSwitch
+   74:  Wait  3`
+   80:  Call  SetMusicTrack ( 00000000 .Song:PeachsCastleParty 00000001 00000006 )
+   9C:  Return
+   A4:  End
+}
+
+PADDING: 8024011C to 80240120 (0000011C to 00000120)
+00000000
+
+#new:Script $Script_ExitDoubleDoor_80240120
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  ~Entry:Entry0
+   2C:  Set   *Var1  ~Collider:deilit1
+   3C:  Set   *Var2  ~Model:door1
+   4C:  Set   *Var3  ~Model:door2
+   5C:  Exec  ExitDoubleDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_802409E0 00000001 ) % kkj_01
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_ExitDoubleDoor_802401C4
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  ~Entry:Entry1
+   2C:  Set   *Var1  ~Collider:deilit2
+   3C:  Set   *Var2  ~Model:door4
+   4C:  Set   *Var3  ~Model:door3
+   5C:  Exec  ExitDoubleDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_802409E8 00000000 ) % kkj_03
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_80240268
+{
+    0:  Bind  $Script_ExitDoubleDoor_80240120 .Trigger:WallPressA ~Collider:deilit1 00000001 00000000
+   1C:  Bind  $Script_ExitDoubleDoor_802401C4 .Trigger:WallPressA ~Collider:deilit2 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_EnterDoubleDoor_802402B0
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Set   *Var2  ~Model:door1
+   38:  		Set   *Var3  ~Model:door2
+   48:  		ExecWait  EnterDoubleDoor
+   54:  	Case  ==  ~Entry:Entry1
+   60:  		Set   *Var2  ~Model:door4
+   70:  		Set   *Var3  ~Model:door3
+   80:  		ExecWait  EnterDoubleDoor
+   8C:  EndSwitch
+   94:  Return
+   9C:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:PeachCastleGrounds
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   84:  Call  MakeNpcs  ( .False $NpcGroupList_802409C8 )
+   98:  Exec  $Script_80240070
+   A4:  Call  UseDoorSounds     ( .DoorSounds:Large )
+   B4:  Exec  $Script_80240268
+   C0:  Exec  $Script_EnterDoubleDoor_802402B0
+   CC:  Wait  1`
+   D8:  Return
+   E0:  End
+}
+
+PADDING: 8024043C to 80240440 (0000043C to 00000440)
+00000000
+
+#new:AISettings $AISettings_80240440
+{
+    1.5 % move speed
+    60` % move time
+    30` % wait time
+    0.0 % alert radius
+    0.0
+    -1`
+    0.0 % chase speed
+    0`
+    0`
+    0.0 % chase radius
+    0.0
+    1`
+}
+
+#new:Script $Script_NpcAI_80240470
+{
+    0:  Call  DoBasicAI ( $AISettings_80240440 )
+   10:  Return
+   18:  End
+}
+
+#new:NpcSettings $NpcSettings_80240490
+{
+	00000000 001E0018 00000000 00000000 $Script_NpcAI_80240470 00000000 00000000 00000000
+	00000000 00000000 00630010
+}
+
+MISSING: 802404BC to 802404E8 (000004BC to 000004E8)
+00000000 00170013 00000000 00000000 80240470 00000000 00000000 00000000
+00000000 00000000 00630010
+
+#new:NpcSettings $NpcSettings_802404E8
+{
+	00000000 001E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+MISSING: 80240514 to 80240540 (00000514 to 00000540)
+00000000 00170013 00000000 00000000 00000000 00000000 00000000 00000000
+00000000 00000000 00630000
+
+#new:Script $Script_Interact_80240540
+{
+    0:  Call  SpeakToPlayer ( .Npc:Self 00830004 00830001 00000000 00000049 ) % It's nice and quiet here with no guests around. Ah ...
+   20:  Return
+   28:  End
+}
+
+#new:Script $Script_Interact_80240570
+{
+    0:  Call  SpeakToPlayer ( .Npc:Self 00870004 00870001 00000000 0000004A ) % Princess Peach went into her private chambers just ...
+   20:  Return
+   28:  End
+}
+
+#new:Script $Script_Init_802405A0
+{
+    0:  Call  BindNpcInteract   ( .Npc:Self $Script_Interact_80240540 )
+   14:  Return
+   1C:  End
+}
+
+#new:Script $Script_Init_802405C4
+{
+    0:  Call  BindNpcInteract   ( .Npc:Self $Script_Interact_80240570 )
+   14:  Return
+   1C:  End
+}
+
+#new:NpcGroup $NpcGroup_802405E8
+{
+	.NpcID:NPC_Toad_00 $NpcSettings_80240490 ~Vec3f:NPC_Toad_00 % 0 0 -100
+	00000D0D $Script_Init_802405A0 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_Toad_00
+	~AnimationTable:NPC_Toad_00 % .Sprite:Toad
+	00000000 00000000 00000000 00000000 % no tattle string
+	%
+	% $NpcGroup_802405E8[1F0]
+	.NpcID:NPC_ToadGuard_01 $NpcSettings_802404E8 ~Vec3f:NPC_ToadGuard_01 % 1175 110 60
+	00000D0D $Script_Init_802405C4 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_ToadGuard_01
+	~AnimationTable:NPC_ToadGuard_01 % .Sprite:ToadGuard
+	00000000 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroupList $NpcGroupList_802409C8
+{
+	00000002 $NpcGroup_802405E8 00000000
+	00000000 00000000 00000000
+}
+
+#new:ASCII $ASCII_802409E0
+{
+	"kkj_01"
+}
+
+#new:ASCII $ASCII_802409E8
+{
+	"kkj_03"
+}
+

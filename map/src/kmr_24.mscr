@@ -1,0 +1,168 @@
+% Script File: kmr_24.mscr
+% Decoded from: 0 to 490 (kmr_24)
+
+
+#new:Function_Init $Function_Init
+{
+    0:  JR        RA
+    4:  LI        V0, 1
+}
+
+PADDING: 80240008 to 80240010 (00000008 to 00000010)
+00000000 00000000
+
+#new:Function $Function_80240010
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S0, 18 (SP)
+    8:  COPY      S0, A0
+    C:  BEQ       A1, R0, .o20
+   10:  SW        RA, 1C (SP)
+   14:  JAL       ~Func:set_map_transition_effect
+   18:  LI        A0, 4
+   1C:  SW        R0, 74 (S0)
+        .o20
+   20:  LHU       V0, 76 (S0)
+   24:  ADDIU     A0, SP, 10
+   28:  JAL       ~Func:update_exit_map_screen_overlay
+   2C:  SH        V0, 10 (SP)
+   30:  SLL       V0, V0, 10
+   34:  BEQ       V0, R0, .o4C
+   38:  CLEAR     V0
+   3C:  JAL       ~Func:set_game_mode
+   40:  CLEAR     A0
+   44:  BEQ       R0, R0, .o54
+   48:  LI        V0, 2
+        .o4C
+   4C:  LH        V1, 10 (SP)
+   50:  SW        V1, 74 (S0)
+        .o54
+   54:  LW        RA, 1C (SP)
+   58:  LW        S0, 18 (SP)
+   5C:  JR        RA
+   60:  ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_80240074
+{
+    0:  ADDIU     SP, SP, FFD0
+    4:  LA        A0, $ASCII_80240480
+    C:  SW        S0, 18 (SP)
+   10:  LA        S0, 8007419C
+   18:  ADDIU     A1, SP, 10
+   1C:  SW        RA, 28 (SP)
+   20:  SW        S3, 24 (SP)
+   24:  SW        S2, 20 (SP)
+   28:  SW        S1, 1C (SP)
+   2C:  LW        V0, 0 (S0)
+   30:  LHU       S1, 86 (V0)
+   34:  LHU       S2, 8C (V0)
+   38:  LHU       S3, 8E (V0)
+   3C:  JAL       ~Func:get_map_IDs_by_name
+   40:  ADDIU     A2, SP, 12
+   44:  LW        V1, 0 (S0)
+   48:  LHU       V0, 10 (SP)
+   4C:  LHU       A1, 12 (SP)
+   50:  LBU       A0, 166 (V1)
+   54:  SH        V0, 86 (V1)
+   58:  LI        V0, 4
+   5C:  SH        A1, 8C (V1)
+   60:  JAL       ~Func:fio_save_game
+   64:  SH        V0, 8E (V1)
+   68:  LW        V1, 0 (S0)
+   6C:  SH        S1, 86 (V1)
+   70:  SH        S2, 8C (V1)
+   74:  SH        S3, 8E (V1)
+   78:  LW        RA, 28 (SP)
+   7C:  LW        S3, 24 (SP)
+   80:  LW        S2, 20 (SP)
+   84:  LW        S1, 1C (SP)
+   88:  LW        S0, 18 (SP)
+   8C:  LI        V0, 2
+   90:  JR        RA
+   94:  ADDIU     SP, SP, 30
+}
+
+PADDING: 8024010C to 80240110 (0000010C to 00000110)
+00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %    0.0    0.0    0.0    0.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000001
+	[Background]  00000000
+	[MapTattle]   00000000
+}
+
+#new:Script $Script_80240160
+{
+    0:  Wait  10`
+    C:  Call  ShowMessageAtScreenPos    ( 001E004D  160`  40` ) % Save and continue Save and quit Continue without s ...
+   24:  Switch  *Var0
+   30:  	Case  ==  00000000
+   3C:  		Call  $Function_80240074 ( )
+   48:  		Wait  10`
+   54:  	Case  ==  00000001
+   60:  		Call  $Function_80240074 ( )
+   6C:  		Wait  10`
+   78:  		Call  $Function_80240010 ( )
+   84:  		Wait  100`
+   90:  	Case  ==  00000002
+   9C:  EndSwitch
+   A4:  Call  GotoMapSpecial    ( $ASCII_80240480 00000004 0000000B ) % osr_03
+   BC:  Wait  100`
+   C8:  Return
+   D0:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  DisablePlayerPhysics  ( .True )
+   20:  Call  SetPlayerPos  (  -1000`  0`  0` )
+   38:  Wait  1`
+   44:  Call  GetCurrentPartnerID   ( *Var0 )
+   54:  If  *Var0  !=  .Partner:None % 0
+   64:  	Call  DisablePartnerAI  ( 00000000 )
+   74:  	Call  SetNpcFlagBits    ( .Npc:Partner 00000200 .False )
+   8C:  	Call  SetNpcPos ( .Npc:Partner  0`  -1000`  0` )
+   A8:  EndIf
+   B0:  Call  SetSpriteShading  ( .Shading:None )
+   C0:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   E0:  Call  SetCamBGColor ( .Cam:Default  208`  208`  208` )
+   FC:  Call  SetCamEnabled ( .Cam:Default .True )
+  110:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+  124:  Call  SetCamType    ( .Cam:Default 00000004 .False )
+  13C:  Call  SetCamPitch   ( .Cam:Default  0`  0` )
+  154:  Call  SetCamDistance    ( .Cam:Default  440` )
+  168:  Call  SetCamPosA    ( .Cam:Default  0`  100` )
+  180:  Call  SetCamPosB    ( .Cam:Default  0`  0` )
+  198:  Call  SetCamPosC    ( .Cam:Default  0`  65` )
+  1B0:  Call  SetPanTarget  ( .Cam:Default  0`  0`  0` )
+  1CC:  Call  SetCamSpeed   ( .Cam:Default *Fixed[90.0] )
+  1E0:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  1F8:  Call  DisablePlayerInput    ( .True )
+  208:  Call  DisablePlayerPhysics  ( .True )
+  218:  Wait  1`
+  224:  Exec  $Script_80240160
+  230:  Return
+  238:  End
+}
+
+PADDING: 80240478 to 80240480 (00000478 to 00000480)
+00000000 00000000
+
+#new:ASCII $ASCII_80240480
+{
+	"osr_03"
+}
+
+PADDING: 80240488 to 80240490 (00000488 to 00000490)
+00000000 00000000
+

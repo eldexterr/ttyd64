@@ -1,0 +1,482 @@
+% Automatically dumped from section 02
+
+#new:Actor $02_JrTroopa2 {
+% stats
+[Index]        89b 
+[Level]        44`b 
+[MaxHP]        15`b 
+[Coins]         0`b 
+[Flags]       00000000 
+[StatusTable] $StatusTable_80224418_02 
+% ai
+[PartsCount]    1`s 
+[PartsTable]  $PartsTable_802244C4_02 
+[Script]      $Script_Init_80224A94_02 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]       0`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]     0`b 
+[PowerBounce]  80`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         32`b  32`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -15`b  30`b % dx dy
+[StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:IdleAnimations $IdleAnimations_80224380_02 {
+.Status:Normal    00210003
+.Status:Sleep     0021001C
+.Status:Frozen    00210000
+.Status:Poison    00210000
+.Status:Stop      00210000
+.Status:Static    00210000
+.Status:Paralyze  00210000
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_802243F8_02 {
+.Status:Normal    00210004
+.Status:Stop      00210002
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_8022440C_02 {
+.Element:Normal 00000001
+.Element:End
+}
+
+#new:StatusTable $StatusTable_80224418_02 {
+.Status:Normal    100`
+.Status:Default   100`
+.Status:Sleep      80`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy      50`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze  100`
+.Status:Shrink    100`
+.Status:Stop      100`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod     -1`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod     -1`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod  -1`
+.Status:ShrinkTurnMod    -1`
+.Status:StopTurnMod      -2`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_802244C4_02 {
+00800000 01000000 FA1200FF $IdleAnimations_80224380_02 $DefenseTable_8022440C_02 00000000 00000000 05FC0000 00000000 
+}
+
+#new:Script $Script_80224510_02 {
+    0:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+   1C:  Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+   38:  Call  UseBattleCamPreset    ( 00000007 )
+   48:  Call  BattleCamTargetActor  ( .Actor:Self )
+   58:  Call  SetBattleCamOffsetZ   ( 00000026 )
+   68:  Call  SetBattleCamZoom      ( 00000100 )
+   78:  Call  MoveBattleCamOver     ( 0000000F )
+   88:  Return
+   90:  End
+}
+
+#new:Script $Script_802245A8_02 {
+    0:  Call  802535B4  ( 00000001 )
+   10:  Call  UseBattleCamPreset    ( 00000002 )
+   20:  Call  MoveBattleCamOver     ( 0000000C )
+   30:  Return
+   38:  End
+}
+
+#new:IdleAnimations $IdleAnimations_8022464C_02 {
+.Status:Normal    00210014
+.Status:End
+}
+
+#new:Script $Script_80224658_02 {
+    0:  Set   *VarA  *Var0 
+   10:  Call  8027D32C      ( FFFFFF81 )
+   20:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   34:  Call  SetAnimation  ( .Actor:Self *VarA *Var1 )
+   4C:  Wait  10`
+   58:  Call  80269E80      ( *Var5 )
+   68:  Switch  *Var5 
+   74:  	CaseOR  ==  0000000A 
+   80:  	CaseOR  ==  0000000E 
+   8C:  	CaseOR  ==  0000000C 
+   98:  	CaseOR  ==  00000010 
+   A4:  	CaseOR  ==  0000000B 
+   B0:  	CaseOR  ==  0000000F 
+   BC:  	CaseOR  ==  0000000D 
+   C8:  	CaseOR  ==  00000011 
+   D4:  	CaseOR  ==  00000002 
+   E0:  	EndCaseGroup
+   E8:  	Default
+   F0:  		Set   *Var2  00000000 
+  100:  		Loop  00000018 
+  10C:  			Call  SetActorYaw   ( .Actor:Self *Var2 )
+  120:  			Add   *Var2  0000001E 
+  130:  			Wait  1`
+  13C:  		EndLoop
+  144:  		Call  SetActorYaw   ( .Actor:Self 00000000 )
+  158:  EndSwitch
+  160:  Label  0
+  16C:  Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+  188:  Add   *Var1  0000000A 
+  198:  Add   *Var2  0000000A 
+  1A8:  Call  PlayEffect        ( ~FX:BigSmokePuff *Var0 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  1EC:  Call  PlaySound ( 000003E5 )
+  1FC:  Call  DropStarPoints    ( .Actor:Self )
+  20C:  Call  SetActorYaw       ( .Actor:Self 00000000 )
+  220:  Call  UseBattleCamPreset    ( 0000000E )
+  230:  Call  SetBattleCamZoom  ( 00000104 )
+  240:  Call  SetBattleCamOffsetZ   ( 0000000F )
+  250:  Call  BattleCamTargetActor  ( .Actor:Self )
+  260:  Call  MoveBattleCamOver ( 0000001E )
+  270:  Call  PlaySoundAtActor  ( .Actor:Self 000020E5 )
+  284:  Call  SetAnimation      ( .Actor:Self *VarA 00210027 )
+  29C:  Wait  12`
+  2A8:  Call  SetAnimation      ( .Actor:Self *VarA 00210014 )
+  2C0:  Call  SetIdleAnimations ( .Actor:Self *VarA $IdleAnimations_8022464C_02 )
+  2D8:  Wait  60`
+  2E4:  Call  SetActorFlagBits  ( .Actor:Self 00400000 .True )
+  2FC:  Return
+  304:  End
+}
+
+#new:Script $Script_80224964_02 {
+    0:  Wait  10`
+    C:  Call  PlaySoundAtActor  ( .Actor:Self .Sound:CloseShell )
+   20:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+   3C:  Add   *Var1  0000000A 
+   4C:  Add   *Var2  00000005 
+   5C:  Call  PlayEffect    ( ~FX:Steam:TinyPuff *Var0 *Var1 *Var2 FFFFFFFC 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+   A0:  Call  PlayEffect    ( ~FX:Steam:TinyPuff *Var0 *Var1 *Var2 00000004 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+   E4:  Call  SetAnimation  ( .Actor:Self 00000001 00210012 )
+   FC:  Call  SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_802243F8_02 )
+  114:  Wait  10`
+  120:  Return
+  128:  End
+}
+
+#new:Script $Script_Init_80224A94_02 {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_80225314_02 )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_80224B24_02 )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_80224B58_02 )
+   3C:  Call  BindNextTurn  ( .Actor:Self $Script_NextTurn_80225B4C_02 )
+   50:  Call  SetActorVar   ( .Actor:Self 00000000 00000000 )
+   68:  Call  SetActorVar   ( .Actor:Self 00000001 00000000 )
+   80:  Return
+   88:  End
+}
+
+#new:Script $Script_Idle_80224B24_02 {
+    0:  Label  0
+    C:  Wait  1`
+   18:  Goto  0
+   24:  Return
+   2C:  End
+}
+
+#new:Script $Script_HandleEvent_80224B58_02 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   3C:  Switch  *Var0 
+   48:  	Case  ==  .Event:HitCombo % 9
+   54:  		ExecWait  $Script_802250E4_02 
+   60:  		SetConst  *Var0  00000001 
+   70:  		SetConst  *Var1  00210011 
+   80:  		ExecWait  DoNormalHit 
+   8C:  	Case  ==  .Event:Hit % A
+   98:  		ExecWait  $Script_802250E4_02 
+   A4:  		SetConst  *Var0  00000001 
+   B4:  		SetConst  *Var1  00210011 
+   C4:  		ExecWait  DoNormalHit 
+   D0:  		ExecWait  $Script_802251CC_02 
+   DC:  	Case  ==  .Event:Death % 20
+   E8:  		SetConst  *Var0  00000001 
+   F8:  		SetConst  *Var1  00210011 
+  108:  		ExecWait  DoNormalHit 
+  114:  		Wait  10`
+  120:  		SetConst  *Var0  00000001 
+  130:  		SetConst  *Var1  00210013 
+  140:  		ExecWait  $Script_80224658_02 
+  14C:  		Return
+  154:  	Case  ==  .Event:BurnHit % E
+  160:  		Set   *Var0  00000001 
+  170:  		Set   *Var1  00210028 
+  180:  		Set   *Var2  00210029 
+  190:  		ExecWait  DoBurnHit 
+  19C:  	Case  ==  .Event:BurnDeath % 24
+  1A8:  		Set   *Var0  00000001 
+  1B8:  		Set   *Var1  00210028 
+  1C8:  		Set   *Var2  00210029 
+  1D8:  		ExecWait  DoBurnHit 
+  1E4:  		Wait  10`
+  1F0:  		SetConst  *Var0  00000001 
+  200:  		SetConst  *Var1  00210029 
+  210:  		ExecWait  $Script_80224658_02 
+  21C:  		Return
+  224:  	Case  ==  .Event:SpinSmashHit % B
+  230:  		ExecWait  $Script_802250E4_02 
+  23C:  		SetConst  *Var0  00000001 
+  24C:  		SetConst  *Var1  00210011 
+  25C:  		ExecWait  DoSpinSmashHit 
+  268:  		ExecWait  $Script_802251CC_02 
+  274:  	Case  ==  .Event:SpinSmashDeath % 21
+  280:  		SetConst  *Var0  00000001 
+  290:  		SetConst  *Var1  00210011 
+  2A0:  		ExecWait  DoSpinSmashHit 
+  2AC:  		SetConst  *Var0  00000001 
+  2BC:  		SetConst  *Var1  00210013 
+  2CC:  		ExecWait  $Script_80224658_02 
+  2D8:  		Return
+  2E0:  	Case  ==  .Event:ShockHit % 2F
+  2EC:  		SetConst  *Var0  00000001 
+  2FC:  		SetConst  *Var1  00210011 
+  30C:  		ExecWait  DoShockHit 
+  318:  		SetConst  *Var0  00000001 
+  328:  		SetConst  *Var1  00210011 
+  338:  		ExecWait  DoJumpBack 
+  344:  		Call  JumpToGoal    ( .Actor:Self 00000005 .False .True .False )
+  364:  		SetConst  *Var0  00000001 
+  374:  		SetConst  *Var1  00210009 
+  384:  		ExecWait  DoReturnHome 
+  390:  		ExecWait  $Script_80224964_02 
+  39C:  	Case  ==  .Event:ShockDeath % 26
+  3A8:  		SetConst  *Var0  00000001 
+  3B8:  		SetConst  *Var1  00210011 
+  3C8:  		ExecWait  DoShockHit 
+  3D4:  		SetConst  *Var0  00000001 
+  3E4:  		SetConst  *Var1  00210011 
+  3F4:  		ExecWait  DoJumpBack 
+  400:  		Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  41C:  		Call  SetHomePos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  438:  		SetConst  *Var0  00000001 
+  448:  		SetConst  *Var1  00210013 
+  458:  		ExecWait  $Script_80224658_02 
+  464:  		Return
+  46C:  	CaseOR  ==  00000017 % 17
+  478:  	CaseOR  ==  .Event:Immune % 19
+  484:  	CaseOR  ==  .Event:AirLiftFailed % 1F
+  490:  		SetConst  *Var0  00000001 
+  4A0:  		SetConst  *Var1  00210004 
+  4B0:  		ExecWait  DoImmune 
+  4BC:  	EndCaseGroup
+  4C4:  	Case  ==  .Event:EndFirstStrike % 35
+  4D0:  		SetConst  *Var0  00000001 
+  4E0:  		SetConst  *Var1  00210003 
+  4F0:  		ExecWait  DoReturnHome 
+  4FC:  		Call  HPBarToHome   ( .Actor:Self )
+  50C:  	Case  ==  .Event:RecoverStatus % 31
+  518:  		SetConst  *Var0  00000001 
+  528:  		SetConst  *Var1  00210003 
+  538:  		ExecWait  DoRecover 
+  544:  	Default
+  54C:  EndSwitch
+  554:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  568:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  57C:  Return
+  584:  End
+}
+
+#new:Script $Script_802250E4_02 {
+    0:  Call  GetActorVar   ( .Actor:Self 00000001 *Var0 )
+   18:  If  *Var0  ==  00000000 
+   28:  	Call  GetLastDamage     ( .Actor:Self *Var1 )
+   3C:  	Call  GetBattleFlags    ( *Var2 )
+   4C:  	If  *Var2  !&  00080000 
+   5C:  		If  *Var1  !=  00000000 
+   6C:  			Call  SetActorVar       ( .Actor:Self 00000001 00000001 )
+   84:  			Call  GetStatusFlags    ( .Actor:Self *Var0 )
+   98:  			If  *Var0  !&  ~Flags:StatusFlags:Sleep|Paralyze|Dizzy|Stone|Stop % 351000
+   A8:  				Call  FreezeBattleCam   ( .True )
+   B8:  			EndIf
+   C0:  		EndIf
+   C8:  	EndIf
+   D0:  EndIf
+   D8:  Return
+   E0:  End
+}
+
+#new:Script $Script_802251CC_02 {
+    0:  Call  GetActorVar   ( .Actor:Self 00000001 *Var0 )
+   18:  If  *Var0  ==  00000001 
+   28:  	Call  GetStatusFlags    ( .Actor:Self *Var0 )
+   3C:  	If  *Var0  !&  ~Flags:StatusFlags:Sleep|Paralyze|Dizzy|Stone|Stop % 351000
+   4C:  		Call  SetActorVar       ( .Actor:Self 00000001 00000002 )
+   64:  		ExecWait  $Script_80224510_02 
+   70:  		Call  MoveBattleCamOver ( 0000001E )
+   80:  		Wait  30`
+   8C:  		Call  ActorSpeak        ( 000C012A .Actor:Self 00000001 0021001D 0021001D ) % Yeeowch!! Who knew that Mario had such battle skil ...
+   AC:  		Call  SetAnimation      ( .Actor:Self 00000001 0021001A )
+   C4:  		Call  EndActorSpeech    ( .Actor:Self 00000001 FFFFFFFF FFFFFFFF )
+   E0:  		ExecWait  $Script_80224964_02 
+   EC:  		ExecWait  $Script_802245A8_02 
+   F8:  	Else
+  100:  		Call  SetActorVar   ( .Actor:Self 00000001 00000000 )
+  118:  	EndIf
+  120:  EndIf
+  128:  Call  FreezeBattleCam   ( .False )
+  138:  Return
+  140:  End
+}
+
+#new:Script $Script_TakeTurn_80225314_02 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  PlaySoundAtActor  ( .Actor:Self .Sound:OpenShell )
+   3C:  Call  SetAnimation      ( .Actor:Self 00000001 00210003 )
+   54:  Wait  20`
+        Call  $SetTargetActorInFront ( .Actor:Self )
+   74:  Call  SetGoalToTarget   ( .Actor:Self )
+   84:  Call  UseBattleCamPreset    ( 0000003F )
+   94:  Call  BattleCamTargetActor  ( .Actor:Self )
+   A4:  Call  MoveBattleCamOver ( 00000014 )
+   B4:  Call  8024ECF8  ( FFFFFFFF 00000001 00000000 )
+   CC:  Call  SetAnimation      ( .Actor:Self 00000001 00210009 )
+   E4:  Call  SetActorSpeed     ( .Actor:Self *Fixed[8.0] )
+   F8:  Call  SetGoalToTarget   ( .Actor:Self )
+  108:  Call  AddGoalPos        ( .Actor:Self 00000032 00000000 00000000 )
+  124:  Call  SetActorSpeed     ( .Actor:Self *Fixed[6.0] )
+  138:  Call  RunToGoal ( .Actor:Self 00000000 .False )
+  150:  Call  SetAnimation      ( .Actor:Self 00000001 00210003 )
+  168:  Call  SetActorDispOffset    ( .Actor:Self 00000000 FFFFFFFF 00000000 )
+  184:  Wait  1`
+  190:  Call  SetActorDispOffset    ( .Actor:Self 00000000 FFFFFFFE 00000000 )
+  1AC:  Wait  5`
+  1B8:  Call  SetActorDispOffset    ( .Actor:Self 00000000 00000000 00000000 )
+  1D4:  Call  SetAnimation      ( .Actor:Self 00000001 0021000E )
+  1EC:  Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000002 00000010 )
+  210:  Switch  *VarA 
+  21C:  	CaseOR  ==  .HitResult:Lucky % 5
+  228:  	CaseOR  ==  .HitResult:Miss % 6
+  234:  		Call  SetGoalToTarget       ( .Actor:Self )
+  244:  		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[2.0] )
+  258:  		Call  SetAnimation  ( .Actor:Self 00000001 0021000F )
+  270:  		Thread
+  278:  			Wait  8`
+  284:  			Call  SetAnimation  ( .Actor:Self 00000001 00210010 )
+  29C:  		EndThread
+            Call  GetOwnerTarget ( *Var1 .False )
+  2A4:  		Call  GetActorPos   ( *Var1 *Var0 *Var1 *Var2 )
+  2C0:  		Set   *Var1  00000000 
+  2D0:  		Add   *Var2  00000005 
+  2E0:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  2FC:  		Call  JumpToGoal    ( .Actor:Self 0000000F .False .True .False )
+  31C:  		If  *VarA  ==  .HitResult:Lucky % 5
+  32C:  			Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+  350:  		EndIf
+  358:  		Wait  2`
+  364:  		Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  380:  		Sub   *Var0  00000014 
+  390:  		Set   *Var1  00000000 
+  3A0:  		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+  3B4:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  3D0:  		Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+  3F0:  		Call  SetAnimation  ( .Actor:Self 00000001 00210003 )
+  408:  		Wait  10`
+  414:  		Call  UseBattleCamPreset    ( 00000002 )
+  424:  		Call  MoveBattleCamOver     ( 00000019 )
+  434:  		Call  SetActorYaw   ( .Actor:Self 000000B4 )
+  448:  		Call  AddActorDecoration    ( .Actor:Self 00000001 00000000 .Decoration:Sweat )
+  464:  		Call  SetGoalToHome ( .Actor:Self )
+  474:  		Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+  488:  		Call  SetAnimation  ( .Actor:Self 00000001 0021000B )
+  4A0:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+  4B8:  		Call  SetAnimation  ( .Actor:Self 00000001 00210003 )
+  4D0:  		Call  RemoveActorDecoration ( .Actor:Self 00000001 00000000 )
+  4E8:  		Call  SetActorYaw   ( .Actor:Self 00000000 )
+  4FC:  		ExecWait  $Script_80224964_02 
+  508:  		Call  UseIdleAnimation      ( .Actor:Self .True )
+  51C:  		Return
+  524:  	EndCaseGroup
+  52C:  EndSwitch
+  534:  Call  SetGoalToTarget       ( .Actor:Self )
+  544:  Call  SetActorJumpGravity   ( .Actor:Self *Fixed[2.0] )
+  558:  Thread
+  560:  	Wait  3`
+  56C:  	Call  SetAnimation  ( .Actor:Self 00000001 0021000F )
+  584:  	Wait  5`
+  590:  	Call  SetAnimation  ( .Actor:Self 00000001 00210010 )
+  5A8:  EndThread
+  5B0:  Call  JumpToGoal        ( .Actor:Self 0000000F .False .True .False )
+  5D0:  Wait  2`
+  5DC:  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:Jump 00000000 00000000 00000002 00000020 )
+  604:  Switch  *Var0 
+  610:  	Default
+  618:  		Call  UseBattleCamPreset    ( 00000002 )
+  628:  		Call  ResetAllActorSounds   ( .Actor:Self )
+  638:  		Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  654:  		Add   *Var0  00000028 
+  664:  		Set   *Var1  00000000 
+  674:  		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+  688:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  6A4:  		Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+  6C4:  		Add   *Var0  0000001E 
+  6D4:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  6F0:  		Call  JumpToGoal    ( .Actor:Self 00000008 .False .True .False )
+  710:  		Add   *Var0  00000014 
+  720:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  73C:  		Call  JumpToGoal    ( .Actor:Self 00000006 .False .True .False )
+  75C:  		Call  SetAnimation  ( .Actor:Self 00000001 00210003 )
+  774:  		Wait  10`
+  780:  		Call  SetGoalToHome ( .Actor:Self )
+  790:  		Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+  7A4:  		Call  SetAnimation  ( .Actor:Self 00000001 00210009 )
+  7BC:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+  7D4:  		Call  SetAnimation  ( .Actor:Self 00000001 00210003 )
+  7EC:  		ExecWait  $Script_80224964_02 
+  7F8:  EndSwitch
+  800:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  814:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  828:  Return
+  830:  End
+}
+
+#new:Script $Script_NextTurn_80225B4C_02 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  GetBattlePhase    ( *Var0 )
+   38:  Switch  *Var0 
+   44:  	Case  ==  0000000A 
+   50:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   68:  		If  *Var0  ==  00000000 
+   78:  			Call  SetActorVar   ( .Actor:Self 00000000 00000001 )
+   90:  			Wait  15`
+   9C:  			ExecWait  $Script_80224510_02 
+   A8:  			Wait  10`
+   B4:  			Call  ActorSpeak    ( 000C0128 .Actor:Self 00000001 0021001A 0021001B ) % Get ready to hurt, Mario! I'm gonna show you a new ...
+   D4:  			Call  SetAnimation  ( .Actor:Self 00000001 0021000B )
+   EC:  			Call  PlaySoundAtActor  ( .Actor:Self 000020B9 )
+  100:  			Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  11C:  			Add   *Var1  00000010 
+  12C:  			Call  PlayEffect    ( ~FX:GatherEnergyPink *Var0 *Var1 *Var2 00000001 0000001E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  170:  			Call  PlayEffect    ( 00000013 00000001 *Var0 *Var1 *Var2 00000001 0000001E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  1B4:  			Wait  30`
+  1C0:  			ExecWait  $Script_80224964_02 
+  1CC:  			Wait  30`
+  1D8:  			Call  ActorSpeak    ( 000C0129 .Actor:Self 00000001 00210017 00210004 ) % Yeah! Check that out! You've never seen anything l ...
+  1F8:  			Wait  10`
+  204:  			ExecWait  $Script_802245A8_02 
+  210:  		Else
+  218:  		EndIf
+  220:  	Case  ==  0000000C 
+  22C:  EndSwitch
+  234:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  248:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  25C:  Return
+  264:  End
+}
+

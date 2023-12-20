@@ -1,0 +1,157 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:PeachsCastle
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_EnterMap
+    Exec  $Script_CreateExitTriggers  
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+    Call    MakeItemEntity ( .Item:SpeedySpin ~Vec3d:Reward1 .ItemSpawnMode:Fixed_NeverVanish *GF_KKJ30_Reward1 )
+    Call    MakeItemEntity ( .Item:StarPiece ~Vec3d:Reward2 .ItemSpawnMode:Fixed_NeverVanish *GF_KKJ30_Reward2 )
+    Call    MakeItemEntity ( .Item:StarPiece ~Vec3d:Reward3 .ItemSpawnMode:Fixed_NeverVanish *GF_KKJ30_Reward3 )
+    Call    ParentColliderToModel ( ~Collider:bookcase ~Model:bookcaseA )
+    Exec    $Script_Bookcase_UpdatePlayer
+    Bind    $Script_BookcaseFalls .Trigger:FloorAbove ~Collider:fallBookCase 00000001 00000000
+    Bind    $Script_BookcaseFalls .Trigger:WallPressA ~Collider:fallBookCase2 00000001 00000000
+    Call    DisablePlayerInput ( .True )
+    Wait    5
+    Call    DisablePlayerInput ( .False )
+	Return
+	End
+}
+
+% Base code grabbed from obk_08
+#new:Script $Script_BookcaseFalls % Script_8024240C
+{
+        Call  ModifyColliderFlags 	( .False ~Collider:fallBookCase2 7FFFFE00 )
+        Set   *MapVar[0] .True % The bookcase is falling
+        Call  MakeLerp  ( 00000000 FFFFFFA6 30` .Easing:QuarticIn )
+  17C:  Label  A
+  188:  Call  UpdateLerp ( )
+  194:  Call  RotateGroup   ( ~Model:bookcase_group *Var0 -1 00000000 00000000 )
+  1B4:  Call  UpdateColliderTransform   ( ~Collider:bookcase )
+  1D4:  Wait  1`
+  1E0:  If  *Var1  ==  00000001
+  1F0:  	Goto  A
+  1FC:  EndIf
+        Set   *MapVar[0] .False
+  204:  Call  PlaySoundAtCollider   ( ~Collider:bookcase 000000F7 00000000 )
+  21C:  Thread
+  224:  	Call  ShakeCam  ( .Cam:Default 00000000  30` *Fixed[1.5] )
+  240:  EndThread
+  2BC:  Wait  60`
+        Set   *MapVar[1] .True % The bookcase is rising up
+        Call  MakeLerp  ( FFFFFFA6 00000000 30` .Easing:Linear )
+  2E4:  Label  F
+  2F0:  Call  UpdateLerp ( )
+  2FC:  Call  RotateGroup   ( ~Model:bookcase_group *Var0 -1 00000000 00000000 )
+  31C:  Call  UpdateColliderTransform   ( ~Collider:bookcase )
+  33C:  Wait  1`
+  348:  If  *Var1  ==  00000001
+  358:  	Goto  F
+  364:  EndIf
+        Set   *MapVar[1] .False
+        Call  ModifyColliderFlags 	( .True ~Collider:fallBookCase2 7FFFFE00 )
+  388:  Return
+  390:  End
+}
+
+% Check if the player is below the bookcase when is about to fall
+#new:Script $Script_Bookcase_UpdatePlayer
+{
+    Loop
+        If *MapVar[0] == .True
+            Call $ReadAddress ( 8015A558 1 *Var0 .False .False ) % collider the player is touching from below
+            If *Var0 == ~Collider:bookcase
+                Call    DisablePlayerInput ( .True )
+                Loop
+                    Call    GetPlayerActionState ( *Var0 )
+                    Switch *Var0
+                        CaseOR == .ActionState:Idle
+                        CaseOR == .ActionState:Ride
+                            BreakLoop
+                        EndCaseGroup
+                    EndSwitch
+                    Wait    1
+                EndLoop
+                Call    SetPlayerAnimation ( 00010002 )
+                Call    SetPlayerAnimation ( 00010014 )
+                Loop
+                    If *MapVar[1] == .True
+                        Call    SetPlayerAnimation ( 0001000F )
+                        Wait    10`
+                        Call    SetPlayerAnimation ( 00010030 )
+                        Wait    15`
+                        Call    SetPlayerAnimation ( 00010031 )
+                        Thread
+                            Call    PlaySound ( 0172 )
+                            Wait    12`
+                            Call    PlaySound ( 0172 )
+                        EndThread
+                        Wait    12`
+                        Call    DisablePlayerInput ( .False )
+                        BreakLoop
+                    EndIf
+                    Wait    1
+                EndLoop
+            EndIf
+        EndIf
+        Wait    1
+    EndLoop
+    Return
+    End
+}
+
+%%%
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorTouch ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0 {
+    Call    UseExitHeading  	( 3C ~Entry:Entry0 )
+	Exec    ExitWalk
+    Call    GotoMap   ( "kkj_16" 00000001 )
+    Wait    100`
+    Return
+    End
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Mario, sometimes I really wonder how[BR]
+many secret rooms does this castle[BR]
+have?
+[Wait][End]      
+}

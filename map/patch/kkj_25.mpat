@@ -1,0 +1,31 @@
+% Restore partner HP after getting Peach Beam too.
+
+#delete $Function_80240CE8
+
+@ $Script_80248998
+{
+    [1C80]  Call  $Function_FullyHeal
+}
+
+#new:Function $Function_FullyHeal % Function_80240CE8
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LA        V0, 8010F290
+    C:  SW        RA, 10 (SP)
+        JAL       $Function_HealPartners
+        NOP
+   10:  LBU       A1, 3 (V0)
+   14:  LBU       A2, 6 (V0)
+   18:  LB        A0, 28E (V0)
+   1C:  LI        V1, 2
+   20:  SB        V1, 292 (V0)
+   24:  SLL       A0, A0, 8
+   28:  SB        A1, 2 (V0)
+   2C:  SB        A2, 5 (V0)
+   30:  JAL       ~Func:sync_status_menu
+   34:  SH        A0, 290 (V0)
+   38:  LW        RA, 10 (SP)
+   3C:  LI        V0, 2
+   40:  JR        RA
+   44:  ADDIU     SP, SP, 18
+}

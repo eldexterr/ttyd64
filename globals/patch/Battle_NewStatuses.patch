@@ -1,0 +1,2138 @@
+% This file add support for all the new buffs and debuffs to every actor, along with the new little counters on screen.
+%
+% Plus patch actor(0x220-0x222) to use the data from $extraData instead.
+%
+% New buffs and debuffs:
+%
+% -Defensive Buff
+% -Defensive Debuff
+% -Offensive Buff
+% -Offensive Debuff
+% -HP Buff
+% -FP Buff
+
+%============
+% Counters
+%============
+
+% 0x00 - Defense FX Data
+% 0x04 - Offensive FX Data
+% 0x08 - HP FX Data
+% 0x0C - FP FX Data
+#new:Data $DeBuffsCounters_FXPointers
+{
+    00000000 00000000 00000000 00000000 % Mario
+    00000000 00000000 00000000 00000000 % Partner
+    %
+    00000000 00000000 00000000 00000000 % Enemy0
+    00000000 00000000 00000000 00000000 % Enemy1
+    00000000 00000000 00000000 00000000 % Enemy2
+    00000000 00000000 00000000 00000000 % Enemy3
+    00000000 00000000 00000000 00000000 % Enemy4
+    00000000 00000000 00000000 00000000 % Enemy5
+    00000000 00000000 00000000 00000000 % Enemy6
+    00000000 00000000 00000000 00000000 % Enemy7
+    00000000 00000000 00000000 00000000 % Enemy8
+    00000000 00000000 00000000 00000000 % Enemy9
+    00000000 00000000 00000000 00000000 % Enemy10
+    00000000 00000000 00000000 00000000 % Enemy11
+    00000000 00000000 00000000 00000000 % Enemy12
+    00000000 00000000 00000000 00000000 % Enemy13
+    00000000 00000000 00000000 00000000 % Enemy14
+    00000000 00000000 00000000 00000000 % Enemy15
+    00000000 00000000 00000000 00000000 % Enemy16
+    00000000 00000000 00000000 00000000 % Enemy17
+    00000000 00000000 00000000 00000000 % Enemy18
+    00000000 00000000 00000000 00000000 % Enemy19
+    00000000 00000000 00000000 00000000 % Enemy20
+    00000000 00000000 00000000 00000000 % Enemy21
+    00000000 00000000 00000000 00000000 % Enemy22
+    00000000 00000000 00000000 00000000 % Enemy23
+    FFFFFFFF FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+% 0x00 - Defense Counter Data
+% 0x04 - Offensive Counter Data
+% 0x08 - HP Counter Data
+% 0x0C - FP Counter Data
+%
+% 0x00 - u8 counterType
+%  00=Buff
+%  01=Debuff
+% 
+% 0x01 - u8 animationState
+%  00=Null
+%  01=StartAnim
+%  02=Idle
+%  03=EndAnim
+%
+% 0x02 - u16 animationTimer
+#new:Data $DeBuffsCounters_Data
+{
+    00000000 00000000 00000000 00000000 % Mario
+    00000000 00000000 00000000 00000000 % Partner
+    %
+    00000000 00000000 00000000 00000000 % Enemy0
+    00000000 00000000 00000000 00000000 % Enemy1
+    00000000 00000000 00000000 00000000 % Enemy2
+    00000000 00000000 00000000 00000000 % Enemy3
+    00000000 00000000 00000000 00000000 % Enemy4
+    00000000 00000000 00000000 00000000 % Enemy5
+    00000000 00000000 00000000 00000000 % Enemy6
+    00000000 00000000 00000000 00000000 % Enemy7
+    00000000 00000000 00000000 00000000 % Enemy8
+    00000000 00000000 00000000 00000000 % Enemy9
+    00000000 00000000 00000000 00000000 % Enemy10
+    00000000 00000000 00000000 00000000 % Enemy11
+    00000000 00000000 00000000 00000000 % Enemy12
+    00000000 00000000 00000000 00000000 % Enemy13
+    00000000 00000000 00000000 00000000 % Enemy14
+    00000000 00000000 00000000 00000000 % Enemy15
+    00000000 00000000 00000000 00000000 % Enemy16
+    00000000 00000000 00000000 00000000 % Enemy17
+    00000000 00000000 00000000 00000000 % Enemy18
+    00000000 00000000 00000000 00000000 % Enemy19
+    00000000 00000000 00000000 00000000 % Enemy20
+    00000000 00000000 00000000 00000000 % Enemy21
+    00000000 00000000 00000000 00000000 % Enemy22
+    00000000 00000000 00000000 00000000 % Enemy23
+    FFFFFFFF FFFFFFFF
+}
+
+% Update counters' data for every actor
+#new:Function $Function_UpdateDeBuffsCounters
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4, S5, S6
+    LIO     S0, $DeBuffsCounters_Data
+    LIO     S2, $ExtraActorData_Everyone
+    COPY    S1, S2
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    COPY    S3, V0
+    CLEAR   S4
+    CLEAR   S5
+    LIO     S6, $DeBuffsCounters_FXPointers
+    .Loop
+    % S0 = $DeBuffsCounters_Data (current offset)
+    % S1 = $ExtraData (current actor)
+    % S2 = $ExtraActorData_Everyone (current offset)
+    % S3 = current partner extra data
+    % S4 = actor loop counter
+    % S5 = boost loop counter
+    % S6 = $DeBuffsCounters_FXPointers (current offset)
+    %
+    % check if next actor to check is Partner
+    ORI     A1, R0, 1
+    BNE     A1, S4, .GetBoost
+    ADDIU   S1, S1, 4 % start reading from Defense boosts
+    % It is, check if Mario have any partner out
+    BEQL    S3, R0, .GetNextActor
+    ADDIU   S6, S6, 10
+    .GetBoost
+    LBU     A0, 1 (S0) % buff - animationState
+    % check if this actor has a buff/debuff for this kind of status
+    LB      A1, 0 (S1)
+    % Check if this buff is empty and if doesn't have any animation left to remove.
+    ANDI    A2, A0, FFFF
+    ANDI    A3, A1, FFFF
+    OR      A2, A2, A3 % check if A2 & A3 are empty
+    BEQ     A2, R0, .CheckNextBuff
+    NOP
+    % check if the FX isn't hidden
+    LW      A1, 0 (S6) % fxData
+    BEQ     A1, R0, .Check_ZeroTurnsLeft
+    NOP
+    % check if FX is hidden to don't update the animations
+    LW      A1, 0 (A1) % flags
+    ANDI    A2, A1, 4 % bit2
+    BEQ     A2, R0, .CheckNextBuff
+    NOP
+    .Check_ZeroTurnsLeft
+    % check if turns left are now zero
+    LBU     A1, 1 (S1)
+    BEQL    A1, R0, .CheckAnimationState_Idle
+    SH      R0, 0 (S1) % clear this buff data
+    .CheckAnimationState_Idle
+    % check if the animationState is in idle
+    ORI     A1, R0, 2
+    BNE     A0, A1, .UpdateCounter_NotIdle
+    NOP
+    % The counter is in idle, check if the buff has changed to update the animation
+    LBU     A0, 0 (S0) % buff type
+    LB      A1, 0 (S1) % get boost
+    ORI     A3, R0, 3 % EndAnim
+    BEQL    A1, R0, .CheckNextBuff % boost is now zero, remove the counter
+    SB      A3, 1 (S0) % animationState
+    % isn't zero, but check if got changed between a buff or debuff
+    SLTI    A2, A1, 0
+    BLTZ    A1, .CheckBoost_Debuff
+    NOP
+    % Boost is +0, check if counter type is 0x00
+    BEQ     A0, R0, .CheckNextBuff
+    NOP
+    % boost is +0 but type is debuff, hide the counter
+    ORI     A3, R0, 3 % EndAnim
+    BNEL    A0, R0, .CheckNextBuff
+    SB      A3, 1 (S0) % animationState
+    .CheckBoost_Debuff
+    % Boost is -0, check if counter type is 0x01
+    BNE     A0, R0, .CheckNextBuff
+    NOP
+    % boost is -0 but type is buff, hide the counter
+    ORI     A3, R0, 3 % EndAnim
+    BEQL    A0, R0, .CheckNextBuff
+    SB      A3, 1 (S0) % animationState
+    .UpdateCounter_NotIdle
+    % check if animationState is zero (null)
+    LBU     A0, 1 (S0) % animationState
+    ORI     A3, R0, 1 % StartAnim
+    BEQL    A0, R0, .CreateFX
+    SB      A3, 1 (S0) % animationState
+    % Update animation
+    LHU     A3, 2 (S0) % animationTimer
+    ADDIU   A3, A3, 1
+    SH      A3, 2 (S0)
+    SLTIU   V0, A3, 10` % animation duration
+    BNE     V0, R0, .CheckNextBuff
+    NOP
+    % Animation has ended, check what to do next
+    LBU     A0, 1 (S0) % animationState
+    SH      R0, 2 (S0) % clear timer
+    % check if animationState was StartAnim (0x01)
+    ORI     A1, R0, 1
+    ORI     A3, R0, 2 % Idle
+    BEQL    A0, A1, .CheckNextBuff
+    SB      A3, 1 (S0) % animationState
+    % It is EndAnim, remove the counter FX
+    JAL     ~Func:remove_effect
+    LW      A0, 0 (S6)
+    % clear fx data
+    SW      R0, 0 (S0) % clear this boost data
+    BEQ     R0, R0, .CheckNextBuff
+    SW      R0, 0 (S6) % clear fxPointer
+    % Create FX counter
+    .CreateFX
+    CLEAR   A2
+    LIA	    A0, $Script_MakeEffect
+    JAL	    ~Func:start_script
+    ADDIU	A1, R0, 1
+    % Check which kind of buff is being checked
+    SLTIU   A1, S5, 2 % boost - 00-01=defense/offense boost
+    BEQ     A1, R0, .CreateEffect_HPFP
+    NOP
+    %===================
+    % FX will be ~FX:StatChange
+    %===================    
+    % V0 = script_context*
+    %
+    % set vars
+    ORI     A0, R0, 0056 % ~FX:StatChange
+    BEQ     R0, R0, .EffectCreated
+    SW      A0, 84 (V0) % write var0
+    %===================
+    .CreateEffect_HPFP
+    %===================
+    % V0 = script_context*
+    %
+    % set vars
+    ORI     A0, R0, 0040 % ~FX:Recover
+    SW      A0, 84 (V0) % write var0
+    CLEAR   A0 % ~FX:Recover:HP
+    ORI     A1, R0, 2 % counter data 0x02 = HP
+    BNEL    S5, A1, .CreateEffect_WriteSubFXID_HPFP
+    ORI     A0, R0, 1 % ~FX:Recover:FP
+    .CreateEffect_WriteSubFXID_HPFP
+    SW      A0, 88 (V0) % write var1
+    SW      S6, 8C (V0) % write var2
+    %=================
+    .EffectCreated
+    %=================
+    % save last vars
+    SW      S6, 8C (V0) % write var2
+    SW      S5, 90 (V0) % write var3
+    LB      A0, 0 (S1) % get boost
+    SW      A0, 94 (V0) % write var4
+    SW      S0, 98 (V0) % write var5
+    %
+    ORI     A3, R0, 1 % StartAnim
+    SB      A3, 1 (S0) % animationState
+    .CheckNextBuff
+    ADDIU   S0, S0, 4
+    ADDIU   S1, S1, 2
+    ADDIU   S6, S6, 4
+    ADDIU   S5, S5, 1
+    SLTIU   A0, S5, 4 % because there's only 4 types of buffs
+    BNE     A0, R0, .GetBoost
+    NOP
+    .GetNextActor
+    CLEAR   S5
+    ADDIU   S4, S4, 1
+    % check if next actor is a partner
+    ORI     A0, R0, 1
+    BEQL    S4, A0, .Loop
+    COPY    S1, S3 % use partner data
+    % get next actor data
+    ADDIU   S2, S2, 10 % read next actor
+    COPY    S1, S2
+    % check if all actor has been read
+    LW      A0, 0 (S2)
+    ADDI    A1, R0, -1
+    BNE     A0, A1, .Loop
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4, S5, S6
+    JR      RA
+    NOP
+}
+
+#new:Script $Script_MakeEffect
+{
+    Call    PlayEffect ( *Var0 *Var1 .False -1000 .False *Fixed[1.0] 30` .False .False .False .False .False .False .False )
+    % save FX* in $DeBuffsCounters_FXPointers
+    Call    $ReadAddress ( $Data_LastFX 2 *Var6 .False .False )
+    Call    $WriteAddress ( *Var2 2 *Var6 .False .False )
+    Call    $ReadAddress ( *Var6 2 *Var6 C .False ) % load FX data
+    /% Update FX data
+    %
+    var3 = current boost being checked index
+        0x00=Defense
+        0x01=Offense
+        0x02=HP
+        0x03=FP
+    % var4 = buff amount
+    % var5 = DeBuffsCounters_Data (current buff data)
+    % Var6 = FX data
+    %/
+    Switch *Var3
+        % Defense & Offense counters
+        CaseOR == 0
+        CaseOR == 1
+            % Update arrow type
+            If *Var4 < 0 % debuff
+                If *Var3 == 0 % Defense
+                    Set *Var7 3 % Blue Arrow (Down)
+                Else % Offense
+                    Set *Var7 1 % Red Arrow (Down)
+                EndIf
+                Call    $WriteAddress ( *Var5 0 1 .False .False ) % set counterType as 0x01 (debuff)
+            Else % buff
+                If *Var3 == 0 % Defense
+                    Set *Var7 2 % Blue Arrow (Up)
+                Else % Offense
+                    Set *Var7 0 % Red Arrow (Down)
+                EndIf
+            EndIf
+            Call    $WriteAddress ( *Var6 2 *Var7 1C .False ) % arrowFX(0x1C)=u32 arrowType | (00=Red Up, 01=Red Down, 02=Blue Up)(03=Blue Down (added in Hooks 3AF3C4 & 3AF3F0))
+            % Update boost amount
+            Call    $WriteAddress ( *Var6 2 *Var4 20 .False ) % arrowFX(0x20)=s32 amount
+        EndCaseGroup
+        % HP & FP counters
+        CaseOR == 2
+        CaseOR == 3
+            If *Var4 < 0 % debuff
+                % unused
+                Call    $WriteAddress ( *Var5 0 1 .False .False ) % set counterType as 0x01 (debuff)
+            EndIf
+            % Update boost amount
+            Call    $WriteAddress ( *Var6 2 *Var4 40 .False ) % recoverFX(0x40)=s32 amount
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+% Draw every new status counter
+#export:Function:Battle $Function_DrawNewStatusFXs
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, F0, F2, F4, F6, S0, S1, S2, S3, S4, S5, S6, S7
+    LIO     S0, $DeBuffsCounters_FXPointers
+    LIO     S1, $DeBuffsCounters_Data
+    LIO     S2, $ExtraActorData_Everyone % current actor extraData
+    COPY    S3, S2 % current actor extraData (current buff)
+    ADDIU   S3, S3, 4 % start reading from def boosts
+    CLEAR   S4 % buff/status counter (current actor)
+    CLEAR   S5 % amount of statuses active (current actor)
+    CLEAR   S6 % loop counter
+    CLEAR   S7 % actorID
+    .Loop
+    LW      A0, 0 (S0)
+    BEQ     A0, R0, .ReadNextStatus
+    NOP
+    % check if the FX isn't hidden
+    LW      A1, 0 (S0) % fxData
+    LW      A1, 0 (A1) % flags
+    ANDI    A2, A1, 4 % bit2
+    BEQ     A2, R0, .ReadNextStatus
+    NOP
+    %==========
+    % DrawFX
+    %==========
+    %
+    ADDIU   S5, S5, 1
+    % get actor pos
+    JAL     ~Func:get_actor
+    COPY    A0, S7
+    % get actor status icon offsets
+    LW      A0, 8 (V0) % staticActorData
+    LB      A1, 26 (A0) % iconOffsetX
+    LB      A2, 27 (A0) % iconOffsetY
+    % check if actor is on the ceiling
+    LHU     A3, 192 (V0) % actorID
+    SLTIU   V1, A3, 0200 % .Actor:Enemy0
+    BNE     V1, R0, .GetIconOffsetY
+    NOP
+    % Actor is an enemy
+    LW      A3, 0 (V0) % actorFlags
+    ANDI    A3, A3, 0800 % ceiling flags
+    BNEL    A3, R0, .GetIconOffsetY
+    CLEAR   A2 % don't use Y offset if enemy is on the ceiling
+    .GetIconOffsetY
+    MTC1    A2, F2
+    CVT.S.W F2, F2
+    % multiply iconOffsetY by actor's scalingFactor($actor(0x188))
+    LWC1    F6, 188 (V0) % get scalingFactor
+    MUL.S   F2, F2, F6
+    CVT.W.S F2, F2
+    MFC1    A2, F2
+    % get Y offsets according to how many buffs offsets are active
+    ORI     A3, R0, 3 % space between the new status icons and vanilla ones.
+    ADDU    A1, A1, A3
+    ORI     A3, R0, 11 % space between counters
+    ADDI    V1, R0, 1 % S5-1
+    SUB     V1, S5, V1
+    MULT    A3, V1
+    MFLO    A3
+    ADDU    A2, A2, A3
+    % get final x pos
+    MTC1    A1, F6
+    CVT.S.W F6, F6
+    LWC1    F0, 144 (V0) % posX
+    SUB.S   F0, F0, F6
+    % get final y pos
+    MTC1    A2, F6
+    CVT.S.W F6, F6
+    LWC1    F2, 148 (V0) % posY
+    ADD.S   F2, F2, F6
+    LIF     F6, 3.0
+    LWC1    F4, 14C (V0) % posZ
+    ADD.S   F4, F4, F6
+    % apply offsets according to the fx animation timer
+    LBU     A0, 1 (S1) % animationState
+    LHU     A1, 2 (S1) % animationTimer
+    ORI     A2, R0, 10` % because max timer is this amount
+    % is animation EndAnim?
+    ORI     A3, R0, 3 % EndAnim
+    BEQ     A0, A3, .UpdateFXOffsets_EndAnim
+    NOP
+    % is animation Idle?
+    ORI     A3, R0, 2 % Idle
+    LIF     F6, 0.0
+    BEQ     A0, A3, .UpdateFXData_General
+    RESERVED
+    %%% StartAnim %%%
+    ADDI    A3, R0, -1
+    MULT    A2, A3
+    MFLO    A3
+    ADD     A1, A3, A1
+    MTC1    A1, F6
+    CVT.S.W F6, F6
+    BEQ     R0, R0, .UpdateFXData_General
+    NOP
+    .UpdateFXOffsets_EndAnim
+    ADDI    A3, R0, -1
+    MULT    A2, A3
+    MFLO    A3
+    SUB     A1, A2, A1
+    ADD     A1, A3, A1
+    MTC1    A1, F6
+    CVT.S.W F6, F6    
+    .UpdateFXData_General
+    %==================
+    % update FX's data
+    LW      A0, 0 (S0) % fxPointer
+    LW      A0, C (A0) % fxData
+    % update X & Y pos according to the animation offset
+    ADD.S   F0, F0, F6 % X
+    SUB.S   F2, F2, F6 % Y
+    SWC1    F0, 4 (A0) % fxPosX
+    SWC1    F2, 8 (A0) % fxPosY
+    SWC1    F4, C (A0) % fxPosZ
+    % update opacity
+    %
+    % check if animation is in idle
+    LBU     A1, 1 (S1) % animationState
+    ORI     A2, R0, 2 % Idle
+    BEQ     A1, A2, .UpdateFXData_GetSpecificData
+    ORI     A2, R0, FF
+    % animationState isn't idle
+    %
+    % get opacity
+    LHU     A3, 2 (S1) % animationTimer
+    MTC1    A3, F0
+    CVT.S.W F0, F0
+    LIF     F2, 10.0 % because animationTimer's cap is 10`
+    DIV.S   F0, F0, F2
+    LIF     F2, 255.0 % because max opacity is 0xFF
+    MUL.S   F0, F0, F2
+    CVT.W.S F0, F0
+    MFC1    A2, F0
+    % check if animation state is Start or End
+    ORI     A3, R0, 00FF % max opacity
+    ORI     V0, R0, 3 % EndAnim
+    BEQL    A1, V0, .UpdateFXData_GetSpecificData
+    SUB     A2, A3, A2 % animation is EndAnim
+    .UpdateFXData_GetSpecificData
+    % update specific FX data
+    %
+    % Check which kind of FX is
+    SLTIU   A1, S4, 2
+    BEQ     A1, R0, .UpdateFXData_HPFP
+    NOP
+    % FX is an arrow (offense/defense buff/debuff)
+    .UpdateFXData_DefOffe
+    % get turns left
+    LBU     A1, 1 (S3) % current buff turns left
+    % if turns left is zero, draw a 1 instead
+    BEQL    A1, R0, .UpdateFXData_DefOffe_UpdateNumber
+    ORI     A1, R0, 1
+    % check if is a debuff to use the "-" symbol instead
+    LBU     A3, 0 (S1) % counterType
+    BEQ     A3, R0, .UpdateFXData_DefOffe_UpdateNumber
+    NOP
+    % is a debuff turn the turns left into negative
+    ADDI    A3, R0, -1
+    MULT    A1, A3
+    MFLO    A1
+    .UpdateFXData_DefOffe_UpdateNumber
+    SW      A1, 20 (A0) % arrowNumber
+    ORI     A1, R0, 20`
+    SW      A1, 14 (A0) % fxTimeLeft
+    SW      A2, 24 (A0) % opacity
+    % update fx size
+    LIF     F0, 0.6875
+    SWC1    F0, 10 (A0) % fxScale
+    LIF     F0, 1.0 % x
+    LIF     F2, 0.8125 % y
+    SWC1    F0, 28 (A0) % sizeX
+    BEQ     R0, R0, .ReadNextStatus
+    SWC1    F2, 2C (A0) % sizeY
+    .UpdateFXData_HPFP
+    % get turns left
+    LBU     A1, 1 (S3) % current buff turns left
+    % if turns left is zero, draw a 1 instead
+    BEQL    A1, R0, .UpdateFXData_HPFP_UpdateNumber
+    ORI     A1, R0, 1
+    .UpdateFXData_HPFP_UpdateNumber
+    SW      A1, 40 (A0) % counterNumber
+    ORI     A1, R0, 20`
+    SW      A1, 2C (A0) % fxTimeLeft
+    SW      R0, 5C (A0) % animationOffsetSpeedY
+    SW      R0, 64 (A0) % heartRotation
+    SW      A2, 70 (A0) % opacity
+    % update fx size
+    LIF     F0, 0.75
+    SWC1    F0, 80 (A0) % sizeX
+    SWC1    F0, 84 (A0) % sizeY
+    % y pos
+    LWC1    F0, 8 (A0) % fxPosY
+    LIF     F6, 9.5
+    ADD.S   F0, F0, F6
+    SWC1    F0, 8 (A0) % y
+    %====================
+    .ReadNextStatus
+    ADDIU   S0, S0, 4
+    ADDIU   S1, S1, 4
+    ADDIU   S3, S3, 2
+    ADDIU   S4, S4, 1
+    % All buffs from this actor has been already checked?
+    SLTIU   A1, S4, 4
+    BNE     A1, R0, .Loop
+    NOP
+    %================
+    % get next actor
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    COPY    S3, V0
+    CLEAR   S4
+    CLEAR   S5
+    BEQL    S6, R0, .AdvanceLoopCount
+    ORI     S7, R0, 0100 % .Actor:Partner
+    % Next actor needs to be Enemy0?
+    ADDIU   S2, S2, 10
+    COPY    S3, S2
+    ORI     A0, R0, 1
+    BEQL    S6, A0, .AdvanceLoopCount
+    ORI     S7, R0, 0200 % .Actor:Enemy0
+    ADDIU   S7, S7, 1
+    .AdvanceLoopCount
+    ADDIU   S3, S3, 4 % start reading extraData from defense boosts
+    ADDIU   S6, S6, 1
+    LW      A0, 0 (S0)
+    ADDI    A1, R0, -1 % end of the table?
+    BNE     A0, A1, .Loop
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1, F0, F2, F4, F6, S0, S1, S2, S3, S4, S5, S6, S7
+    JR      RA
+    NOP
+}
+
+% Patch ~Func:state_step_battle
+@Hook EF2C % 80033B2C
+{
+    % vanilla code
+    JAL	    ~Func:update_effects
+    NOP
+    % new code
+    JAL     $Function_NewStatuses_Step
+    NOP
+    J       80033B34
+    NOP
+}
+
+% Update and draw the new status FXs
+#export:Function $Function_NewStatuses_Step
+{
+    PUSH    RA
+    JAL     $Function_UpdateDeBuffsCounters
+    NOP
+    JAL     $Function_DrawNewStatusFXs
+    NOP
+    POP     RA
+    JR      RA
+    NOP
+}
+
+#export:Function $Function_ClearDeBuffs_AllData
+{
+    PUSH    RA
+    JAL     $Function_ClearDeBuffs_FXData
+    NOP
+    JAL     $Function_ClearDeBuffs_Data
+    NOP
+    POP     RA
+    JR      RA
+    NOP
+}
+
+#export:Function $Function_ClearDeBuffs_FXData
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $DeBuffsCounters_FXPointers
+    .Loop
+    SW      R0, 0, (A0)
+    SW      R0, 4, (A0)
+    SW      R0, 8, (A0)
+    SW      R0, C, (A0)
+    ADDIU   A0, A0, 10 % next actor
+    LW      A1, 0 (A0)
+    ADDI    A2, R0, -1
+    BNE     A1, A2, .Loop
+    NOP
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+#export:Function $Function_ClearDeBuffs_Data
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $DeBuffsCounters_Data
+    .Loop
+    SW      R0, 0, (A0)
+    SW      R0, 4, (A0)
+    ADDIU   A0, A0, 8 % next actor
+    LW      A1, 0 (A0)
+    ADDI    A2, R0, -1
+    BNE     A1, A2, .Loop
+    NOP
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% Clear all buff/debuff data attached to an actor in specific.
+%
+% A0 = actorID
+#export:Function $Function_RemoveBuffs_ActorID
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    LIO     S0, $DeBuffsCounters_FXPointers
+    LIO     S1, $DeBuffsCounters_Data
+    LIO     S2, $ExtraActorData_Everyone
+    COPY    V0, A0
+    % check if actor is Partner
+    ORI     A0, R0, 0100 % .Actor:Partner
+    BEQ     V0, A0, .FindActorData
+    NOP
+    % actor is the player?
+    BEQ     V0, R0, .FindActorData
+    CLEAR   A1
+    % It's an enemy, format actorID
+    ANDI    A1, V0, FDFF % remove 0X00 from the ID (number 2)
+    ADDIU   A1, A1, 2
+    .FindActorData
+    % clear extra data's buffs data
+    %
+    % get data offset
+    ORI     V1, R0, 10
+    MULT    A1, V1
+    MFLO    V1
+    %
+    ORI     A2, R0, 1 % Isn't partner?
+    BEQ     A1, R0, .ClearExtraData % Player
+    ADDU    A3, S2, V1
+    BNE     A1, A2, .ClearExtraData % Enemies
+    ADDI    A3, A3, -10 % because enemies' extraActorData starts at index 0x01 unlike the FX data.
+    .Partner
+    % It's partner
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    COPY    A3, V0
+    .ClearExtraData
+    SW      R0, 4 (A3) % clear def and off data
+    SW      R0, 8 (A3) % clear HP and FP data
+    % clear fxData
+    ADDU    A3, S1, V1
+    SW      R0, 0 (A3)
+    SW      R0, 4 (A3)
+    SW      R0, 8 (A3)
+    SW      R0, C (A3)
+    % clear fxPointers and all FXs
+    ADDU    S0, S0, V1
+    LW      A0, 0 (S0)
+    BEQ     A0, R0, .RemoveFX_Offense
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_Offense
+    LW      A0, 4 (S0)
+    BEQ     A0, R0, .RemoveFX_HP
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_HP
+    LW      A0, 8 (S0)
+    BEQ     A0, R0, .RemoveFX_FP
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_FP
+    LW      A0, C (S0)
+    BEQ     A0, R0, .RemoveFX_Pointers
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_Pointers
+    SW      R0, 0 (S0)
+    SW      R0, 4 (S0)
+    SW      R0, 8 (S0)
+    SW      R0, C (S0)
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+% Clear all buff/debuff data attached to your current partner.
+#export:Function $Function_RemoveBuffs_Partner
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    LIO     S0, $DeBuffsCounters_FXPointers
+    LIO     S1, $DeBuffsCounters_Data
+    ORI     A1, R0, 1 % because partner uses DebuffsData Index 0x01
+    % get data offset
+    ORI     V1, R0, 10
+    MULT    A1, V1
+    MFLO    V1
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    COPY    A3, V0
+    .ClearExtraData
+    SW      R0, 4 (A3) % clear def and off data
+    SW      R0, 8 (A3) % clear HP and FP data
+    % clear fxData
+    ADDU    A3, S1, V1
+    SW      R0, 0 (A3)
+    SW      R0, 4 (A3)
+    SW      R0, 8 (A3)
+    SW      R0, C (A3)
+    % clear fxPointers and all FXs
+    ADDU    S0, S0, V1
+    LW      A0, 0 (S0)
+    BEQ     A0, R0, .RemoveFX_Offense
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_Offense
+    LW      A0, 4 (S0)
+    BEQ     A0, R0, .RemoveFX_HP
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_HP
+    LW      A0, 8 (S0)
+    BEQ     A0, R0, .RemoveFX_FP
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_FP
+    LW      A0, C (S0)
+    BEQ     A0, R0, .RemoveFX_Pointers
+    NOP
+    JAL     ~Func:remove_effect
+    NOP
+    .RemoveFX_Pointers
+    SW      R0, 0 (S0)
+    SW      R0, 4 (S0)
+    SW      R0, 8 (S0)
+    SW      R0, C (S0)
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+% Hide or unhide the new statuses according to the current battleState(0x800DC068)
+#export:Function $UpdateNewStatuses_Visibility
+{
+    % This function is called in FFWD.patch - Hook 16FA70 % 80241190
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % A0=battleState about to be set
+    %=============
+    % Hide statuses - All
+    %=============
+    ORI     A1, R0, 0012 % .BattleState:PlayerMove
+    BEQ     A0, A1, .HideStatuses_All
+    ORI     A1, R0, 0013 % .BattleState:PartnerMove
+    BEQ     A0, A1, .HideStatuses_All
+    ORI     A1, R0, 0014 % .BattleState:NextEnemy
+    BEQ     A0, A1, .HideStatuses_All
+    NOP
+    %=============
+    % Unhide statuses - All
+    %=============
+    ORI     A1, R0, 000D % .BattleState:PlayerMenu
+    BEQ     A0, A1, .UnhideStatuses_All
+    ORI     A1, R0, 000E % .BattleState:PartnerMenu
+    BEQ     A0, A1, .UnhideStatuses_All
+    ORI     A1, R0, 000A % .BattleState:SwitchToPlayer
+    BEQ     A0, A1, .UnhideStatuses_All
+    ORI     A1, R0, 000B % .BattleState:SwitchToPartner
+    BEQ     A0, A1, .UnhideStatuses_All
+    NOP
+    %=============
+    % Hide statuses - Player Team
+    %=============
+    ORI     A1, R0, 0011 % .BattleState:SelectTarget
+    BEQ     A0, A1, .HideStatuses_PlayerTeam
+    ORI     A1, R0, 0018 % .BattleState:RunAway
+    BEQ     A0, A1, .HideStatuses_PlayerTeam
+    ORI     A1, R0, 0019 % .BattleState:Defend
+    BEQ     A0, A1, .HideStatuses_PlayerTeam
+    NOP
+    %=============
+    % Unhide statuses - Player Team
+    %=============
+    ORI     A1, R0, 0021 % .BattleState:Celebration
+    BEQ     A0, A1, .UnhideStatuses_PlayerTeam
+    ORI     A1, R0, 0007 % .BattleState:BeginPlayerTurn
+    BEQ     A0, A1, .UnhideStatuses_PlayerTeam
+    ORI     A1, R0, 000C % .BattleState:PrepareMenu
+    BEQ     A0, A1, .UnhideStatuses_PlayerTeam
+    ORI     A1, R0, 001D % .BattleState:ChangePartner
+    BEQ     A0, A1, .UnhideStatuses_PlayerTeam
+    NOP
+    %=============
+    % Unhide statuses - Enemy Team
+    %=============
+    ORI     A1, R0, 0009 % .BattleState:NextPlayer
+    BEQ     A0, A1, .UnhideStatuses_EnemyTeam
+    NOP
+    .HideStatuses_All
+    JAL     $Function_HideNewStatuses_AllActors
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .UnhideStatuses_All
+    JAL     $Function_UnhideNewStatuses_AllActors
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .HideStatuses_PlayerTeam
+    JAL     $Function_HideNewStatuses_PlayerTeam
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .UnhideStatuses_PlayerTeam
+    JAL     $Function_UnhideNewStatuses_PlayerTeam
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .UnhideStatuses_EnemyTeam
+    JAL     $Function_UnhideNewStatuses_EnemyTeam
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% Apply FX's flag 0x00000004 to hide every FX
+#export:Function $Function_HideNewStatuses_AllActors
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $DeBuffsCounters_FXPointers
+    .Loop
+    LW      A1, 0 (A0)
+    % end of the table?
+    ADDI    V0, R0, -1
+    BEQ     A1, V0, .End
+    NOP
+    BEQL    A1, R0, .Loop
+    ADDIU   A0, A0, 4
+    % disable FX flag(0x03[bit2]) to hide the counters
+    LW      A2, 0 (A0)
+    LW      A3, 0 (A2) % fxFlags
+    ANDI    A3, A3, FFFB % disable bit3
+    SW      A3, 0 (A2)
+    BEQ     R0, R0, .Loop
+    ADDIU   A0, A0, 4
+    .End
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% Disable FX's flag 0x00000004 to unhide every FX
+#export:Function $Function_UnhideNewStatuses_AllActors
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $DeBuffsCounters_FXPointers
+    .Loop
+    LW      A1, 0 (A0)
+    % end of the table?
+    ADDI    V0, R0, -1
+    BEQ     A1, V0, .End
+    NOP
+    BEQL    A1, R0, .Loop
+    ADDIU   A0, A0, 4    
+    % enable FX flag(0x03[bit2]) to unhide the counters
+    LW      A2, 0 (A0)
+    LW      A3, 0 (A2) % fxFlags
+    ORI     A3, A3, 0004 % enable bit3
+    SW      A3, 0 (A2)
+    BEQ     R0, R0, .Loop
+    ADDIU   A0, A0, 4
+    .End
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% only player and partner
+#export:Function $Function_HideNewStatuses_PlayerTeam
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $DeBuffsCounters_FXPointers
+    ADDIU   V0, A0, 20 % stop at byte 0x20 (Enemy0 data)
+    .Loop
+    LW      A1, 0 (A0)
+    % breakLoop?
+    BEQ     A0, V0, .End
+    NOP
+    BEQL    A1, R0, .Loop
+    ADDIU   A0, A0, 4
+    % disable FX flag(0x03[bit2]) to hide the counters
+    LW      A2, 0 (A0)
+    LW      A3, 0 (A2) % fxFlags
+    ANDI    A3, A3, FFFB % disable bit3
+    SW      A3, 0 (A2)
+    BEQ     R0, R0, .Loop
+    ADDIU   A0, A0, 4
+    .End
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% only player and partner
+#export:Function $Function_UnhideNewStatuses_PlayerTeam
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $DeBuffsCounters_FXPointers
+    ADDIU   V0, A0, 20 % stop at byte 0x20 (Enemy0 data)
+    .Loop
+    LW      A1, 0 (A0)
+    % breakLoop?
+    BEQ     A0, V0, .End
+    NOP
+    BEQL    A1, R0, .Loop
+    ADDIU   A0, A0, 4
+    % disable FX flag(0x03[bit2]) to hide the counters
+    LW      A2, 0 (A0)
+    LW      A3, 0 (A2) % fxFlags
+    ORI     A3, A3, 0004 % enable bit3
+    SW      A3, 0 (A2)
+    BEQ     R0, R0, .Loop
+    ADDIU   A0, A0, 4
+    .End
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% only enemies actors.
+#export:Function $Function_UnhideNewStatuses_EnemyTeam
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $DeBuffsCounters_FXPointers
+    ADDIU   A0, A0, 20 % start at byte 0x20 (Enemy0 data)
+    .Loop
+    LW      A1, 0 (A0)
+    % end of the table?
+    ADDI    V0, R0, -1
+    BEQ     A1, V0, .End
+    NOP
+    BEQL    A1, R0, .Loop
+    ADDIU   A0, A0, 4
+    % enable FX flag(0x03[bit2]) to unhide the counters
+    LW      A2, 0 (A0)
+    LW      A3, 0 (A2) % fxFlags
+    ORI     A3, A3, 0004 % enable bit3
+    SW      A3, 0 (A2)
+    BEQ     R0, R0, .Loop
+    ADDIU   A0, A0, 4
+    .End
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% unused
+%
+% Advance all new buff data related to all enemies.
+#export:Function $Function_AdvanceBuffData_Enemies
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    LIO     S0, $ExtraActorData_Everyone
+    ADDIU   S0, S0, 10 % start reading from Enemy0's data
+    ADDIU   S1, S0, 4 % start reading from buff data
+    ADDIU   S2, S0, C % stop at $extraData(0x0C)
+    .Loop
+    LBU     A0, 1 (S1) % turns left
+    ADDI    A1, A0, -1
+    BNEL    A0, R0, .ReadNextBuff
+    SB      A1, 1 (S1)
+    % Advance turns
+    .ReadNextBuff
+    ADDIU   S1, S1, 2
+    BNE     S2, S1, .Loop
+    NOP
+    % This actor data has been fully read, read next actor
+    LW      A0, 10 (S0)
+    ADDI    A1, R0, -1
+    ADDIU   S0, S0, 10 % next actor data
+    ADDIU   S1, S0, 4 % start reading from buff data
+    ADDIU   S2, S0, C % stop at this byte
+    % Next actor will be the end of the table?
+    BNE     A0, A1, .Loop
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    NOP
+}
+
+% Advance all new buff data related to an actor in specific (Except partners).
+%
+% A0= actorID
+#export:Function:Battle $Function_AdvanceBuffData_Actor
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, F0, F2
+    COPY    S2, A0
+    LIO     S0, $ExtraActorData_Everyone
+    BEQ     S2, R0, .IsntEnemy
+    NOP
+    .Enemy
+    % It's an enemy, format actorID
+    ANDI    S2, S2, FDFF % remove 0X00 from the ID (number 2)
+    ADDIU   S2, S2, 1
+    .IsntEnemy
+    % get data offset
+    ORI     A0, R0, 10 % because each actor uses 0x0F bytes
+    MULT    A0, S2
+    MFLO    A0
+    ADDU    S0, S0, A0
+    ADDIU   S0, S0, 4 % start reading from buff data
+    ADDIU   S1, S0, 8 % stop at $extraData(0x0C)
+    .Loop
+    LBU     A0, 1 (S0) % turns left
+    ADDI    A1, A0, -1
+    BEQ     A0, R0, .ReadNextBuff
+    NOP
+    % Update buff
+    SB      A1, 1 (S0)
+    BNE     A1, R0, .ReadNextBuff
+    NOP
+    % only if buff has ended
+    ORI     A1, R0, 0014
+    SAW     A1, 8029F258 % battle wait timer
+    % Advance turns
+    .ReadNextBuff
+    ADDIU   S0, S0, 2
+    BNE     S0, S1, .Loop
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, F0, F2
+    JR      RA
+    NOP
+}
+
+% Check all actors HP & FP buffs and apply the buff.
+#export:Function $Function_HPFBBuffs_Heal_Init 
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    LIO     S0, 800DC148 % Actors Data table
+    CLEAR   S1
+    SAW     R0, $Data_ActorsWithHPFPBuffs
+    .ReadNextActor
+    LW      S2, 0 (S0)
+    BEQ     S2, R0, .GetNextActor
+    NOP
+    JAL     $Function_HPFBBuffs_Heal_Actor
+    LHU     A0, 192 (S2) % actorID
+    .GetNextActor
+    % read next actor data
+    ADDIU   S0, S0, 4
+    ADDIU   S1, S1, 1
+    SLTIU   S2, S1, 26` % the max amount of actors is 26` (Counting the player team)
+    BNE     S2, R0, .ReadNextActor
+    NOP
+    LAW     A0, $Data_ActorsWithHPFPBuffs
+    SAW     R0, $Data_ActorsWithHPFPBuffs
+    BEQ     A0, R0, .End
+    RESERVED
+    JAL     ~Func:sfx_play_sound
+    ORI     A0, R0, 0213 % heal sfx
+    % wait a little frames
+    ORI     A0, R0, 0014
+    SAW     A0, 8029F258 % battle wait timer
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    NOP
+}
+
+% Amount of actors with a HP or FP buff.
+#export:Data $Data_ActorsWithHPFPBuffs
+{ 00000000 }
+
+% Heal actor according to their HP & FP buffs.
+%
+% A0=actorID
+#new:Function:Battle $Function_HPFBBuffs_Heal_Actor
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, F0, F2
+    COPY    S2, A0
+    JAL     $GetActorExtraBattleData_Pointer
+    NOP
+    BEQ     V0, R0 .End
+    NOP
+    COPY    S0, V0
+    % actor isn't player?
+    BNE     S2, R0, .GiveBuffs_Enemies
+    NOP
+    LAW     S1, 800DC148 % playerActorData
+    BEQ     R0, R0, .GiveHPBuff
+    NOP
+    .GiveBuffs_Enemies
+    JAL     ~Func:get_actor
+    NOP
+    COPY    S1, V0
+    .GiveHPBuff
+    % Status isn't poison or shrink
+    LB      A0, 8 (S0) % HP Buff
+    BEQ     A0, R0, .Actor_CheckFP
+    NOP
+    COPY    T0, A0
+    JAL     $ShowFlyingStat
+    CLEAR   A0 % show a heart
+    LIO     A0, $Data_ActorsWithHPFPBuffs
+    LW      A1, 0 (A0)
+    ADDIU   A1, A1, 1
+    SW      A1, 0 (A0)
+    % heal actor
+    LHU     A0, 192 (S1) % actorID
+    JAL     $heal_actor
+    LB      A1, 8 (S0) % HP Buff
+    % check if actor healed was the player
+    BNE     S2, R0, .ActorHealed_HP
+    NOP
+    % update mega/power rush byte
+    LABU    A0, 8010F292 % current HP
+    LIO     A2, 800DC070 % battleStatus
+    LBU     A1, 99 (A2) % rushByte
+    BEQ     A1, R0, .ActorHealed_HP
+    SB      R0, 99 (A2) % clear rushByte
+    ORI     A1, R0, 1
+    BNE     A0, A1, .CheckDanger
+    NOP
+    % player is in peril
+    JAL     $IsBadgeEquipped
+    ORI     A0, R0, 00F9 % .Item:MegaRush
+    BEQ     V0, R0, .ActorHealed_HP
+    NOP
+    ORI     A1, R0, 1 % peril
+    BEQ     R0, R0, .ActorHealed_HP
+    SB      A1, 99 (A2) % rushByte
+    .CheckDanger
+    SLTIU   A1, A0, 6
+    BEQ     A1, R0, .ActorHealed_HP
+    NOP
+    % player is in danger
+    JAL     $IsBadgeEquipped
+    ORI     A0, R0, 010D % .Item:PowerRush
+    BEQ     V0, R0, .ActorHealed_HP
+    NOP
+    ORI     A1, R0, 2 % danger
+    SB      A1, 99 (A2) % rushByte
+    .ActorHealed_HP
+    ORI     V1, R0, 1 % a heart FX was dispatched
+    .Actor_CheckFP
+    LB      A0, A (S0) % FP Buff
+    BEQ     A0, R0, .End
+    NOP
+    % check if a heart was dispatched too
+    BEQ     V1, R0, .Actor_FP
+    LW      A3, 0148 (S1) % push actor's pos
+    % add to Y pos
+    ORI     A1, R0, 17
+    MTC1	A1, F0
+    CVT.S.W F0, F0
+    LWC1    F2, 0148 (S1) % load actor Y pos
+    ADD.S   F2, F2, F0
+    SWC1    F2, 0148 (S1)
+    .Actor_FP
+    COPY    T0, A0
+    JAL     $ShowFlyingStat
+    ORI     A0, R0, 1 % show a flower
+    SW      A3, 0148 (S1) % pop actor's pos
+    % If actor was from the player team heal FP
+    LHU     A0, 192 (S1) % actorID
+    SLTIU   A1, A0, 200 % .Actor:Enemy0
+    BEQ     A1, R0, .End
+    NOP
+    %=================
+    % Update FP
+    %
+    LIO     V0, 8010F290 % playerStatus
+    LBU     A0, 5 (V0) % FP
+    LBU     A1, 6 (V0) % maxFP
+    LB      A2, A (S0) % FP Buff
+    ADD     A0, A0, A2
+    % check if FP is below zero
+    BLTZL   A0, .SetFP
+    CLEAR   A0
+    % check max FP cap
+    SLTU    A2, A0, A1
+    BEQL    A2, R0, .SetFP
+    COPY    A0, A1 % if the new amount is >= to max FP just set the FP as Max FP
+    .SetFP
+    SB      A0, 5 (V0) % save new FP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, F0, F2
+    JR      RA
+    NOP
+}
+
+% Advance buff turns - Enemies
+@Hook:Battle 171A5C % 8024317C % func_80242FE0
+{
+    PUSH    RA, A0
+    JAL     $Function_AdvanceBuffData_Actor
+    LH      A0, 192 (S0) % $actor(0x192)=actorID
+    POP     RA, A0
+    % restore vanilla code
+    OR	    V0, V0, V1
+    J       80243184
+    AND	    A0, V0, A0
+}
+
+%================================
+
+% Stop using the attack and defense bytes from actor(0x221/222) and use the data from $extraData instead
+
+% patch GetStatusFlags(API)
+%
+% unknown purpose (?)
+@Hook:Battle 8026F3DC
+{
+    PUSH    RA, V1, A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU	    A0, 192 (A0) % actorID
+    COPY    V1, V0
+    BEQ     V0, R0, .8026F3FC
+    NOP
+    % attack boosts
+    LB      V0, 6 (V1) % Offensive boosts
+    BEQ 	V0, R0, .8026F3EC
+    LUI	    V0, 0800
+    OR	    S0, S0, V0
+    .8026F3EC
+    % defense boosts
+    LB      V0, 4 (V1) % defense boosts
+    BEQ 	V0, R0, .8026F3FC
+    LUI	    V0, 1000
+    OR	    S0, S0, V0
+    .8026F3FC
+    POP     RA, V1, A0
+    % chillOut
+    %
+    % Skip chill out isn't used anymore
+    J       8026F40C
+    NOP
+}
+
+% Attack Boosts - Enemies
+%
+% Patch ~func:calc_enemy_damage_target
+@Hook:Battle 80277880
+{
+    PUSH    RA, A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU	    A0, 192 (T0) % actorID
+    LBU     A0, F (V0) % charge byte
+    LB	    V0, 6 (V0) % attack boosts
+    ADD     V0, V0, A0
+    %LB	    V1, 0224 (T0) % ignore chillOut byte
+    POP     RA, A0
+    J       8027789C
+    ADDU	S0, S0, V0
+}
+
+% Patch GetActorDefenseBoost(API)
+@Hook:Battle 8026FCB0
+{
+    PUSH    A0, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (V0) % actorID
+    LB      A2, 4 (V0) % defense boosts
+    POP     A0, V0
+    JAL     ~Func:set_variable
+    COPY    A1, S0
+    J       8026FCBC
+    NOP
+}
+
+% Patch GetActorAttackBoost(API)
+@Hook:Battle 8026FC48
+{
+    PUSH    A0, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (V0) % actorID
+    LB      A2, 6 (V0) % attack boosts
+    POP     A0, V0
+    JAL     ~Func:set_variable
+    COPY    A1, S0
+    J       8026FC54
+    NOP
+}
+
+%=============================
+% BoostAttack & BoostDefense
+%
+% These function now use 3 arguments, I don't want to modify the database
+% so I made these new functions that basically just call the vanilla functions,
+% to avoid star rod returning an error due to having the incorrect amount of arguments.
+%=============================
+
+% ( #actorID, int amount, turns )
+#export:Function $BoostAttack
+{
+    J       8026FCD4 % BoostAttack
+    NOP
+}
+
+% ( #actorID, int amount, turns )
+#export:Function $BoostDefense
+{
+    J       80270174 % BoostDefense
+    NOP
+}
+
+% Patch BoostDefense(API)
+@Hook:Battle 802704F0
+{
+    PUSH    RA, A1, A2, A3, V0, V1
+    % get arg2
+    COPY    A0, S2
+    LW      A1, C (S2)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1) % get arg2
+    COPY    A1, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S0) % actorID
+    COPY    V1, V0
+    LB      V0, 4 (V1) % defense boosts
+    % Check if got changed between a buff or a debuff
+    % to completely remove the buff
+    %
+    % S1=new boost
+    % V0=old boost
+    BGTZ    V0, .CurrentBoost_IsBuff
+    NOP
+    BEQ     V0, R0, .UseNewBuff
+    NOP
+    .CurrentBoost_IsDebuff
+    BGTZL   S1, .ClearBuff
+    SH      R0, 4 (V1)
+    .CurrentBoost_IsBuff
+    BLTZL   S1, .ClearBuff
+    SH      R0, 4 (V1)
+    .UseNewBuff
+    SB      S1, 4 (V1) % new boost
+    SB      A1, 5 (V1) % turns left
+    .ClearBuff
+    ADDIU	A0, S1, 0005
+    POP     RA, A1, A2, A3, V0, V1
+    J       80270520
+    NOP
+}
+
+% Patch BoostAttack(API)
+%
+% Add turns in argument2
+@Hook:Battle 80270050
+{
+    PUSH    RA, A1, A2, A3, V0, V1
+    % get arg2
+    COPY    A0, S2
+    LW      A1, C (S2)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1) % get arg2
+    COPY    A1, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S0) % actorID
+    COPY    V1, V0
+    LB      V0, 6 (V1) % attack boosts
+    % Check if got changed between a buff or a debuff
+    % to completely remove the buff
+    %
+    % S1=new boost
+    % V0=old boost
+    BGTZ    V0, .CurrentBoost_IsBuff
+    NOP
+    BEQ     V0, R0, .UseNewBuff
+    NOP
+    .CurrentBoost_IsDebuff
+    BGTZL   S1, .ClearBuff
+    SH      R0, 6 (V1)
+    .CurrentBoost_IsBuff
+    BLTZL   S1, .ClearBuff
+    SH      R0, 6 (V1)
+    .UseNewBuff
+    SB      S1, 6 (V1) % new boost
+    SB      A1, 7 (V1) % turns left
+    .ClearBuff
+    ADDIU	A0, S1, FFFF
+    POP     RA, A1, A2, A3, V0, V1
+    J       80270080
+    NOP
+}
+
+% Patch `DamageType:RemoveBuffs`
+%
+% Patch ~func:calc_item_damage_enemy
+@Hook:Battle 80251C4C
+{
+    PUSH    RA, A0, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S3) % actorID
+    SW      R0, 4 (V0) % attack & defense boosts
+    SW      R0, 8 (V0) % hp & fp boosts
+    SB      R0, F (V0) % charge byte
+    % clear from actor data
+    SH      R0, 212 (S3) % clear static data
+    SH      R0, 218 (S3) % clear transparent data
+    POP     RA, A0, V0
+    BEQ     V0, R0, .80251C6C
+    NOP
+    J       80251C5C
+    NOP
+    .80251C6C
+    J       80251C6C
+    NOP
+}
+
+% Call  $AddDefenseBoost ( actorID amount turns )
+%
+% Overwrite current boost, or clear the boost if this one was a debuff (or buff) instead.
+#export:Function $AddDefenseBoost
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    COPY    S0, A0
+    % get arg0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    COPY    S1, V0
+    % get arg1
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1)
+    COPY    S2, V0
+    % get arg2
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1)
+    COPY    S3, V0
+    % .Actor:Self was used?
+    LIO     A0, FFFFFF81
+    BEQL    S1, A0, .EnemyCheck
+    LW	    S1, 0148 (S0) % load self id
+    .EnemyCheck
+    % check if actor is an enemy
+    ORI     A0, R0, 0200 % .Actor:Enemy0
+    SLTIU   A0, S1, A0
+    BEQL    A0, R0, .GetPointer
+    ADDI    S3, S3, 1 % add 1 extra turn if is an enemy
+    .GetPointer
+    % save new amount
+    JAL     $GetActorExtraBattleData_Pointer
+    COPY    A0, S1
+    COPY    V1, V0
+    LB      V0, 4 (V1) % defense boosts
+    % Check if got changed between a buff or a debuff
+    % to completely remove the buff
+    %
+    % S2=new boost
+    % S3=new turns
+    % V0=old boost
+    BGTZ    V0, .CurrentBoost_IsBuff
+    NOP
+    BEQ     V0, R0, .UseNewBuff
+    NOP
+    .CurrentBoost_IsDebuff
+    BGTZL   S2, .End
+    SH      R0, 4 (V1)
+    BEQ     R0, R0, .UseNewBuff
+    NOP
+    .CurrentBoost_IsBuff
+    BLTZL   S2, .End
+    SH      R0, 4 (V1)
+    .UseNewBuff
+    SB      S2, 4 (V1) % new boost
+    SB      S3, 5 (V1) % turns left
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call  $AddAttackBoost ( actorID amount turns )
+%
+% Overwrite current boost, or clear the boost if this one was a debuff (or buff) instead.
+#export:Function $AddAttackBoost
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    COPY    S0, A0
+    % get arg0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    COPY    S1, V0
+    % get arg1
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1)
+    COPY    S2, V0
+    % get arg2
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1)
+    COPY    S3, V0
+    % .Actor:Self was used?
+    LIO     A0, FFFFFF81
+    BEQL    S1, A0, .EnemyCheck
+    LW	    S1, 0148 (S0) % load self id
+    .EnemyCheck
+    % check if actor is an enemy
+    ORI     A0, R0, 0200 % .Actor:Enemy0
+    SLTIU   A0, S1, A0
+    BEQL    A0, R0, .GetPointer
+    ADDI    S3, S3, 1 % add 1 extra turn if is an enemy
+    .GetPointer
+    % save new amount
+    JAL     $GetActorExtraBattleData_Pointer
+    COPY    A0, S1
+    COPY    V1, V0
+    LB      V0, 6 (V1) % attack boosts
+    % Check if got changed between a buff or a debuff
+    % to completely remove the buff
+    %
+    % S2=new boost
+    % S3=new turns
+    % V0=old boost
+    BGTZ    V0, .CurrentBoost_IsBuff
+    NOP
+    BEQ     V0, R0, .UseNewBuff
+    NOP
+    .CurrentBoost_IsDebuff
+    BGTZL   S2, .End
+    SH      R0, 6 (V1)
+    BEQ     R0, R0, .UseNewBuff
+    NOP
+    .CurrentBoost_IsBuff
+    BLTZL   S2, .End
+    SH      R0, 6 (V1)
+    .UseNewBuff
+    SB      S2, 6 (V1) % new boost
+    SB      S3, 7 (V1) % turns left
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+%===========================
+% Power Punch Item - Player
+%===========================
+%
+% Use actor(0x220) as the giant byteflag, previously it was the glow byte, but isn't used anymore
+% due to now using actorData(0x0F) instead.
+%
+%===========================
+% Shrink Actor
+%===========================
+%
+% Now the shrink status work a little different, it no longer exists.
+% It's just an attack debuff instead and the actor will become smaller
+% if actor(0x221) it's true and if also have any attack debuffs, something like
+% what Power Punch do actually.
+%
+% actor(0x221) was previously "attack boosts" but isn't used anymore, because
+% attack boosts are now placed in extraActorData(0x06).
+%
+% Patch func_80257DA4
+@Hook:Battle 802581E0
+{
+    PUSH    RA, A0, V0
+    %=============
+    % Giant
+    %=============
+    % check if actor doesn't have any attack boosts to clear to clear the giant byteflag.
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU	    A0, 0192 (S6) % get actorID
+    BEQ     V0, R0, .End
+    NOP
+    LB      A0, 6 (V0) % attack boosts
+    BLEZL   A0, .ClearGiantByteFlag % attack boost is <= zero
+    SB      R0, 220 (S6)
+    % actor has a buff, check if actor(0x220) it's true
+    LBU     A0, 220 (S6)
+    BEQ     A0, R0, .ClearGiantByteFlag
+    NOP
+    % byte it's true, make actor bigger
+    LWC1	F0, 0188 (S6) % f32 scalingFactor
+    SB      R0, 221 (S6) % clear tiny bite
+    LAD     F2, $GiantSize
+    CVT.D.S	F0, F0
+    SUB.D	F2, F2, F0
+    LIF     F5, 2.375
+    LIF     F4, 0.0
+    DIV.D	F2, F2, F4
+    POP     RA, A0, V0
+    J	    80258220
+    ADD.D	F0, F0, F2
+    .ClearGiantByteFlag
+    %=============
+    % Tiny
+    %=============
+    LB      A0, 6 (V0) % attack boosts
+    BGEZL   A0, .End % actor has a buff
+    SB	    R0, 0221 (S6) % clear tiny byteflag
+    LB	    V1, 0221 (S6) % tiny byteflag
+    BEQ     V1, R0, .End
+    NOP
+    POP     RA, A0, V0
+    % Actor has an attack debuff and the tiny byteflags it's true
+    J       802581A4
+    NOP
+    .End
+    POP     RA, A0, V0
+    J       802581F0
+    NOP
+}
+
+% Make actor giant or tiny - all actors except player
+%
+% Patch func_80255FE0
+@Hook:Battle 80256444
+{
+    PUSH    RA, A0, V0
+    %=============
+    % Giant
+    %=============
+    % check if actor doesn't have any attack boosts to clear to clear the giant byteflag.
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU	    A0, 0192 (S2) % get actorID
+    BEQ     V0, R0, .End
+    NOP
+    LB      A0, 6 (V0) % attack boosts
+    BLEZL   A0, .ClearGiantByteFlag % attack boost is <= zero
+    SB      R0, 220 (S2)
+    % actor has a buff, check if actor(0x220) it's true
+    LBU     A0, 220 (S2)
+    BEQ     A0, R0, .ClearGiantByteFlag
+    NOP
+    % byte it's true, make actor bigger
+    SB      R0, 221 (S2) % clear tiny bite
+    LWC1	F0, 0188 (S2) % f32 scalingFactor
+    LAD     F2, $GiantSize
+    CVT.D.S	F0, F0
+    SUB.D	F2, F2, F0
+    LIF     F5, 2.375
+    LIF     F4, 0.0
+    DIV.D	F2, F2, F4
+    POP     RA, A0, V0
+    J	    80256484
+    ADD.D	F0, F0, F2
+    .ClearGiantByteFlag
+    %=============
+    % Tiny
+    %=============
+    LB      A0, 6 (V0) % attack boosts
+    BGEZL   A0, .End % actor has a buff
+    SB	    R0, 0221 (S2) % clear tiny byteflag
+    LB	    V1, 0221 (S2) % tiny byteflag
+    BEQ     V1, R0, .End
+    NOP
+    POP     RA, A0, V0
+    % Actor has an attack debuff and the tiny byteflags it's true
+    J       802563C0
+    NOP
+    .End
+    POP     RA, A0, V0
+    J       80256454
+    NOP
+}
+
+#new:ConstDouble $GiantSize
+{
+    2.000000d
+}
+
+% Call  $MakeActorGiant ( actorID )
+%
+% Used only by Power Punch, writes in `actor(0x220)
+%
+% The actor needs to already have an attack boost to become bigger.
+#export:Function:Battle $MakeActorGiant
+{
+    PUSH    RA, A0, A1, A2, A3, S0, S1, S2
+    COPY    S2, A0
+    LW      S0, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0) % load arg1
+    % Get .Actor:Self was used?
+    COPY    A0, V0
+    ADDIU	V0, R0, FF81
+    BNE 	A0, V0, .GetActorPointer
+    NOP
+    LW	    A0, 0148 (S2) % Load Actual ID, instead of SelfID
+    .GetActorPointer
+    JAL	    ~Func:get_actor
+    NOP
+    % V0 = Actor Data Address
+    ORI     A0, R0, 1
+    SB      A0, 220 (V0) % giantByte (previosuly glow byte)
+    .End
+    POP     RA, A0, A1, A2, A3, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% `Call  $MakeActorTiny ( actorID )`
+%
+% Writes in `actor(0x221)`
+%
+% The actor needs to already have an attack debuff to become smaller.
+#export:Function:Battle $MakeActorTiny
+{
+    PUSH    RA, A0, A1, A2, A3, S0, S1, S2
+    COPY    S2, A0
+    LW      S0, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0) % load arg1
+    % Get .Actor:Self was used?
+    COPY    A0, V0
+    ADDIU	V0, R0, FF81
+    BNE 	A0, V0, .GetActorPointer
+    NOP
+    LW	    A0, 0148 (S2) % Load Actual ID, instead of SelfID
+    .GetActorPointer
+    JAL	    ~Func:get_actor
+    NOP
+    % V0 = Actor Data Address
+    ORI     A0, R0, 1
+    SB      A0, 221 (V0) % tinyByte (previosuly attack boost)
+    .End
+    POP     RA, A0, A1, A2, A3, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Read from extraData instead of actor data.
+% And add buff/debuff instead of halving the amount to deal.
+%
+% Patch ApplyShrinkFromOwner(API)
+@Hook:Battle 802541D0
+{
+    LBU     A0, 221 (S0) % get tiny byteflag
+    BEQ     A0, R0, .End
+    NOP
+    JAL     $GetActorExtraBattleData_Pointer
+    LW	    A0, 0148 (S1) % get ownerID
+    LB      A1, 6 (V0) % get attack boosts
+    ADD     A2, A2, A1
+    .End
+    J       802541F0
+    NOP
+}
+
+% Shrink flag
+%
+% Read actor(0x221) to know if the actor is tiny instead.
+%
+% Patch GetStatusFlags(API)
+@Hook:Battle 8026F2F8
+{
+    LBU     V0, 221 (A0) % tiny byteflag
+    BEQ	    V0, R0, .End
+    LUI	    V0, 0008 % shrink flag
+    OR	    S0, S0, V0
+    .End
+    J       8026F304
+    NOP
+}
+
+
+% If actor doesn't have any debuffs, go to above hook to check if it's tiny then.
+%
+% GetStatusFlags(API)
+@Data:Battle 8026F280
+{
+    1060001D % BEQZ	V1, 0x8026F2F8
+}
+
+%====================
+% ~FX:StatChange
+%
+% This FX doesn't have upside down blue arrows, the following hooks
+% make possible to show one if fxData(0x1C) is 0x03 (arrowType)
+
+% Show a blue arrow if arrowType is 0x03
+@Function 3AF3C4 % E00AC5A4
+{
+    LIO     T7 $Hook_E00AC5A4
+    JR      T7
+    NOP
+}
+
+#new:Function $Hook_E00AC5A4
+{
+    LW      V0, 1C (S4) % get arrowType
+    ORI     V1, R0, 3
+    BNE     V0, V1, .GetArrow
+    NOP
+    LIO     V1, 09002798 % blue arrow (displayList code)
+    BEQ     R0, R0, .End
+    RESERVED
+    .GetArrow
+    LUI	    V1, E00B
+    ADDU	V1, V1, A2
+    LW	    V1, C7B0 (V1) % get arrow color
+    .End
+    LIO     T7, E00AC5B0
+    JR      T7
+    LUI	    V0, FA00
+}
+
+% Make arrow to appear upside down if arrowType is 0x03
+@Function 3AF3F0 % E00AC5D0
+{
+    LIO     T7 $Hook_E00AC5D0
+    JR      T7
+    NOP
+}
+
+#new:Function $Hook_E00AC5D0
+{
+    LW      V0, 1C (S4) % get arrowType
+    ORI     V1, R0, 3
+    BNE     V0, V1, .GetArrow
+    NOP
+    LIO     V1, 09002880 % upside down (displayList code)
+    BEQ     R0, R0, .End
+    RESERVED
+    .GetArrow
+    LUI	    V1, E00B
+    ADDU	V1, V1, A2
+    LW	    V1, C7BC (V1) % get arrow orentation
+    .End
+    LIO     T7, E00AC5DC
+    JR      T7
+    ADDIU	V0, T0, 0020
+}
+
+%===============
+% Charge Byte
+%
+% Isn't exactly a new status but use extraData(0x0F) as charge byte
+% instead of actor(0x220).
+%===============
+
+% Make actor glow
+%
+% Patch func_80255FE0
+@Hook:Battle 802569E0
+{
+    PUSH    RA, A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S2) % actorID
+    BEQ     V0, R0, .End
+    NOP
+    LBU     V0, F (V0) % charge byte
+    .End
+    POP     RA, A0
+    BEQ 	V0, R0, .80256A04
+    NOP
+    J       802569EC
+    NOP
+    .80256A04
+    J       80256A04
+    NOP
+}
+
+% Patch GetStatusFlags(API)
+@Hook:Battle 8026F3CC
+{
+    PUSH    RA, A0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (A0) % actorID
+    POP     RA, A0
+    BEQ     V0, R0, .End
+    NOP
+    LBU     V0, F (V0) % charge byte
+    .End
+    BEQ 	V0, R0, .8026F3DC
+    LUI	    V0, 0200
+    J       8026F3D8
+    NOP
+    .8026F3DC
+    J       8026F3DC
+    NOP
+}
+
+/% This hook isn't really neccesary, just use the below function instead.
+
+Write in actorExtraData(0xF) instead of actor(0x220)
+%
+% EnableActorGlow(API)
+@Hook:Battle 8027DBFC
+{
+    PUSH    A0, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S1) % actorID
+    SB	    S0, F (V0) % charge byte
+    POP     A0, V0
+    BNE	    S0, R0, .8027DC4C
+    NOP
+    J       8027DC04
+    NOP
+    .8027DC4C
+    J       8027DC4C
+    NOP
+}%/
+
+% `Call $AddCharge ( actorID amount )`
+%
+% Add to actor's charge (actorExtraData(0xF))
+#export:Function $AddCharge
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (S0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % arg0
+    ADDIU	A0, R0, FF81 % .Actor:Self
+    BEQL    V0, A0, .GetExtraData
+    LW	    V0, 0148 (S0) % load actual actorID
+    .GetExtraData
+    JAL     $GetActorExtraBattleData_Pointer
+    COPY    A0, V0
+    COPY    S1, V0
+    COPY    A0, S0
+    LW      A1, C (S0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1) % arg1
+    LB      A0, F (S1) % charge byte
+    ADD     A0, A0, V0
+    SB      A0, F (S1)
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Shrink for 3 turns, 50% chances to shrink.
+#export:Script:Battle $Script_TryToShrinkTarget
+{
+    Call    GetBattleFlags ( *Var0 )
+    If *Var0 & 80000000 % attack dodged
+        Return
+    EndIf
+    % shrink target
+    Call  RandInt ( 100` *Var0 )
+    If *Var0 < 50`
+        Call  GetOwnerTarget ( *Var4 .False )
+        Switch *Var4
+          Case == .Actor:Player
+            Call  GetPlayerHP ( *Var0 )
+          Case == .Actor:Partner
+            Call  $GetPartnerHP_API ( *Var0 )
+          Default
+            Call  GetActorHP ( *Var4 *Var0 )
+        EndSwitch
+        If *Var0 == .False % target is already dead
+            Return
+        EndIf
+        Call  $AddAttackBoost ( *Var4 -1 4 )
+        Call  $MakeActorTiny ( *Var4 )
+        %=============
+        % FX
+        %=============
+        Call    PlaySoundAtActor ( *Var4 2106 )
+        % Show arrow
+        Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+        Add     *Var0  15` % x
+        Add     *Var1  35` % y
+        Set     *Var2  6 % z
+        Call    PlayEffect    ( ~FX:StatChange:AttackMinus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+        % set arrowFx's number
+        Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+        Call    $WriteAddress ( *Var0 2 -1 20 .False  ) % set amount inside the arrow
+        % show wave fx
+        Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+        Add     *Var1 15` % y
+        Add     *Var2 2 % z
+        Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+    EndIf
+    Return
+    End
+}
+
+%=====================
+% RemovePlayerBuffs, add new statuses to the function
+%=====================
+
+% Remove attack boosts, previously jump charges flag
+@Hook:Battle 802674A8
+{
+    PUSH    RA, A0, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    SH      R0, 6 (V0) % clear offensive boosts
+    POP     RA, A0, V0
+    J       802674B0
+    AND	    V0, V0, V1
+}
+
+% Remove defense boosts, previously hammer charges flag
+@Hook:Battle 802674C8
+{
+    PUSH    RA, A0, V0
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    SH      R0, 4 (V0) % clear offensive boosts
+    POP     RA, A0, V0
+    J       802674D0
+    AND	    V0, V0, V1
+}
+
+% skip turbo charge checks - 1
+@Function:Battle 80267568
+{
+    CLEAR   V0
+}
+
+% skip turbo charge checks - 2
+@Function:Battle 802676C4
+{
+    CLEAR   V0
+}
+
+% Add support for HP, FP buffs & charges
+%
+% 00000400 = HP Buff
+% 00000800 = HP Buff
+% 00001000 = Charges
+@Hook:Battle 80267750
+{
+    PUSH    A0
+    ANDI    V0, S3, 0400 % HP buff
+    BEQ     V0, R0, .CheckFP
+    NOP
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    SH      R0, 8 (V0) % clear hp boosts
+    .CheckFP
+    ANDI    V0, S3, 0800 % FP buff
+    BEQ     V0, R0, .CheckCharges
+    NOP
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    SH      R0, A (V0) % clear fp boosts
+    .CheckCharges
+    ANDI    V0, S3, 1000 % Charge
+    BEQ     V0, R0, .End
+    NOP
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    SB      R0, F (V0) % clear charges
+    .End
+    POP     A0
+    LW	    RA, 002C (SP)
+    J       80267758
+    LW	    S4, 0028 (SP)
+}
+
+% For partners now clear all their new buffs
+@Hook:Battle 8026773C
+{
+    PUSH    RA, A0, V0
+    JAL     $GetPartnerHP
+    BLEZ    V0, .End % partner is dead, or isn't HP compatible
+    NOP
+    % clear data from extra data
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    SH      R0, 2 (V0) % clear static and invisible data
+    SW      R0, 4 (V0) % clear attack and defense buffs
+    SW      R0, 8 (V0) % clear HP & FP buffs
+    SB      R0, F (V0) % clear charges
+    % clear data from actor data
+    LIO     A0, 800DC070 % battleStatus
+    LW      V0, DC (A0) % partnerActor*
+    SH      R0, 212 (V0) % clear static data
+    SH      R0, 214 (V0) % clear stone data
+    SH      R0, 218 (V0) % clear transparent data
+    .End
+    POP     RA, A0, V0
+    J       80267744
+    LW	    V0, 0000 (V1)
+}

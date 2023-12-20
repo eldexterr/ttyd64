@@ -1,0 +1,542 @@
+% This patch add the multiplayer component to the game, making possible to
+% move your 2nd partner with a 2nd controller in the overworld and in battle.
+
+/%
+Player 1 Inputs #1 (raw data) - 800B1D68
+Player 1 Inputs #2 (raw data) - 8009A5B8
+Player 1 Inputs #3 - 80074024
+Player 2 Inputs #1 (raw data) - 800B1D6E
+Player 2 Inputs #2 (raw data) - 800B0EDC
+Player 2 Inputs #3 - $Controller2_Inputs
+
+800B0EDC:
+bit0=D Pad Right
+bit1=D Pad Left
+bit2=D Pad Down
+bit3=D Pad Up
+bit4=Start
+bit5=Z button
+bit6=B button
+bit7=A button
+
+800B0EDD:
+bit0=C Right
+bit1=C Left
+bit2=C Down
+bit3=C Up
+bit4=R button
+bit5=L button
+
+800B0EDE - Joystick X moment
+Right= Positive value
+Left= Negative
+
+800B0EDF - Joystick Y moment
+Up = Positive
+Down = Negative
+
+% Joystick Movement (flagbits)
+bit0=Up
+bit1=Down
+bit2=Left
+bit3=Right
+%/
+
+#new:Data $Controller2_Inputs
+{
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000003 % Control initializated byteflag
+}
+
+#new:Data $Controller2_Joystick_ExtraData
+{ 00000000 00000000 }
+
+#new:Data $Controller2_Pointer
+{ $Controller2_Inputs }
+
+/% Track the 2nd controller
+%
+% From ~Func:step_game_loop
+@Hook 1B5C % 8002675C
+{
+    JAL     $update_input_player2
+    NOP
+    % restore vanilla code
+    LUI	A0, 0CDF
+    J       80026764
+    LHU	V0, 0134 (V1)
+}%/
+
+% Base code grabbed from ~Func:update_input % 03C74 % 80028874
+#new:Function $update_input_player2
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S2, 18 (SP)
+        LIO       S2, $Controller2_Pointer
+   10:  SW        RA, 1C (SP)
+   14:  SW        S1, 14 (SP)
+   18:  SW        S0, 10 (SP)
+   1C:  LW        V0, 0 (S2)
+   20:  LBU       V0, 73 (V0)
+        LIO       S1, 800B0EDC % Controller #2 - raw data #2
+   2C:  ANDI      V0, V0, 1
+   30:  BEQ       V0, R0, .o48
+   34:  CLEAR     S0
+   38:  ADDIU     S0, R0, 1
+   3C:  COPY      A0, S1
+   40:  JAL       $nuCont2DataGet % get controller #2 data
+   44:  CLEAR     A1
+        .o48
+   48:  LW        V1, 0 (S2)
+   4C:  LB        V0, 71 (V1)
+   50:  BEQ       V0, R0, .oA8
+   54:  SLTI      V0, V0, 2
+   58:  BEQ       V0, R0, .o7C
+   5C:  NOP
+   60:  LHU       V0, 0 (S1)
+   64:  ANDI      V0, V0, F000
+   68:  BEQ       V0, R0, .o7C
+   6C:  COPY      V0, S0
+   70:  BEQ       V0, R0, .o7C
+   74:  ADDIU     V0, R0, 2
+   78:  SB        V0, 71 (V1)
+        .o7C
+   7C:  LIA       A0, $Controller2_Pointer
+   84:  LW        V1, 0 (A0)
+   88:  LHU       V0, 68 (V1)
+   8C:  SH        V0, 0 (S1)
+   90:  LBU       V0, 6A (V1)
+   94:  LW        V1, 0 (A0)
+   98:  SB        V0, 2 (S1)
+   9C:  LBU       V0, 6B (V1)
+   A0:  ADDIU     S0, R0, 1
+   A4:  SB        V0, 3 (S1)
+        .oA8
+   A8:  COPY      V0, S0
+   AC:  BEQ       V0, R0, .o648
+   B0:  NOP
+   B4:  LBU       V1, 3 (S1)
+   B8:  LBU       V0, 2 (S1)
+   BC:  SLL       V1, V1, 18
+   C0:  SRA       A3, V1, 18
+   C4:  SLL       V0, V0, 18
+   C8:  BLEZ      V0, .oE8
+   CC:  SRA       A1, V0, 18
+   D0:  ADDIU     V0, A1, FFFC
+   D4:  COPY      A1, V0
+   D8:  SLL       V0, V0, 10
+   DC:  BGEZ      V0, .o10C
+   E0:  SLL       V0, A3, 10
+   E4:  CLEAR     A1
+        .oE8
+   E8:  SLL       V0, A1, 10
+   EC:  BGEZ      V0, .o10C
+   F0:  SLL       V0, A3, 10
+   F4:  ADDIU     V0, A1, 4
+   F8:  COPY      A1, V0
+   FC:  SLL       V0, V0, 10
+  100:  BGTZL     V0, .o108
+  104:  CLEAR     A1
+        .o108
+  108:  SLL       V0, A3, 10
+        .o10C
+  10C:  BLEZ      V0, .o128
+  110:  ADDIU     V0, A3, FFFC
+  114:  COPY      A3, V0
+  118:  SLL       V0, V0, 10
+  11C:  BGEZ      V0, .o144
+  120:  NOP
+  124:  CLEAR     A3
+        .o128
+  128:  SLL       V0, A3, 10
+  12C:  BGEZ      V0, .o144
+  130:  ADDIU     V0, A3, 4
+  134:  COPY      A3, V0
+  138:  SLL       V0, V0, 10
+  13C:  BGTZL     V0, .o144
+  140:  CLEAR     A3
+        .o144
+  144:  LIA       V1, $Controller2_Pointer
+  14C:  LW        V0, 0 (V1)
+  150:  SB        A1, 40 (V0)
+  154:  LW        V0, 0 (V1)
+  158:  SB        A3, 44 (V0)
+  15C:  SLL       V0, A1, 10
+  160:  SRA       A2, V0, 10
+  164:  SLTI      V0, A2, 21
+  168:  LHU       A0, 0 (S1)
+  16C:  BNE       V0, R0, .o1DC
+  170:  CLEAR     T0
+  174:  ADDIU     T0, R0, 1
+  178:  LW        V0, 0 (V1)
+  17C:  LUI       V1, 8
+  180:  LW        V0, 30 (V0)
+  184:  AND       V0, V0, V1
+  188:  BNE       V0, R0, .o1A0
+  18C:  OR        A0, A0, V1
+  190:  SAH       A1, $Controller2_Joystick_ExtraData
+        BEQ       R0, R0, .o1E0
+  19C:  SLL       V0, A1, 10
+        .o1A0
+  1A0:  LAH       V0, $Controller2_Joystick_ExtraData[4]
+  1A8:  BNE       V0, R0, .o1C4
+  1AC:  NOP
+  1B0:  LIA       V1, $Controller2_Joystick_ExtraData
+  1B8:  LH        V0, 0 (V1)
+        BEQ       R0, R0, .o1D4
+  1C0:  SLT       V0, V0, A2
+        .o1C4
+  1C4:  LIA       V1, $Controller2_Joystick_ExtraData
+  1CC:  LH        V0, 0 (V1)
+  1D0:  SLT       V0, A2, V0
+        .o1D4
+  1D4:  BNEL      V0, R0, .o1DC
+  1D8:  SH        A1, 0 (V1)
+        .o1DC
+  1DC:  SLL       V0, A1, 10
+        .o1E0
+  1E0:  SRA       A2, V0, 10
+  1E4:  SLTI      V0, A2, FFE0
+  1E8:  BEQ       V0, R0, .o260
+  1EC:  COPY      V0, T0
+  1F0:  ADDIU     T0, R0, 1
+  1F4:  LAW       V0, $Controller2_Pointer
+  1FC:  LUI       V1, 4
+  200:  LW        V0, 30 (V0)
+  204:  AND       V0, V0, V1
+  208:  BNE       V0, R0, .o220
+  20C:  OR        A0, A0, V1
+  210:  SAH       A1, $Controller2_Joystick_ExtraData
+  218:  BEQ       R0, R0, .o260
+  21C:  COPY      V0, T0
+        .o220
+  220:  LAH       V0, $Controller2_Joystick_ExtraData[4]
+  228:  BNE       V0, R0, .o244
+  22C:  NOP
+  230:  LIA       V1, $Controller2_Joystick_ExtraData
+  238:  LH        V0, 0 (V1)
+  23C:  BEQ       R0, R0, .o254
+  240:  SLT       V0, A2, V0
+        .o244
+  244:  LIA       V1, $Controller2_Joystick_ExtraData
+  24C:  LH        V0, 0 (V1)
+  250:  SLT       V0, V0, A2
+        .o254
+  254:  BNEL      V0, R0, .o25C
+  258:  SH        A1, 0 (V1)
+        .o25C
+  25C:  COPY      V0, T0
+        .o260
+  260:  BNE       V0, R0, .o278
+  264:  SLL       V0, A3, 10
+  268:  SAH       R0, $Controller2_Joystick_ExtraData[4]
+  270:  SAH       A1, $Controller2_Joystick_ExtraData
+        .o278
+  278:  SRA       A2, V0, 10
+  27C:  SLTI      V0, A2, 21
+  280:  BNE       V0, R0, .o2F4
+  284:  CLEAR     T0
+  288:  ADDIU     T0, R0, 1
+  28C:  LAW       V0, $Controller2_Pointer
+  294:  LUI       V1, 1
+  298:  LW        V0, 30 (V0)
+  29C:  AND       V0, V0, V1
+  2A0:  BNE       V0, R0, .o2B8
+  2A4:  OR        A0, A0, V1
+  2A8:  SAH       A3, $Controller2_Joystick_ExtraData[2]
+  2B0:  BEQ       R0, R0, .o2F8
+  2B4:  SLL       V0, A3, 10
+        .o2B8
+  2B8:  LAH       V0, $Controller2_Joystick_ExtraData[6]
+  2C0:  BNE       V0, R0, .o2DC
+  2C4:  NOP
+  2C8:  LIA       V1, $Controller2_Joystick_ExtraData[2]
+  2D0:  LH        V0, 0 (V1)
+  2D4:  BEQ       R0, R0, .o2EC
+  2D8:  SLT       V0, V0, A2
+        .o2DC
+  2DC:  LIA       V1, $Controller2_Joystick_ExtraData[2]
+  2E4:  LH        V0, 0 (V1)
+  2E8:  SLT       V0, A2, V0
+        .o2EC
+  2EC:  BNEL      V0, R0, .o2F4
+  2F0:  SH        A3, 0 (V1)
+        .o2F4
+  2F4:  SLL       V0, A3, 10
+        .o2F8
+  2F8:  SRA       A2, V0, 10
+  2FC:  SLTI      V0, A2, FFE0
+  300:  BEQ       V0, R0, .o3B0
+  304:  COPY      V0, T0
+  308:  ADDIU     T0, R0, 1
+  30C:  LAW       V0, $Controller2_Pointer
+  314:  LUI       V1, 2
+  318:  LW        V0, 30 (V0)
+  31C:  AND       V0, V0, V1
+  320:  BNE       V0, R0, .o338
+  324:  OR        A0, A0, V1
+  328:  SAH       A3, $Controller2_Joystick_ExtraData[2]
+  330:  BEQ       R0, R0, .o3B0
+  334:  COPY      V0, T0
+        .o338
+  338:  LAH       V0, $Controller2_Joystick_ExtraData[6]
+  340:  BNE       V0, R0, .o394
+  344:  NOP
+  348:  LIA       V1, $Controller2_Joystick_ExtraData[2]
+  350:  LH        V0, 0 (V1)
+  354:  BEQ       R0, R0, .o3A4
+  358:  SLT       V0, A2, V0
+        .o35C
+  35C:  LW        V1, 0 (A1)
+  360:  LW        A0, 30 (A1)
+  364:  ADDIU     V0, R0, FFFF
+  368:  SH        V0, 60 (A1)
+  36C:  LW        V0, 0 (A1)
+  370:  XOR       V1, V1, A0
+  374:  LHU       A0, 48 (A1)
+  378:  SW        V1, 20 (A1)
+  37C:  AND       V1, V1, V0
+  380:  SW        V1, 20 (A1)
+  384:  BEQ       R0, R0, .o638
+  388:  SH        A0, 58 (A1)
+        .o38C
+  38C:  BEQ       R0, R0, .o638
+  390:  SW        R0, 20 (A1)
+        .o394
+  394:  LIA       V1, $Controller2_Joystick_ExtraData[2]
+  39C:  LH        V0, 0 (V1)
+  3A0:  SLT       V0, V0, A2
+        .o3A4
+  3A4:  BNEL      V0, R0, .o3AC
+  3A8:  SH        A3, 0 (V1)
+        .o3AC
+  3AC:  COPY      V0, T0
+        .o3B0
+  3B0:  BNE       V0, R0, .o3C8
+  3B4:  SLL       V0, A1, 10
+  3B8:  SAH       R0, $Controller2_Joystick_ExtraData[6]
+  3C0:  SAH       A3, $Controller2_Joystick_ExtraData[2]
+        .o3C8
+  3C8:  SRA       A2, V0, 10
+  3CC:  SLTI      V0, A2, 21
+  3D0:  BNE       V0, R0, .o444
+  3D4:  SLL       V0, A1, 10
+  3D8:  LIA       T0, $Controller2_Joystick_ExtraData[4]
+  3E0:  LH        V1, 0 (T0)
+  3E4:  ADDIU     V0, R0, 1
+  3E8:  BNE       V1, V0, .o414
+  3EC:  NOP
+  3F0:  LAH       V0, $Controller2_Joystick_ExtraData
+  3F8:  SUBU      V0, A2, V0
+  3FC:  SLTI      V0, V0, 11
+  400:  BNE       V0, R0, .o414
+  404:  LUI       V0, FFF7
+  408:  ORI       V0, V0, FFFF
+  40C:  AND       A0, A0, V0
+  410:  SH        R0, 0 (T0)
+        .o414
+  414:  LAH       V1, $Controller2_Joystick_ExtraData
+  41C:  SLL       V0, A1, 10
+  420:  SRA       V0, V0, 10
+  424:  SUBU      V1, V1, V0
+  428:  SLTI      V1, V1, 11
+  42C:  BNE       V1, R0, .o444
+  430:  SLL       V0, A1, 10
+  434:  ADDIU     V0, R0, 1
+  438:  SAH       V0, $Controller2_Joystick_ExtraData[4]
+  440:  SLL       V0, A1, 10
+        .o444
+  444:  SRA       A2, V0, 10
+  448:  SLTI      V0, A2, FFE0
+  44C:  BEQ       V0, R0, .o4BC
+  450:  ADDIU     V0, R0, 1
+  454:  LIA       T0, $Controller2_Joystick_ExtraData[4]
+  45C:  LH        V1, 0 (T0)
+  460:  BNE       V1, V0, .o494
+  464:  SLL       V0, A1, 10
+  468:  LAH       V0, $Controller2_Joystick_ExtraData
+  470:  SUBU      V0, V0, A2
+  474:  SLTI      V0, V0, 11
+  478:  BNE       V0, R0, .o494
+  47C:  SLL       V0, A1, 10
+  480:  LIO       V0, FFFBFFFF
+  488:  AND       A0, A0, V0
+  48C:  SH        R0, 0 (T0)
+  490:  SLL       V0, A1, 10
+        .o494
+  494:  LAH       V1, $Controller2_Joystick_ExtraData
+  49C:  SRA       V0, V0, 10
+  4A0:  SUBU      V0, V0, V1
+  4A4:  SLTI      V0, V0, 11
+  4A8:  BNE       V0, R0, .o4C0
+  4AC:  SLL       V0, A3, 10
+  4B0:  ADDIU     V0, R0, 1
+  4B4:  SAH       V0, $Controller2_Joystick_ExtraData[4]
+        .o4BC
+  4BC:  SLL       V0, A3, 10
+        .o4C0
+  4C0:  SRA       A1, V0, 10
+  4C4:  SLTI      V0, A1, 21
+  4C8:  BNE       V0, R0, .o53C
+  4CC:  SLL       V0, A3, 10
+  4D0:  LIA       A2, $Controller2_Joystick_ExtraData[6]
+  4D8:  LH        V1, 0 (A2)
+  4DC:  ADDIU     V0, R0, 1
+  4E0:  BNE       V1, V0, .o50C
+  4E4:  NOP
+  4E8:  LAH       V0, $Controller2_Joystick_ExtraData[2]
+  4F0:  SUBU      V0, A1, V0
+  4F4:  SLTI      V0, V0, 11
+  4F8:  BNE       V0, R0, .o50C
+  4FC:  LUI       V0, FFFE
+  500:  ORI       V0, V0, FFFF
+  504:  AND       A0, A0, V0
+  508:  SH        R0, 0 (A2)
+        .o50C
+  50C:  LAH       V1, $Controller2_Joystick_ExtraData[2]
+  514:  SLL       V0, A3, 10
+  518:  SRA       V0, V0, 10
+  51C:  SUBU      V1, V1, V0
+  520:  SLTI      V1, V1, 11
+  524:  BNE       V1, R0, .o53C
+  528:  SLL       V0, A3, 10
+  52C:  ADDIU     V0, R0, 1
+  530:  SAH       V0, $Controller2_Joystick_ExtraData[6]
+  538:  SLL       V0, A3, 10
+        .o53C
+  53C:  SRA       A1, V0, 10
+  540:  SLTI      V0, A1, FFE0
+  544:  BEQ       V0, R0, .o5B0
+  548:  ADDIU     V0, R0, 1
+  54C:  LIA       A2, $Controller2_Joystick_ExtraData[6]
+  554:  LH        V1, 0 (A2)
+  558:  BNE       V1, V0, .o58C
+  55C:  SLL       V0, A3, 10
+  560:  LAH       V0, $Controller2_Joystick_ExtraData[2]
+  568:  SUBU      V0, V0, A1
+  56C:  SLTI      V0, V0, 11
+  570:  BNE       V0, R0, .o58C
+  574:  SLL       V0, A3, 10
+  578:  LIO       V0, FFFDFFFF
+  580:  AND       A0, A0, V0
+  584:  SH        R0, 0 (A2)
+  588:  SLL       V0, A3, 10
+        .o58C
+  58C:  LAH       V1, $Controller2_Joystick_ExtraData[2]
+  594:  SRA       V0, V0, 10
+  598:  SUBU      V0, V0, V1
+  59C:  SLTI      V0, V0, 11
+  5A0:  BNE       V0, R0, .o5B0
+  5A4:  ADDIU     V0, R0, 1
+  5A8:  SAH       V0, $Controller2_Joystick_ExtraData[6]
+        .o5B0
+  5B0:  LAW       A1, $Controller2_Pointer
+  5B8:  LW        V0, 30 (A1)
+  5BC:  SW        A0, 0 (A1)
+  5C0:  COPY      V1, A0
+  5C4:  XOR       V0, A0, V0
+  5C8:  SW        V0, 10 (A1)
+  5CC:  AND       V0, V0, V1
+  5D0:  BEQ       V1, R0, .o38C
+  5D4:  SW        V0, 10 (A1)
+  5D8:  LW        V0, 30 (A1)
+  5DC:  BNEL      V0, V1, .o35C
+  5E0:  SW        V1, 20 (A1)
+  5E4:  LH        V0, 60 (A1)
+  5E8:  LHU       V1, 60 (A1)
+  5EC:  BLTZ      V0, .o610
+  5F0:  ADDIU     V0, V1, FFFF
+  5F4:  SH        V0, 60 (A1)
+  5F8:  SLL       V0, V0, 10
+  5FC:  BNE       V0, R0, .o38C
+  600:  COPY      V0, A0
+  604:  LHU       V1, 50 (A1)
+  608:  BEQ       R0, R0, .o634
+  60C:  SW        V0, 20 (A1)
+        .o610
+  610:  LHU       V0, 58 (A1)
+  614:  ADDIU     V0, V0, FFFF
+  618:  SH        V0, 58 (A1)
+  61C:  SLL       V0, V0, 10
+  620:  BNEL      V0, R0, .o638
+  624:  SW        R0, 20 (A1)
+  628:  LW        V0, 0 (A1)
+  62C:  LHU       V1, 50 (A1)
+  630:  SW        V0, 20 (A1)
+        .o634
+  634:  SH        V1, 60 (A1)
+        .o638
+  638:  LAW       V1, $Controller2_Pointer
+  640:  LW        V0, 0 (V1)
+  644:  SW        V0, 30 (V1)
+        .o648
+  648:  LW        RA, 1C (SP)
+  64C:  LW        S2, 18 (SP)
+  650:  LW        S1, 14 (SP)
+  654:  LW        S0, 10 (SP)
+  658:  JR        RA
+  65C:  ADDIU     SP, SP, 20
+}
+
+% Get controller #2 data
+%
+% Base code grabbed from ~func:nuContDataGet % 03AA50 % 8005F650
+#new:Function $nuCont2DataGet
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S1, 14 (SP)
+    8:  COPY      S1, A0
+    C:  SW        S0, 10 (SP)
+   10:  SW        RA, 18 (SP)
+   14:  JAL       $nuCont2DataClose
+   18:  COPY      S0, A1
+   1C:  SLL       A0, S0, 1
+   20:  ADDU      A0, A0, S0
+   24:  SLL       A0, A0, 1
+        LIO       V0, 800B1D6E % controller #2 raw data #1
+   30:  ADDU      A0, A0, V0
+   34:  COPY      A1, S1
+   38:  JAL       ~Func:bcopy
+   3C:  ADDIU     A2, R0, 6 % copy controller data #1 to #2
+   40:  JAL       $nuCont2DataOpen
+   44:  NOP
+   48:  LW        RA, 18 (SP)
+   4C:  LW        S1, 14 (SP)
+   50:  LW        S0, 10 (SP)
+   54:  JR        RA
+   58:  ADDIU     SP, SP, 20
+}
+
+% Base code grabbed from ~Func:nuContDataClose
+#new:Function $nuCont2DataClose % 03BA0C % 8006060C 
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LIA       A0, 800DC040
+    C:  CLEAR     A1
+   10:  SW        RA, 10 (SP)
+   14:  JAL       ~Func:osSendMesg
+   18:  ADDIU     A2, R0, 1
+   1C:  LW        RA, 10 (SP)
+   20:  JR        RA
+   24:  ADDIU     SP, SP, 18
+}
+
+% Base code grabbed from ~Func:func_nuContDataOpen
+#new:Function $nuCont2DataOpen % 03BA34 % 80060634 
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LIA       A0, 800DC040
+    C:  CLEAR     A1
+   10:  SW        RA, 10 (SP)
+   14:  JAL       ~Func:osRecvMesg
+   18:  ADDIU     A2, R0, 1
+   1C:  LW        RA, 10 (SP)
+   20:  JR        RA
+   24:  ADDIU     SP, SP, 18
+}

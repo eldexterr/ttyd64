@@ -1,0 +1,168 @@
+% Add new hidden item
+
+@ $Script_80240780
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000006 )
+   50:  EndThread
+        Exec  $Script_InitNewStuff
+   58:  Return
+   60:  End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Call  MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_KPA134_Item )
+    Bind  $Script_SecretWall .Trigger:WallPressA ~Collider:SecretDoor 00000001 00000000
+    Bind  $Script_ExitSecretWall .Trigger:WallPressA ~Collider:SecretDoor_Exit 00000001 00000000
+    % Fix some stuff
+    Call  ModifyColliderFlags   ( .False ~Collider:ttw 7FFFFE00 )
+    Call  ModifyColliderFlags   ( .False ~Collider:o411 7FFFFE00 )
+    Return
+    End
+}
+
+% Code grabbed from flo_28.mpat
+#new:Script $Script_SecretWall
+{
+    Wait    3
+    Call    DisablePlayerPhysics ( .True )
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePartnerAI ( 0 )
+    % enter to the secret tunel
+    Thread % panel sfx
+        Call    PlaySound ( 00A7 )
+        Wait    5
+        Call    StopSound ( 00A7 )
+    EndThread
+    Thread % Flip panel
+        Call    MakeLerp ( 0 180` 15` .Easing:Linear )
+		Loop
+			Call    UpdateLerp
+            Call    RotateModel ( ~Model:secret *Var0 0 -1 0 )
+			Wait    1
+			If *Var1 == .False
+				BreakLoop
+			EndIf
+		EndLoop
+    EndThread
+    Wait    5
+    % move player
+    Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Sub     *Var2 20` % Z
+    Call    PlayerMoveTo ( *Var0 *Var2 10` )
+    Call    DisablePlayerPhysics ( .False )
+    Call    DisablePlayerInput ( .False )
+    Call    EnablePartnerAI
+    Return
+    End
+}
+
+#new:Script $Script_ExitSecretWall
+{
+    Call    DisablePlayerPhysics ( .True )
+    Call    DisablePlayerInput ( .True )
+    %
+    Thread % panel sfx
+        Call    PlaySound ( 00A7 )
+        Wait    5
+        Call    StopSound ( 00A7 )
+    EndThread
+    Thread % Flip panel
+        Call    MakeLerp ( 0 180` 15` .Easing:Linear )
+		Loop
+			Call    UpdateLerp
+            Call    RotateModel ( ~Model:secret *Var0 0 -1 0 )
+			Wait    1
+			If *Var1 == .False
+				BreakLoop
+			EndIf
+		EndLoop
+    EndThread
+    Wait    5
+    % move player
+    Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Add     *Var2 20` % Z
+    Call    PlayerMoveTo ( *Var0 *Var2 10` )
+    Call    DisablePlayerPhysics ( .False )
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+%==================
+% Fix some stuff
+%
+% Looks like all colliders IDs have a wrong ID of +4
+%==================
+
+@ $Script_ExitDoubleDoor_802408E8
+{
+   [2C]  Set   *Var1  ~Collider:tte
+}
+
+@ $Script_80240A44
+{
+    [0]  Bind  $Script_ExitWalk_8024088C .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   [1C]  Bind  $Script_ExitWalk_8024098C .Trigger:FloorAbove ~Collider:deiliw2 00000001 00000000
+   [38]  Bind  $Script_ExitWalk_802409E8 .Trigger:FloorAbove ~Collider:deiliaw 00000001 00000000
+}
+
+@ $Script_Main
+{
+   [D0]  	Call  ModifyColliderFlags   ( 00000000 ~Collider:o372 7FFFFE00 )
+   [E8]  	Call  ModifyColliderFlags   ( 00000000 ~Collider:o378 7FFFFE00 )
+  [100]  	Call  ModifyColliderFlags   ( 00000000 ~Collider:o383 7FFFFE00 )
+  [118]  	Call  ModifyColliderFlags   ( 00000000 ~Collider:o384 7FFFFE00 )
+  [288]  	Call  ModifyColliderFlags   ( 00000000 ~Collider:ttaw 7FFFFE00 )
+}
+
+@ $Script_802410C0
+{
+   [B4]  		Call  ModifyColliderFlags   ( 00000000 ~Collider:o358 7FFFFE00 )
+   [CC]  		Call  ModifyColliderFlags   ( 00000000 ~Collider:nno 7FFFFE00 )
+   [E4]  		Call  ModifyColliderFlags   ( 00000000 ~Collider:ttw 7FFFFE00 )
+   [FC]  		Call  ModifyColliderFlags   ( 00000000 ~Collider:o411 7FFFFE00 )
+  [16C]  		Call  ModifyColliderFlags   ( 00000000 ~Collider:ttw 7FFFFE00 )
+  [184]  		Call  ModifyColliderFlags   ( 00000003 ~Collider:nno 00000004 )
+  [19C]  		Call  ModifyColliderFlags   ( 00000000 ~Collider:nno 00080000 )
+  [1C0]  		Call  ModifyColliderFlags   ( 00000000 ~Collider:o358 7FFFFE00 )
+}
+
+@ $Script_80241570
+{
+  [2BC]  Call  ModifyColliderFlags   ( 00000000 ~Collider:o358 7FFFFE00 )
+  [2D4]  Call  ModifyColliderFlags   ( 00000000 ~Collider:o411 7FFFFE00 )
+  [2EC]  Call  ModifyColliderFlags   ( 00000000 ~Collider:nno 7FFFFE00 )
+}
+
+@ $Script_80241968
+{
+  [5FC]  Call  ModifyColliderFlags   ( 00000001 ~Collider:o358 7FFFFE00 )
+  [614]  Call  ModifyColliderFlags   ( 00000001 ~Collider:o411 7FFFFE00 )
+  [62C]  Call  ModifyColliderFlags   ( 00000001 ~Collider:nno 7FFFFE00 )
+  [644]  Call  ModifyColliderFlags   ( 00000000 ~Collider:nno 00008000 )
+  [65C]  Call  ModifyColliderFlags   ( 00000003 ~Collider:nno 00000004 )
+  [674]  Call  ModifyColliderFlags   ( 00000000 ~Collider:nno 00080000 )
+}
+
+@ $Script_80243190
+{
+   [6C]  Call  ModifyColliderFlags   ( 00000000 ~Collider:o372 7FFFFE00 )
+   [84]  Call  ModifyColliderFlags   ( 00000000 ~Collider:o378 7FFFFE00 )
+   [9C]  Call  ModifyColliderFlags   ( 00000000 ~Collider:o383 7FFFFE00 )
+   [B4]  Call  ModifyColliderFlags   ( 00000000 ~Collider:o384 7FFFFE00 )
+}
+
+@ $Script_802435A0
+{
+   [124]  Bind  $Script_ExitDoubleDoor_802408E8 .Trigger:WallPressA ~Collider:tte 00000001 00000000
+}
+
+@ $Script_MakeEntities
+{
+   [6C]  	Bind  $Script_ExitDoubleDoor_802408E8 .Trigger:WallPressA ~Collider:tte 00000001 00000000
+}

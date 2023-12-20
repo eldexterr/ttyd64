@@ -1,0 +1,51 @@
+% Patch original super block, and change Deep Focus badge for a Shine Sprite block too.
+
+#delete $Script_80242008 % og super block script
+
+@ $Script_MakeEntities
+{
+         % original super block
+     0:  Call  MakeEntity        ( .Entity:SuperBlock ~Vec4d:Entity80242488 80000000 )
+    24:  Set   *MapVar[0]  *Var0
+    34:  Call  AssignBlockFlag   ( *GF_OMO11_SuperBlock )
+    44:  Call  AssignScript      ( $Script_Entity_Shine1 )
+         %
+    54:  Call  MakeEntity        ( .Entity:MultiCoinBrick ~Vec4d:Entity802424DC 80000000 )
+    78:  Call  AssignBlockFlag   ( *GF_OMO11_MultiCoinBrick )
+    88:  Call  UseDynamicShadow  ( .True )
+    98:  Call  MakeEntity        ( .Entity:HiddenYellowBlock ~Vec4d:Entity80242520 .Item:VoltShroom 80000000 )
+    C0:  Call  AssignBlockFlag   ( *GF_OMO11_HiddenItem_VoltShroom )
+    D0:  Call  MakeEntity        ( .Entity:HiddenYellowBlock ~Vec4d:Entity80242558 .Item:SnowmanDoll 80000000 )
+    F8:  Call  AssignBlockFlag   ( *GF_OMO11_HiddenItem_SnowmanDoll )
+   108:  Call  MakeEntity        ( .Entity:YellowBlock ~Vec4d:Entity80242590 .Item:Coin 80000000 )
+   130:  Call  AssignBlockFlag   ( *GF_OMO11_ItemBlock_CoinB )
+         % new super block, was Deep Focus before
+         Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity802425C8 80000000 )
+         Set   *MapVar[1] *Var0
+         Call  AssignBlockFlag   ( *GF_OMO11_Shine )
+         Call  AssignScript 	    ( $Script_Entity_Shine2 )
+         %
+   168:  Call  AssignBlockFlag   ( *GF_OMO11_HiddenBadge_DeepFocus2 )
+   178:  Call  MakeEntity        ( .Entity:YellowBlock ~Vec4d:Entity80242600 .Item:Coin 80000000 )
+   1A0:  Call  AssignBlockFlag   ( *GF_OMO11_ItemBlock_CoinA )
+   1B0:  Return
+   1B8:  End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_OMO11_SuperBlock % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine2
+{
+    Set *Var0 *MapVar[1] % entityID
+    SetConst *Var1 *GF_OMO11_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}

@@ -1,0 +1,117 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:JadeJungle
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Call  $Function_InitFog
+	Exec  $Script_MakeEntities
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+	Return
+	End
+}
+
+#new:Function $Function_InitFog
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  JAL       ~Func:enable_world_fog
+    C:  NOP
+   10:  LW        RA, 10 (SP)
+   14:  LI        V0, 2
+   18:  JR        RA
+   1C:  ADDIU     SP, SP, 18
+}
+
+#new:Script $Script_MakeEntities
+{
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring1 60` 80000000 )
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring2 60` 80000000 )
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring3 60` 80000000 )
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring4 60` 80000000 )
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring5 60` 80000000 )
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring6 60` 80000000 )
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring7 60` 80000000 )
+	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity_Spring8 60` 80000000 )
+	%
+	Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+    Set   *MapVar[0] *Var0
+    Call  AssignBlockFlag   ( *GF_JAN27_Shine )
+    Call  AssignScript 	    ( $Script_Entity_Shine1 )
+	Return
+	End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_JAN27_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:RaphaelRaven 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+    Set	 *Var0 $Script_CreateExitTriggers
+    Exec EnterWalk
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind     $Script_Exit0  .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0 {
+	Call     UseExitHeading  	( 3C ~Entry:Entry0 )
+	Exec     ExitWalk
+    Call     GotoMap	( "jan_16" 5 )
+	Wait     100`
+	Return
+	End
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Wow, another entrance inside the[BR]
+big tree?[BR]
+[Wait][Next]
+Now I'm wondering how big this[BR]
+tree exactly is?![BR]
+[Wait][End]      
+}

@@ -1,0 +1,426 @@
+#new:Actor $3D_FireBros {
+% stats
+[Index]        68b 
+[Level]        13`b 
+[MaxHP]        7`b 
+[Coins]         0`b 
+[Flags]       00000000 
+[StatusTable] $StatusTable_8021E4F4_FireBros_3D 
+% ai
+[PartsCount]    3`s 
+[PartsTable]  $PartsTable_8021E5A0_FireBros_3D 
+[Script]      $Script_Init_8021E6A0_FireBros_3D 
+% move effectiveness
+[Escape]       50`b 
+[Item]         40`b 
+[AirLift]      60`b 
+[Hurricane]    70`b % Bow's "Spook" as well
+[UpAndAway]    95`b 
+[PowerBounce] 100`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         28`b  38`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  20`b % dx dy
+[StatusIcon]   10`b  35`b % dx dy
+}
+
+#new:IdleAnimations $IdleAnimations_8021E490_FireBros_3D {
+.Status:Normal    005A0203
+.Status:Frozen    005A0200
+.Status:Sleep     005A0211
+.Status:Poison    005A0203
+.Status:Stop      005A0200
+.Status:Static    005A0203
+.Status:Paralyze  005A0200
+.Status:Dizzy     005A0212
+.Status:Fear      005A0212
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_8021E4DC_FireBros_3D {
+.Status:Normal    005A0F20
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_8021E4E8_FireBros_3D {
+.Element:Normal 00000001
+.Element:End
+}
+
+#new:StatusTable $StatusTable_8021E4F4_FireBros_3D {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep      80`
+.Status:Poison    100`
+.Status:Frozen     70`
+.Status:Dizzy      70`
+.Status:Fear        0`
+.Status:Static     80`
+.Status:Paralyze   80`
+.Status:Shrink     80`
+.Status:Stop       80`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod     -1`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod     -1`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod      -2`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_8021E5A0_FireBros_3D {
+00800000 01000000 FD2300FF $IdleAnimations_8021E490_FireBros_3D $DefenseTable_8021E4E8_FireBros_3D 00000000 00000000 FDF60000 00000000 
+00120001 02000000 000000FF $IdleAnimations_8021E4DC_FireBros_3D $DefenseTable_8021E4E8_FireBros_3D 00000000 00000000 00000000 00000000 
+00120001 03000000 000000FF $IdleAnimations_8021E4DC_FireBros_3D $DefenseTable_8021E4E8_FireBros_3D 00000000 00000000 00000000 00000000 
+}
+
+#new:Script $Script_Init_8021E6A0_FireBros_3D {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_8022028C_FireBros_3D )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_8021E704_FireBros_3D )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_8021E860_FireBros_3D )
+   3C:  Call  SetActorVar   ( .Actor:Self 00000008 00000000 )
+   54:  Return
+   5C:  End
+}
+
+#new:Script $Script_Idle_8021E704_FireBros_3D {
+    0:  Label  0
+    C:  Call  GetStatusFlags    ( .Actor:Self *Var0 )
+   20:  Switch  *Var0 
+   2C:  	Case  &  ~Flags:StatusFlags:Sleep % 1000
+   38:  		Call  SetTargetOffset   ( .Actor:Self 00000001 FFFFFFFB 0000000F )
+   54:  		Call  8027D4C8  ( FFFFFF81 00000001 00000000 00000000 )
+   70:  	Default
+   78:  		Call  GetActorVar   ( .Actor:Self 00000008 *Var0 )
+   90:  		Switch  *Var0 
+   9C:  			Case  ==  00000000 
+   A8:  				Call  SetTargetOffset   ( .Actor:Self 00000001 FFFFFFFD 00000023 )
+   C4:  				Call  8027D4C8  ( FFFFFF81 00000001 FFFFFFFD FFFFFFF6 )
+   E0:  			Case  ==  00000001 
+   EC:  				Call  SetTargetOffset   ( .Actor:Self 00000001 FFFFFFFB 0000000F )
+  108:  				Call  8027D4C8  ( FFFFFF81 00000001 00000000 00000000 )
+  124:  		EndSwitch
+  12C:  EndSwitch
+  134:  Wait  1`
+  140:  Goto  0
+  14C:  Return
+  154:  End
+}
+
+#new:Script $Script_HandleEvent_8021E860_FireBros_3D {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   3C:  Switch  *Var0 
+   48:  	CaseOR  ==  .Event:HitCombo % 9
+   54:  	CaseOR  ==  .Event:Hit % A
+   60:  		SetConst  *Var0  00000001 
+   70:  		SetConst  *Var1  005A021B 
+   80:  		ExecWait  DoNormalHit 
+   8C:  	EndCaseGroup
+   94:  	Case  ==  .Event:BurnHit % E
+   A0:  		SetConst  *Var0  00000001 
+   B0:  		SetConst  *Var1  005A021B 
+   C0:  		SetConst  *Var2  005A0210 
+   D0:  		ExecWait  DoBurnHit 
+   DC:  	Case  ==  .Event:BurnDeath % 24
+   E8:  		SetConst  *Var0  00000001 
+   F8:  		SetConst  *Var1  005A021B 
+  108:  		SetConst  *Var2  005A0210 
+  118:  		ExecWait  DoBurnHit 
+  124:  		SetConst  *Var0  00000001 
+  134:  		SetConst  *Var1  005A0210 
+  144:  		ExecWait  DoDeath 
+  150:  		Return
+  158:  	Case  ==  .Event:SpinSmashHit % B
+  164:  		SetConst  *Var0  00000001 
+  174:  		SetConst  *Var1  005A021B 
+  184:  		ExecWait  DoSpinSmashHit 
+  190:  	Case  ==  .Event:SpinSmashDeath % 21
+  19C:  		SetConst  *Var0  00000001 
+  1AC:  		SetConst  *Var1  005A021B 
+  1BC:  		ExecWait  DoSpinSmashHit 
+  1C8:  		SetConst  *Var0  00000001 
+  1D8:  		SetConst  *Var1  005A021B 
+  1E8:  		ExecWait  DoDeath 
+  1F4:  		Return
+  1FC:  	CaseOR  ==  00000017 % 17
+  208:  	CaseOR  ==  .Event:Immune % 19
+  214:  		SetConst  *Var0  00000001 
+  224:  		SetConst  *Var1  005A0215 
+  234:  		ExecWait  DoImmune 
+  240:  		Call  GetStatusFlags    ( .Actor:Self *Var0 )
+  254:  		If  *Var0  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+  264:  			Call  SetAnimation  ( .Actor:Self 00000001 005A0217 )
+  27C:  			Wait  10`
+  288:  		EndIf
+  290:  	EndCaseGroup
+  298:  	Case  ==  .Event:Death % 20
+  2A4:  		SetConst  *Var0  00000001 
+  2B4:  		SetConst  *Var1  005A021B 
+  2C4:  		ExecWait  DoNormalHit 
+  2D0:  		Wait  10`
+  2DC:  		SetConst  *Var0  00000001 
+  2EC:  		SetConst  *Var1  005A021B 
+  2FC:  		ExecWait  DoDeath 
+  308:  		Return
+  310:  	Case  ==  .Event:RecoverStatus % 31
+  31C:  		SetConst  *Var0  00000001 
+  32C:  		SetConst  *Var1  005A0203 
+  33C:  		ExecWait  DoRecover 
+  348:  	Case  ==  .Event:ScareAway % 39
+  354:  		SetConst  *Var0  00000001 
+  364:  		SetConst  *Var1  005A0207 
+  374:  		SetConst  *Var2  005A021B 
+  384:  		ExecWait  DoScareAway 
+  390:  		Return
+  398:  	Case  ==  .Event:BeginAirLift % 3A
+  3A4:  		SetConst  *Var0  00000001 
+  3B4:  		SetConst  *Var1  005A0207 
+  3C4:  		ExecWait  DoAirLift 
+  3D0:  	Case  ==  .Event:BlowAway % 16
+  3DC:  		Call  GetStatusFlags    ( .Actor:Self *Var0 )
+  3F0:  		If  *Var0  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+  400:  			If  *Var0  &  ~Flags:StatusFlags:Shrink % 80000
+  410:  				Call  SetActorDispOffset    ( .Actor:Self FFFFFFFE 00000001 00000000 )
+  42C:  			Else
+  434:  				Call  SetActorDispOffset    ( .Actor:Self FFFFFFFB 00000003 00000000 )
+  450:  			EndIf
+  458:  		EndIf
+  460:  		SetConst  *Var0  00000001 
+  470:  		SetConst  *Var1  005A021B 
+  480:  		ExecWait  DoBlowAway 
+  48C:  		Return
+  494:  	Case  ==  .Event:AirLiftFailed % 1F
+  4A0:  		SetConst  *Var0  00000001 
+  4B0:  		SetConst  *Var1  005A0203 
+  4C0:  		ExecWait  DoImmune 
+  4CC:  	Default
+  4D4:  EndSwitch
+  4DC:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  4F0:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  504:  Return
+  50C:  End
+}
+
+#new:Script $Script_FireBros_SingleFireBallAttack {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+        Call  $SetTargetActorInFront ( .Actor:Self )
+   3C:  Call  GetBattlePhase    ( *Var0 )
+   4C:  If  *Var0  ==  00000001 
+   5C:  	Call  UseBattleCamPreset    ( 00000002 )
+   6C:  	Call  MoveBattleCamOver     ( 00000001 )
+   7C:  EndIf
+        Set   *Var8 00000002
+        Set   *Var9 00000003
+        ExecWait  $Script_ThrowFireBall
+  840:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  854:  Call  UseIdleAnimation  ( .Actor:Self .True )
+        Call  SetAnimation  ( .Actor:Self 00000001 005A0203 )
+  868:  Return
+  870:  End
+}
+
+#new:Script $Script_8021F5EC_FireBros_3D {
+    0:  Call  SetAnimationRate  ( .Actor:Self 00000001 *Fixed[2.0] )
+   18:  Call  SetAnimation  ( .Actor:Self 00000001 005A0203 )
+   30:  Call  SetAnimation  ( .Actor:Self 00000001 005A021D )
+   48:  Wait  4`
+   54:  Call  SetPartFlagBits   ( .Actor:Self *Var0 00000001 .False )
+   70:  Call  SetPartSounds ( .Actor:Self *Var0 .ActorSound:Jump 00000000 00000000 )
+   90:  Call  PlaySoundAtPart   ( .Actor:Self *Var0 000002CF )
+   A8:  Call  SetGoalToTarget   ( .Actor:Self )
+   B8:  Call  GetGoalPos    ( .Actor:Self *Var1 *Var2 *Var3 )
+   D4:  Set   *Var2  0000000A 
+   E4:  Call  RandInt       ( 0000003C *Var4 )
+   F8:  Set   *Var5  0000001E 
+  108:  Sub   *Var5  *Var4 
+  118:  Add   *Var1  *Var5 
+  128:  Call  SetPartJumpGravity    ( .Actor:Self *Var0 *Fixed[1.3] )
+  140:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 0000000F .True )
+  168:  Sub   *Var1  00000032 
+  178:  Set   *Var2  0000000A 
+  188:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 00000014 .True )
+  1B0:  Sub   *Var1  0000001E 
+  1C0:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 0000000A .True )
+  1E8:  Sub   *Var1  00000014 
+  1F8:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 00000005 .True )
+  220:  Call  SetPartFlagBits   ( .Actor:Self *Var0 00000001 .True )
+  23C:  Return
+  244:  End
+}
+
+#new:Script $Script_8021F838_FireBros_3D {
+    0:  Call  SetAnimationRate  ( .Actor:Self 00000001 *Fixed[2.0] )
+   18:  Call  SetAnimation  ( .Actor:Self 00000001 005A0203 )
+   30:  Call  SetAnimation  ( .Actor:Self 00000001 005A021D )
+   48:  Wait  4`
+   54:  Call  SetPartFlagBits   ( .Actor:Self *Var0 00000001 .False )
+   70:  Call  SetPartSounds ( .Actor:Self *Var0 .ActorSound:Jump 00000000 00000000 )
+   90:  Call  PlaySoundAtPart   ( .Actor:Self *Var0 000002CF )
+   A8:  Call  SetGoalToTarget   ( .Actor:Self )
+   B8:  Call  GetGoalPos    ( .Actor:Self *Var1 *Var2 *Var3 )
+   D4:  Call  SetPartJumpGravity    ( .Actor:Self *Var0 *Fixed[1.3] )
+   EC:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 0000000F .True )
+  114:  Sub   *Var1  00000032 
+  124:  Set   *Var2  0000000A 
+  134:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 00000014 .True )
+  15C:  Sub   *Var1  0000001E 
+  16C:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 0000000A .True )
+  194:  Sub   *Var1  00000014 
+  1A4:  Call  JumpPartTo    ( .Actor:Self *Var0 *Var1 *Var2 *Var3 00000005 .True )
+  1CC:  Call  SetPartFlagBits   ( .Actor:Self *Var0 00000001 .True )
+  1E8:  Return
+  1F0:  End
+}
+
+#new:Script $Script_FireBros_MultiFireBallAttack_Two {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   3C:  Call  GetBattlePhase    ( *Var0 )
+   4C:  If  *Var0  ==  00000001 
+   5C:  	Call  UseBattleCamPreset    ( 00000002 )
+   6C:  	Call  MoveBattleCamOver     ( 00000001 )
+   7C:  EndIf
+        Set   *Var8 00000002
+        Set   *Var9 00000002
+        Exec  $Script_ThrowFireBall
+        Wait  20`
+        Set   *Var8 00000003
+        Set   *Var9 00000002
+        ExecWait $Script_ThrowFireBall
+  840:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  854:  Call  UseIdleAnimation  ( .Actor:Self .True )
+        Call  SetAnimation  ( .Actor:Self 00000001 005A0203 )
+  868:  Return
+  870:  End
+}
+
+#new:Script $Script_FireBros_MultiFireBallAttack_Six {
+  0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+ 14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+ 3C:  Call  GetBattlePhase    ( *Var0 )
+ 4C:  If  *Var0  ==  00000001 
+ 5C:  	Call  UseBattleCamPreset    ( 00000002 )
+ 6C:  	Call  MoveBattleCamOver     ( 00000001 )
+ 7C:  EndIf
+      Set   *Var8 00000002
+      Set   *Var9 00000001
+      Exec  $Script_ThrowFireBall
+      Wait  20`
+      Set   *Var8 00000003
+      Set   *Var9 00000001
+      Exec  $Script_ThrowFireBall
+      Wait  20`
+      Set   *Var8 00000002
+      Set   *Var9 00000001
+      Exec  $Script_ThrowFireBall
+      Wait  20`
+      Set   *Var8 00000003
+      Set   *Var9 00000001
+      Exec  $Script_ThrowFireBall
+      Wait  20`
+      Set   *Var8 00000002
+      Set   *Var9 00000001
+      Exec  $Script_ThrowFireBall
+      Wait  20`
+      Set   *Var8 00000003
+      Set   *Var9 00000001
+      ExecWait $Script_ThrowFireBall
+840:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+854:  Call  UseIdleAnimation  ( .Actor:Self .True )
+      Call  SetAnimation  ( .Actor:Self 00000001 005A0203 )
+868:  Return
+870:  End
+}
+
+#new:Script $Script_ThrowFireBall
+{
+    Call  RandInt ( 100` *Var0 )
+    If *Var0 < 30`
+        Call  $SetTargetActorInTheBack ( .Actor:Self )
+    Else
+        Call  $SetTargetActorInFront ( .Actor:Self )
+    EndIf
+    Call  SetGoalToTarget ( .Actor:Self )
+    Call  GetBattlePhase    ( *Var0 )
+    If  *Var0  ==  00000001
+      Call  SetPartPos        ( .Actor:Self *Var8 00000000 00000032 00000000 )
+      Call  SetPartFlagBits   ( .Actor:Self *Var8 00000001 .False )
+      Call  SetAnimation      ( .Actor:Self 00000001 005A021D )
+      Goto  64
+    EndIf
+    Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+    Sub   *Var0  00000017 
+    Add   *Var1  00000017 
+    Sub   *Var2  00000002 
+    Call  SetPartPos    ( .Actor:Self *Var8 *Var0 *Var1 *Var2 )
+    Call  SetAnimation  ( .Actor:Self 00000001 005A021D )
+    Thread
+      Wait  13`
+      Call  SetAnimation  ( .Actor:Self 00000001 005A0203 )
+    EndThread
+    Wait  6
+    Call  SetPartFlagBits   ( .Actor:Self *Var8 00000001 .False )
+    Label  64
+    Call  GetStatusFlags    ( .Actor:Self *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Shrink % 80000
+      Call  SetPartScale  ( .Actor:Self *Var8 *Fixed[0.4] *Fixed[0.4] *Fixed[0.4] )
+    Else
+      Call  SetPartScale  ( .Actor:Self *Var8 *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    EndIf
+    Call  SetPartSounds     ( .Actor:Self *Var8 .ActorSound:Jump 00000000 00000000 )
+    Call  PlaySoundAtPart   ( .Actor:Self *Var8 000002EF )
+    Call  SetGoalToTarget   ( .Actor:Self )
+    % 1st jump
+    Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  GetActorPos ( .Actor:Self *Var3 *Var4 .False )
+    Call  GetDist2D ( *Var3 *Var0 *Var1 *Var3 *Var4 )
+    Div   *Var3 2
+    Add   *Var0 *Var3
+    Call  SetPartMoveSpeed  ( .Actor:Self *Var8 *Fixed[8.0] )
+    Call  SetPartJumpGravity    ( .Actor:Self *Var8 *Fixed[1.0] )
+    Call  JumpPartTo ( .Actor:Self *Var8 *Var0 .False *Var2 .False .True )
+    % 2nd jump
+    Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  JumpPartTo ( .Actor:Self *Var8 *Var0 *Var1 *Var2 .False .True )
+    Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000001 00000010 )
+    Switch  *VarA
+      CaseOR  ==  .HitResult:Miss % 6
+      CaseOR  ==  .HitResult:Lucky % 5
+          If  *VarA  ==  .HitResult:Lucky % 5
+              Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+          EndIf
+      EndCaseGroup
+      Default
+          Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact|Fire 00000000 00000000 *Var9 00000020 )
+    EndSwitch
+    Call  SetPartFlagBits   ( .Actor:Self *Var8 00000001 .True )
+    Wait  20`
+    Return
+    End
+}
+
+#new:Script $Script_TakeTurn_8022028C_FireBros_3D {
+    0:  Call  GetActorHP    ( .Actor:Self *Var0 )
+   14:  Call  GetEnemyMaxHP ( .Actor:Self *Var1 )
+   28:  MulF  *Var0  *Fixed[100.0] 
+   38:  DivF  *Var0  *Var1
+        Switch *Var0
+          Case > 70`
+            ExecWait  $Script_FireBros_SingleFireBallAttack 
+          Case > 34`
+            ExecWait  $Script_FireBros_MultiFireBallAttack_Two
+          Default
+            ExecWait  $Script_FireBros_MultiFireBallAttack_Six
+        EndSwitch 
+   80:  Return
+   88:  End
+}
+

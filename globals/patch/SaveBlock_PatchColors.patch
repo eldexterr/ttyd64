@@ -1,0 +1,1181 @@
+% Animate the save block colors like in future PM titles.
+
+% Patch ~Func:entity_SaveBlock_init
+%
+% Nuke all animation data everytime a Save Block spawns
+@Hook 102C54 % 802E13D4
+{
+    PUSH    T0, T1, T2, V1, S0, S1
+    % get block data to use
+    LIO     S1, $SaveBlocksData_Table
+    .Loop_DataToUse
+    LW      S0, 0 (S1)
+    % this is the end of the table?
+    ADDI    T2, R0, -1
+    BEQ     S0, T2, .End
+    NOP
+    /% Always nuke all data when a Save Block spawns.
+    LHU     T1, 32 (S0) % data active (byteFlag)
+    BNEL    T1, R0, .Loop_DataToUse
+    ADDIU   S1, S1, 4%/
+    LW      S0, 0 (S1)
+    ADDI    T1, R0, -1
+    SH      T1, 30 (S0) % nuke entityIndex
+    SH      R0, 32 (S0) % nuke active data
+    CLEAR   T0
+    .Loop
+    CLEAR   T1
+    LW      V0, 0 (S0) % get color data
+    LW      V1, 18 (S0) % get animationData
+    % Nuke colors data
+    SW      R0, 0 (V0)
+    SW      R0, 4 (V0)
+    SW      R0, 8 (V0)
+    SW      R0, C (V0)
+    SH      R0, 10 (V0)
+    % Nuke frames data
+    .Loop_NukeFrames
+    SW      R0, 0 (V1)
+    SW      R0, 4 (V1)
+    SW      R0, 8 (V1)
+    SW      R0, C (V1)
+    SW      R0, 10 (V1)
+    SW      R0, 14 (V1)
+    SW      R0, 18 (V1)
+    ADDIU   V1, V1, 8 % get next vertex data
+    ADDIU   T1, T1, 1
+    SLTIU   T2, T1, 9 % Nine because there are 9 vertices per side
+    BNE     T2, R0, .Loop_NukeFrames
+    NOP
+    ADDIU   T0, T0, 1
+    SLTIU   T1, T0, 6 % Six because the cube have 6 sides
+    BNE     T1, R0, .Loop
+    ADDIU   S0, S0, 4
+    % check if there's still data left to be cleared
+    BEQ     R0, R0, .Loop_DataToUse
+    ADDIU   S1, S1, 4
+    .End
+    POP     T0, T1, T2, V1, S0, S1
+    % restore vanilla code
+    LIO     V0, 802E0DE0
+    J       802E13DC
+    RESERVED
+}
+
+% Patch ~Func:entity_SaveBlock_setupGfx
+@Hook 102690 % 802E0E10
+{
+    PUSH    RA
+    JAL     $SaveBlock_AnimateColors
+    NOP
+    POP     RA
+    % restore vanilla code
+    SW	    S1, 00AC (SP)
+    J       802E0E18
+    SDC1	F20, 00D0 (SP)
+}
+%/
+#new:Function $SaveBlock_AnimateColors
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, T0, T1, T2, T3, T4, S0, S1, S2, S3, S4, S5, S6, S7, F0, F2
+    JAL     ~Func:get_entity_by_index
+    LW      A0, 14 (SP) % entityIndex
+    COPY    S7, V0
+    LW      S0, 44 (S7) % saveBlock geometry data
+    % try to find this saveBlock data
+    LIO     T0, $SaveBlocksData_Table
+    .Loop_LookForIndex
+    LW      S6, 0 (T0)
+    % this is the end of the table?
+    ADDI    T2, R0, -1
+    BEQ     S6, T2, .InitSaveBlockData_SaveIndex
+    NOP
+    LHU     T2, 30 (S6) % entityIndex
+    LBU     A0, 4 (S7) % entityIndex
+    BEQ     T2, A0, .DataFound
+    NOP
+    BEQ     R0, R0, .Loop_LookForIndex
+    ADDIU   T0, T0, 4
+    .InitSaveBlockData_SaveIndex
+    % This save block doesn't have any data attach it to it,
+    % try to find one data being available
+    LIO     T0, $SaveBlocksData_Table
+    .Loop_LookForFreeData
+    LW      S6, 0 (T0)
+    % this is the end of the table?
+    ADDI    T2, R0, -1
+    BEQ     S6, T2, .End % There's no data available, skip everything
+    NOP
+    LHU     T2, 32 (S6) % activeByteFlag
+    BNE     T2, R0, .Loop_LookForFreeData
+    ADDIU   T0, T0, 4
+    % free data found
+    LBU     A0, 4 (S7) % entityIndex
+    SH      A0, 30 (S6) % entityIndex
+    ORI     A0, R0, 1
+    SH      A0, 32 (S6) % activeByteFlag
+    .DataFound
+    % Check if the color data is empty
+    LW      T0, 0 (S6) % $SaveBlockX_Colors_Front
+    LBU     T1, 0 (T0)
+    BNE     T1, R0, .SkipInit
+    NOP
+    %================================
+    % Get first colors, fully rng
+    %================================
+    CLEAR   S1 % loop counter
+    CLEAR   S2 % vertex counter
+    .Init_Rand
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 7
+    BEQ     V0, R0, .Init_Rand
+    NOP
+    LW      T1, 18 (S6) % SaveBlockX_Frames_Front
+    BEQL    S1, R0, .Init_GetColors
+    LW      T0, 0 (S6) % $SaveBlockX_Colors_Front
+    ORI     T0, R0, 1
+    LW      T1, 1C (S6) % SaveBlockX_Frames_Back
+    BEQL    S1, T0, .Init_GetColors
+    LW      T0, 4 (S6) % $SaveBlockX_Colors_Back
+    ORI     T0, R0, 2
+    LW      T1, 20 (S6) % SaveBlockX_Frames_Left
+    BEQL    S1, T0, .Init_GetColors
+    LW      T0, 8 (S6) % $SaveBlockX_Colors_Left
+    ORI     T0, R0, 3
+    LW      T1, 24 (S6) % SaveBlockX_Frames_Right
+    BEQL    S1, T0, .Init_GetColors
+    LW      T0, C (S6) % $SaveBlockX_Colors_Right
+    ORI     T0, R0, 4
+    LW      T1, 28 (S6) % SaveBlockX_Frames_Up
+    BEQL    S1, T0, .Init_GetColors
+    LW      T0, 10 (S6) % $SaveBlockX_Colors_Up
+    ORI     T0, R0, 5
+    LW      T1, 2C (S6) % SaveBlockX_Frames_Down
+    BEQL    S1, T0, .Init_GetColors
+    LW      T0, 14 (S6) % $SaveBlockX_Colors_Down
+    .Init_GetColors
+    % T0 = $SaveBlock_Data_XXXX
+    % The next colors for each vertex are being
+    % set?
+    SLTIU   T2, S2, 9
+    BNE     T2, R0, .Init_NotNextColors
+    NOP
+    % Check if the next color for that vertex
+    % is goint to be the same as "current color"
+    %
+    % load current color for that vertex
+    ADDU    T2, T0, S2
+    ADDI    T2, T2, FFFA % -6
+    LBU     T2, 0 (T2)
+    BEQ     T2, V0, .Init_Rand % don't use the same color for next color
+    NOP
+    .Init_NotNextColors
+    ADDU    T0, T0, S2
+    SB      V0, 0 (T0) % save vertex color
+    % save new color in frame data
+    LIO     T2  $SaveBlock_ColorData
+    ORI     T3, R0, 4
+    MULT    V0, T3
+    MFLO    T3
+    ADDU    T4, T2, T3
+    % red
+    LBU     T2, 0 (T4)
+    MTC1    T2, F0
+    CVT.S.W F0, F0
+    SWC1    F0, 4 (T1) % colorRed
+    % green
+    LBU     T2, 1 (T4)
+    MTC1    T2, F0
+    CVT.S.W F0, F0
+    SWC1    F0, C (T1) % colorGreen
+    % blue
+    LBU     T2, 2 (T4)
+    MTC1    T2, F0
+    CVT.S.W F0, F0
+    SWC1    F0, 14 (T1) % colorBlue
+    ADDIU   S2, S2, 1
+    SLTIU   T2, S2, 9
+    BNE     T2, R0, .Init_Rand % write next vertex color
+    NOP
+    CLEAR   S2
+    ADDIU   S1, S1, 1
+    SLTIU   T2, S1, 6 % because the block have 6 sides
+    BNE     T2, R0, .Init_Rand % write next cube's side vertex color data
+    NOP
+    %===================================
+    % Write actual color for each vertex
+    CLEAR   S1
+    CLEAR   S2
+    .Init_WriteColors_GetData
+    BEQ     S1, R0, .Init_WriteData_Front
+    ORI     T0, R0, 1
+    BEQ     S1, T0, .Init_WriteData_Back
+    ORI     T0, R0, 2
+    BEQ     S1, T0, .Init_WriteData_Left
+    ORI     T0, R0, 3
+    BEQ     S1, T0, .Init_WriteData_Right
+    ORI     T0, R0, 4
+    BEQ     S1, T0, .Init_WriteData_Up
+    ORI     T0, R0, 5
+    BEQ     S1, T0, .Init_WriteData_Down
+    NOP
+    .Init_WriteData_Front
+    LW      T0, 0 (S6) % SaveBlockX_Colors_Front
+    LIO     T1, $SaveBlock_ColorsOffsets_Front
+    BEQ     R0, R0, .Init_WriteColors
+    RESERVED
+    .Init_WriteData_Back
+    LW      T0, 4 (S6) % SaveBlockX_Colors_Back
+    LIO     T1, $SaveBlock_ColorsOffsets_Back
+    BEQ     R0, R0, .Init_WriteColors
+    RESERVED
+    .Init_WriteData_Left
+    LW      T0, 8 (S6) % SaveBlockX_Colors_Left
+    LIO     T1, $SaveBlock_ColorsOffsets_Left
+    BEQ     R0, R0, .Init_WriteColors
+    RESERVED
+    .Init_WriteData_Right
+    LW      T0, C (S6) % SaveBlockX_Colors_Right
+    LIO     T1, $SaveBlock_ColorsOffsets_Right
+    BEQ     R0, R0, .Init_WriteColors
+    RESERVED
+    .Init_WriteData_Up
+    LW      T0, 10 (S6) % SaveBlockX_Colors_Up
+    LIO     T1, $SaveBlock_ColorsOffsets_Up
+    BEQ     R0, R0, .Init_WriteColors
+    RESERVED
+    .Init_WriteData_Down
+    LW      T0, 14 (S6) % SaveBlockX_Colors_Down
+    LIO     T1, $SaveBlock_ColorsOffsets_Down
+    BEQ     R0, R0, .Init_WriteColors
+    RESERVED
+    .Init_WriteColors
+    % T0 = $SaveBlock_Data_XXXX
+    % T1 = $SaveBlock_ColorsOffsets_XXXX
+    % S0 = SaveBlock geometry data pointer
+    LBU     V0, 0 (T0) % get vertex colorID
+    % get actual color
+    ORI     T2, R0, 4
+    MULT    V0, T2
+    MFLO    T2
+    LIO     V0, $SaveBlock_ColorData
+    ADDU    V0, V0, T2
+    LW      V0, 0 (V0) % load actual color rgba value
+    LW      T2, 0 (T1) % get vertex's color offset
+    ADDU    T2, S0, T2
+    SW      V0, 0 (T2) % write color
+    % move to next vertex
+    ADDIU   T0, T0, 1
+    ADDIU   T1, T1, 4
+    ADDIU   S2, S2, 1
+    SLTIU   T2, S2, 9 % because each side have 9 vertices
+    BNE     T2, R0, .Init_WriteColors % write next vertex color
+    NOP
+    CLEAR   S2
+    ADDIU   S1, S1, 1
+    SLTIU   T2, S1, 6 % because the block have 6 sides
+    BNE     T2, R0, .Init_WriteColors_GetData % write next cube's side vertex color data
+    NOP
+    .SkipInit
+    %=====================
+    % Animate the color for each vertex
+    %=====================
+    CLEAR   S1
+    CLEAR   S2
+    .Anim_GetData_Frames
+    BEQ     S1, R0, .Anim_GetFrameData_Front
+    ORI     T0, R0, 1
+    BEQ     S1, T0, .Anim_GetFrameData_Back
+    ORI     T0, R0, 2
+    BEQ     S1, T0, .Anim_GetFrameData_Left
+    ORI     T0, R0, 3
+    BEQ     S1, T0, .Anim_GetFrameData_Right
+    ORI     T0, R0, 4
+    BEQ     S1, T0, .Anim_GetFrameData_Up
+    ORI     T0, R0, 5
+    BEQ     S1, T0, .Anim_GetFrameData_Down
+    NOP
+    .Anim_GetFrameData_Front
+    LW      S3, 0 (S6) % $SaveBlockX_Colors_Front
+    LIO     S4, $SaveBlock_ColorsOffsets_Front
+    BEQ     R0, R0, .Anim_CheckFrames
+    LW      S5, 18 (S6) % $SaveBlockX_Frames_Front
+    .Anim_GetFrameData_Back
+    LW      S3, 4 (S6) % $SaveBlockX_Colors_Back
+    LIO     S4, $SaveBlock_ColorsOffsets_Back
+    BEQ     R0, R0, .Anim_CheckFrames
+    LW      S5, 1C (S6) % $SaveBlockX_Frames_Back
+    .Anim_GetFrameData_Left
+    LW      S3, 8 (S6) % $SaveBlockX_Colors_Left
+    LIO     S4, $SaveBlock_ColorsOffsets_Left
+    BEQ     R0, R0, .Anim_CheckFrames
+    LW      S5, 20 (S6) % $SaveBlockX_Frames_Left
+    .Anim_GetFrameData_Right
+    LW      S3, C (S6) % $SaveBlockX_Colors_Right
+    LIO     S4, $SaveBlock_ColorsOffsets_Right
+    BEQ     R0, R0, .Anim_CheckFrames
+    LW      S5, 24 (S6) % $SaveBlockX_Frames_Right
+    .Anim_GetFrameData_Up
+    LW      S3, 10 (S6) % $SaveBlockX_Colors_Up
+    LIO     S4, $SaveBlock_ColorsOffsets_Up
+    BEQ     R0, R0, .Anim_CheckFrames
+    LW      S5, 28 (S6) % $SaveBlockX_Frames_Up
+    .Anim_GetFrameData_Down
+    LW      S3, 14 (S6) % $SaveBlockX_Colors_Down
+    LIO     S4, $SaveBlock_ColorsOffsets_Down
+    BEQ     R0, R0, .Anim_CheckFrames
+    LW      S5, 2C (S6) % $SaveBlockX_Frames_Down
+    .Anim_CheckFrames
+    % S1=Block current side index
+    % S2=Block current vertex index
+    % S3=Block current side - color data
+    % S5=Block current side - frames data
+    %
+    % get data offsets for current vertex
+    ADDU    S3, S3, S2 % color data
+    ORI     T0, R0, 1C
+    MULT    T0, S2
+    MFLO    T0
+    ADDU    S5, S5, T0 % frames data
+    % Check if is time to get a new color
+    %
+    % if both frames are the same get a new color (needed only when comming from the Init stuff)
+    LHU     T0, 0 (S5) % load current frame
+    LHU     T1, 2 (S5) % load final frame
+    BEQ     T0, T1, .Anim_GetNewColor
+    NOP
+    /% get random value to swap to the next color
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 40
+    ADDIU   V0, V0, 170 % the lowest, the fastest the vertices will swap colors
+    LHU     T0, 0 (S5) % load current frame
+    SLTU    T1, T0, V0
+    BEQ     T1, R0, .Anim_GetNewColor
+    NOP%/
+    %=========================
+    % Fade color to the next one
+    .Anim_FadeColor
+    % S0=Save Block geometry data pointer
+    % S1=Block current side index
+    % S2=Block current vertex index
+    % S3=Block current side - color data
+    % S4=Block current side - colors offsets data
+    % S5=Block current side - frames data
+    %
+    % get offset for this vertex color data
+    ORI     T0, R0, 4
+    MULT    T0, S2
+    MFLO    T0
+    ADDU    S4, S4, T0
+    LW      T0, 0 (S4) % load offset needed to load this vertex color
+    ADDU    T1, S0, T0
+    % update colors
+    %
+    % RED
+    LWC1    F0, 4 (S5) % colorRed
+    LWC1    F2, 8 (S5) % updateRedBy    
+    ADD.S   F0, F0, F2
+    SWC1    F0, 4 (S5) % colorRed
+    CVT.W.S F0, F0 % convert to hex
+    MFC1    T2, F0
+    SB      T2, 0 (T1) % save new color - red
+    % GREEN
+    LWC1    F0, C (S5) % colorGreen
+    LWC1    F2, 10 (S5) % updateGreenBy
+    ADD.S   F0, F0, F2
+    SWC1    F0, C (S5) % colorGreen
+    CVT.W.S F0, F0 % convert to hex
+    MFC1    T2, F0
+    SB      T2, 1 (T1) % save new color - green
+    % BLUE
+    LWC1    F0, 14 (S5) % colorBlue
+    LWC1    F2, 18 (S5) % updateBlueBy
+    ADD.S   F0, F0, F2
+    SWC1    F0, 14 (S5) % colorBlue
+    CVT.W.S F0, F0 % convert to hex
+    MFC1    T2, F0
+    SB      T2, 2 (T1) % save new color - blue
+    .AdvanceData
+    COPY    T3, T1 % copy vertex's current color pointer in T3
+    % Advance data
+    %
+    % Move frames
+    LHU     T0, 0 (S5) % load current frame
+    LHU     T1, 2 (S5) % load last frame
+    ADDIU   T0, T0, 1
+    SH      T0, 0 (S5) % save current frame
+    % check if current has reached final frame
+    BNE     T0, T1, .Anim_NotFinalFrame
+    NOP
+    % set current color as next color (The RGBA value not the colorIDs)
+    %
+    LBU     T1, 9 (S3) % load next colorID
+    % get actual RGBA value for next color
+    ORI     T2, R0, 4
+    MULT    T1, T2
+    MFLO    T2
+    LIO     V0, $SaveBlock_ColorData
+    ADDU    V0, V0, T2
+    LW      V0, 0 (V0)
+    SW      V0, 0 (T3) % save color
+    .Anim_NotFinalFrame
+    % Move to next vertex
+    ADDIU   S2, S2, 1
+    SLTIU   T0, S2, 9
+    BNE     T0, R0, .Anim_GetData_Frames
+    NOP
+    % Move to next side of the block
+    CLEAR   S2
+    ADDIU   S1, S1, 1
+    SLTIU   T0, S1, 6
+    BNE     T0, R0, .Anim_GetData_Frames
+    NOP
+    % All the colors from all vertices and from all sides have been overwriten
+    BEQ     R0, R0, .End
+    NOP
+    %==========================
+    .Anim_GetNewColor
+    % The color from that vertex has completely faded
+    % to the new one, get the next color for that vertex
+    %
+    % S3=Block current side - color data
+    % S5=Block current side - frames data
+    %
+    % Nuke last frame data for that vertex
+    SW      R0, 0 (S5)
+    SW      R0, 4 (S5)
+    SW      R0, 8 (S5)
+    SW      R0, C (S5)
+    SW      R0, 10 (S5)
+    SW      R0, 14 (S5)
+    SW      R0, 18 (S5)
+    LBU     T0, 9 (S3) % load next color for that vertex
+    SB      T0, 0 (S3) % set current color as next color
+    .NextColor_Rand
+    % get next color for that vertex
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 7
+    BEQ     V0, R0, .NextColor_Rand
+    NOP
+    % check the next color isn't the same as the current one
+    LBU     T0, 0 (S3) % load current color
+    BEQ     T0, V0, .NextColor_Rand
+    NOP
+    SB      V0, 9 (S3) % save next color
+    % get animation speed
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 10`
+    ADDIU   V0, V0, 10` % the lowest, the fastest the animations will go
+    SH      V0, 2 (S5)
+    COPY    V1, V0
+    % get amount needed to add between each frame to get to the next
+    % color on that amount of frames
+    %
+    % load current and next colors, actual rgb values
+    LBU     T0, 0 (S3) % load current colorID
+    LBU     T1, 9 (S3) % load next colorID
+    % get actual color (current color)
+    ORI     T2, R0, 4
+    MULT    T0, T2
+    MFLO    T2
+    LIO     V0, $SaveBlock_ColorData
+    ADDU    V0, V0, T2
+    % get actual color (next color)
+    ORI     T2, R0, 4
+    MULT    T1, T2
+    MFLO    T2
+    LIO     V1, $SaveBlock_ColorData
+    ADDU    V1, V1, T2
+    % V0=Current color actual RGBA value
+    % V1=Next color actual RGBA value (pointer)
+    %
+    % update color - RED
+    LBU     T0, 0 (V0) % load color - red (current color)
+    % convert color to float and save in frame data
+    MTC1    T0, F0
+    CVT.S.W F0, F0
+    SWC1    F0, 4 (S5) % colorRed
+    LBU     T1, 0 (V1) % load color - red (next color)
+    LHU     T4, 2 (S5) % lastFrame
+    BEQ     T0, T1, .UpdateRed
+    MTC1    R0, F0
+    % check which amount is bigger
+    SLTU    T3, T0, T1
+    BNEL    T3, R0 .GetAmountToAdd_Red
+    SUB     T2, T1, T0 % positive
+    SUB     T2, T0, T1 % negative
+    .GetAmountToAdd_Red
+    % convert to floats
+    MTC1    T2, F0
+    MTC1    T4, F2
+    CVT.S.W F0, F0
+    CVT.S.W F2, F2
+    DIV.S   F0, F0, F2
+    LIF     F2, -1.0
+    BEQL    T3, R0 .UpdateRed
+    MUL.S   F0, F0, F2 % turn amount to negative
+    .UpdateRed
+    SWC1    F0, 8 (S5) % updateRedBy
+    %=====================
+    % update color - GREEN
+    LBU     T0, 1 (V0) % load color - Green (current color)
+    % convert color to float and save in frame data
+    MTC1    T0, F0
+    CVT.S.W F0, F0
+    SWC1    F0, C (S5) % colorGreen
+    LBU     T1, 1 (V1) % load color - Green (next color)
+    LHU     T4, 2 (S5) % lastFrame
+    BEQ     T0, T1, .UpdateGreen
+    MTC1    R0, F0
+    % check which amount is bigger
+    SLTU    T3, T0, T1
+    BNEL    T3, R0 .GetAmountToAdd_Green
+    SUB     T2, T1, T0 % positive
+    SUB     T2, T0, T1 % negative
+    .GetAmountToAdd_Green
+    % convert to floats
+    MTC1    T2, F0
+    MTC1    T4, F2
+    CVT.S.W F0, F0
+    CVT.S.W F2, F2
+    DIV.S   F0, F0, F2
+    LIF     F2, -1.0
+    BEQL    T3, R0 .UpdateGreen
+    MUL.S   F0, F0, F2 % turn amount to negative
+    .UpdateGreen
+    SWC1    F0, 10 (S5) % updateGreenBy
+    %=====================
+    % update color - BLUE
+    LBU     T0, 2 (V0) % load color - Blue (current color)
+    % convert color to float and save in frame data
+    MTC1    T0, F0
+    CVT.S.W F0, F0
+    SWC1    F0, 14 (S5) % colorBlue
+    LBU     T1, 2 (V1) % load color - Blue (next color)
+    LHU     T4, 2 (S5) % lastFrame
+    BEQ     T0, T1, .UpdateBlue
+    MTC1    R0, F0
+    % check which amount is bigger
+    SLTU    T3, T0, T1
+    BNEL    T3, R0 .GetAmountToAdd_Blue
+    SUB     T2, T1, T0 % positive
+    SUB     T2, T0, T1 % negative
+    .GetAmountToAdd_Blue
+    % convert to floats
+    MTC1    T2, F0
+    MTC1    T4, F2
+    CVT.S.W F0, F0
+    CVT.S.W F2, F2
+    DIV.S   F0, F0, F2
+    LIF     F2, -1.0
+    BEQL    T3, R0 .UpdateBlue
+    MUL.S   F0, F0, F2 % turn amount to negative
+    .UpdateBlue
+    BEQ     R0, R0, .Anim_GetData_Frames
+    SWC1    F0, 18 (S5) % updateBlueBy
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, T0, T1, T2, T3, T4, S0, S1, S2, S3, S4, S5, S6, S7, F0, F2
+    JR      RA
+    NOP
+}
+
+% Data for each Save Block (neccesary if multiple save blocks are in one map like trd_00)
+#new:Data $SaveBlocksData_Table
+{
+    $SaveBlockData0
+    $SaveBlockData1
+    %$SaveBlockData2
+    FFFFFFFF
+}
+
+#new:Data $SaveBlockData0
+{
+    % colors
+    /% 0x00 %/ $SaveBlock0_Colors_Front
+    /% 0x04 %/ $SaveBlock0_Colors_Back
+    /% 0x08 %/ $SaveBlock0_Colors_Left
+    /% 0x0C %/ $SaveBlock0_Colors_Right
+    /% 0x10 %/ $SaveBlock0_Colors_Up
+    /% 0x14 %/ $SaveBlock0_Colors_Down
+    % animationData
+    /% 0x18 %/ $SaveBlock0_Frames_Front
+    /% 0x1C %/ $SaveBlock0_Frames_Back
+    /% 0x20 %/ $SaveBlock0_Frames_Left
+    /% 0x24 %/ $SaveBlock0_Frames_Right
+    /% 0x28 %/ $SaveBlock0_Frames_Up
+    /% 0x2C %/ $SaveBlock0_Frames_Down
+    /% 0x30 %/ FFFFs % entityIndex
+    /% 0x32 %/ 0000s % data being active (byteFlag)
+}
+
+#new:Data $SaveBlockData1
+{
+    % colors
+    /% 0x00 %/ $SaveBlock1_Colors_Front
+    /% 0x04 %/ $SaveBlock1_Colors_Back
+    /% 0x08 %/ $SaveBlock1_Colors_Left
+    /% 0x0C %/ $SaveBlock1_Colors_Right
+    /% 0x10 %/ $SaveBlock1_Colors_Up
+    /% 0x14 %/ $SaveBlock1_Colors_Down
+    % animationData
+    /% 0x18 %/ $SaveBlock1_Frames_Front
+    /% 0x1C %/ $SaveBlock1_Frames_Back
+    /% 0x20 %/ $SaveBlock1_Frames_Left
+    /% 0x24 %/ $SaveBlock1_Frames_Right
+    /% 0x28 %/ $SaveBlock1_Frames_Up
+    /% 0x2C %/ $SaveBlock1_Frames_Down
+    /% 0x30 %/ FFFFs % entityIndex
+    /% 0x32 %/ 0000s % data being active (byteFlag)
+}
+
+% rgb values for each color, the order of each color
+% is according to the color IDs
+#new:Data $SaveBlock_ColorData
+{
+    00000000 % Nothing
+    F50F0F99 % Red % RGBA
+    F0DD0C99 % Yellow
+    EBA70999 % Orange
+    1CED0999 % Green
+    8D07ED99 % Purple
+    05E5ED99 % Sky Blue
+    0202EB99 % Blue
+}
+
+% Each byte is the current color for each vertex
+%
+% ColorIDs:
+% 0x01=Red
+% 0x02=Yellow
+% 0x03=Orange
+% 0x04=Green
+% 0x05=Purple
+% 0x06=Sky Blue
+% 0x07=Blue
+#new:Data $SaveBlock0_Colors_Front
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock0_Colors_Back
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock0_Colors_Left
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock0_Colors_Right
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock0_Colors_Up
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock0_Colors_Down
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+% SaveBlock1
+
+#new:Data $SaveBlock1_Colors_Front
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock1_Colors_Back
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock1_Colors_Left
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock1_Colors_Right
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock1_Colors_Up
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+#new:Data $SaveBlock1_Colors_Down
+{
+    % current colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+    % next colors
+    0b 0b 0b
+    0b 0b 0b
+    0b 0b 0b
+}
+
+% 0x00 - u16 currentFrame
+% 0x02 - u16 LastFrame
+% 0x04 - f32 colorRed (Hex value formated as a float)
+% 0x08 - f32 updateRedBy (amount to add between each frame)
+% 0x0C - f32 colorGreen
+% 0x10 - f32 updateGreenBy
+% 0x14 - f32 colorBlue
+% 0x18 - f32 updateBlueBy
+%
+% Size 0x1C bytes
+#new:Data $SaveBlock0_Frames_Front
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock0_Frames_Back
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock0_Frames_Left
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock0_Frames_Right
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock0_Frames_Up
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock0_Frames_Down
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+% SaveBlock1
+
+#new:Data $SaveBlock1_Frames_Front
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock1_Frames_Back
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock1_Frames_Left
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock1_Frames_Right
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock1_Frames_Up
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock1_Frames_Down
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $SaveBlock_ColorsOffsets_Front
+{
+    66C 59C 65C % Top
+    62C 5AC 58C % Middle
+    63C 64C 5BC % Bottom
+}
+
+#new:Data $SaveBlock_ColorsOffsets_Back
+{
+    55C 52C 51C % Top
+    56C 53C 54C % Middle
+    60C 57C 61C % Bottom
+}
+
+#new:Data $SaveBlock_ColorsOffsets_Left
+{
+    67C 5CC 6AC % Top
+    68C 69C 5DC % Middle
+    5EC 5FC 6BC % Bottom
+}
+
+#new:Data $SaveBlock_ColorsOffsets_Right
+{
+    44C 42C 41C % Top
+    45C 43C 40C % Middle
+    46C 47C 48C % Bottom
+}
+
+#new:Data $SaveBlock_ColorsOffsets_Up
+{
+    3CC 3BC 3FC % Top
+    3AC 39C 3EC % Middle
+    37C 38C 3DC % Bottom
+}
+
+#new:Data $SaveBlock_ColorsOffsets_Down
+{
+    4EC 4DC 4CC % Top
+    4FC 4AC 47C % Middle % 47C is used by right too
+    50C 4BC 49C % Bottom
+}
+
+%=========================
+% Save Block geometry data
+%=========================
+
+% vertexs Data
+% [00040006] [00000000] [014B02F9] [FF60DFE5]
+% [Rotation] [ ?  ?  ?] [ ?  ?  ?] [ Color  ]
+
+/% Only for reference
+
+@Data E4B2E0 % 80264AE0
+{
+% START - unknown data
+00040006 00000000 014B02F9 FF60DFE5 % 0x00 - 0x0C
+0007FFFE 00000000 00DC01A1 FF60DFE5 % 0x10 - 0x1C
+0000FFF9 00000000 020000CD FF60DFE5 % 0x20 - 0x2C
+FFF9FFFE 00000000 032401A1 FF60DFE5 % 0x30 - 0x3C
+FFFC0006 00000000 02B502F9 FF60DFE5 % 0x40 - 0x4C
+000C0004 00000000 0019029E FF60DFE5 % 0x50 - 0x5C
+0000000D 00000000 02000400 FF60DFE5 % 0x60 - 0x6C
+0008FFF5 00000000 00D30062 FF60DFE5 % 0x70 - 0x7C
+FFF8FFF5 00000000 032D0062 FF60DFE5 % 0x80 - 0x8C
+FFF40004 00000000 03E7029E FF60DFE5 % 0x90 - 0x9C
+0000000D 00000000 02000400 FFFF2AE5 % 0xA0 - 0xAC
+FFFC0006 00000000 014B02F9 FFFF2AE5 % 0xB0 - 0xBC
+00040006 00000000 02B502F9 FFFF2AE5 % 0xC0 - 0xCC
+FFF9FFFE 00000000 00DC01A1 FFFF2AE5 % 0xD0 - 0xDC
+0000FFF9 00000000 020000CD FFFF2AE5 % 0xE0 - 0xEC
+0007FFFE 00000000 032401A1 FFFF2AE5 % 0xF0 - 0xFC
+FFF40004 00000000 0019029E FFFF2AE5 % 0x100 - 0x10C
+000C0004 00000000 03E7029E FFFF2AE5 % 0x110 - 0x11C
+FFF8FFF5 00000000 00D30062 FFFF2AE5 % 0x120 - 0x12C
+0008FFF5 00000000 032D0062 FFFF2AE5 % 0x130 - 0x13C
+FFF10000 00000000 009EFD97 FFFFFF7E % 0x140 - 0x14C
+00000000 00000000 0277FE5B FFFFFF7E % 0x150 - 0x15C
+FFF50000 FFF50000 009EFF1F FFFFFF7E % 0x160 - 0x16C
+FFEC0000 00000000 0000FD55 FFFFFF00 % 0x170 - 0x17C
+FFF20000 FFF20000 0000FF60 FFFFFF00 % 0x180 - 0x18C
+FFF50000 000B0000 009EFD97 FFFFFF7E % 0x190 - 0x19C
+FFF10000 00000000 009EFF1F FFFFFF7E % 0x1A0 - 0x1AC
+FFF20000 000E0000 0000FD55 FFFFFF00 % 0x1B0 - 0x1BC
+FFEC0000 00000000 0000FF60 FFFFFF00 % 0x1C0 - 0x1CC
+FFF20000 FFF20000 0000FD55 FFFFFF00 % 0x1D0 - 0x1DC
+FFF50000 FFF50000 009EFD97 FFFFFF7E % 0x1E0 - 0x1EC
+00000000 FFF10000 009EFF1F FFFFFF7E % 0x1F0 - 0x1FC
+00000000 FFEC0000 0000FF60 FFFFFF00 % 0x200 - 0x20C
+00000000 00000000 0277FE5B FFFFFF7E % 0x210 - 0x21C
+00000000 000F0000 009EFD97 FFFFFF7E % 0x220 - 0x22C
+FFF50000 000B0000 009EFF1F FFFFFF7E % 0x230 - 0x23C
+000B0000 000B0000 009EFD97 FFFFFF7E % 0x240 - 0x24C
+00000000 000F0000 009EFF1F FFFFFF7E % 0x250 - 0x25C
+00000000 FFF10000 009EFD97 FFFFFF7E % 0x260 - 0x26C
+000B0000 FFF50000 009EFF1F FFFFFF7E % 0x270 - 0x27C
+00000000 FFEC0000 0000FD55 FFFFFF00 % 0x280 - 0x28C
+000E0000 FFF20000 0000FF60 FFFFFF00 % 0x290 - 0x29C
+00000000 00140000 0000FD55 FFFFFF00 % 0x2A0 - 0x2AC
+FFF20000 000E0000 0000FF60 FFFFFF00 % 0x2B0 - 0x2BC
+000E0000 000E0000 0000FD55 FFFFFF00 % 0x2C0 - 0x2CC
+00000000 00140000 0000FF60 FFFFFF00 % 0x2D0 - 0x2DC
+00140000 00000000 0000FD55 FFFFFF00 % 0x2E0 - 0x2EC
+000F0000 00000000 009EFD97 FFFFFF7E % 0x2F0 - 0x2FC
+000B0000 000B0000 009EFF1F FFFFFF7E % 0x300 - 0x30C
+000E0000 000E0000 0000FF60 FFFFFF00 % 0x310 - 0x31C
+00000000 00000000 0277FE5B FFFFFF7E % 0x320 - 0x32C
+000B0000 FFF50000 009EFD97 FFFFFF7E % 0x330 - 0x33C
+000E0000 FFF20000 0000FD55 FFFFFF00 % 0x340 - 0x34C
+000F0000 00000000 009EFF1F FFFFFF7E % 0x350 - 0x35C
+00140000 00000000 0000FF60 FFFFFF00 % 0x360 - 0x36C
+% END - unknown data
+%
+% Top of the Cube Data
+FFF3000D 000D0000 00000000 FE0F0F99 % 0x370 - 0x37C % Top - vertex 1 Data
+0000000D 000D0000 00000000 9F0FFE99 % 0x380 - 0x38C % Top - vertex 2 Data
+0000000D 00000000 00000000 FFFFFF99 % 0x390 - 0x39C % Top - vertex 3 Data
+FFF3000D 00000000 00000000 FE6F0F99 % 0x3A0 - 0x3AC % Top - vertex 4 Data
+0000000D FFF30000 00000000 3FFE0F99 % 0x3B0 - 0x3BC % Top - vertex 5 Data
+FFF3000D FFF30000 00000000 FEFE0F99 % 0x3C0 - 0x3CC % Top - vertex 6 Data
+000D000D 000D0000 00000000 2A2AFF99 % 0x3D0 - 0x3DC % Top - vertex 7 Data
+000D000D 00000000 00000000 2AFFFF99 % 0x3E0 - 0x3EC % Top - vertex 8 Data
+000D000D FFF30000 00000000 00F39199 % 0x3F0 - 0x3FC % Top - vertex 9 Data
+% Right side of the Cube Data
+000D0001 FFF30000 00000000 00BC9699 % 0x400 - 0x40C % Right - vertex 1 Data
+000D000D FFF30000 00000000 2AFFFF99 % 0x410 - 0x41C % Right - vertex 2 Data
+000D000D 00000000 00000000 2A2AFF99 % 0x420 - 0x42C % Right - vertex 3 Data
+000D0001 00000000 00000000 FFFFFF99 % 0x430 - 0x43C % Right - vertex 4 Data
+000D000D 000D0000 00000000 D42AFF99 % 0x440 - 0x44C % Right - vertex 5 Data
+000D0001 000D0000 00000000 FF2A2A99 % 0x450 - 0x45C % Right - vertex 6 Data
+000DFFF3 000D0000 00000000 F3910099 % 0x460 - 0x46C % Right - vertex 7 Data
+000DFFF3 00000000 00000000 FEFE0F99 % 0x470 - 0x47C % Right & Bottom - vertex 8(Right) & 9(Bottom) Data
+000DFFF3 FFF30000 00000000 61F30099 % 0x480 - 0x48C % Right - vertex 9 Data
+% Bottom side of the Cube Data
+000DFFF3 FFF30000 00000000 FF7F2A99 % 0x490 - 0x49C % Bottom - vertex 1 Data
+0000FFF3 00000000 00000000 FFFFFF99 % 0x4A0 - 0x4AC % Bottom - vertex 2 Data
+0000FFF3 FFF30000 00000000 FE0F3F99 % 0x4B0 - 0x4BC % Bottom - vertex 3 Data
+000DFFF3 000D0000 00000000 6FFE0F99 % 0x4C0 - 0x4CC % Bottom - vertex 4 Data
+0000FFF3 000D0000 00000000 00D75699 % 0x4D0 - 0x4DC % Bottom - vertex 5 Data
+FFF3FFF3 000D0000 00000000 00D7D799 % 0x4E0 - 0x4EC % Bottom - vertex 6 Data
+FFF3FFF3 00000000 00000000 0F0FFE99 % 0x4F0 - 0x4FC % Bottom - vertex 7 Data
+FFF3FFF3 FFF30000 00000000 9F0FFE99 % 0x500 - 0x50C % Bottom - vertex 8 Data
+% Back side of the Cube Data
+FFF3000D FFF30000 00000000 00F36199 % 0x510 - 0x51C % Back - vertex 1 Data
+0000000D FFF30000 00000000 0FFEFE99 % 0x520 - 0x52C % Back - vertex 2 Data
+00000001 FFF30000 00000000 FFFFFF99 % 0x530 - 0x53C % Back - vertex 3 Data
+FFF30001 FFF30000 00000000 6FFE0F99 % 0x540 - 0x54C % Back - vertex 4 Data
+000D000D FFF30000 00000000 0F0FFE99 % 0x550 - 0x55C % Back - vertex 5 Data
+000D0001 FFF30000 00000000 CF0FFE99 % 0x560 - 0x56C % Back - vertex 6 Data
+0000FFF3 FFF30000 00000000 FE6F0F99 % 0x570 - 0x57C % Back - vertex 7 Data
+% Front and Left Side of the Cube Data
+000D0001 000D0000 00000000 F3910099 % 0x580 - 0x58C % Front - vertex 1 Data
+0000000D 000D0000 00000000 61F30099 % 0x590 - 0x59C % Front - vertex 2 Data
+00000001 000D0000 00000000 FFFFFF99 % 0x5A0 - 0x5AC % Front - vertex 3 Data
+000DFFF3 000D0000 00000000 FE0F0F99 % 0x5B0 - 0x5BC % Front - vertex 4 Data
+FFF3000D 00000000 00000000 FF2A2A99 % 0x5C0 - 0x5CC % Left - vertex 1 Data
+FFF30001 000D0000 00000000 0F0FFE99 % 0x5D0 - 0x5DC % Left - vertex 2 Data
+FFF3FFF3 FFF30000 00000000 6FFE0F99 % 0x5E0 - 0x5EC % Left - vertex 3 Data
+FFF3FFF3 00000000 00000000 00D72B99 % 0x5F0 - 0x5FC % Left - vertex 4 Data
+% Back side of the Cube last Data
+000DFFF3 FFF30000 00000000 FE0F0F99 % 0x600 - 0x60C % Back - vertex 8 Data
+FFF3FFF3 FFF30000 00000000 FEFE0F99 % 0x610 - 0x61C % Back - vertex 9 Data
+% Front and Left Side of the Cube Data
+000D000D 000D0000 00000000 F3F30099 % 0x620 - 0x62C % Front - vertex 5 Data
+FFF3000D 000D0000 00000000 00F39199 % 0x630 - 0x63C % Front - vertex 6 Data
+FFF30001 000D0000 00000000 00F3F399 % 0x640 - 0x64C % Front - vertex 7 Data
+FFF3FFF3 000D0000 00000000 0F0FFE99 % 0x650 - 0x65C % Front - vertex 8 Data
+0000FFF3 000D0000 00000000 C200F399 % 0x660 - 0x66C % Front - vertex 9 Data
+FFF3000D FFF30000 00000000 FE6F0F99 % 0x670 - 0x67C % Left - vertex 5 Data
+FFF30001 FFF30000 00000000 FEFE0F99 % 0x680 - 0x68C % Left - vertex 6 Data
+FFF30001 00000000 00000000 FFFFFF99 % 0x690 - 0x69C % Left - vertex 7 Data
+FFF3000D 000D0000 00000000 9F0FFE99 % 0x6A0 - 0x6AC % Left - vertex 8 Data
+FFF3FFF3 000D0000 00000000 2AFFFF99 % 0x6B0 - 0x6BC % Left - vertex 9 Data
+% S Texture Data
+000D0001 FFF30000 00000214 E1FFFFB2 % 0x6C0 - 0x6CC % S - Back - vertex 1 Data
+000DFFF3 FFF30000 00000000 E1FFFFB2 % 0x6D0 - 0x6DC % S - Back - vertex 2 Data
+0000FFF3 FFF30000 04290000 E1FFFFB2 % 0x6E0 - 0x6EC % S - Back - vertex 3 Data
+00000001 FFF30000 04290214 E1FFFFB2 % 0x6F0 - 0x6FC % S - Back - vertex 4 Data
+0000000D FFF30000 04290400 E1FFFFB2 % 0x700 - 0x70C % S - Back - vertex 5 Data
+000D000D FFF30000 00000400 E1FFFFB2 % 0x710 - 0x71C % S - Back - vertex 6 Data
+FFF3FFF3 FFF30000 08000000 E1FFFFB2 % 0x720 - 0x72C % S - Back - vertex 7 Data
+FFF30001 FFF30000 08000214 E1FFFFB2 % 0x730 - 0x73C % S - Back - vertex 8 Data
+FFF3000D FFF30000 08000400 E1FFFFB2 % 0x740 - 0x74C % S - Back - vertex 9 Data
+%
+0000000D 000D0000 03D70400 E1FFFF80 % 0x750 - 0x75C % S - Front - vertex 1 Data
+FFF3000D 000D0000 00000400 E1FFFF80 % 0x760 - 0x76C % S - Front - vertex 2 Data
+FFF30001 000D0000 00000214 E1FFFF80 % 0x770 - 0x77C % S - Front - vertex 3 Data
+00000001 000D0000 03D70214 E1FFFF80 % 0x780 - 0x78C % S - Front - vertex 4 Data
+000D0001 000D0000 08000214 E1FFFF80 % 0x790 - 0x79C % S - Front - vertex 5 Data
+000D000D 000D0000 08000400 E1FFFF80 % 0x7A0 - 0x7AC % S - Front - vertex 6 Data
+FFF3FFF3 000D0000 00000000 E1FFFF80 % 0x7B0 - 0x7BC % S - Front - vertex 7 Data
+0000FFF3 000D0000 03D70000 E1FFFF80 % 0x7C0 - 0x7CC % S - Front - vertex 8 Data
+000DFFF3 000D0000 08000000 E1FFFF80 % 0x7D0 - 0x7DC % S - Front - vertex 9 Data
+%
+000D0001 FFF30000 08000214 E1FFFF80 % 0x7E0 - 0x7EC % S - Right - vertex 1 Data
+000D000D FFF30000 08000400 E1FFFF80 % 0x7F0 - 0x7FC % S - Right - vertex 2 Data
+000D000D 00000000 04000400 E1FFFF80 % 0x800 - 0x80C % S - Right - vertex 3 Data
+000D0001 00000000 04000214 E1FFFF80 % 0x810 - 0x81C % S - Right - vertex 4 Data
+000D000D 000D0000 00000400 E1FFFF80 % 0x820 - 0x82C % S - Right - vertex 5 Data
+000D0001 000D0000 00000214 E1FFFF80 % 0x830 - 0x83C % S - Right - vertex 6 Data
+000DFFF3 000D0000 00000000 E1FFFF80 % 0x840 - 0x84C % S - Right - vertex 7 Data
+000DFFF3 00000000 04000000 E1FFFF80 % 0x850 - 0x85C % S - Right - vertex 8 Data
+000DFFF3 FFF30000 08000000 E1FFFF80 % 0x860 - 0x86C % S - Right - vertex 9 Data
+%
+FFF3FFF3 FFF30000 00000000 E1FFFF80 % 0x870 - 0x87C % S - Left - vertex 1 Data
+FFF3FFF3 00000000 04000000 E1FFFF80 % 0x880 - 0x88C % S - Left - vertex 2 Data
+FFF30001 00000000 04000214 E1FFFF80 % 0x890 - 0x89C % S - Left - vertex 3 Data
+FFF30001 FFF30000 00000214 E1FFFF80 % 0x8A0 - 0x8AC % S - Left - vertex 4 Data
+FFF3FFF3 000D0000 08000000 E1FFFF80 % 0x8B0 - 0x8BC % S - Left - vertex 5 Data
+FFF30001 000D0000 08000214 E1FFFF80 % 0x8C0 - 0x8CC % S - Left - vertex 6 Data
+FFF3000D 00000000 04000400 E1FFFF80 % 0x8D0 - 0x8DC % S - Left - vertex 7 Data
+FFF3000D 000D0000 08000400 E1FFFF80 % 0x8E0 - 0x8EC % S - Left - vertex 8 Data
+FFF3000D FFF30000 00000400 E1FFFF80 % 0x8F0 - 0x8FC % S - Left - vertex 9 Data
+}%/

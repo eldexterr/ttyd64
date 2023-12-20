@@ -1,0 +1,115 @@
+% Script File: 09 Goombaria.wscr
+% Decoded from: 324F10 to 325070 (09 Goombaria)
+
+#new:Function $Function_Init
+{
+    0:  LI        V0, 18
+    4:  SH        V0, A8 (A0)
+    8:  LI        V0, 14
+    C:  JR        RA
+   10:  SH        V0, A6 (A0)
+}
+
+#new:Function $Function_802BD114
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 14 (SP)
+    8:  SW        S0, 10 (SP)
+    C:  BEQ       A1, R0, .o1C
+   10:  LW        S0, 14C (A0)
+   14:  JAL       ~Func:partner_init_get_out
+   18:  COPY      A0, S0
+        .o1C
+   1C:  JAL       ~Func:partner_get_out
+   20:  COPY      A0, S0
+   24:  LW        RA, 14 (SP)
+   28:  LW        S0, 10 (SP)
+   2C:  SLTU      V0, R0, V0
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802BD14C
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S1, 14 (SP)
+    8:  LA        S1, 8010F290
+   10:  SW        RA, 18 (SP)
+   14:  SW        S0, 10 (SP)
+   18:  LW        S0, 14C (A0)
+   1C:  BEQ       A1, R0, .o2C
+   20:  COPY      A0, S0
+   24:  JAL       ~Func:partner_walking_enable
+   28:  LI        A1, 1
+        .o2C
+   2C:  JAL       ~Func:partner_walking_update_player_tracking
+   30:  COPY      A0, S0
+   34:  JAL       ~Func:partner_walking_update_motion
+   38:  COPY      A0, S0
+   3C:  LW        V0, 31C (S1)
+   40:  ADDIU     V0, V0, 1
+   44:  SW        V0, 31C (S1)
+   48:  LW        RA, 18 (SP)
+   4C:  LW        S1, 14 (SP)
+   50:  LW        S0, 10 (SP)
+   54:  CLEAR     V0
+   58:  JR        RA
+   5C:  ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_802BD1AC
+{
+    0:  JR        RA
+    4:  LI        V0, 2
+}
+
+#new:Function $Function_802BD1B4
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 14 (SP)
+    8:  SW        S0, 10 (SP)
+    C:  BEQ       A1, R0, .o1C
+   10:  LW        S0, 14C (A0)
+   14:  JAL       ~Func:partner_init_put_away
+   18:  COPY      A0, S0
+        .o1C
+   1C:  JAL       ~Func:partner_put_away
+   20:  COPY      A0, S0
+   24:  LW        RA, 14 (SP)
+   28:  LW        S0, 10 (SP)
+   2C:  SLTU      V0, R0, V0
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 18
+}
+
+PADDING: 802BD1EC to 802BD1F0 (00324FFC to 00325000)
+00000000
+
+#new:Script $Script_TakeOut
+{
+    0:  Call  $Function_802BD114 ( )
+    C:  Return
+   14:  End
+}
+
+#new:Script $Script_UseAbility
+{
+    0:  Call  $Function_802BD14C ( )
+    C:  Return
+   14:  End
+}
+
+#new:Script $Script_Update
+{
+    0:  Call  $Function_802BD1AC ( )
+    C:  Return
+   14:  End
+}
+
+#new:Script $Script_PutAway
+{
+    0:  Call  $Function_802BD1B4 ( )
+    C:  Return
+   14:  End
+}
+

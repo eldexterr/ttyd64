@@ -1,0 +1,138 @@
+% Add new exit, a save block and a healing block, and change badge
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000005
+    [Background]  80200000
+    [MapTattle]   00190123
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 %    0.0    0.0  100.0   90.0
+    ~Vec4f:Entry1 %  460.0    0.0    0.0  270.0
+    ~Vec4f:Entry2 %    0.0 -500.0    0.0    0.0
+    ~Vec4f:Entry3 %    0.0    0.0    0.0    0.0
+    ~Vec4f:Entry4
+}
+
+@ $Script_Main_EnterWalk {
+    0:  Set   *GB_WorldLocation  .Location:CloudyClimb
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   34:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   54:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  Set   *GF_Map_CloudyClimb  .True
+   94:  ExecWait  $Script_80240AC0
+   A0:  Call  ParentColliderToModel ( ~Collider:o117 ~Model:o142 )
+   B4:  Call  HidePlayerShadow  ( .True )
+        Exec  $Script_BindExit0 % Script_80242FD0
+   D0:  Exec  $Script_80241780
+   DC:  Call  ModifyColliderFlags   ( 00000003 ~Collider:o122 00000007 )
+   F4:  Call  EnableTexPanning  ( ~Model:o59 .True )
+  108:  Call  EnableTexPanning  ( ~Model:o60 .True )
+  11C:  Thread
+  124:  	Set   *Var0  00000001
+  134:  	Set   *Var1  FFFFFF88
+  144:  	Set   *Var2  00000000
+  154:  	Set   *Var3  00000000
+  164:  	Set   *Var4  00000000
+  174:  	Set   *Var5  00000001
+  184:  	Set   *Var6  00000000
+  194:  	Set   *Var7  00000000
+  1A4:  	Set   *Var8  00000000
+  1B4:  	Set   *Var9  00000000
+  1C4:  	Set   *VarA  00000000
+  1D4:  	Set   *VarB  00000000
+  1E4:  	Set   *VarC  00000000
+  1F4:  	Exec  $Script_UpdateTexturePan_80240B00
+  200:  EndThread
+  208:  Thread
+  210:  	Set   *Var0  00000002
+  220:  	Set   *Var1  FFFFFFA6
+  230:  	Set   *Var2  00000000
+  240:  	Set   *Var3  00000000
+  250:  	Set   *Var4  00000000
+  260:  	Set   *Var5  00000001
+  270:  	Set   *Var6  00000000
+  280:  	Set   *Var7  00000000
+  290:  	Set   *Var8  00000000
+  2A0:  	Set   *Var9  00000000
+  2B0:  	Set   *VarA  00000000
+  2C0:  	Set   *VarB  00000000
+  2D0:  	Set   *VarC  00000000
+  2E0:  	Exec  $Script_UpdateTexturePan_80240B00
+  2EC:  EndThread
+  2F4:  Call  GetEntryID    ( *Var0 )
+  304:  If  *Var0  !=  ~Entry:Entry3
+  314:  	Set   *AreaFlag[02C]  .False
+  324:  EndIf
+        Call  GetLoadType   ( *Var1 )
+        If  *Var1  ==  00000001
+            Exec  EnterSavePoint
+            Exec  $Script_80240BF8
+            Call  ModifyColliderFlags   ( 00000000 ~Collider:deilite 7FFFFE00 )
+        Else
+  32C:      Switch  *Var0
+  338:      	Case  ==  ~Entry:Entry0
+  344:      		Exec  $Script_80240BF8
+                  CaseOR  ==  ~Entry:Entry1
+                  CaseOR  ==  ~Entry:Entry4
+  35C:      		Call  ModifyColliderFlags   ( 00000000 ~Collider:deilite 7FFFFE00 )
+  374:      		Set   *Var0  $Script_80240BF8
+  384:      		Exec  EnterWalk
+                  EndCaseGroup
+  390:      	Case  ==  ~Entry:Entry2
+  39C:      		Exec  $Script_80242A2C
+  3A8:      		Exec  $Script_80240BF8
+  3B4:      	Case  ==  ~Entry:Entry3
+  3C0:      		Exec  $Script_80241CC4
+  3CC:      		Exec  $Script_80240BF8
+  3D8:      EndSwitch
+        EndIf  
+  3E0:  ExecWait  $Script_802409C0
+  3EC:  If  *GB_StoryProgress  >=  .Story:Ch6_DestroyedPuffPuffMachine % 35
+  3FC:  	Call  $Function_8024030C ( )
+  408:  EndIf
+  410:  Return
+  418:  End
+}
+
+#delete $Script_80242FD0
+
+#new:Script $Script_BindExit0 % Script_80242FD0
+{
+    Bind  $Script_802423F8 .Trigger:FloorTouch ~Collider:o117 00000001 00000000
+    Call  GetEntryID ( *Var0 )
+    If *Var0 != 00000002 % Cutscene
+        Exec  $Script_InitNewStuff
+    EndIf
+    Return
+    End
+}
+
+@ $Script_80240AC0
+{
+    [0]  Call  MakeItemEntity    ( .Item:LEmblem ~Vec3d:Item80240AC0 .ItemSpawnMode:Fixed_NeverVanish *GF_FLO19_Item_SJumpChg )
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Call  MakeEntity        ( .Entity:SavePoint ~Vec4d:SaveBlock 80000000 )
+    Call  MakeEntity    ( .Entity:HealingBlock ~Vec4d:HealBlock 80000000 )
+    Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry4 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "flo_27" 00000000 )
+    Wait  100`
+    Return
+    End
+}

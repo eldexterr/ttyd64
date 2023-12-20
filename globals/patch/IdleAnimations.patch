@@ -1,0 +1,595 @@
+% Patch Mario and Partners idle animations, so they will use a tired animation
+% when they're in peril or they start to get sleepy when the player hasn't
+% touched the joystick for some time like in TTYD.
+
+% 8010EFD0 = Idle timer (2 bytes)
+
+% Mario - Use tired animation when HP is <= 5
+@Hook E23308 % 802B60A8
+{
+    PUSH    T0, T1
+    LUI	    A0, 0001
+    % skip if player inputs are locked
+    LAW     T0, 8010EFC8 %  playerFlags
+    ORI     T1, R0, 3000 % playerFlags(0x02(bit4/5))
+    AND     T1, T0, T1
+    BNEL    T1, R0, .End
+    ORI	    A0, A0, 0002 % normal idle
+    % check if Mario is in 8bit mode
+    LAW     T0, 8010EFCC %  playerFlags2
+    ORI     T1, R0, 4000 % playerFlags(0x02(bit6))
+    AND     T1, T0, T1
+    BNEL    T1, R0, .End
+    ORI	    A0, A0, 0002 % normal idle
+    % Check if Mario HP is <= 5
+    LABU    T0, 8010F292 % load Mario's HP
+    SLTIU   T0, T0, 6
+    BEQL    T0, R0, .End
+    ORI	    A0, A0, 0002 % normal idle
+    ORI	    A0, A0, 0003 % tired idle
+    .End
+    POP     T0, T1
+    J	    802B60C8
+    NOP
+}
+
+% Patch $mod\world\action\src\00 Idle.wscr
+%
+% Mario - Fall asleep when he hasn't move for some time
+@Hook E232A8 % 802B6048
+{
+    PUSH    T0, T1, T2
+    LHU	    V0, 0008 (S0) % load idle timer % 8010EFD0
+    % Check if the player is Mario, not Peach
+    LABU    T0, 800740A2 % 0 = Mario
+    BNE     T0, R0, .End
+    NOP
+    % Check if player inputs are locked
+    LAW     T0, 8010EFC8 %  playerFlags
+    ORI     T1, R0, 3000 % playerFlags(0x02(bit4/5))
+    AND     T1, T0, T1
+    BNEL    T1, R0, .End
+    SH	    R0, 0008 (S0) % clear idle timer
+    % check if Mario is in 8bit mode
+    LAW     T0, 8010EFCC %  playerFlags2
+    ORI     T1, R0, 4000 % playerFlags(0x02(bit6))
+    AND     T1, T0, T1
+    BNEL    T1, R0, .End
+    SH	    R0, 0008 (S0) % clear idle timer
+    % Check if Mario is already sleeping, to bypass all of this
+    LAW     T0, 8010F080 % load player's animation
+    LIO     T1, 0008001D % sleeping
+    BEQ     T0, T1, .End
+    NOP
+    % If Mario is in peril bypass all of this too
+    LABU    T0, 8010F292 % load mario HP
+    SLTIU   T0, T0, 6
+    BNE     T0, R0, .End
+    NOP
+    % Check timer to know what animation to use
+    % V0 = Idle timer
+    LIO     T1, 8010F080 % Mario's animation
+    % 1st Yawn
+    LIO     T2, 00080028 % yawn
+    ORI     T0, R0, 100 % 1st yawn
+    BEQL    V0, T0, .End
+    SW      T2, 0 (T1)
+    % 2nd yawn
+    ORI     T0, R0, 1A0 % 2nd yawn
+    BEQL    V0, T0, .End
+    SW      T2, 0 (T1)
+    % Frame before 2nd Yawn
+    % Set animation as 00010002 first
+    LIO     T2, 00010002 % idle
+    ORI     T0, R0, 19F % Pre-2nd yawn
+    BEQL    V0, T0, .End
+    SW      T2, 0 (T1)
+    % Sleeping
+    LIO     T2, 0008001D % idle
+    ORI     T0, R0, 1B5 % fall asleep
+    BEQL    V0, T0, .End
+    SW      T2, 0 (T1)
+    .End
+    POP     T0, T1, T2
+    % restore vanilla code
+    J       802B6050
+    LW	    V1, 0000 (S0)
+}
+
+% Patch ~Func:partner_walking_follow_player
+%
+% Ground Partners - Swap Idle animations
+@Hook 85C50 % 800EC7A0
+{
+    PUSH    RA, T0, T1, V1
+    LW	    V0, 835C (AT) % load idle animation
+    COPY    V1, V0 % push V0
+    % Check if player inputs are locked
+    LAW     T0, 8010EFC8 %  playerFlags
+    ORI     T1, R0, 3000 % playerFlags(0x02(bit4/5))
+    AND     T1, T0, T1
+    BNE     T1, R0, .End
+    NOP
+    %==========================
+    % Get Partner HP
+    %==========================
+    JAL     $GetPartnerHP
+    NOP
+    BLTZL   V0, .End % invalid partner
+    NOP
+    % Check if current partner have <= 5 HP
+    SLTIU   T0, V0, 6
+    BEQ     T0, R0, .SkipTiredIdle
+    NOP
+    % get tired animation
+    LABU    T0, 8010F2A2 % load partnerID
+    % Goombario
+    ORI     T1, R0, 1
+    LUI     V0, 0001
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000C
+    % Kooper
+    ORI     T1, R0, 2
+    LUI     V0, 0002
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 0015
+    % Bombette
+    ORI     T1, R0, 3
+    LUI     V0, 0003
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 0013
+    % Sushie
+    ORI     T1, R0, 7
+    LUI     V0, 0007
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000F
+    .SkipTiredIdle
+    %==========================
+    % Check if Mario fall asleep
+    %==========================
+    LAHU    T0, 8010EFD0 % load idle timer
+    SLTIU   T1, T0, 1B5
+    BNE     T1, R0, .End
+    NOP
+    % get sleeping animation
+    LABU    T0, 8010F2A2 % load partnerID
+    % Goombario
+    ORI     T1, R0, 1
+    LUI     V0, 0001
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000B
+    % Kooper
+    ORI     T1, R0, 2
+    LUI     V0, 0002
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 0014
+    % Bombette
+    ORI     T1, R0, 3
+    LUI     V0, 0003
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 0012
+    % Sushie
+    ORI     T1, R0, 7
+    LUI     V0, 0007
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000E
+    .End
+    COPY    V0, V1
+    POP     RA, T0, T1, V1
+    % restore vanilla code
+    J       800EC7A8
+    SW	    V0, 0028 (S1)
+}
+
+% Patch ~Func:partner_flying_follow_player
+%
+% Flying Partners - Swap Idle animations
+@Hook 87744 % 800EE294
+{
+    PUSH    RA, T0, T1, V1
+    % V0 = Idle Animation
+    COPY    V1, V0 % push V0
+    % Check if player inputs are locked
+    LAW     T0, 8010EFC8 %  playerFlags
+    ORI     T1, R0, 3000 % playerFlags(0x02(bit4/5))
+    AND     T1, T0, T1
+    BNE     T1, R0, .End
+    NOP
+    %==========================
+    % Get Partner HP
+    %==========================
+    JAL     $GetPartnerHP
+    NOP
+    BLTZL   V0, .End % invalid partner
+    NOP
+    % Check if current partner have <= 5 HP
+    SLTIU   T0, V0, 6
+    BEQ     T0, R0, .SkipTiredIdle
+    NOP
+    % get tired animation
+    LABU    T0, 8010F2A2 % load partnerID
+    % Parakarry
+    ORI     T1, R0, 4
+    LUI     V0, 0004
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000C
+    % Bow
+    ORI     T1, R0, 9
+    LUI     V0, 0005
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000E
+    % Watt
+    ORI     T1, R0, 6
+    LUI     V0, 0006
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000B
+    % Lakilester
+    ORI     T1, R0, 8
+    LUI     V0, 0008
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000F
+    .SkipTiredIdle
+    %==========================
+    % Check if Mario fall asleep
+    %==========================
+    LAHU    T0, 8010EFD0 % load idle timer
+    SLTIU   T1, T0, 1B5
+    BNE     T1, R0, .End
+    NOP
+    % get sleeping animation
+    LABU    T0, 8010F2A2 % load partnerID
+    % Parakarry
+    ORI     T1, R0, 4
+    LUI     V0, 0004
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000B
+    % Bow
+    ORI     T1, R0, 9
+    LUI     V0, 0005
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000D
+    % Watt
+    ORI     T1, R0, 6
+    LUI     V0, 0006
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000A
+    % Lakilester
+    ORI     T1, R0, 8
+    LUI     V0, 0008
+    BEQL    T0, T1, .End
+    ADDIU   V1, V0, 000E
+    .End
+    COPY    V0, V1
+    POP     RA, T0, T1, V1
+    % restore vanilla code
+    SWC1	F2, 0024 (SP)
+    J       800EE29C
+    SW	    V0, 0028 (S1)
+}
+
+%================
+% Battle
+%================
+
+% Only Lakilester? - Set tired animation if Partner is in danger state - Current turn is Mario
+@Hook 185584 % 80256CA4
+{
+    PUSH    RA, V0, T0, T1
+    LW	    A0, 0094 (S1) % load IdleAnimationsTable
+    % Check if current actor is Partner
+    % S2 = ActorData
+    LHU     T0, 192 (S2) % load ActorID
+    ORI     T1, R0, 100 % .Actor:Partner
+    BNE     T0, T1, .End
+    ADDIU	A1, R0, 0001 % use .Status:Normal animation
+    % Check if Partner have <= 5 HP
+    JAL     $GetPartnerHP
+    NOP
+    SLTIU   V0, V0, 6
+    BEQ     V0, R0, .End
+    NOP
+    ADDIU	A1, R0, 001A % use .Status:Danger animation
+    .End
+    POP     RA, V0, T0, T1
+    % restore vanilla code
+    JAL	    80265CE8 % : IdleAnimationID : IdleAnimationsTablePointer, ElementID
+    NOP
+    J       80256CB0
+    NOP
+}
+
+% Set tired animation if Partner is in danger state - Current turn is Mario
+@Hook 185480 % 80256BA0
+{
+    PUSH    RA, V0, T0, T1
+    LW	    A0, 0094 (S1) % load IdleAnimationsTable
+    % Check if current actor is Partner
+    % S2 = ActorData
+    LHU     T0, 192 (S2) % load ActorID
+    ORI     T1, R0, 100 % .Actor:Partner
+    BNE     T0, T1, .End
+    ADDIU	A1, R0, 0001 % use .Status:Normal animation
+    .Defense
+    % Check if partner is HP compatible
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .End % if partner is dead or is an invalid one
+    NOP
+    % Check if partner used the defense command to use the guard animation as idle
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    LBU     V0, E (V0) % load defense byte
+    BNEL    V0, R0, .End
+    ADDIU	A1, R0, 0030 % use .Status:Defense animation
+    .Danger
+    % Check if Partner have <= 5 HP
+    JAL     $GetPartnerHP
+    NOP
+    SLTIU   V0, V0, 6
+    BNEL    V0, R0, .End
+    ADDIU	A1, R0, 001A % use .Status:Danger animation
+    .End
+    POP     RA, V0, T0, T1
+    % restore vanilla code
+    JAL	    80265CE8 % : IdleAnimationID : IdleAnimationsTablePointer, ElementID
+    NOP
+    J       80256BAC
+    NOP
+}
+
+% Misc documentation
+%
+% This addresses are used to load the proper animation on Partner's turn
+% 802AB520 = Partners Thinking animations table
+% 802AB55C = Partners idle animations table
+
+% Partner thinking animation, use the danger animation instead if Partner have <= 5HP
+@Hook 41D4F4 % 802A8764
+{
+    PUSH    RA, T0, T1, V0
+    ADDU	A2, A2, V0
+    LW	    A2, B520 (A2) % load thinking animation
+    % Check if current partner have <= 5HP to use the Danger animation
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End % If is a not HP compatible partner
+    NOP
+    SLTIU   T0, V0, 6
+    BEQ     T0, R0, .End
+    NOP
+    % get Danger animation
+    LABU    T0, 8010F2A2 % PartnerID
+    % Goombario
+    ORI     T1, R0, 1
+    LUI     V0, 0009
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0016
+    % Kooper
+    ORI     T1, R0, 2
+    LUI     V0, 000A
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001F
+    % Bombette
+    ORI     T1, R0, 3
+    LUI     V0, 000B
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0020
+    % Parakarry
+    ORI     T1, R0, 4
+    LUI     V0, 000C
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001C
+    % Bow
+    ORI     T1, R0, 9
+    LUI     V0, 000D
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001D
+    % Watt
+    ORI     T1, R0, 6
+    LUI     V0, 000E
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0015
+    % Sushie
+    ORI     T1, R0, 7
+    LUI     V0, 000F
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0016
+    % Lakilester
+    ORI     T1, R0, 8
+    LUI     V0, 0010
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001C
+    .SetDangerAnimation
+    COPY    A2, V0
+    .End
+    POP     RA, T0, T1, V0
+    J       802A876C
+    NOP
+}
+
+% Partner Idle animation (when a menu is open on partner's turn), use the danger animation instead if Partner have <= 5HP
+@Hook 41D5F4 % 802A8864
+{
+    PUSH    RA, T0, T1, V0
+    ADDU	A2, A2, V0
+    LW	    A2, B520 (A2) % load thinking animation
+    % Check if current partner have <= 5HP to use the Danger animation
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End % If is a not HP compatible partner
+    NOP
+    SLTIU   T0, V0, 6
+    BEQ     T0, R0, .End
+    NOP
+    % get Danger animation
+    LABU    T0, 8010F2A2 % PartnerID
+    % Goombario
+    ORI     T1, R0, 1
+    LUI     V0, 0009
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0016
+    % Kooper
+    ORI     T1, R0, 2
+    LUI     V0, 000A
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001F
+    % Bombette
+    ORI     T1, R0, 3
+    LUI     V0, 000B
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0020
+    % Parakarry
+    ORI     T1, R0, 4
+    LUI     V0, 000C
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001C
+    % Bow
+    ORI     T1, R0, 9
+    LUI     V0, 000D
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001D
+    % Watt
+    ORI     T1, R0, 6
+    LUI     V0, 000E
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0015
+    % Sushie
+    ORI     T1, R0, 7
+    LUI     V0, 000F
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 0016
+    % Lakilester
+    ORI     T1, R0, 8
+    LUI     V0, 0010
+    BEQ     T0, T1, .SetDangerAnimation
+    ADDIU   V0, V0, 001C
+    .SetDangerAnimation
+    COPY    A2, V0
+    .End
+    POP     RA, T0, T1, V0
+    J       802A886C
+    NOP
+}
+
+%====================
+% Peril & Danger Icons
+%
+% Still use a single icon but now track partners' HP too
+% and adjust the icon position according to who is the one in danger/peril
+%====================
+
+% Peril check, add suport for partners HP
+@Hook 186BB4 % 802582D4
+{
+    PUSH    RA
+    LB	    V0, 0002 (S1) % load Mario HP
+    SLTI	V0, V0, 0002 % check if HP is <= 1
+    BNE     V0, R0, .End
+    NOP
+    % Check partner HP
+    JAL     $GetPartnerHP
+    NOP
+    BLEZL   V0, .End
+    CLEAR   V0
+    SLTI	V0, V0, 0002 % check if HP is <= 1
+    .End
+    POP     RA
+    J       802582DC
+    NOP
+}
+
+% Danger check, add suport for partners HP
+@Hook 186BCC % 802582EC
+{
+    PUSH    RA
+    LB	    V0, 0002 (S1) % load Mario HP
+    SLTI	V0, V0, 0006 % check if HP is <= 5
+    BNE     V0, R0, .End
+    NOP
+    % Check partner HP
+    JAL     $GetPartnerHP
+    NOP
+    BLEZL   V0, .End
+    CLEAR   V0
+    SLTI	V0, V0, 0006 % check if HP is <= 5
+    .End
+    POP     RA
+    J       802582F4
+    NOP
+}
+
+% Peril, change icon pos according to who is in Peril
+@Hook 228F4 % 800474F4
+{
+    JAL     $Function_GetDangerLabel_XPos
+    ORI     GP, R0, 2 % Check <= 5HP
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, FFF0 % y
+    J       80047500
+    NOP
+}
+
+% Danger, change icon pos according to who is in Danger
+@Hook 229A0 % 800475A0
+{
+    JAL     $Function_GetDangerLabel_XPos
+    ORI     GP, R0, 6 % Check <= 1HP
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, FFF0 % y
+    J       800475AC
+    NOP
+}
+
+% GP = Amount of HP to check
+#new:Function $Function_GetDangerLabel_XPos
+{
+    % Reserve SP(0x10 - 0x2C)
+    PUSH    R0, R0, R0, R0, R0, R0, R0, RA, A0, A1, A2, A3, V0, T3, S0, S2, S3
+    % Check if both are in danger
+    JAL     $GetPartnerHP
+    NOP
+    % If Partner isn't HP compatible or is dead skip
+    BLEZ    V0, .SkipPartner
+    CLEAR   S0
+    SLTU    S0, V0, GP
+    % Get partner screen coords
+    LIO     V0, 800DC148 % Actors Data Table
+    LW      V0, 4 (V0) % load partner actor data
+    LWC1	F0, 144 (V0) % load pos x
+    LWC1	F2, 148 (V0) % load pos y
+    MFC1	A1, F0
+    MFC1	A3, F2
+    LWC1	F2, FF5C (S1)
+    LWC1	F0, FF84 (S1)
+    CVT.S.W	F0, F0
+    ADD.S	F2, F2, F0
+    LAW     A0, 80077410
+    MFC1	A2, F2
+    SW	    A1, 0020 (SP)
+    SW	    A3, 0024 (SP)
+    SW	    S7, 0010 (SP)
+    SW	    S6, 0014 (SP)
+    JAL	    ~Func:get_screen_coords
+    SW	    S5, 0018 (SP)
+    LW	    T3, 0080 (SP) % load x
+    LW      A1, 34 (SP) % pop A1
+    .SkipPartner
+    LABU    V0, 8010F292 % MarioHP
+    SLTU    S2, V0, GP
+    ADDU    S3, S0, S2
+    % S0=Partner in Danger (Bool)
+    % S2=Mario in Danger (Bool)
+    % S3=Sum of both bools
+    ORI     V0, R0, 2
+    BEQL    S3, V0, .End
+    ADDIU	A1, R0, 39 % Both
+    BNEL    S0, R0, .End
+    ADDIU	A1, T3, 2 % Partner
+    BNEL    S2, R0, .End
+    ADDIU	A1, A1, 2 % Mario
+    .End
+    CLEAR   GP
+    POP     R0, R0, R0, R0, R0, R0, R0, RA, A0, R0, A2, A3, V0, T3, S0, S2, S3 % don't pop A1
+    JR      RA
+    NOP
+}

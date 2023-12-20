@@ -1,0 +1,75 @@
+/% Wait until the player press the A button when the disclaimer appears
+% IS > N64 > Nintendo
+@Hook F4F8 % 800340F8
+{
+LB		V1, 00AC (V1)
+PUSH    RA
+JAL     $FreezeIntelligentLogo
+NOP
+POP     RA
+J       80034100
+NOP
+}%/
+
+/% 800740D0
+Logos timer while Booting the game
+00-02 = N64 Logo
+03-05= Nintendo Logo
+06-09= Intelligent Systems%/
+
+#new:Function $FreezeIntelligentLogo
+{
+LABU    T0, 800740D0 % Current Logo
+ADDIU   T1, R0, 8
+BNE     T0, T1, .Finish
+NOP
+%% Checking A/B/Start Input
+% Check A
+LABU 	T2, 80074036 % Input A % bit7(A) bit6(B) bit4(Start)
+COPY	T1, T2
+SLL		T1, T1, 24` % bit7/A Button
+SRL 	T1, T1, 31` % Move all bits to just leave bit7
+ADDIU	T0, R0, 1
+BEQL	T1, T0, .Unfreeze
+ADDIU   T0, R0, 9
+% Check B Input
+COPY	T1, T2
+SLL		T1, T1, 23` % bit6/B Button
+SRL 	T1, T1, 31` % Move all bits to just leave bit6
+ADDIU	T0, R0, 1
+BEQL	T1, T0, .Unfreeze
+ADDIU   T0, R0, 9
+% Check Start Input
+COPY	T1, T2
+SLL		T1, T1, 27` % bit4/Start Button
+SRL 	T1, T1, 31` % Move all bits to just leave bit4
+ADDIU	T0, R0, 1
+BEQL	T1, T0, .Unfreeze
+ADDIU   T0, R0, 9
+BEQ     R0, R0, .Bypass
+NOP
+.Unfreeze
+SAB     T0, 800740D0 % Current Logo
+PUSH    RA
+JAL     $Function_PlaySound
+NOP
+POP     RA
+.Finish
+SLTIU	V0, V1, C % original code
+.Bypass
+JR		RA
+NOP
+}
+
+#new:Function $Function_PlaySound
+{
+PUSH	RA, A0, A1, A2, A3, V0, V1
+ADDIU	A0, R0, 00C9
+CLEAR 	A1
+COPY 	A2, A1
+JAL 	~Func:sfx_adjust_env_sound_pos
+COPY 	A3, A1
+POP 	RA, A0, A1, A2, A3, V0, V1
+JR 		RA
+NOP
+}

@@ -1,0 +1,601 @@
+% This file adds the super guard mechanic from TTYD
+
+% Used to know if the player succesfully landed a Superguard
+#new:Data $Superguard_Byteflag
+{ 00 }
+
+% ~DamageType:00004000 = attack can't be superguarded
+
+% From ~Func:calc_enemy_damage_target
+%
+% Check if the player pressed B if he didn't pressed A in time.
+@Hook:Battle 1A6358 % 80277A78
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, T0, T1
+    % check if this attack can be superguarded
+    LW      A0, 188 (S4) % attack elements
+    LIO     A1, 00080000 % can't be superguarded
+    AND     T0, A0, A1
+    BNE     T0, R0, .End
+    NOP
+    % Check if Kooper is flipped to skip suprguard
+    %
+    % Check if current attack isn't for partner
+    % S6 = TargetID
+    ORI     T0, R0, 100 % .Actor:Partner
+    BNE     T0, S6, .TrackBButton
+    NOP
+    % Check Kooper flipped state
+    %
+    % Check if current Partner is Kooper
+    LABU    T0, 8010F2A2 % partnerID
+    ORI     T1, R0, 2
+    BNE     T0, T1, .TrackBButton
+    NOP
+    % Check if Kooper is currently flipped to skip being able
+    % to superguard the attack.
+    LIO     T0, $ExtraPartnerActorData
+    LBU     T0, 1C (T0) % load flipped byteflag
+    BNE     T0, R0, .End
+    CLEAR   V0
+    .TrackBButton
+    JAL     ~Func:check_block_input
+    ORI	    A0, R0, 4000 % b button
+    BEQ     V0, R0, .End
+    NOP
+    % B pressed at the right time
+    ORI     V0, R0, 1
+    SAB     V0, $Superguard_Byteflag
+    % Set attack dodged flag as true, needed to don't get status ailments when super guarding
+    LAW     S0, 800DC070 % BattleFlags
+    LIO     V0, 80000000 % [80]000000 = bit7 = Attack dodged
+    OR      S0, S0, V0
+    SAW     S0, 800DC070 % save flags
+    % S0 = Damage
+    CLEAR   S0
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, T0, T1
+    % restore vanilla code
+    JAL	    80266970
+    COPY    A0, S3
+    J       80277A80
+    NOP
+}
+
+% Always nuke $Superguard_Byteflag at the start of ~Func:check_block_input
+@Hook 1977F4 % 80268F14
+{
+    SAB     R0, $Superguard_Byteflag
+    % restore vanilla code
+    LB	    V1, 0083 (S1)
+    J       80268F1C
+    ADDIU	V0, R0, FFFF
+}
+
+% From ~Func:check_block_input
+%
+% When tracking for the b button use a 1 frame window instead of 3
+@Hook 197888 % 80268FA8
+{
+    % S4 = button mask
+    LIO     V0, 00004000 % bit6=b button
+    BNE     V0, S4  .End
+    ADDIU   S0, R0, 0003
+    ADDIU   S0, R0, 0001 % B button
+    .End
+    % restore vanilla code
+    J       80268FB0
+    LUI	    V0, 800E
+}
+
+% From ~Func:check_block_input
+%
+% If the b button is being tracked ignore Dodge Master
+@Hook 1978B4 % 80268FD4
+{
+    % If S0 = 5, Dodge is active
+    ORI     V1, R0, 5
+    BNE     S0, V1, .End
+    NOP
+    % Dodge is Active
+    % check if b is being tracked
+    LIO     V1, 00004000 % bit6=b button
+    % S4 = button mask
+    BNE     S4, V1, .End
+    NOP
+    % B is being tracked and Dodge is active
+    ADDIU   S0, R0, 0001 % set the frame window back to 1 frame
+    .End
+    % restore vanilla code
+    LB	    V1, 0431 (S1)
+    J       80268FDC
+    ADDU	V0, S3, S0
+}
+
+% Player
+%
+% If $Superguard_Byteflag == .True do a Superguard
+@Hook:Battle 1A6908 % 80278028
+{
+    LABU    A0, $Superguard_Byteflag
+    BNEL    A0, R0, .End
+    ORI     S2, R0, 43 % Superguard
+    % restore vanilla code
+    .End
+    JAL	    ~Func:dispatch_event_player
+    COPY    A0, S2
+    J       80278030
+    NOP
+}
+
+% Partners, Set a special EventID when getting hurt
+% This hook is used by a other things not only for
+% Superguard.
+%
+% ~Func:calc_enemy_damage_target
+@Hook:Battle 1A6918 % 80278038
+{
+    PUSH    T0, T1
+    %===============
+    % Superguard
+    LABU    A0, $Superguard_Byteflag
+    BNEL    A0, R0, .End
+    ORI     S2, R0, 43 % Superguard
+    %===============
+    % Flip Koooper
+    % Check if current Partner is Kooper
+    LABU    T0, 8010F2A2 % partnerID
+    ORI     T1, R0, 2 % kooper
+    BNE     T0, T1, .End
+    NOP
+    % Check if this attack can flip kooper
+    %
+    % Check if the player dodged the attack
+    LABU    T0, 800DC070 % load battleFlags[1]
+    ANDI    T0, T0, 80 % bit7=Attack guarded
+    BNE     T0, R0, .End
+    NOP
+    % the player didn't guarded the attack
+    % check if this attack has the "Jump, Pow or Quake" flags
+    LIO     T0, 00000C80
+    LAW     T1, 800DC1F8 % load DamageTypeFlags for last attack
+    AND     T0, T1, T0
+    BNEL    T0, R0, .End
+    ORI     S2, R0, D % .Event:FlipTrigger
+    %===============
+    % restore vanilla code
+    .End
+    POP     T0, T1
+    JAL	    ~Func:dispatch_event_partner
+    COPY    A0, S2
+    J       80278040
+    NOP
+}
+
+%================
+% Hurt Enemy
+%
+% Just activate ZapTab/Volt Shroom, if the player superguarded
+%================
+
+% From ~Func:calc_enemy_damage_target
+%
+% Check if Mario is electrified
+@Hook 1A6EE0 % 80278600
+{
+    % Check if the player made a superguard
+    LABU    V0, $Superguard_Byteflag
+    BNEL    V0, R0, .MarioIsElectrified
+    ORI     V0, R0, B
+    % Didn't superguaded
+    % V1 = B = Electrified
+    LB	    V0, 212 (S3) % load player's status
+    BEQ     V0, V1, .MarioIsElectrified
+    NOP
+    % Isn't Electrified
+    J       8027860C
+    NOP
+    .MarioIsElectrified
+    J       80278620
+    NOP
+}
+
+% From ~Func:calc_enemy_damage_target
+%
+% Bypass doing the ShockFX if the player made a superguard
+@Hook 1A6F4C % 8027866C
+{
+    LABU    A2, $Superguard_Byteflag
+    BNE     A2, R0, .BypassFX
+    NOP
+    .DoShockFX
+    LW	    A2, 000C (S1)
+    J       80278674
+    LW	    A3, 0010 (S1)
+    .BypassFX
+    LW	    A2, 000C (S1)
+    J       80278688
+    LW	    A3, 0010 (S1)
+}
+
+% Clear superguard's byte at the start of every enemy turn.
+%
+% ~Func:btl_state_update_next_enemy
+@Hook:Battle 802472B4
+{
+    SAB     R0, $Superguard_Byteflag
+    % restore code
+    LIO     S1, 800DC070 % battleStatus
+    J       802472BC
+    RESERVED
+}
+
+% Patch DoShockHit
+%
+% Check if the player made a superguard to bypass the shock animation
+@Script:Battle 1C8FDC % 8029A6FC
+{
+    ExecWait $DoShockHit
+    Return
+    End
+}
+
+#new:Script:Battle $DoShockHit
+{
+    Call  SetActorRotationOffset    ( .Actor:Self 00000000 00000000 00000000 )
+    Call  SetActorRotation  ( .Actor:Self 00000000 00000000 00000000 )
+    Call  SetActorDispOffset        ( .Actor:Self 00000000 00000000 00000000 )
+    Call  $ReadAddress ( $Superguard_Byteflag 0 *Var6 .False .False )
+    If *Var6 == .True
+        Call  $WriteAddress ( $Superguard_Byteflag 0 .False .False .False ) % nuke
+        Exec  $UpdateHealthBarPos
+        Return
+    EndIf
+    ExecWait  8029A76C % DoShockAnimation
+    Return
+    End
+}
+
+% Code grabbed from DoShockAnimation (1C904C)
+#new:Script:Battle $UpdateHealthBarPos % 1C904C
+{
+   D4:  Call  8027D32C      ( .Actor:Self )
+   E4:  Call  HPBarToCurrent    ( .Actor:Self )
+   F4:  Call  8027D2D8      ( .Actor:Self )
+  48C:  Wait  21`
+  498:  Call  8027D32C      ( .Actor:Self )
+  4A8:  Call  HPBarToHome   ( .Actor:Self )
+  4B8:  Call  GetLastEvent  ( .Actor:Self *Var0 )
+  4CC:  If  *Var0  !=  .Event:ShockDeath % 26
+  4DC:  	Call  UseBattleCamPreset  ( 00000002 )
+  4EC:  EndIf
+  4F4:  Return
+  4FC:  End
+}
+
+%======================
+% Superguard Script
+%======================
+
+@Script:Battle 1B3BB4 % HandleEvent_Player % 802852D4
+{
+    Jump  $HandleEvent_Player
+    Return
+    End
+}
+
+#new:Script:Battle $HandleEvent_Player
+{
+    Call  GetLastEvent  ( .Actor:Player *VarF )
+    Switch  *VarF 
+        Case  !=  00000032 % 32
+            Call  UseIdleAnimation  ( .Actor:Player .False )
+    EndSwitch
+    Call  CloseActionCommandInfo
+    Call  SetBattleFlagBits ( 00000100 .False )
+    Call  802693F0
+    Call  802749F8
+    Call  GetLastEvent      ( .Actor:Player *VarF )
+    Switch  *VarF 
+        CaseOR  ==  .Event:SpikeContact % 2A
+        CaseOR  ==  .Event:SpikeDeath % 27
+            Call  SetActorRotation      ( .Actor:Self 00000000 00000000 00000000 )
+            Call  UseBattleCamPreset  ( 0000001E )
+            Call  GetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Sub   *Var0  0000003C 
+            Add   *Var1  00000028 
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[0.1] )
+            Call  SetJumpAnimations     ( .Actor:Player 00000000 0001001A 0001001A 0001001A )
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000005 00000000 00000001 )
+            SetConst  *Var1  0001001A 
+            Set   *Var2  00000000 
+            ExecWait  802988F0 
+            Call  UseBattleCamPreset  ( 00000002 )
+            Call  SetGoalToHome ( .Actor:Player )
+            Call  GetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Add   *Var0  0000001E 
+            Set   *Var1  00000000 
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.4] )
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 0000000A 00000000 00000002 )
+            Sub   *Var0  00000014 
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000007 00000000 00000002 )
+            Sub   *Var0  0000000A 
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000004 00000000 00000002 )
+            If  *VarF  ==  00000027 
+                Return
+            EndIf
+        EndCaseGroup
+        CaseOR  ==  .Event:BurnContact % 2C
+        CaseOR  ==  .Event:BurnDeath % 24
+            Call  SetActorRotation  ( .Actor:Self 00000000 00000000 00000000 )
+            Call  UseBattleCamPreset      ( 0000001F )
+            Call  GetGoalPos        ( .Actor:Player *Var0 *Var1 *Var2 )
+            Sub   *Var0  0000003C 
+            Add   *Var1  00000028 
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[0.1] )
+            Call  SetJumpAnimations ( .Actor:Player 00000000 00050003 00050003 00050003 )
+            Call  SetGoalPos        ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444  ( 00000005 00000000 00000001 )
+            ChildThread
+                Call  GetActorPos   ( .Actor:Player *Var5 *Var6 *Var7 )
+                Add   *Var5  00000005 
+                Add   *Var6  00000004 
+                Add   *Var7  00000005 
+                Call  PlayEffect    ( 00000024 00000000 *Var5 *Var6 *Var7 *Fixed[1.5] 0000000F 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+                Wait  2`
+                Call  GetActorPos   ( .Actor:Player *Var5 *Var6 *Var7 )
+                Add   *Var5  FFFFFFFB 
+                Add   *Var6  00000012 
+                Add   *Var7  00000005 
+                Call  PlayEffect    ( 00000024 00000000 *Var5 *Var6 *Var7 *Fixed[1.5] 0000000F 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+            EndChildThread
+            SetConst  *Var1  00050003 
+            Set   *Var2  00000000 
+            ExecWait  802988F0 
+            Call  UseBattleCamPreset  ( 00000002 )
+            Call  SetGoalToHome ( .Actor:Player )
+            Call  GetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Add   *Var0  0000001E 
+            Set   *Var1  00000000 
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.4] )
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 0000000A 00000000 00000002 )
+            Sub   *Var0  00000014 
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000007 00000000 00000002 )
+            Sub   *Var0  0000000A 
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000004 00000000 00000002 )
+            If  *VarF  ==  00000024 
+                Return
+            EndIf
+        EndCaseGroup
+        CaseOR  ==  .Event:ShockHit % 2F
+        CaseOR  ==  .Event:ShockDeath % 26
+            Call  SetActorRotation      ( .Actor:Self 00000000 00000000 00000000 )
+            Call  UseBattleCamPreset  ( 0000001F )
+            Call  GetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Sub   *Var0  0000003C 
+            Add   *Var1  00000028 
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[0.1] )
+            Call  SetJumpAnimations     ( .Actor:Player 00000000 0001001A 0001001A 0001001A )
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000005 00000000 00000001 )
+            Call  ShowShockEffect       ( .Actor:Self )
+            SetConst  *Var1  0001001A 
+            Set   *Var2  00000000 
+            ExecWait  802988F0 
+            Call  UseBattleCamPreset  ( 00000002 )
+            Call  SetGoalToHome ( .Actor:Player )
+            Call  GetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Add   *Var0  0000001E 
+            Set   *Var1  00000000 
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.4] )
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 0000000A 00000000 00000002 )
+            Sub   *Var0  00000014 
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000007 00000000 00000002 )
+            Sub   *Var0  0000000A 
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 00000004 00000000 00000002 )
+            If  *VarF  ==  00000026 
+                Return
+            EndIf
+        EndCaseGroup
+        Case  ==  .Event:Lucky % 37
+            Call  80260B70
+            If  *Var0  ==  00000000 
+                Call  SetAnimation  ( .Actor:Player 00000000 00030009 )
+                Wait  30`
+                Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+            Else
+                Wait  30`
+            EndIf
+        Case  ==  .Event:RecoverStatus % 31
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.8] )
+            Call  SetJumpAnimations     ( .Actor:Player 00000000 00010007 00010008 00010009 )
+            Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 0000000F 00000000 00000000 )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+            Call  SetGoalToHome ( .Actor:Player )
+            Call  SetActorSpeed ( .Actor:Player *Fixed[4.0] )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010005 )
+            Call  PlayerRunToGoal       ( 00000000 )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+        Case  ==  00000032 % 32
+            Wait  10`
+            Call  UseIdleAnimation  ( .Actor:Player .False )
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.8] )
+            Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010009 )
+            Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            Call  80273444      ( 0000000F 00000000 00000000 )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+            Call  SetGoalToHome ( .Actor:Player )
+            Call  SetActorSpeed ( .Actor:Player *Fixed[4.0] )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010005 )
+            Call  PlayerRunToGoal   ( 00000000 )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+        CaseOR  ==  .Event:HitCombo % 9
+        CaseOR  ==  .Event:Hit % A
+            SetConst  *Var1  00010017 
+            Set   *Var2  00000000 
+            ExecWait  80298724 
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+        EndCaseGroup
+        CaseOR  ==  00000017 % 17
+        CaseOR  ==  .Event:Immune % 19
+            Call  PlaySoundAtActor  ( .Actor:Player 0000208C )
+            % Check if Player used the defend command
+            Call $ReadAddress ( $ExtraActorData_Everyone 0 *Var0 E .False ) % get Mario's defense byte
+            If *Var0 == .False
+                SetConst  *Var1  00010002
+            Else % Defend
+                SetConst  *Var1  .PlayerAnim:StoneStill % 00010015
+            EndIf
+            ExecWait  80298948 
+        EndCaseGroup
+        CaseOR  ==  00000018 % 18
+        CaseOR  ==  .Event:Block % 1A
+            Call  PlaySoundAtActor  ( .Actor:Player 0000208C )
+            SetConst  *Var0  00000001 
+            SetConst  *Var1  00010014 
+            ExecWait  80298948 
+            Wait  10`
+        EndCaseGroup
+        Case  ==  .Event:BurnHit % E
+            SetConst  *Var1  00050003 
+            Set   *Var2  00000000 
+            ExecWait  802988F0 
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+        Case  ==  00000029 % 29
+            SetConst  *Var1  00050003 
+            Set   *Var2  00000000 
+            ExecWait  802988F0 
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+            Return
+        Case  ==  .Event:Death % 20
+            SetConst  *Var1  00010017 
+            Set   *Var2  00000000 
+            ExecWait  802988F0 
+            Return
+        Case  ==  00000034 % 34
+            Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.8] )
+            Call  GetActorPos   ( .Actor:Player *Var7 *Var8 *Var9 )
+            Call  SetJumpAnimations     ( .Actor:Player 00000000 00010007 00010008 00010006 )
+            Call  SetGoalPos    ( .Actor:Player *Var7 *Var8 *Var9 )
+            Call  80273444      ( 0000000F 00000000 00000000 )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010006 )
+%==============================================================================================
+        Case  ==  43 % NEW! % .Event:Superguard
+            Set *Var0 00000000
+            Set *Var1 00010010
+            ExecWait $DoSuperguard
+        Default
+    EndSwitch
+    Call  UseIdleAnimation  ( .Actor:Self .True )
+    Return
+    End
+}
+
+% var0 = Sprite Part
+%
+% var1 = Superguard Animation
+#new:Script:Battle $DoSuperguard
+{
+    Call    SetAnimation  ( .Actor:Self *Var0 *Var1 )
+    Call    PlaySoundAtActor ( .Actor:Self 0237 )
+    Call    $PlayTextPopup ( 3 )
+    Loop 2
+        Call    MakeLerp    	( 0 360` 3 .Easing:Linear )
+        Loop     
+            Call     UpdateLerp
+            Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+            Wait     1
+            If  *Var1  ==  .False
+                BreakLoop
+            EndIf
+        EndLoop
+    EndLoop
+    % End
+    Call    MakeLerp    	( 0 180` 4 .Easing:Linear )
+    Loop     
+        Call     UpdateLerp
+        Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+        Wait     1
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    %
+    Call    MakeLerp    	( -180` 0 7 .Easing:Linear )
+    Loop     
+        Call     UpdateLerp
+        Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+        Wait     1
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Call  SetActorRotation  ( .Actor:Self 0 0 0 )
+    Wait  5
+    Return
+    End
+}
+
+#export $DoSuperguard
+
+% 0 = Nice
+%
+% 1 = Miss
+%
+% 2 = Lucky
+%
+% 3 = Super
+%
+% Call $PlayTextPopup ( PopUpID )
+%
+% I took the code from 80260B70
+#new:Function:Battle $PlayTextPopup
+{
+    ADDIU	SP, SP, -28
+    SW	    S1, 001C (SP)
+    COPY    S1, A0
+    SW	    S0, 0018 (SP)
+    SW	    RA, 0020 (SP)
+    % load actorID
+    JAL     ~Func:get_actor
+    LW      A0, 148 (S1) % load selfID
+    COPY    S0, V0 % S0 = $actor data
+    LIF     F2, 2.0 % text height
+    LW      A0, C (S1)
+    LW      A0, 0 (A0) % load arg0
+    LWC1	F4, 0148 (S0) % y pos
+    LWC1	F0, 014C (S0) % z pos
+    ADD.S	F4, F4, F2
+    SWC1	F0, 0010 (SP)
+    LW	    A2, 0144 (S0) % x pos
+    MFC1	A3, F4
+    JAL	    802667F0
+    COPY    A1, S0
+    SW	    R0, 0084 (S1) % set var0 as zero
+    LBU	    V0, 0210 (S0) % load status debuff
+    ADDIU	V0, V0, FFFD % -3
+    SLTIU	V0, V0, 0006 % check if status is >=9 basically
+    BEQ	    V0, R0, .End
+    ADDIU	V0, R0, 0001
+    SW	    V0, 0084 (S1) % set var0 as true
+    .End
+    LW	    RA, 0020 (SP)
+    LW	    S1, 001C (SP)
+    LW	    S0, 0018 (SP)
+    ADDIU	V0, R0, 0002
+    JR	    RA
+    ADDIU	SP, SP, 28
+}

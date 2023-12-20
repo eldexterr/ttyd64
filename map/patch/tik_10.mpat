@@ -1,0 +1,66 @@
+% Add new exit to tik_27
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  00000000
+    [MapTattle]   0019002C
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 %  330.0   20.0    0.0  270.0
+    ~Vec4f:Entry1
+    ~Vec4f:Entry2
+}
+
+@ $Script_80241538
+{
+    0:  Bind  $Script_ExitWalk_802414DC .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+        Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+        Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_Exit1
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "tik_09" 00000004 )
+    Wait  100`
+    Return
+    End
+}
+
+#new:Script $Script_Exit2
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "tik_27" 00000000 )
+    Wait  100`
+    Return
+    End
+}
+
+%================================================================
+
+% Patch super block to give a shine sprite instead
+
+#delete $Script_802421F8 % original super block script
+
+@ $Script_MakeEntities {
+    [44]  Call  AssignScript      ( $Script_Entity_Shine1 )
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_TIK10_SuperBlock % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}

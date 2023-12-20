@@ -1,0 +1,196 @@
+% Script File: 04 Goompa.bscr
+% Decoded from: 6F0B30 to 6F10E0 (04 Goompa)
+
+#new:IdleAnimations $IdleAnimations_80238000
+{
+	.Status:Normal    009D0002
+	.Status:End
+}
+
+#new:DefenseTable $DefenseTable_8023800C
+{
+	.Element:Normal 00000000
+	.Element:End
+}
+
+#new:StatusTable $StatusTable_80238018
+{
+	.Status:Normal    100`
+	.Status:Default   100`
+	.Status:Sleep     100`
+	.Status:Poison    100`
+	.Status:Frozen    100`
+	.Status:Dizzy     100`
+	.Status:Fear      100`
+	.Status:Static    100`
+	.Status:Paralyze  100`
+	.Status:Shrink    100`
+	.Status:Stop      100`
+	.Status:DefaultTurnMod    0`
+	.Status:SleepTurnMod      0`
+	.Status:PoisonTurnMod     0`
+	.Status:FrozenTurnMod     0`
+	.Status:DizzyTurnMod      0`
+	.Status:FearTurnMod       0`
+	.Status:StaticTurnMod     0`
+	.Status:ParalyzeTurnMod   0`
+	.Status:ShrinkTurnMod     0`
+	.Status:StopTurnMod       0`
+	.Status:End
+}
+
+#new:PartsTable $PartsTable_802380C4
+{
+	00000000 01000000 000000FF $IdleAnimations_80238000 $DefenseTable_8023800C 00000000 00000000 00000000 00000000
+}
+
+#new:Actor $Goompa
+{
+	% stats
+	[Index]        6Fb
+	[Level]         0`b
+	[MaxHP]        99`b
+	[Coins]         0`b
+	[Flags]       00200000
+	[StatusTable] $StatusTable_80238018
+	% ai
+	[PartsCount]    1`s
+	[PartsTable]  $PartsTable_802380C4
+	[Script]      $Script_Init_80238110
+	% move effectiveness
+	[Escape]        0`b
+	[Item]          0`b
+	[AirLift]       0`b
+	[Hurricane]     0`b % Bow's "Spook" as well
+	[UpAndAway]     0`b
+	[PowerBounce]  80`b
+	[SpinSmash]     4`b % weight (0-4)
+	% ui positions
+	[Size]         29`b  26`b % width height
+	[HealthBar]     0`b   0`b % dx dy
+	[StatusTurn]  -10`b  20`b % dx dy
+	[StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:Script $Script_Init_80238110
+{
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_802383F4 )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_8023818C )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_8023819C )
+   3C:  Call  SetActorVar   ( .Actor:Self 00000000 00000000 )
+   54:  Call  SetActorVar   ( .Actor:Self 00000001 00000000 )
+   6C:  Return
+   74:  End
+}
+
+#new:Script $Script_Idle_8023818C
+{
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_HandleEvent_8023819C
+{
+    0:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+   14:  Call  CloseActionCommandInfo ( )
+   20:  Call  GetLastEvent      ( .Actor:Partner *Var0 )
+   34:  Switch  *Var0
+   40:  	CaseOR  ==  .Event:HitCombo % 9
+   4C:  	CaseOR  ==  .Event:Hit % A
+   58:  		SetConst  *Var0  00000001
+   68:  		SetConst  *Var1  009D0007
+   78:  		ExecWait  DoNormalHit
+   84:  	EndCaseGroup
+   8C:  	CaseOR  ==  00000017 % 17
+   98:  	CaseOR  ==  .Event:Immune % 19
+   A4:  		Call  PlaySound ( 0000208C )
+   B4:  		SetConst  *Var0  00000001
+   C4:  		SetConst  *Var1  009D0007
+   D4:  		ExecWait  DoImmune
+   E0:  	EndCaseGroup
+   E8:  	Case  ==  .Event:SpikeContact % 2A
+   F4:  		SetConst  *Var1  009D0007
+  104:  		SetConst  *Var2  009D0003
+  114:  		SetConst  *Var3  009D0001
+  124:  		ExecWait  80294FE4
+  130:  	Case  ==  .Event:BurnContact % 2C
+  13C:  		SetConst  *Var0  009D0007
+  14C:  		SetConst  *Var1  009D0007
+  15C:  		SetConst  *Var2  009D0007
+  16C:  		SetConst  *Var3  009D0003
+  17C:  		SetConst  *Var4  009D0001
+  18C:  		ExecWait  80294C68
+  198:  	Case  ==  .Event:BurnHit % E
+  1A4:  		SetConst  *Var0  00000000
+  1B4:  		SetConst  *Var1  009D0007
+  1C4:  		ExecWait  DoNormalHit
+  1D0:  	Case  ==  00000033 % 33
+  1DC:  	Case  ==  00000034 % 34
+  1E8:  		SetConst  *Var0  00000001
+  1F8:  		SetConst  *Var1  009D0001
+  208:  		SetConst  *Var2  009D0003
+  218:  		ExecWait  80295EC4
+  224:  	Default
+  22C:  EndSwitch
+  234:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  248:  Return
+  250:  End
+}
+
+#new:Script $Script_TakeTurn_802383F4
+{
+    0:  Call  GetBattlePhase    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  00000000
+   28:  		ExecWait  $Script_8023859C
+   34:  	Case  ==  00000005
+   40:  		ExecWait  $Script_80238488
+   4C:  	Case  ==  00000003
+   58:  		ExecWait  $Script_802384D4
+   64:  	Case  ==  00000007
+   70:  		ExecWait  $Script_80238510
+   7C:  EndSwitch
+   84:  Return
+   8C:  End
+}
+
+#new:Script $Script_80238488
+{
+    0:  SetConst  *Var0  00000001
+   10:  SetConst  *Var1  009D0009
+   20:  SetConst  *Var2  009D0002
+   30:  ExecWait  80294720
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_802384D4
+{
+    0:  SetConst  *Var0  00000001
+   10:  SetConst  *Var1  009D0003
+   20:  ExecWait  80294AFC
+   2C:  Return
+   34:  End
+}
+
+#new:Script $Script_80238510
+{
+    0:  Call  SetGoalToHome ( .Actor:Partner )
+   10:  Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+   24:  Call  SetAnimation  ( .Actor:Partner FFFFFFFF 009D0003 )
+   3C:  Call  SetActorYaw   ( .Actor:Partner  0` )
+   50:  Call  RunToGoal     ( .Actor:Partner  0` )
+   64:  Call  SetAnimation  ( .Actor:Partner FFFFFFFF 009D0001 )
+   7C:  Return
+   84:  End
+}
+
+#new:Script $Script_8023859C
+{
+    0:  Return
+    8:  End
+}
+
+PADDING: 802385AC to 802385B0 (006F10DC to 006F10E0)
+00000000
+

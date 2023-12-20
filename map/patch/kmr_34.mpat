@@ -1,0 +1,105 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList] $EntryList
+	[EntryCount] 1
+	[MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:GoombaVillage
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+	Set   *Var0 $Script_CreateExitTriggers
+	Exec  EnterWalk
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:GoombaVillage 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+	Call  MakeEntity    ( .Entity:HiddenYellowBlock ~Vec4d:Entity_CoinBlock_1 .Item:Coin 80000000 )
+    Call  AssignBlockFlag   ( *GF_KMR34_Block1 )
+	Call  MakeEntity    ( .Entity:HiddenYellowBlock ~Vec4d:Entity_CoinBlock_2 .Item:Coin 80000000 )
+    Call  AssignBlockFlag   ( *GF_KMR34_Block2 )
+	Call  MakeEntity    ( .Entity:HiddenYellowBlock ~Vec4d:Entity_CoinBlock_3 .Item:Coin 80000000 )
+    Call  AssignBlockFlag   ( *GF_KMR34_Block3 )
+	Call  MakeEntity    ( .Entity:HiddenYellowBlock ~Vec4d:Entity_CoinBlock_4 .Item:Coin 80000000 )
+    Call  AssignBlockFlag   ( *GF_KMR34_Block4 )
+	If *GF_KMR34_HammerBlock == .False
+		Call  MakeEntity        ( .Entity:Hammer1Block ~Vec4d:Entity_HammerBlock .Item:Coin 80000000 )
+		Call  AssignScript  ( $Script_HammerBlock )
+	EndIf
+	%
+	Call  MakeItemEntity ( .Item:Coin ~Vec3d:coin1 .ItemSpawnMode:Fixed_NeverVanish .False )
+	Call  MakeItemEntity ( .Item:Coin ~Vec3d:coin2 .ItemSpawnMode:Fixed_NeverVanish .False )
+	Call  MakeItemEntity ( .Item:Coin ~Vec3d:coin3 .ItemSpawnMode:Fixed_NeverVanish .False )
+	Call  MakeItemEntity ( .Item:StarPiece ~Vec3d:item .ItemSpawnMode:Fixed_NeverVanish *GF_KMR34_Item1 )
+	%
+	Call  MakeItemEntity ( .Item:HappyHeartP ~Vec3d:reward .ItemSpawnMode:Fixed_NeverVanish *GF_KMR34_Item2 )
+	Return
+	End
+}
+
+#new:Script $Script_HammerBlock
+{
+	Set	*GF_KMR34_HammerBlock .True
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+	Bind     $Script_Exit0  .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0 {
+	Call     UseExitHeading  	( 3C 0 )
+	Exec     ExitWalk
+    Call     GotoMap	( "kmr_00" 1 )
+	Wait     100`
+	Return
+	End
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Now that I think about it, it's good[BR]
+that you landed next to our home[BR]
+Mario.[BR]
+[Wait][Next]
+What would have happened if you had[BR]
+fallen in a place with no one around...[BR]
+[Wait][Next]
+Anyways, the best of all is thanks[BR]
+to that, now we're good friends!
+[Wait][End]
+}

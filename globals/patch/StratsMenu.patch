@@ -1,0 +1,1740 @@
+% This file add the Pray, Defense and Charge mechanics inside the strats menu for Mario and Partners
+% plus it adds the run away option for partners too, the code for Defense and Charge is placed here too.
+
+/% NEW STRATS LIST ORDER:
+Change Member
+Focus %
+Charge %
+Defense
+Run Away
+%/
+
+%=========================================
+% Remove Focus from the Star Spirits Menu
+
+% Skip focus
+@Hook 417AE0 % 802A2D50
+{
+    % check if current list is Star Spirits
+    LAW     S0, 800DC4DC % battleMenuState
+    ORI     V0, R0, 3D % star spirits
+    BEQL    S0, V0, .StarSpirits
+    ORI     S0, R0, 1 % Start Star Spirit list at element #2 instead of #1
+    CLEAR   S0 % Start at pos #1
+    .StarSpirits
+    BLEZ	V1, .802A2D78
+    NOP
+    J       802A2D58
+    NOP
+    .802A2D78
+    J       802A2D78
+    NOP
+}
+
+% Always reduce Star Spirits list lenght by 1
+@Hook 41C214 % 802A7484
+{
+    ADDI    V0, V0, FFFF
+    % restore vanilla code
+    SAW     V0, 802AD4A4 % set list lenght
+    J       802A748C
+    RESERVED
+}
+
+% Add 1 to V0, to load the last Star Spirit data too
+@Hook 417AF0 % 802A2D60
+{
+    PUSH    A2, A3
+    SW	    S0, 0000 (V1)
+    LW	    V0, 0000 (A1) % load list lenght
+    % check if current list is Star Spirits
+    LAW     A2, 800DC4DC % battleMenuState
+    ORI     A3, R0, 3D % star spirits
+    BEQL    A2, A3, .End
+    ADDIU   V0, V0, 1
+    .End
+    POP     A2, A3
+    J       802A2D68
+    NOP
+}
+
+%=========================================
+
+%=====================================
+% Add new commands to the strats menu
+%=====================================
+
+% Player - Set Strats Menu lenght 
+%
+% From ~Func:btl_state_update_player_menu
+@Hook 41C850 % 802A7AC0
+{
+    %======Set Strats Menu lenght=======
+    ADDIU	S4, R0, 0002
+    % Check if Player has Star Spirits to enable focus
+    LABU    A1, 8010F51E % Star Spirits
+    BNEL    A1, R0, .EnableFocus
+    ADDIU   S4, S4, 1
+    .EnableFocus
+    % Check if Player has Charge
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 016D % .Item:Charge
+    BNEL    V0, R0, .EnableCharge
+    ADDIU   S4, S4, 1
+    .EnableCharge
+    % Check if Player has more than one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    SLTIU   V0, V0, 2
+    BEQL    V0, R0, .EnableChangePartners
+    ADDIU	S4, S4, 0001 % Player has more than 1 partner
+    .EnableChangePartners
+    % Set list lenght
+    % S6 = battleStatus
+    SB	    R0, 0063 (S6) % battleStatus(0x63) = ?
+    LB	    S1, 0063 (S6)
+    SAW     S4, 802AD66C % set list lenght
+    SAW     R0, 802AD670 % set list scroll(?), if this isn't set the game can crash
+    %======Set each element Data=======
+    % Get Charge equipped
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 016D % .Item:Charge
+    JAL     $StratsMenu_SetElementsData
+    NOP
+    J       802A7BDC
+    LUI	    A1, 001D
+}%/
+
+% Partners - Set Strats Menu lenght 
+%
+% From ~Func:btl_state_update_partner_menu
+@Hook 41E2FC % 802A956C
+{
+    %======Set Strats Menu lenght=======
+    ADDIU	S0, R0, 0002
+    % Check if Player has Star Spirits to enable focus
+    LABU    A1, 8010F51E % Star Spirits
+    BNEL    A1, R0, .EnableFocus
+    ADDIU   S0, S0, 1
+    .EnableFocus
+    % Check if Player has Charge P
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 017D % .Item:ChargeP
+    BNEL    V0, R0, .EnableCharge
+    ADDIU   S0, S0, 1
+    .EnableCharge
+    % Check if Player has more than one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    SLTIU   V0, V0, 2
+    BEQL    V0, R0, .EnableChangePartners
+    ADDIU	S0, S0, 0001 % Player has more than 1 partner
+    .EnableChangePartners
+    % Set list lenght
+    % S4 = battleStatus
+    SB	    R0, 0063 (S4) % battleStatus(0x63) = ?
+    LB	    S1, 0063 (S4)
+    SAW     S0, 802AD66C % set list lenght
+    SAW     R0, 802AD670 % set list scroll(?), if this isn't set the game can crash
+    %======Set each element Data=======
+    % Get Charge P equipped
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 017D % .Item:ChargeP
+    JAL     $StratsMenu_SetElementsData
+    NOP
+    J       802A95F0
+    NOP
+}%/
+
+% Set all elements' names, descriptions, flags, icons and commands IDs
+#new:Function $StratsMenu_SetElementsData
+{
+    PUSH    RA, T0, T1, A0, S0, S1, S2
+    LIO     S0, 800DC070 % battleStatus
+    SH      R0, 17C (S0) % clear selectedMove
+    % The "change partners" command is the only one who get init
+    % outside this function, if wasn't set due to the player
+    % not having more than 1 partners start writing from slot#0
+    % instead of #1.
+    %
+    % Get Star Spirits saved
+    LABU    S0, 8010F51E % Star Spirits
+    COPY    S1, V0 % copy Charge badges equipped
+    % Get partners unlocked
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    SLTIU   S2, V0, 2
+    %==============
+    % Names
+    %==============
+    LIO     T0, 802AD658 % First element name stringID
+    % Change Partners
+    %
+    % check if player has more than 1 partners
+    BEQ     S2, R0, .SkipPartners_Names
+    NOP
+    ADDI    T0, T0, -4 % write in slot #0
+    .SkipPartners_Names
+    % Focus
+    %
+    % Check if the player have star spirits
+    BEQ     S0, R0, .SkipFocus_Names
+    NOP
+    LIO     T1, 001D0048 % Focus
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipFocus_Names
+    % Charge
+    %
+    % Check if Charge P is active
+    BEQ     S1, R0, .SkipChargeP_Names
+    NOP
+    LIO     T1, 002A0002 % Charge
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipChargeP_Names
+    % Defense
+    LIO     T1, 001D0044 % Defense
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    % Run Away
+    LIO     T1, 001D003B % Run Away
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    %==============
+    % Descriptions
+    %==============
+    LIO     T0, 802AD6C0 % First element description stringID
+    % Change Partners
+    %
+    % check if player has more than 1 partners
+    BEQ     S2, R0, .SkipPartners_Desc
+    NOP
+    ADDI    T0, T0, -4 % write in slot #0
+    .SkipPartners_Desc
+    % Focus
+    %
+    % Check if the player have star spirits
+    BEQ     S0, R0, .SkipFocus_Desc
+    NOP
+    LIO     T1, 001D0020 % Focus
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipFocus_Desc
+    % Charge
+    %
+    % Check if Charge P is active
+    BEQ     S1, R0, .SkipChargeP_Desc
+    NOP
+    LIO     T1, $String_Charge_Desc
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipChargeP_Desc
+    % Defense
+    LIO     T1, $String_Defense_Desc
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    % Run Away
+    LIO     T1, 001D00A3 % Run Away
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    %==============
+    % Flags
+    %==============
+    LIO     T0, 802AD690 % First element flag
+    % Change Partners
+    %
+    % check if player has more than 1 partners
+    BEQ     S2, R0, .SkipPartners_Flags
+    NOP
+    ADDI    T0, T0, -4 % write in slot #0
+    .SkipPartners_Flags
+    % Focus
+    %
+    % Check if the player have star spirits
+    BEQ     S0, R0, .SkipFocus_Flags
+    ORI     T1, R0 , 1
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipFocus_Flags
+    % Charge
+    %
+    % Check if Charge P is active
+    BEQ     S1, R0, .SkipChargeP_Flags
+    NOP
+    ADDIU   T0, T0, 4
+    % check if player has enough FP
+    % S1 = Amount of charges badges equipped
+    LABU    A0, 8010F295 % load current FP
+    SLTU    A0, A0, S1
+    BNEL    A0, R0, .SkipChargeP_Flags
+    SW      R0, 0 (T0) % lock command
+    SW      T1, 0 (T0) % enable command
+    .SkipChargeP_Flags
+    % Defense
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    % Run Away
+    ADDIU   T0, T0, 4
+    % Check if is possible to run away from this battle
+    LAW     A0, 800DC074 % load battleFlags2
+    ANDI	A0, A0, 0020 % 00000020 = can't run away
+    BNEL    A0, R0, .Flags_EnableRunAway
+    SW      T1, 0 (T0) % enable run away
+    % Disable Run Away
+    SW      R0, 0 (T0) % disable run away
+    % get position in the list for the Run Away command
+    LIO     T1, 802AD690 % First element flag
+    SUBU    T1, T0, T1 % get offset
+    % Yeah, there's a flag for enabled and another one for locked lol
+    % this ones are used to show the proper warning when a command is locked.
+    LIO     A0, 802AD6A8 % first element locked byteflag
+    ADDU    A0, A0, T1
+    ORI     T1, R0, 1
+    SW      T1, 0 (A0) % set run away's locked byteflag as true
+    .Flags_EnableRunAway
+    %==============
+    % Commands IDs
+    %==============
+    % This ID decide the kind of command
+    % 03=Run Away
+    % 04=Defense
+	% 05=Change Partner
+	% 09=Do Nothing
+	% 0A=Z Button
+    %==NEW==
+    % 0B=Partner Focus
+    % 0C=Charge
+    LIO     T0, 802AD678 % First element type ID
+    % Change Partners
+    %
+    % check if player has more than 1 partners
+    BEQ     S2, R0, .SkipPartners_ID
+    NOP
+    ADDI    T0, T0, -4 % write in slot #0
+    .SkipPartners_ID
+    % Focus
+    %
+    % Check if the player have star spirits
+    BEQ     S0, R0, .SkipFocus_ID
+    NOP
+    ORI     T1, R0 , B
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipFocus_ID
+    % Charge
+    %
+    % Check if Charge P is active
+    BEQ     S1, R0, .SkipChargeP_ID
+    NOP
+    ORI     T1, R0 , C
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipChargeP_ID
+    % Defense
+    ORI     T1, R0 , 4
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    % Run Away
+    ORI     T1, R0 , 3
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    %==============
+    % Icons
+    %==============
+    LIO     T0, 802AD628 % First element icon Index
+    % Change Partners
+    %
+    % check if player has more than 1 partners
+    BEQ     S2, R0, .SkipPartners_Icons
+    NOP
+    ADDI    T0, T0, -4 % write in slot #0
+    .SkipPartners_Icons
+    % Focus
+    %
+    % Check if the player have star spirits
+    BEQ     S0, R0, .SkipFocus_Icons
+    NOP
+    ORI     T1, R0, 082C
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipFocus_Icons
+    % Charge
+    %
+    % Check if Charge P is active
+    BEQ     S1, R0, .SkipChargeP_Icons
+    NOP
+    ORI     T1, R0, 0854
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipChargeP_Icons
+    % Defense
+    ORI     T1, R0, 081D
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    % Run Away
+    ORI     T1, R0, 0855
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    %==============
+    % Icon Scripts
+    %==============
+    LIO     T0, 802AD640 % First element icon script
+    % Change Partners
+    %
+    % check if player has more than 1 partners
+    BEQ     S2, R0, .SkipPartners_IconsScripts
+    NOP
+    ADDI    T0, T0, -4 % write in slot #0
+    .SkipPartners_IconsScripts
+    % Focus
+    %
+    % Check if the player have star spirits
+    BEQ     S0, R0, .SkipFocus_IconsScripts
+    NOP
+    LIO     T1, $IconScript_Focus
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    .SkipFocus_IconsScripts
+    % Charge
+    %
+    % Check if Charge P is active
+    BEQ     S1, R0, .SkipChargeP_IconsScripts
+    NOP
+    LIO     T1, $IconScript_ChargeCommand
+    ADDIU   T0, T0, 4
+    % check if player has enough FP
+    LIO     V0, $IconScript_ChargeCommandBW
+    % S1 = Amount of charges badges equipped
+    LABU    A0, 8010F295 % load current FP
+    SLTU    A0, A0, S1
+    BNEL    A0, R0, .IconScripts_UseBW_Charge
+    COPY    T1, V0 % use black and white icon instead
+    .IconScripts_UseBW_Charge
+    SW      T1, 0 (T0)
+    .SkipChargeP_IconsScripts
+    % Defense
+    LIO     T1, $IconScript_Defense
+    ADDIU   T0, T0, 4
+    SW      T1, 0 (T0)
+    % Run Away
+    LIO     T1, $IconScript_RunAway
+    ADDIU   T0, T0, 4
+    % Check if is possible to run away from this battle
+    LAW     A0, 800DC074 % load battleFlags2
+    ANDI	A0, A0, 0020 % 00000020 = can't run away
+    BNE     A0, R0, .IconScripts_DontUseFalseIcon_RunAway
+    NOP
+    LIO     T1, $IconScript_RunAwayBW
+    .IconScripts_DontUseFalseIcon_RunAway
+    SW      T1, 0 (T0)
+    .End
+    POP     RA, T0, T1, A0, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+% Charge - Show FP cost
+@Hook 41A290 % 802A5500
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    % Check if string about to draw is "002A0002" (Defense)
+    % A0 = String about to draw
+    LIO     V0, 002A0002
+    BNE     A0, V0, .End
+    NOP
+    % check if current turn is from Mario or Partner
+    LAW     V0, 800DC070 % load battleFlags
+    LUI     V1, 0010 % 00100000 - bit4= current turn is partner
+    AND     V0, V0, V1
+    BNE     V0, R0, .Partner
+    NOP
+    .Mario
+    % Check how many Charge badges the player have
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 016D % .Item:Charge
+    BEQ     V0, R0, .End
+    NOP
+    BEQ     R0, R0, .DrawFPCost
+    COPY    S0, V0
+    .Partner
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 017D % .Item:ChargeP
+    BEQ     V0, R0, .End
+    COPY    S0, V0
+    .DrawFPCost
+    CLEAR   A1
+    JAL     ~Func:set_message_value
+    COPY    A0, V0
+    LIO     A0, $Charge_FPAmount
+    LW      A1, 20 (SP) % x
+    ADDI    A1, A1, 32
+    LW      A2, 24 (SP) % y
+    ADDI    A2, A2, -1
+    ORI     A3, R0, FF % opacity
+    % Check if player has enough FP to use Charge
+    % S0 = Amount of charges equipped
+    ORI     V0, R0, B % gray color
+    LIO     V1, 8010F290
+    LBU     V1, 5 (V1) % load FP
+    SLTU    V1, V1, S0
+    BNEL    V1, R0, .draw_string
+    SW      V0, 10 (SP) % use gray color
+    ORI     V0, R0, A % black color (normal)
+    SW      V0, 10 (SP)
+    .draw_string
+    JAL     ~Func:draw_string
+    SW      R0, 14 (SP) % text FX / 0 = none
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    % restore vanilla code
+    LAW     A3, 802AD624 % load opacity
+    J       802A5508
+    RESERVED
+}
+
+#string $Charge_FPAmount
+{
+    [Var:00][Size:0C:0C][Down 03][Right 02]FP[END]
+}
+
+#string $String_Defense_Desc
+{
+Defend this turn.[END]
+}
+
+#string $String_Charge_Desc
+{
+Save up strength to power up[BR]
+your next attack.[END]
+}
+
+%==================================================
+% Add support for new commands to the strats menu.
+%==================================================
+
+%===========
+% Player
+%===========
+
+% Player already has the dispatching code of the Defense
+% command in the strats menu, ignore using that code
+% so the game uses the one from below Hook.
+%
+% From ~Func:btl_state_update_player_menu
+@Function 41CA68 % 802A7CD8
+{
+    NOP
+}
+
+% Add IDs below 0x05 - Defense
+%
+% From ~Func:btl_state_update_player_menu
+@Hook:Battle 41CA80 % 802A7CF0
+{
+    % S0 = Current command ID
+    ORI     V0, R0, 4 % Defense
+    BEQ     S0, V0, .Defense
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Defense
+    ORI     V0, R0, 00CD
+    SAW     V0, 800DC4DC % Battle Menu State
+    CLEAR   V0 % Defend
+    SH	    V0, 017C (S5) % battleStatus(0x17C) = s16 selectedMoveID
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0019 % .BattleState:Defend
+    JAL     802A472C % Free strats menu icons
+    NOP
+    JAL	    802A10B8 % Free command wheel icons
+    NOP
+    .End
+    J	    802A8144
+    NOP
+}
+
+% Add IDs above 0x05 - Focus & Charge
+%
+% From ~Func:btl_state_update_player_menu
+@Hook:Battle 41CA9C % 802A7D0C
+{
+    % S0 = Current command ID
+    ORI     V0, R0, B % Focus
+    BEQ     S0, V0, .Focus
+    ORI     V0, R0, C % Charge
+    BEQ     S0, V0, .Charge
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Focus
+    ORI     V0, R0, 00CD
+    SAW     V0, 800DC4DC % Battle Menu State
+    ADDIU	V0, R0, 0077
+    ORI     S0, R0, 8
+    % S6 = battleStatus
+    SB	    S0, 0178 (S6) % battleStatus(0x178) = s8 moveCategory
+    SH	    R0, 017A (S6) % battleStatus(0x178) = s16 subMoveID(?), this is used to know which Star Spirit move to do (0=Focus)
+    SH	    V0, 017C (S6) % battleStatus(0x17C) = s16 selectedMoveID
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0012 % .BattleState:PlayerMove
+    BEQ     R0, R0, .End
+    NOP
+    .Charge
+    ORI     V0, R0, 00CD
+    SAW     V0, 800DC4DC % Battle Menu State
+    ORI     V0, R0, 1 % Charge
+    SH	    V0, 017C (S6) % battleStatus(0x17C) = s16 selectedMoveID
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0019 % .BattleState:Defend
+    .End
+    JAL     802A472C % Free strats menu icons
+    NOP
+    JAL	    802A10B8 % Free command wheel icons
+    NOP
+    J	    802A8144
+    NOP
+}
+
+% Strategies Menu - Warnings
+%
+% It's possible to have only 2 strings for warnings, use
+%
+% "You don't have enough FP" instead of "Can't switch partners"
+%
+% for warning 0x00, that warning isn't used anymore anyways.
+%
+% func_802A57C8
+@Function:Battle 802A57EC
+{
+    ORI	A0, A0, 009F % 001D009F
+}
+
+% Strategies Menu - Warnings
+%
+% Adjust warning size according to string.
+%
+% func_802A4A54
+@Function:Battle 802A5168
+{
+    ORI	A0, A0, 009F % use "not enough fp" string instead.
+}
+
+%===========
+% Partner
+%===========
+
+% Add IDs below 0x0A - Defense
+%
+% From ~Func:btl_state_update_partner_menu
+@Hook:Battle 41E488 % 802A96F8
+{
+    % S0 = Current command ID
+    ORI     V0, R0, 4 % Defense
+    BEQ     S0, V0, .Defense
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Defense
+    ORI     V0, R0, 00CD
+    SAW     V0, 800DC4DC % Battle Menu State
+    CLEAR   V0 % Defend
+    SH	    V0, 017C (S4) % battleStatus(0x17C) = s16 selectedMoveID
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0019 % .BattleState:Defend
+    JAL     802A472C % Free strats menu icons
+    NOP
+    JAL	    802A10B8 % Free command wheel icons
+    NOP
+    .End
+    J	    802A9AAC
+    NOP
+}
+
+% Add IDs above 0x0A - Focus & Charge
+%
+% From ~Func:btl_state_update_partner_menu
+@Hook:Battle 41E49C % 802A970C
+{
+    % S0 = Current command ID
+    ORI     V0, R0, B % Focus
+    BEQ     S0, V0, .Focus
+    ORI     V0, R0, C % Charge
+    BEQ     S0, V0, .Charge
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Focus
+    ORI     V0, R0, 00CD
+    SAW     V0, 800DC4DC % Battle Menu State
+    ADDIU	V0, R0, 0077
+    ORI     S0, R0, 8
+    % S4 = battleStatus
+    SB	    S0, 0178 (S4) % battleStatus(0x178) = s8 moveCategory
+    SH	    R0, 017A (S4) % battleStatus(0x178) = s16 subMoveID(?), this is used to know which Star Spirit move to do (0=Focus)
+    SH	    V0, 017C (S4) % battleStatus(0x17C) = s16 selectedMoveID
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0013 % .BattleState:PartnerMove
+    BEQ     R0, R0, .End
+    NOP
+    .Charge
+    ORI     V0, R0, 00CD
+    SAW     V0, 800DC4DC % Battle Menu State
+    ORI     V0, R0, 1 % Charge
+    SH	    V0, 017C (S4) % battleStatus(0x17C) = s16 selectedMoveID
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0019 % .BattleState:Defend
+    .End
+    JAL     802A472C % Free strats menu icons
+    NOP
+    JAL	    802A10B8 % Free command wheel icons
+    NOP
+    J	    802A9AAC
+    NOP
+}
+
+% Strategies Menu - Warnings - Partners
+% Check if the strategies menu returned an error.
+% When a disabled element was choosen.
+%
+% ~Func:btl_state_update_partner_menu
+@Hook:Battle 802A9608
+{
+    COPY    S0, V0
+    %===New code====
+    ADDI    V0, R0, -1
+    BEQ	    S0, V0, .802A9AA4
+    ADDIU	V0, R0, 00CF
+    %===============
+    %
+    % restore code
+    BEQ	    S0, R0, .802A9AAC
+    ADDIU	V0, R0, 00FF
+    BNE	    S0, V0, .802A9644
+    ADDIU	V1, S0, FFFF
+    J       802A961C
+    NOP
+    .802A9644
+    J       802A9644
+    NOP
+    .802A9AA4 % write in battleMenuState (0x800DC4DC) and finish the function
+    J       802A9AA4
+    NOP
+    .802A9AAC % End
+    J       802A9AAC
+    NOP
+}
+
+% Strategies Menu - Warnings - Partners
+%
+% Partner's menu function doesn't have any code for battleMenuState 0xCF (Warning)
+% Just use the code from battleMenuState 0xC9 to make it work.
+%
+% ~Func:btl_state_update_partner_menu
+@Data:Battle 802AC6FC
+{
+    802A9600 % ~Func:btl_state_update_partner_menu[1438] - battleMenuState 0xC9
+}
+
+%======================
+% Defend & Charge Code
+%======================
+
+% Patch Battle State - 0x19 - Defend
+% The game now waits until the animation ends also this
+% state is now used for the charge mechanic too, it also
+% uses scripting too.
+
+% Set actorID in Evt(0x148) after running the StartDefend,
+% instead of always setting Evt(0x148) as .Actor:Player
+%
+% This is needed if .Actor:Self want to be used or GetOwnerID
+@Hook 173790 % 80244EB0
+{
+    % V0 = Evt / script_contex
+    %
+    % Check if current turn is from Mario or Partner
+    LAW     A0, 800DC070 % load battleFlags
+    LUI     A1, 0010 % check if current turn is from partner % 00100000 = Partner turn
+    AND     A0, A0, A1
+    BEQL    A0, R0, .End
+    SW	    R0, 0148 (V0) % .Actor:Player
+    ORI     A0, R0, 100
+    SW	    A0, 0148 (V0) % .Actor:Partner
+    .End
+    J	    80244EE0
+    NOP
+}
+
+% Set turn as done according to which one used the defend
+% command, instead of always Player, also wait until the
+% defend script ends.
+%
+% From ~Func:btl_state_update_defend
+@Hook:Battle 1737B8 % 80244ED8
+{
+    % Check if the defend script has ended
+    LAHU    A0, $DefendScriptID
+    JAL     ~Func:does_script_exist
+    RESERVED
+    BNE     V0, R0, .End
+    NOP
+    % S1 = battleStatus
+    LAW     A0, 800DC070 % load battleFlags
+    LUI     V0, 0010 % check if current turn is from partner % 00100000 = Partner turn
+    AND     A0, A0, V0
+    BEQ     A0, R0, .SetState
+    ORI     A0, R0, 16 % .BattleState:EndPlayerTurn
+    ORI     A0, R0, 17 % .BattleState:EndPartnerTurn
+    .SetState
+    JAL     ~Func:btl_set_state
+    NOP
+    .End
+    J       80244EE0
+    NOP
+}
+
+#new:Data $DefendScriptID
+{ 0000 }
+
+@Script:Battle 1B3B98 % 802852B8 - StartDefend
+{
+    ExecWait $Script_Dispatch_BattleState19
+    Return
+    End
+}
+
+#new:Script:Battle $Script_Dispatch_BattleState19
+{
+    Exec    $Script_Dispatch_DefendORCharge *Var0
+    Call    $WriteAddress ( $DefendScriptID 1 *Var0 .False .False ) % save scriptID
+    Return
+    End
+}
+
+#new:Script:Battle $Script_Dispatch_DefendORCharge
+{
+    Call    GetMenuSelection ( .False .False *Var0 )
+    If *Var0 == 0 % Defense
+        ExecWait $Script_Defend
+    Else % Charge
+        ExecWait $Script_ChargeCommand
+    EndIf
+    Return
+    End
+}
+
+#new:Script:Battle $Script_Defend
+{
+    Call    UseIdleAnimation  ( .Actor:Self .False )
+    Call    GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only player team
+        If *Var0 == .Actor:Partner
+            Call SetBattleFlagBits2 ( 00000008 .True ) % disable being able to only use the animations from the battle wheel
+            Set  *Var0 0 % idle
+            Exec $SetPartnerAnimation_Battle
+        EndIf
+        Thread
+            % rotate
+            Call    GetActorRotation ( .Actor:Self *Var0 *Var1 *Var2 )
+            Set *Var3 15`
+            Loop *Var3
+                Add     *Var1 54` % y
+                If *Var1 > 360`
+                    Set *Var1 0
+                EndIf
+                Call    SetActorRotation ( .Actor:Self *Var0 *Var1 *Var2 )
+                If *Var3 == 2
+                    % set animation
+                    Call    GetOwnerID ( *Var0 )
+                    Switch *Var0
+                        Case == .Actor:Player
+                            Call SetAnimation ( .Actor:Player 00000000 00010014 ) % guard
+                        Case == .Actor:Partner
+                            Call SetBattleFlagBits2 ( 00000010 .True ) % disable being able to only use the animations from the battle wheel
+                            Set  *Var0 6 % guard
+                            Exec $SetPartnerAnimation_Battle
+                    EndSwitch
+                EndIf
+                Wait    1
+            EndLoop
+            Call    SetActorRotation ( .Actor:Self 0 0 0 )
+        EndThread
+    EndIf
+    % FXs
+    Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+    Add     *Var1 15` % y
+    Call    PlaySoundAtActor ( .Actor:Self 208F ) % Charging
+    /%Call    PlayEffect ( ~FX:EnergyWaveIn:Blue *Var0 *Var1 *Var2 *Fixed[1.0] 26` .False .False .False .False .False .False .False )
+    Wait    30`
+    Call	PlaySound   ( 208E ) % Pipe
+    Add	    *Var0 20` % x
+    Add	    *Var1 5 % y
+    Call    PlayEffect ( ~FX:StatChange:DefensePlus1 *Var0 *Var1 *Var2 *Fixed[1.0] 30` 0 0 0 0 0 0 0 )
+    Wait    25`%/
+    % Boost defense
+    Wait    13`
+    Call    GetOwnerID ( *Var0 )
+    Switch *Var0
+        Case == .Actor:Player
+            Call $ReadAddress ( $ExtraActorData_Everyone 0 *Var0 E .False ) % get mario's defend byte
+            Add *Var0 1
+            Call $WriteAddress ( $ExtraActorData_Everyone 0 *Var0 E .False )
+        Case == .Actor:Partner
+            Call $GetPartnerExtraBattleData_API ( E *Var0 ) % get Defend byte
+            Add *Var0 1
+            Call $SetPartnerExtraBattleData_API ( E *Var0 )
+        Default % Enemies % unused
+            Call    $BoostDefense ( .Actor:Self 1 2 )
+    EndSwitch
+    Call    GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only Player team
+        Call    ShowMessageBox        ( 00000108 0000003C )
+        Call    WaitForMessageBoxDone
+    EndIf
+    Call    UseIdleAnimation  ( .Actor:Self .True )
+    Return
+    End
+}
+
+% MessageBoxes strings, add the defense string to the table
+@Data 1B2050 % 80283770
+{
+    001D0071 001D0072 001D0073 001D0075
+    001D0076 001D0077 001D0078 001D0079
+    001D007A 001D007B 001D0088 001D008B
+    001D008A 001D0089 001D008C 001D008D
+    001D008E 001D008F 001D0090 001D0093
+    001D0092 001D0091 001D0094 001D0095
+    001D0096 001D0097 001D007F 001D0081
+    001D0080 001D0082 001D0083 001D0084
+    % Blank strings
+    001D0085 % index 20
+             001D0086 001D0087 001D007C
+    001D007D 001D007E 001D0098 001D0099
+    001D009A 001D009B 001D009C 001D009D
+    001D009E 001D009A 001D00AF 001D00B0
+    001D00B1 001D00B2 001D00B3 001D00B4
+    001D00AF 001D00AF 001D00B5 001D00B6
+    001D00B7 001D00B8 001D00B9 001D00AF
+    001D00BA 001D00BB 001D00BC 001D00AF
+    001D00BD 001D00BE 001D00BF 001D00C0
+    001D00C1 001D00C2
+    % Unused slots
+    00000000 % index 46
+    001D01AC % Charge % index 47
+    001D00C3 001D00C6 001D00C6 001D00C6
+    001D00C7 001D00C7 001D00C7 001D00C8
+    001D00C9 001D00CA 001D00C9 001D00CA
+    001D00C3 001D0013 001D0007 001D0008
+    001D0009 001D000A 001D000B 001D000C
+    001D000D 001D000E 001D000F 001D0010
+    001D0011 001D0012
+}
+
+#export:Script:Battle $Script_ChargeCommand
+{
+    % Get Charge badges equipped
+    Call    GetOwnerID ( *Var0 )
+    Switch *Var0
+        Case == .Actor:Player
+            Call    $IsBadgeActivated_Stack_API ( .Item:Charge *VarE )
+        Case == .Actor:Partner
+            Call    $IsBadgeActivated_Stack_API ( .Item:ChargeP *VarE )
+        Default % Enemies
+            Set *VarE 1 % enemies can only have one badge
+    EndSwitch
+    % Decrease FP
+    If *Var0 < .Actor:Enemy0 % Heroes team
+        Call    $ReadAddress ( 8010F295 0 *Var0 .False .False ) % load FP
+        Sub     *Var0 *VarE
+        If *Var0 < 0
+            Set *Var0 0
+        EndIf
+        Call    $WriteAddress ( 8010F295 0 *Var0 .False .False ) % set FP
+        %============
+        % Glitz Pit
+        %============
+        Call    $ReadAddress ( $Data_GlitzChallenge 0 *Var0 .False .False ) % challengeID
+        If *Var0 == F % Don't use FP
+            Call    $WriteAddress ( $Data_GlitzChallenge 0 -1 1 .False ) % challengeStatus, set challenge as failed
+        EndIf
+    EndIf
+    Call    UseIdleAnimation  ( .Actor:Self .False )
+    Call    GetOwnerID ( *Var0 )
+    Switch *Var0
+        Case == .Actor:Player
+            Call SetBattleFlagBits2 ( 00000008 .True ) % disable being able to only use the animations from the battle wheel - Mario
+            Call SetAnimation ( .Actor:Player 00000000 .PlayerAnim:Running )
+        Case == .Actor:Partner
+            Call SetBattleFlagBits2 ( 00000010 .True ) % disable being able to only use the animations from the battle wheel - Partner
+            Set  *Var0 2 % run
+            Exec $SetPartnerAnimation_Battle
+        Default % enemies
+    EndSwitch
+    Call    GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only player team
+        Wait    20`
+        % rotate
+        Call    GetActorRotation ( .Actor:Self *Var0 *Var1 *Var2 )
+        Set *Var3 20`
+        Loop *Var3
+            Sub     *Var1 36` % y
+            If *Var1 < -360`
+                Set *Var1 0
+            EndIf
+            Call    SetActorRotation ( .Actor:Self *Var0 *Var1 *Var2 )
+            Wait    1
+        EndLoop
+        Call    SetActorRotation ( .Actor:Self 0 0 0 )
+        Wait    15`
+    EndIf
+    % FXs
+    Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+    Add     *Var1 15` % y
+    Add     *Var2 2 % z
+    Call    PlaySoundAtActor ( .Actor:Self 208F ) % Charging
+    Call    PlayEffect ( ~FX:EnergyWaveIn:Blue *Var0 *Var1 *Var2 *Fixed[1.0] 35` .False .False .False .False .False .False .False )
+    Wait    35`
+    Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+    Call	PlaySound   ( 208E ) % Pipe
+    Add	    *Var0 20` % x
+    Add	    *Var1 5 % y
+    Add     *Var2 1 % z
+    Call    PlayEffect ( ~FX:StatChange:AttackPlus0 *Var0 *Var1 *Var2 *Fixed[1.0] 30` .False .False .False .False .False .False .False )
+    % The code that raises the arrow's number cap is at MiscHooks.patch - Hook 3AF524 % E00AC704
+    Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+    Set     *Var1 *VarE
+    Add     *Var1 1 % Amount =  ChargesBadges + 1
+    Call    $WriteAddress ( *Var0 2 *Var1 20 .False  ) % set amount inside the arrow
+    % Happy animation
+    Call    GetOwnerID ( *Var0 )
+    Switch *Var0
+        Case == .Actor:Player
+            Call    SetAnimation ( .Actor:Player 00000000 00010002 )
+            Call    SetAnimation ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+        Case == .Actor:Partner
+            Set  *Var0 5 % happy
+            Exec $SetPartnerAnimation_Battle
+        Default % enemies
+    EndSwitch
+    % Update charge byte
+    %
+    % VarE = Amount of Charge Badges equipped
+    If *VarE > 1 % More than 1 charge badge
+        Set *Var0 *VarE
+        Add *Var0 1
+    Else % Only 1 badge
+        Set *Var0 2
+    EndIf
+    % set Actor charge
+    Call    $GetActorPointer ( .Actor:Self *Var2 )
+    Call    $ReadAddress ( *Var2 1 *Var2 192 .False ) % get actorID
+    Call    $GetActorExtraData ( *Var2 F *Var1 ) % chargeByte
+    Add     *Var1 *Var0
+    Call    $SetActorExtraData ( *Var2 F *Var1 )
+    Wait    30`
+    Call    GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only Player team
+        Call    ShowMessageBox        ( 00000047 0000003C )
+        Call    WaitForMessageBoxDone
+    EndIf
+    Call    UseIdleAnimation  ( .Actor:Self .True )
+    Return
+    End
+}
+
+% Make actor glow - Mario
+%
+% from func_80257DA4
+@Hook 186F10 % 80258630
+{
+    PUSH    RA, A0
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    LBU     V0, F (V0) % charge byte
+    POP     RA, A0
+    BEQ 	V0, R0, .DontActivatePlayerGlow
+    NOP
+    J       8025863C
+    NOP
+    .DontActivatePlayerGlow
+    J       80258654
+    NOP
+}
+
+% Charge - Remove Charge boost after the actor attacked - Player
+
+% Save in memory if Player tried to attack an enemy on this turn
+%
+% From ~Func:PlayerTestEnemy
+@Hook 1A31E0 % 80274900
+{
+    ORI     S3, R0, 1
+    SAB     S3, $DoesActorTriedToHitTarget_Player
+    % restore vanilla code
+    LW	    RA, 0020 (SP)
+    J       80274908
+    LW	    S3, 001C (SP)
+}
+
+% Check if Player tried to attack this turn to nuke
+% the charge boost
+%
+% From ~Func:btl_state_update_player_move
+@Hook:Battle 174CFC % 8024641C
+{
+    LIO     A0, $DoesActorTriedToHitTarget_Player
+    LBU     V0, 0 (A0)
+    BEQ     V0, R0, .End
+    SB      R0, 0 (A0)    
+    % Clear charge boost
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    SB      R0, F (V0) % charge byte
+    .End
+    % restore vanilla code
+    JAL	    ~Func:btl_set_state
+    ADDIU	A0, R0, 0016 % .BattleState:EndPlayerTurn
+    J       80246424
+    NOP
+}
+
+#new:Data $DoesActorTriedToHitTarget_Player
+{ 00 }
+
+% Charge - Remove Charge boost after the actor attacked - Partner
+
+% Save in memory if Partner tried to attack an enemy on this turn
+%
+% From ~Func:PartnerTestEnemy
+@Hook 1AEFCC % 802806EC
+{
+    ORI     S4, R0, 1
+    SAB     S4, $DoesActorTriedToHitTarget_Partner
+    % restore vanilla code
+    LW	    RA, 0024 (SP)
+    J       802806F4
+    LW	    S4, 0020 (SP)
+}
+
+% Check if Partner tried to attack this turn to nuke
+% the charge boost
+%
+% From ~Func:btl_state_update_partner_move
+@Hook:Battle 175AC8 % 802471E8
+{
+    LIO     A0, $DoesActorTriedToHitTarget_Partner
+    LBU     V0, 0 (A0)
+    BEQ     V0, R0, .End
+    SB      R0, 0 (A0)    
+    % Clear boost charge
+    JAL     $GetPartnerExtraBattleData_Pointer
+    ORI     A0, R0, 0100 % .Actor:Partner
+    SB      R0, F (V0) % Charge byte
+    .End
+    % restore vanilla code
+    JAL	    ~Func:btl_set_state
+    ADDIU	A0, R0, 0017 % .BattleState:EndPartnerTurn
+    J       802471F0
+    NOP
+}
+
+#new:Data $DoesActorTriedToHitTarget_Partner
+{ 00 }
+
+% Idle Animations - Defense - Player
+% Always use the defense animation if the defense byte is
+% true.
+%
+% From func_80265D44
+@Hook 1946E8 % 80265E08
+{
+    LIO     A3, $ExtraActorData_Everyone
+    LBU     A3, E (A3) % load Mario's defense byte
+    BEQ     A3, R0, .End
+    NOP
+    LIO     A3, 00010014 % guard
+    ORI     V0, R0, 30 % .Status:Defense
+    J       80265D6C
+    ORI     A0, R0, 30 % .Status:Defense
+    .End
+    % restore vanilla code
+    LW	    V0, 0000 (A1)
+    BEQ	    V0, R0, .80265E3C
+    NOP
+    J       80265E10
+    NOP
+    .80265E3C
+    J       80265E3C
+    NOP
+}
+
+% Idle Animations - Defense - Partners
+% Don't use the "turn used" animation if defense is active,
+% the other part of the code that handle this is at IdleAnimations.patch
+%
+% From func_80255FE0
+@Hook 185250 % 80256970
+{
+    % Check if partner used the defense command to use the guard animation as idle
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    LBU     V0, E (V0) % load defense byte
+    BNEL    V0, R0, .End
+    ADDIU	A1, R0, 0030 % use .Status:Defense animation
+    .End
+    % restore vanilla code
+    JAL     80265CE8 % : IdleAnimationID : IdleAnimationsTablePointer, ElementID
+    ADDIU	S3, R0, 0001
+    J       80256978
+    NOP
+}
+
+% Idle Animations - Defense - Partners (Poisoned)
+%
+% Don't use the poisoned idle animation if partner used the defense command.
+%
+% func_80255FE0
+@Hook:Battle 80256B64
+{
+    PUSH    RA, A0, V0
+    ADDIU	S3, R0, 0001
+    % check if current actor is partner
+    LHU     A0, 192 (S2) % actorID
+    ORI     V0, R0, 0100 % .Actor:Partner
+    BNE     A0, V0, .End
+    NOP
+    % check if is poisoned
+    LBU     A0, 210 (S2) % debuff
+    ORI     V0, R0, 9 % .Status:Poison
+    BNE     A0, V0, .End
+    NOP
+    % check if partner used the defend command
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP    
+    LBU     A0, E (V0) % defense
+    BNEL    A0, R0, .End
+    CLEAR   S3
+    .End
+    POP     RA, A0, V0
+    JAL	    80265CE8 % setAnimationByStatusTable
+    NOP
+    J       80256B6C
+    NOP
+}
+
+% Idle Animations - Defense - Partners (Electrified/Static)
+%
+% Don't use the static idle animation if partner used the defense command.
+%
+% func_80255FE0
+@Hook:Battle 80256B8C
+{
+    PUSH    RA, A0, V0
+    ADDIU	S3, R0, 0001
+    % check if current actor is partner
+    LHU     A0, 192 (S2) % actorID
+    ORI     V0, R0, 0100 % .Actor:Partner
+    BNE     A0, V0, .End
+    NOP
+    % check if is electrified
+    LBU     A0, 212 (S2) % staticByte
+    ORI     V0, R0, B % .Status:Static
+    BNE     A0, V0, .End
+    NOP
+    % check if partner used the defend command
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP    
+    LBU     A0, E (V0) % defense
+    BNEL    A0, R0, .End
+    CLEAR   S3
+    .End
+    POP     RA, A0, V0
+    JAL	    80265CE8 % setAnimationByStatusTable
+    NOP
+    J       80256B94
+    NOP
+}
+
+% Check if Player or Partner is using the defense command to deal -1 damage
+%
+% Function called in Battle_EnemiesBadges.patch - Hook 1A6134 % 80277854
+#export:Function $EnemyCalcDamage_Defense
+{
+    PUSH    RA
+    % S0 = Amount to deal
+    ADDI    A0, S1, FFF4 % actor pointer
+    LHU     A1, 428 (A0) % load enemyTargetID
+    BEQ     A1, R0, .Player
+    NOP
+    % Isn't player, is partner instead?
+    ORI     V0, R0, 100 % .Actor:Partner
+    BNE     A1, V0, .End
+    NOP
+    .Partner
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    LBU     V0, E (V0) % load defense byte
+    BNEL    V0, R0, .End
+    ADDI    S0, S0, -1
+    BEQ     R0, R0, .End
+    NOP
+    .Player
+    LIO     V0, $ExtraActorData_Everyone
+    LBU     V0, E (V0) % load mario's defense byte
+    BNEL    V0, R0, .End
+    ADDI    S0, S0, -1
+    .End
+    POP     RA
+    JR      RA
+    NOP
+}
+
+% Clear the defense byte when the battle wheel
+% get initializated - PLAYER
+%
+% From ~Func:btl_state_update_player_menu
+@Hook 41A790 % 802A5A00
+{
+    PUSH    V0
+    % nuke defense byte
+    LIO     V0, $ExtraActorData_Everyone
+    SB      R0, E (V0) % nuke mario's defense byte
+    POP     V0
+    % restore vanilla code
+    SB	    V0, 0178 (S6)
+    J       802A5A08
+    SH	    R0, 017C (S6)
+}
+
+% Clear the defense byte when the battle wheel
+% get initializated - PARTNER
+%
+% From ~Func:btl_state_update_partner_menu
+@Hook 41CFC4 % 802A8234
+{
+    PUSH    RA, V0
+    % nuke defense byte
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    SB      R0, E (V0) % defense byte
+    .End
+    POP     RA, V0
+    % restore vanilla code
+    SB	    V0, 0178 (S4)
+    J       802A823C
+    SH	    R0, 017C (S4)
+}
+
+% Partner Run Away - Skip player run away animations if player is KO'd.
+
+@Script:Battle 1B379C % PlayerScriptDispatcher % 80284EBC
+{
+    ExecWait $PlayerScriptDispatcher
+    Return
+    End
+}
+
+#new:Script:Battle $PlayerScriptDispatcher % 1B379C / 80284EBC
+{
+    0:  Call  GetBattlePhase    ( *Var0 )
+   10:  Switch  *Var0 
+   1C:  	Case  ==  .Phase:ExecuteAction % 0
+   28:  		ExecWait  ExecutePlayerAction 
+   34:  	Case  ==  .Phase:FirstStrike % 1
+   40:  		    ExecWait  PlayerFirstStrike 
+   4C:  	Case  ==  00000005 
+   58:  		ExecWait  80286194 % PlayerCelebrate
+   64:  	Case  ==  .Phase:RunAwayStart % 3
+   70:  		    ExecWait  RunAwayStart 
+   7C:  	Case  ==  .Phase:RunAwayFail % 7
+                Call    GetStatusFlags ( .Actor:Player *Var0 )
+                If  *Var0  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+   88:  		    ExecWait  RunAwayFail 
+                EndIf
+   94:  	Case  ==  .Phase:RunAwayReset % 4
+                Call    GetStatusFlags ( .Actor:Player *Var0 )
+                If  *Var0  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+   A0:  		    ExecWait  RunAwayReset 
+                EndIf
+   AC:  	Case  ==  .Phase:UseLifeShroom % 8
+   B8:  		ExecWait  UseLifeShroom 
+   C4:  	Case  ==  .Phase:UseDefend  % 6
+   D0:  		ExecWait  StartDefend 
+   DC:  	Case  ==  .Phase:MerleeAttackBonus % 14
+   E8:  		ExecWait  MerleeAttackBonus 
+   F4:  	Case  ==  .Phase:MerleeDefenseBonus % 15
+  100:  		ExecWait  MerleeDefenseBonus 
+  10C:  	Case  ==  .Phase:MerleeExpBonus % 16
+  118:  		ExecWait  MerleeExpBonus 
+  124:  	Case  ==  .Phase:PlayerHappy % 1E
+  130:  		ExecWait  PlayerHappy 
+  13C:  EndSwitch
+  144:  Return
+  14C:  End
+}
+
+@Script:Battle 1B519C % RunAwayStart (802868BC)
+{
+    ExecWait $RunAwayStart
+    Return
+    End
+}
+
+% Skip animations if player is KO'd
+#new:Script:Battle $RunAwayStart % 1B519C / 802868BC
+{
+        Call  GetStatusFlags ( .Actor:Player *Var5 )
+        If  *Var5 &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+            ExecWait $RunAwayStart_Animationless
+            Return
+        EndIf
+    0:  Call  UseIdleAnimation  ( .Actor:Player .False )
+   14:  Call  GetActionCommandMode  ( *Var2 )
+   24:  If  *Var2  ==  00000000 
+   34:  	ExecWait  80286228 % ExitStage
+   40:  	Call  UseIdleAnimation  ( .Actor:Player .True )
+   54:  	Return
+   5C:  EndIf
+   64:  Call  802694A4      ( 00000001 )
+   74:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   8C:  Call  LoadActionCommand ( 00000003 )
+   9C:  Call  802A9000      ( *Var0 )
+   AC:  Call  SetupMashMeter      ( 00000001 00000064 00000000 00000000 00000000 00000000 )
+   D0:  Call  80260E38
+   DC:  Call  SetAnimation  ( .Actor:Player 00000000 00050000 )
+   F4:  Call  PlaySoundAtActor  ( .Actor:Player 0000015D )
+  108:  Call  SetActorYaw   ( .Actor:Player 0000001E )
+  11C:  Wait  1`
+  128:  Call  SetActorYaw   ( .Actor:Player 0000003C )
+  13C:  Wait  1`
+  148:  Call  SetActorYaw   ( .Actor:Player 0000005A )
+  15C:  Wait  1`
+  168:  Call  SetActorYaw   ( .Actor:Player 00000078 )
+  17C:  Wait  1`
+  188:  Call  SetActorYaw   ( .Actor:Player 00000096 )
+  19C:  Wait  1`
+  1A8:  Call  SetActorYaw   ( .Actor:Player 000000B4 )
+  1BC:  Wait  5`
+  1C8:  Call  802A92A0      ( 00000000 0000003C 00000003 )
+  1E0:  Call  80260E5C
+  1EC:  Wait  5`
+  1F8:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  214:  Wait  2`
+  220:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  23C:  Wait  5`
+  248:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  264:  Wait  2`
+  270:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  28C:  Wait  2`
+  298:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  2B4:  Wait  5`
+  2C0:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  2DC:  Wait  2`
+  2E8:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  304:  Wait  5`
+  310:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  32C:  Wait  15`
+  338:  Wait  30`
+  344:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  360:  Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.8] )
+  374:  Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010009 )
+  394:  Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+  3B0:  Call  80273444      ( 00000008 00000000 00000000 )
+  3C8:  Call  GetActionSuccess  ( *Var0 )
+  3D8:  Call  80260DD8
+  3E4:  If  *Var0  ==  00000001 
+  3F4:  	Call  80260DB8
+  400:  	Call  PlaySoundAtActor  ( .Actor:Player 0000015E )
+  414:  	Call  SetGoalPos        ( .Actor:Player FFFFFF10 00000000 0000000A )
+  430:  	Call  SetActorSpeed     ( .Actor:Player *Fixed[16.0] )
+  444:  	Call  PlayerRunToGoal   ( 00000000 )
+  454:  	Wait  5`
+  460:  Else
+  468:  	ChildThread
+  470:  		Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[1.0] )
+  48C:  	EndChildThread
+  494:  	Call  SetAnimation  ( .Actor:Player 00000000 00030001 )
+  4AC:  	Call  PlaySoundAtActor  ( .Actor:Player 00000162 )
+  4C0:  	Call  SetGoalPos    ( .Actor:Player FFFFFF9C 00000000 0000000A )
+  4DC:  	Call  SetActorSpeed ( .Actor:Player *Fixed[10.0] )
+  4F0:  	Call  PlayerRunToGoal   ( 00000000 )
+  500:  	Set   *Var3  00000006 
+  510:  	Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  52C:  	ChildThread
+  534:  		Loop  00000002 
+  540:  			Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  55C:  			Call  PlayEffect    ( ~FX:Steam:SmallOutward *Var0 *Var1 *Var2 *Fixed[1.0] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  5A0:  			Wait  5`
+  5AC:  		EndLoop
+  5B4:  	EndChildThread
+  5BC:  	Loop  0000000A 
+  5C8:  		Sub   *Var0  *Var3 
+  5D8:  		Sub   *Var3  00000001 
+  5E8:  		If  *Var3  <  00000001 
+  5F8:  			Set   *Var3  00000001 
+  608:  		EndIf
+  610:  		Call  SetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  62C:  		Wait  1`
+  638:  	EndLoop
+  640:  	Wait  15`
+  64C:  	Call  PlaySoundAtActor  ( .Actor:Player 00000172 )
+  660:  	Call  SetAnimation      ( .Actor:Player 00000000 00010030 )
+  678:  	Wait  20`
+  684:  	Call  SetAnimation      ( .Actor:Player 00000000 00010031 )
+  69C:  	ChildThread
+  6A4:  		Wait  7`
+  6B0:  		Loop  00000002 
+  6BC:  			Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  6D8:  			Sub   *Var0  00000008 
+  6E8:  			Add   *Var1  0000000E 
+  6F8:  			Add   *Var2  00000005 
+  708:  			Call  PlayEffect    ( ~FX:Steam:TinyPuff *Var0 *Var1 *Var2 *Fixed[1.0] *Fixed[1.0] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  74C:  			Wait  5`
+  758:  		EndLoop
+  760:  	EndChildThread
+  768:  	Wait  5`
+  774:  	Call  UseBattleCamPreset  ( 00000002 )
+  784:  	Wait  10`
+  790:  EndIf
+  798:  Call  UseIdleAnimation  ( .Actor:Player .True )
+  7AC:  Return
+  7B4:  End
+}
+
+% Same as before but without any player animations.
+#new:Script:Battle $RunAwayStart_Animationless
+{
+    /%0:  Call  UseIdleAnimation  ( .Actor:Player .False )
+   14:  Call  GetActionCommandMode  ( *Var2 )
+   24:  If  *Var2  ==  00000000 
+   34:  	ExecWait  80286228 % ExitStage
+   40:  	Call  UseIdleAnimation  ( .Actor:Player .True )
+   54:  	Return
+   5C:  EndIf%/
+        Call  SetBattleFlagBits ( 00100000 .False ) % Force current turn to be Mario. (Neccesary to don't swap positions the next turn)
+   64:  Call  802694A4      ( 00000001 )
+   74:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   8C:  Call  LoadActionCommand ( 00000003 )
+   9C:  Call  802A9000      ( *Var0 )
+   AC:  Call  SetupMashMeter      ( 00000001 00000064 00000000 00000000 00000000 00000000 )
+   D0:  Call  80260E38
+   /%DC:  Call  SetAnimation  ( .Actor:Player 00000000 00050000 )
+   F4:  Call  PlaySoundAtActor  ( .Actor:Player 0000015D )
+  108:  Call  SetActorYaw   ( .Actor:Player 0000001E )%/
+  11C:  Wait  1`
+  %128:  Call  SetActorYaw   ( .Actor:Player 0000003C )
+  13C:  Wait  1`
+  %148:  Call  SetActorYaw   ( .Actor:Player 0000005A )
+  15C:  Wait  1`
+  %168:  Call  SetActorYaw   ( .Actor:Player 00000078 )
+  17C:  Wait  1`
+  %188:  Call  SetActorYaw   ( .Actor:Player 00000096 )
+  19C:  Wait  1`
+  %1A8:  Call  SetActorYaw   ( .Actor:Player 000000B4 )%/
+  1BC:  Wait  5`
+  1C8:  Call  802A92A0      ( 00000000 0000003C 00000003 )
+  1E0:  Call  80260E5C
+  1EC:  Wait  5`
+  %1F8:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  214:  Wait  2`
+  %220:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  23C:  Wait  5`
+  %248:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  264:  Wait  2`
+  %270:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  28C:  Wait  2`
+  %298:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  2B4:  Wait  5`
+  %2C0:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  2DC:  Wait  2`
+  %2E8:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )
+  304:  Wait  5`
+  %310:  Call  AddActorPos   ( .Actor:Player 00000002 00000000 00000000 )%/
+  32C:  Wait  15`
+  338:  Wait  30`
+  /%344:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  360:  Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.8] )
+  374:  Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010009 )
+  394:  Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+  3B0:  Call  80273444      ( 00000008 00000000 00000000 )%/
+  3C8:  Call  GetActionSuccess  ( *Var0 )
+  3D8:  Call  80260DD8
+  3E4:  If  *Var0  ==  00000001 
+  3F4:  	Call  80260DB8
+  400:  	Call  PlaySoundAtActor  ( .Actor:Player 0000015E )
+  /%414:  	Call  SetGoalPos        ( .Actor:Player FFFFFF10 00000000 0000000A )
+  430:  	Call  SetActorSpeed     ( .Actor:Player *Fixed[16.0] )
+  444:  	Call  PlayerRunToGoal   ( 00000000 )%/
+  454:  	Wait  5`
+  460:  Else
+  /%468:  	ChildThread
+  470:  		Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[1.0] )
+  48C:  	EndChildThread
+  494:  	Call  SetAnimation  ( .Actor:Player 00000000 00030001 )
+  4AC:  	Call  PlaySoundAtActor  ( .Actor:Player 00000162 )
+  4C0:  	Call  SetGoalPos    ( .Actor:Player FFFFFF9C 00000000 0000000A )
+  4DC:  	Call  SetActorSpeed ( .Actor:Player *Fixed[10.0] )
+  4F0:  	Call  PlayerRunToGoal   ( 00000000 )
+  500:  	Set   *Var3  00000006 
+  510:  	Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  52C:  	ChildThread
+  534:  		Loop  00000002 
+  540:  			Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  55C:  			Call  PlayEffect    ( ~FX:Steam:SmallOutward *Var0 *Var1 *Var2 *Fixed[1.0] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  5A0:  			Wait  5`
+  5AC:  		EndLoop
+  5B4:  	EndChildThread%/
+  5BC:  	Loop  0000000A 
+  /%5C8:  		Sub   *Var0  *Var3 
+  5D8:  		Sub   *Var3  00000001 
+  5E8:  		If  *Var3  <  00000001 
+  5F8:  			Set   *Var3  00000001 
+  608:  		EndIf
+  610:  		Call  SetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )%/
+  62C:  		Wait  1`
+  638:  	EndLoop
+  640:  	Wait  15`
+  /%64C:  	Call  PlaySoundAtActor  ( .Actor:Player 00000172 )
+  660:  	Call  SetAnimation      ( .Actor:Player 00000000 00010030 )%/
+  678:  	Wait  20`
+  /%684:  	Call  SetAnimation      ( .Actor:Player 00000000 00010031 )
+  69C:  	ChildThread
+  6A4:  		Wait  7`
+  6B0:  		Loop  00000002 
+  6BC:  			Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  6D8:  			Sub   *Var0  00000008 
+  6E8:  			Add   *Var1  0000000E 
+  6F8:  			Add   *Var2  00000005 
+  708:  			Call  PlayEffect    ( ~FX:Steam:TinyPuff *Var0 *Var1 *Var2 *Fixed[1.0] *Fixed[1.0] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  74C:  			Wait  5`
+  758:  		EndLoop
+  760:  	EndChildThread%/
+  768:  	Wait  5`
+  774:  	Call  UseBattleCamPreset  ( 00000002 )
+  784:  	Wait  10`
+  790:  EndIf
+  %798:  Call  UseIdleAnimation  ( .Actor:Player .True )
+  7AC:  Return
+  7B4:  End
+}
+
+/% Don't set Strats menu state as 0x0B when the game doesn't know what to do
+% with an unknown function.
+%
+% From ~Func:btl_state_update_partner_menu
+@Function 41E3FC % 802A966C
+{
+    NOP % was JAL	802A4718 (~Func:btl_stratsmenu_setstate_0B, something like that, that function literally only does that.)
+}
+
+% Run Away is unavailable - Set Battle Menu state back to "C9" after
+% the notification got closed (neccesary to don't crash the game),
+% Mario's menu already does this, but partner's menu don't.
+%
+% From ~Func:btl_state_update_partner_menu
+@Hook 41E41C % 802A968C
+{
+    % V0 = 0 (player presed a button to close the menu)
+    ADDIU	V1, R0, FFFF
+    BNE	    V0, V1, .SetMenuState
+    ADDIU	V0, R0, 00C9
+    % restore vanilla code
+    LW	    V1, 0214 (S4) % load currentButtonsPressed
+    ANDI	V1, V1, 4000 % B button
+    J       802A9694
+    NOP
+    .SetMenuState
+    J       802A9AA4
+    NOP
+}
+
+@Function 0 % 802A96E4
+{
+    SLTI	V0, S0, 000A
+}%/
+
+%============
+% Icons
+%============
+
+#new:Data $Icon_Focus
+{ ~RasterFile:CI-4:battle_strats/focus.png }
+
+#new:Data $Palette_Focus
+{ ~PaletteFile:CI-4:battle_strats/focus.png }
+
+#new:Data $Icon_Charge
+{ ~RasterFile:CI-4:battle_strats/charge.png }
+
+#new:Data $Palette_Charge
+{ ~PaletteFile:CI-4:battle_strats/charge.png }
+
+#new:Data $Palette_Charge_BW
+{ ~PaletteFile:CI-4:battle_strats/charge_bw.png }
+
+#new:Data $Icon_Defense
+{ ~RasterFile:CI-4:battle_strats/defense.png }
+
+#new:Data $Palette_Defense
+{ ~PaletteFile:CI-4:battle_strats/defense.png }
+
+#new:Data $Icon_RunAway
+{ ~RasterFile:CI-4:battle_strats/runAway.png }
+
+#new:Data $Palette_RunAway
+{ ~PaletteFile:CI-4:battle_strats/runAway.png }
+
+#new:Data $Palette_RunAway_BW
+{ ~PaletteFile:CI-4:battle_strats/runAway_bw.png }
+
+% Icon Scripts
+
+#new:Data $IconScript_Focus
+{
+00000008 00000005 00000003 00000004
+00000002 0000003C $Icon_Focus $Palette_Focus
+00000003 00000000
+}
+
+#new:Data $IconScript_ChargeCommand
+{
+00000008 00000005 00000003 00000004
+00000002 0000003C $Icon_Charge $Palette_Charge
+00000003 00000000
+}
+
+#new:Data $IconScript_ChargeCommandBW
+{
+00000008 00000005 00000003 00000004
+00000002 0000003C $Icon_Charge $Palette_Charge_BW
+00000003 00000000
+}
+
+#new:Data $IconScript_Defense
+{
+00000008 00000005 00000003 00000004
+00000002 0000003C $Icon_Defense $Palette_Defense
+00000003 00000000
+}
+
+#new:Data $IconScript_RunAway
+{
+00000008 00000005 00000003 00000004
+00000002 0000003C $Icon_RunAway $Palette_RunAway
+00000003 00000000
+}
+
+#new:Data $IconScript_RunAwayBW
+{
+00000008 00000005 00000003 00000004
+00000002 0000003C $Icon_RunAway $Palette_RunAway_BW
+00000003 00000000
+}

@@ -1,0 +1,942 @@
+% This file adds compatibility for partners and enemies to being able to use items and for mario to be able to use items in partners IN BATTLE
+% It works along with PartnersHP.patch.
+
+%==================
+% Enable the Items command for the partners' battle wheel
+%==================
+
+% 802AD0AC - Amount of Available commands for current actor
+
+% Type of Commands
+% 00 = Jump
+% 01 = Hammer
+% 02 = Items
+% 03 = Run Away
+% 04 = ?
+% 05 = Change Partner
+% 06 = Partner Abilities
+% 07 = Strategies
+% 08 = Star Spirits
+% 09 = Do Nothing
+% 0A = ?
+% 0B = Partner Focus
+
+% Partners now always have 3 commands by default in the battle wheel
+@Function 41D3FC % 802A866C
+{
+    ADDIU	S0, R0, 0003
+}
+
+% Don't check if player has any star spirits to properly show the 3rd command.
+%
+% ~Func:btl_state_update_partner_menu
+@Function:Battle 802A8668
+{
+    NOP
+}
+
+% Set the 3rd Partner command as "Items" instead of "Focus"
+@Hook 41D408 % 802A8678
+{    
+    LIO     A2, 802AB388 % Command's IconScript pointer
+    ADDIU	V0, R0, 0001
+    LW	    A0, 0 (A2)
+    LIO     A1, 001D0050  % load command name
+    ORI     A3, R0, 2 % command's type ID / 0x02 = Items
+    SAW     A3, 802AD0C0 
+    SW	    V0, 0008 (S3) % write command's enable byteflag?
+    SW	    R0, 0008 (S5) % ?
+    SW	    A0, 0008 (S2) % write iconscript pointer
+    % check if player have any items
+    JAL     ~Func:get_item_count
+    SW	    A1, 0008 (FP) % write command name
+    BEQ     V0, R0, .DisableCommand
+    NOP
+    % Check if command is unvailable
+    LHU	    V1, 0070 (S4) % load Command enabled flags (from here 800DC0E0)
+    ANDI	V1, V1, 0004 % bit2 = Items
+    BEQ	    V1, R0 .DisableCommand
+    NOP
+    % check if item command is disabled by a Spy Guy
+    LB      V1, B0 (S4) % itemLossTurns
+    ADDI    V0, R0, -1
+    BEQ	    V1, V0 .EnableCommand
+    NOP
+    .DisableCommand
+    SW	    R0, 0008 (S3)
+    LW	    V1, 0004 (A2)
+    ADDIU	V0, R0, 0048
+    SW	    V0, 0008 (S5)
+    SW	    V1, 0008 (S2)
+    .EnableCommand
+    % I think this is unnecesary... this code only run with Partner :thinking:
+    LB	    V0, 005C (S4) % load current wheel / 06 = Partner, 0B = Mario
+    BEQL	V0, A3, .End % Go to end if = 0x0B (Mario)
+    ADDIU	S1, R0, 0002 % amount of commands for this wheel
+    ADDIU	S0, R0, 0003
+    .End
+    J       802A86DC
+    NOP
+}
+
+% Clear selected move when you pick an item.
+%
+% ~Func:btl_state_update_partner_menu
+@Hook:Battle 802A8EC0
+{
+    SH      R0, 17C (S4) % selectedMove
+    SLL	    V0, V0, 16
+    J       802A8EC8
+    SRA	    V0, V0, 11
+}
+
+%============
+% The following scripts are used in some items patch files
+%============
+
+% When Mario already used his turn his sprite becomes
+% completely black, if the player get heal by a partner
+% set his turn as "Unused" so he come back to his idle animation.
+%
+% At the end of the item script check this byteflag to know if Mario
+% turn need to be set as "Used" once again.
+#new:Data $MarioTurn
+{ 00 }
+
+#new:Data $PartnerTurn
+{ 00 }
+
+#new:Script:Battle $BattleScript_EatItem
+{
+    Call  GetOwnerTarget ( *Var3 .False )
+    % check if target is KO'd
+    Call GetStatusFlags ( *Var3 *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Return
+    EndIf
+    If *Var3 == .Actor:Player
+        % Check if Mario has already used his turn
+        Call    $ReadBitFlag ( 800DC077 .False .False 1 *Var0 )
+        If *Var0 == .True % Mario has used his turn
+            Call    $WriteBitFlag ( 800DC077 .False .False 1 .False ) % set Mario turn as "unused"
+            Call    $WriteAddress ( $MarioTurn 0 .True .False .False )
+        Else
+            Call    $WriteAddress ( $MarioTurn 0 .False .False .False )
+        EndIf
+        Thread
+            Loop  00000004 
+                Call  PlaySoundAtActor  ( .Actor:Player 00002095 )
+                Wait  10`
+            EndLoop
+        EndThread
+        Call  GetOwnerID ( *Var4 ) % The actor isn't healing himself?
+        If *Var3 != *Var4
+            Call  UseIdleAnimation  ( *Var3 .False )
+        EndIf
+        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:Eat )
+        Wait  45`
+        Call  GetOwnerID ( *Var4 ) % The actor isn't healing himself?
+        If *Var3 != *Var4
+            Call  UseIdleAnimation  ( *Var3 .True )
+        EndIf
+    Else % Partner/Enemy
+        If *Var3 == .Actor:Partner
+            % Check if Partner has already used his turn
+            Call    $ReadBitFlag ( 800DC077 .False .False 2 *Var0 )
+            If *Var0 == .True % Mario has used his turn
+                Call    $WriteBitFlag ( 800DC077 .False .False 2 .False ) % set Partner turn as "unused"
+                Call    $WriteAddress ( $PartnerTurn 0 .True .False .False )
+            Else
+                Call    $WriteAddress ( $PartnerTurn 0 .False .False .False )
+            EndIf
+        EndIf
+        Wait  5
+    EndIf
+    Return
+    End
+}
+
+#new:Script:Battle $BattleScript_DrinkItem
+{
+    Call  GetOwnerTarget ( *Var3 .False )
+    % check if target is KO'd
+    Call GetStatusFlags ( *Var3 *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Return
+    EndIf
+    If *Var3 == .Actor:Player
+        % Check if Mario has already used his turn
+        Call    $ReadBitFlag ( 800DC077 .False .False 1 *Var0 )
+        If *Var0 == .True % Mario has used his turn
+            Call    $WriteBitFlag ( 800DC077 .False .False 1 .False ) % set Mario turn as "unused"
+            Call    $WriteAddress ( $MarioTurn 0 .True .False .False )
+        Else
+            Call    $WriteAddress ( $MarioTurn 0 .False .False .False )
+        EndIf
+        Thread
+            Loop  00000004 
+                Call  PlaySoundAtActor  ( .Actor:Player 00002095 )
+                Wait  10`
+            EndLoop
+        EndThread
+        Call  GetOwnerID ( *Var4 ) % The actor isn't healing himself?
+        If *Var3 != *Var4
+            Call  UseIdleAnimation  ( *Var3 .False )
+        EndIf
+        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:Drink )
+        Wait  45`
+        Call  GetOwnerID ( *Var4 ) % The actor isn't healing himself?
+        If *Var3 != *Var4
+            Call  UseIdleAnimation  ( *Var3 .True )
+        EndIf
+    Else % Partner/Enemy
+        If *Var3 == .Actor:Partner
+            % Check if Partner has already used his turn
+            Call    $ReadBitFlag ( 800DC077 .False .False 2 *Var0 )
+            If *Var0 == .True % Mario has used his turn
+                Call    $WriteBitFlag ( 800DC077 .False .False 2 .False ) % set Partner turn as "unused"
+                Call    $WriteAddress ( $PartnerTurn 0 .True .False .False )
+            Else
+                Call    $WriteAddress ( $PartnerTurn 0 .False .False .False )
+            EndIf
+        EndIf
+        Wait  5
+    EndIf
+    Return
+    End
+}
+
+% Turn IdleAnimation as true, for the target
+#new:Script:Battle $BattleScript_GoBackToHome_HealingItem
+{
+    ExecWait $Items_RestoreHeroeTurn
+    Call  GetOwnerTarget ( *Var7 .False )
+    Call  GetOwnerID ( *Var4 ) % The actor didn't used the item on himself?
+    If *Var7 != *Var4
+        Call  UseIdleAnimation  ( *Var7 .True )
+    EndIf
+    Call  GetOwnerID ( *Var7 )
+    Call  UseIdleAnimation  ( *Var7 .False )
+    Call  SetGoalToHome     ( *Var7 )
+    Call  SetActorSpeed     ( *Var7 *Fixed[8.0] )
+    Switch *Var7
+        Case == .Actor:Player
+            Call  SetAnimation      ( *Var7 00000000 .PlayerAnim:Running )
+            Call  PlayerRunToGoal   ( 00000000 )
+            Call  SetAnimation      ( *Var7 00000000 00010002 )
+        Case ==  .Actor:Partner
+            Set     *Var0 2 % run
+            Exec    $SetPartnerAnimation_Battle
+            Call    RunToGoal ( *Var7 0 .False )
+            Set     *Var0 0 % idle
+            Exec    $SetPartnerAnimation_Battle
+        Default % Enemies
+            Call    RunToGoal ( *Var7 0 .False )
+    EndSwitch
+    Call  UseBattleCamPreset ( 2 )
+    Call  UseIdleAnimation  ( *Var7 .True )
+    Return
+    End
+}
+
+#new:Script:Battle $BattleScript_GoBackToHome_Item
+{
+    ExecWait $Items_RestoreHeroeTurn
+    Call  GetOwnerID ( *Var7 )
+    Call  UseIdleAnimation  ( *Var7 .False )
+    Call  SetGoalToHome     ( *Var7 )
+    Call  SetActorSpeed     ( *Var7 *Fixed[8.0] )
+    Switch *Var7
+        Case == .Actor:Player
+            Call  SetAnimation      ( *Var7 00000000 .PlayerAnim:Running )
+            Call  PlayerRunToGoal   ( 00000000 )
+            Call  SetAnimation      ( *Var7 00000000 00010002 )
+        Case ==  .Actor:Partner
+            Set     *Var0 2 % run
+            Exec    $SetPartnerAnimation_Battle
+            Call    RunToGoal ( *Var7 0 .False )
+            Set     *Var0 0 % idle
+            Exec    $SetPartnerAnimation_Battle
+        Default % Enemies
+            Call    RunToGoal ( *Var7 0 .False )
+    EndSwitch
+    Call  UseBattleCamPreset ( 2 )
+    Call  UseIdleAnimation  ( *Var7 .True )
+    Return
+    End
+}
+
+#new:Script $Items_RestoreHeroeTurn
+{
+    % Check if Mario turn need to be set back as "used"
+    Call  $ReadAddress ( $MarioTurn 0 *Var0 .False .False )
+    If *Var0 == .True
+        Call    $WriteBitFlag ( 800DC077 .False .False 1 .True ) % set Mario turn as "used"
+        Call    $WriteAddress ( $MarioTurn 0 .False .False .False )
+    EndIf
+    % Check if Partner turn need to be set back as "used"
+    Call  $ReadAddress ( $PartnerTurn 0 *Var0 .False .False )
+    If *Var0 == .True
+        Call    $WriteBitFlag ( 800DC077 .False .False 2 .True ) % set Partner turn as "used"
+        Call    $WriteAddress ( $PartnerTurn 0 .False .False .False )
+    EndIf
+    Return
+    End
+}
+
+% Call  $Function_InflictStatus ( actorID statusID duration )
+#export:Function:Battle $Function_InflictStatus
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, R0, R0
+    COPY    S0, A0
+    LW      S1, C (S0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S1) % load arg0
+    COPY    A0, V0
+    % .Actor:Self was used?
+    LIO     V1, FFFFFF81
+    BNE	    A0, V1, .GetPointer
+    NOP
+    LW	    A0, 0148 (S0) % load self id
+    .GetPointer
+    JAL     ~Func:get_actor
+    SW      A0, 3C (SP) % save actorID
+    COPY    S2, V0
+    % S2 = $actor data
+    COPY    A0, S0
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S1) % load arg1
+    SW      V0, 38 (SP)
+    COPY    A0, S0
+    JAL     ~Func:get_variable
+    LW      A1, 8 (S1) % load arg2
+    COPY    A0, S2 % *actor
+    LW      A1, 38 (SP) % statusID
+    JAL     ~Func:inflict_status
+    COPY    A2, V0 % duration
+    LW      V0, 3C (SP) % load actorID
+    BEQL    V0, R0, .End % If target was Mario
+    SB      R0, 21C (S2) % clear status
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, R0, R0
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Check status table to know if this status should trigger
+%
+% Call  $Function_TryToInflictStatus ( actorID statusID duration )
+#export:Function:Battle $Function_TryToInflictStatus
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, R0, R0
+    COPY    S0, A0
+    LW      S1, C (S0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S1) % load arg0
+    COPY    A0, V0
+    % .Actor:Self was used?
+    LIO     V1, FFFFFF81
+    BNE	    A0, V1, .GetPointer
+    NOP
+    LW	    A0, 0148 (S0) % load self id
+    .GetPointer
+    JAL     ~Func:get_actor
+    SW      A0, 3C (SP) % save actorID
+    COPY    S2, V0
+    % S2 = $actor data
+    COPY    A0, S0
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S1) % load arg1
+    SW      V0, 38 (SP)
+    COPY    A0, S0
+    JAL     ~Func:get_variable
+    LW      A1, 8 (S1) % load arg2
+    LW      A1, 38 (SP) % statusID
+    COPY    A2, V0 % duration
+    % update debuff data in battleStatus
+    LIO     A0, 800DC070 % battleStatus
+    SW      R0, 190 (A0)
+    SH      R0, 194 (A0)
+    ORI     A3, R0, 8000
+    SH      A3, 190 (A0)
+    ORI     A3, R0, 100`
+    SB      A2, 192 (A0)
+    SB      A3, 193 (A0)
+    SB      A3, 194 (A0)
+    SB      A2, 195 (A0)
+    % get debuff flags according to status
+    CLEAR   A2
+    LW      V1, 190 (A0)
+    ORI     A3, R0, 6 % .Status:Sleep
+    LIO     V0, 00001000 % ~DebuffType:Sleep
+    BNE     A1, A3, .CheckStatus_Static
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0020
+    .CheckStatus_Static
+    ORI     A3, R0, B % .Status:Static
+    LIO     V0, 00002000 % ~DebuffType:Static
+    BNE     A1, A3, .CheckStatus_Frozen
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0021
+    .CheckStatus_Frozen
+    ORI     A3, R0, 7 % .Status:Frozen
+    LIO     V0, 00004000 % ~DebuffType:Frozen
+    BNE     A1, A3, .CheckStatus_Paralyze
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0022
+    .CheckStatus_Paralyze
+    ORI     A3, R0, 5 % .Status:Paralyze
+    LIO     V0, 00010000 % ~DebuffType:Paralyze
+    BNE     A1, A3, .CheckStatus_Poison
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0026
+    .CheckStatus_Poison
+    ORI     A3, R0, 9 % .Status:Poison
+    LIO     V0, 00020000 % ~DebuffType:Poison
+    BNE     A1, A3, .CheckStatus_Dizzy
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0025
+    .CheckStatus_Dizzy
+    ORI     A3, R0, 4 % .Status:Dizzy
+    LIO     V0, 00040000 % ~DebuffType:Dizzy
+    BNE     A1, A3, .CheckStatus_Shrink
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0024
+    .CheckStatus_Shrink
+    ORI     A3, R0, A % .Status:Shrink
+    LIO     V0, 00080000 % ~DebuffType:Shrink
+    BNE     A1, A3, .CheckStatus_Stone
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0027
+    .CheckStatus_Stone
+    ORI     A3, R0, C % .Status:Stone
+    LIO     V0, 00100000 % ~DebuffType:Stone
+    BNE     A1, A3, .CheckStatus_Stop
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0028
+    .CheckStatus_Stop
+    ORI     A3, R0, 8 % .Status:Stop
+    LIO     V0, 00200000 % ~DebuffType:Stop
+    BNE     A1, A3, .TryToInflict
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0029
+    /%.CheckStatus_Daze
+    ORI     A3, R0, D % .Status:Daze
+    LIO     V0, 01000000 % ~DebuffType:Daze
+    BNE     A1, A3, .CheckStatus_Invisible
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0000
+    .CheckStatus_Invisible
+    ORI     A3, R0, E % .Status:Invisible
+    LIO     V0, 04000000 % ~DebuffType:Invisible
+    BNE     A1, A3, .TryToInflict
+    NOP
+    OR      V1, V1, V0
+    ORI     A2, A2, 0000%/
+    .TryToInflict
+    SW      V1, 190 (A0)
+    JAL     ~Func:try_inflict_status
+    COPY    A0, S2 % *actor
+    LW      V0, 3C (SP) % load actorID
+    BEQL    V0, R0, .End % If target was Mario
+    SB      R0, 21C (S2) % clear status
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, R0, R0
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Used by healing items in battle
+%
+% Call $Heal_PlayerTeam ( ActorID amount )
+#new:Function $Heal_PlayerTeam
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1, S2
+    COPY    S2, A0
+    LW	    A1, 0 (S0)
+    JAL     ~Func:get_variable
+    ADDIU	S0, S0, 4
+    COPY    S1, V0 % push arg0 in S1
+    % Arg0 = .Actor:Self ?
+    ADDIU	V0, R0, FF81
+    BNE	    S1, V0, .NotSelf
+    NOP
+    LW	    S1, 0148 (S2) % load actual actorID
+    .NotSelf
+    LW	    A1, 0 (S0)
+    ADDIU	S0, S0, 4
+    JAL     ~Func:get_variable
+    COPY    A0, S2
+    COPY    S0, V0
+    % S1 = ActorID
+    % S0 = Amount to Heal
+    BNE     S1, R0, .HealPartner
+    NOP
+    .HealMario
+    LIO     T0, 8010F292
+    LBU     T1, 0 (T0) % load current hp
+    BEQ     R0, R0, .HealActor
+    LBU     T2, 1 (T0) % load max hp
+    .HealPartner
+    LUI     T0, 8011
+    LABU    T1, 8010F2A2 % Current Partner
+    ORI     T2, R0, 1 % Goombario
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2B1
+    ORI     T2, R0, 2 % Kooper
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2B9
+    ORI     T2, R0, 3 % Bombette
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2C1
+    ORI     T2, R0, 4 % Parakarry
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2C9
+    ORI     T2, R0, 6 % Watt
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2D9
+    ORI     T2, R0, 7 % Sushie
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2E1
+    ORI     T2, R0, 8 % Lakilester
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2E9
+    ORI     T2, R0, 9 % Bow
+    BEQL    T1, T2, .LoadPartnerHPData
+    ADDIU   T0, T0, F2F1
+    .LoadPartnerHPData
+    LBU     T1, 0 (T0) % load current hp
+    LBU     T2, 1 (T0) % load max hp
+    .HealActor
+    ADD     T1, T1, S0
+    % check if HP is below zero
+    BLTZL   T1, .SetHP
+    CLEAR   T0
+    % check max HP cap
+    SLTU    T3, T1, T2
+    BEQL    T3, R0, .SetHP
+    COPY    T1, T2 % if the new amount is >= to max HP just set the HP as Max HP
+    .SetHP
+    SB      T1, 0 (T0) % save new HP
+    POP     RA, A0, A1, A2, A3, V1, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $HealActor ( ActorID Amount )
+%
+% Why not using vanilla's HealActor?
+%
+% That one already have a heart pop up and a sparkles
+% dispatcher integrated, using that one will cause some
+% problems with the items scripts.
+#new:Function:Battle $HealActor
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1, S2
+    COPY    S2, A0
+    LW	    A1, 0 (S0)
+    JAL     ~Func:get_variable
+    ADDIU	S0, S0, 4
+    COPY    S1, V0 % push arg0 in S1
+    % Arg0 = .Actor:Self ?
+    ADDIU	V0, R0, FF81
+    BNE	    S1, V0, .NotSelf
+    NOP
+    LW	    S1, 0148 (S2) % load actual actorID
+    .NotSelf
+    LW	    A1, 0 (S0)
+    ADDIU	S0, S0, 4
+    JAL     ~Func:get_variable
+    COPY    A0, S2
+    COPY    S0, V0
+    % S1 = ActorID
+    % S0 = Amount to Heal
+    JAL     ~Func:get_actor % get actor pointer
+    COPY    A0, S1
+    LBU     T1, 1B8 (V0) % load current hp % ActorData(0x1B8) = HP
+    LBU     T2, 1B9 (V0) % load max hp % ActorData(0x1B9) = Max HP
+    .HealActor
+    ADD     T1, T1, S0
+    % check if HP is below zero
+    BLTZL   T1, .SetHP
+    CLEAR   T1
+    % check max HP cap
+    SLTU    T3, T1, T2
+    BEQL    T3, R0, .SetHP
+    COPY    T1, T2 % if the new amount is >= to max HP just set the HP as Max HP
+    .SetHP
+    SB      T1, 1B8 (V0) % save new HP
+    POP     RA, A0, A1, A2, A3, V1, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% `A0=actorID`
+%
+% `A1=amountToHeal`
+%
+%
+% This function heals any kind of actors.
+%
+% Returns a bool if was possible or not. (Neccesary for partners)
+#export:Function:Battle $heal_actor
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1
+    COPY    S1, A0
+    COPY    S0, A1
+    % S1 = ActorID
+    % S0 = Amount to Heal
+    %
+    % Actor is an enemy?
+    SLTIU   A0, S1, 200 % .Actor:Enemy0
+    BEQ     A0, R0, .GetActor
+    NOP
+    % Actor is player?
+    BNE     S1, R0, .GetPartnerHP
+    NOP
+    % actor is player
+    LIO     A2, 8010F290 % playerStatus
+    LBU     A0, 2 (A2) % playerHP
+    BEQ     R0, R0, .HealActor
+    LBU     A1, 3 (A2) % playerMaxHP
+    .GetPartnerHP
+    JAL     $GetPartnerHP
+    NOP
+    BLTZL   V0, .End
+    CLEAR   V0
+    COPY    A0, V0
+    JAL     $GetPartnerMaxHP
+    NOP
+    BEQ     R0, R0, .HealActor
+    COPY    A1, V0
+    .GetActor
+    JAL     ~Func:get_actor % get actor pointer
+    COPY    A0, S1
+    LBU     A0, 1B8 (V0) % load current hp % ActorData(0x1B8) = HP
+    LBU     A1, 1B9 (V0) % load max hp % ActorData(0x1B9) = Max HP
+    .HealActor
+    ADD     A0, A0, S0
+    % check if HP is below zero
+    BLTZL   A0, .SetHP
+    CLEAR   A0
+    % check max HP cap
+    SLTU    A2, A0, A1
+    BEQL    A2, R0, .SetHP
+    COPY    A0, A1 % if the new amount is >= to max HP just set the HP as Max HP
+    .SetHP
+    % check type of actor
+    %
+    % Actor is an enemy?
+    SLTIU   A1, S1, 200 % .Actor:Enemy0
+    BEQ     A1, R0, .SetHP_Enemy
+    NOP
+    % Actor is partner?
+    BNE     S1, R0, .SetHP_Partner
+    NOP
+    .SetHP_Player
+    SAB     A0, 8010F292 % playerHP
+    BEQ     R0, R0, .SetBool
+    RESERVED
+    % actor is player
+    .SetHP_Enemy
+    BEQ     R0, R0, .SetBool
+    SB      A0, 1B8 (V0) % save new HP
+    .SetHP_Partner
+    JAL     $SetPartnerHP
+    NOP
+    .SetBool
+    ORI     V0, R0, 1
+    .End
+    POP     RA, A0, A1, A2, A3, V1, S0, S1
+    JR      RA
+    NOP
+}
+
+% Call  $RecoverFP    ( amount )
+#export:Function $RecoverFP
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 14 (SP)
+    8:  SW        S0, 10 (SP)
+    C:  LW        V0, C (A0)
+   10:  JAL       ~Func:get_variable
+   14:  LW        A1, 0 (V0)
+   18:  LA        V1, 8010F290
+   20:  LB        A0, 5 (V1) % fp
+   24:  LB        A1, 6 (V1) % fpMax
+   28:  ADDU      A0, A0, V0
+        COPY      S0, V1
+        % Check if FP is below 0
+        BLTZL     A0 .o3C
+        CLEAR     A0
+   2C:  SLT       V0, A1, A0 % check FP cap
+   30:  BEQ       V0, R0, .o3C
+        NOP
+   38:  COPY      A0, A1
+        .o3C
+   3C:  SB        A0, 5 (S0)
+   40:  LW        RA, 14 (SP)
+   44:  LW        S0, 10 (SP)
+   48:  LI        V0, 2
+   4C:  JR        RA
+   50:  ADDIU     SP, SP, 18
+}
+
+% Add support for Partners
+%
+% DispatchDamageEvent(API)
+@Hook:Battle 8027D22C
+{
+    ORI     A2, R0, 100 % .Actor:Partner
+    BNE     A2, V1, .Enemy
+    NOP
+    COPY    A0, A1
+    JAL     ~Func:dispatch_damage_event_partner_0
+    COPY    A1, V0
+    BEQ     R0, R0, .End
+    NOP
+    .Enemy
+    JAL     ~Func:dispatch_damage_event_actor_0
+    COPY    A2, V0
+    .End
+    J       8027D234
+    NOP
+}
+
+% Var0 = newAnimID
+%
+% -> Var2 PartnerID
+%
+% -
+%
+% Animation IDs
+%
+% 0 = Idle
+%
+% 1 = Walk
+%
+% 2 = Run
+%
+% 3 = Talking
+%
+% 4 = Hurt
+%
+% 5 = Happy
+%
+% 6 = Guard
+%
+% 7 = Show Item
+%
+% 8 - Static
+%
+% 9 - Jump
+#new:Script:Battle $SetPartnerAnimation_Battle
+{
+    Call	GetCurrentPartnerID ( *Var2 )
+    Switch  *Var2
+        Case == 1 % Goombario
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090001 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090002 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090003 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 0009000F )
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090014 )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090010 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 0009000E )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090004 )
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00090004 )
+            EndSwitch
+        Case == 2 % Kooper
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0004 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0005 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0006 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0014 )
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0011 )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0016 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0010 )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A001D ) % new animation
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000A0007 )
+            EndSwitch
+        Case == 3 % Bombette
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B0004 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B0006 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B0008 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B0017 )
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B0012 )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B0018 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B000E )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B000A )
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B0000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000B000A )
+            EndSwitch
+        Case == 4 % Parakarry
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C0001 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C0002 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C0003 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C0012 )
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C000E )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C0013 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C000C )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C001A ) % new animation
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C0000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000C0001 ) % idle
+            EndSwitch
+        Case == 9 % Bow
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0001 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0002 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0003 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0004 )
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0015 )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0010 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D001B )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0010 )
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000D0001 ) % idle
+            EndSwitch
+        Case == 6 % Watt
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0001 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0002 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0003 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0004 )
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E000C )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0008 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0013 )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E000B )
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000E0001 ) % idle
+            EndSwitch
+        Case == 7 % Sushie
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0001 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0002 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0003 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0000 ) % sushie don't have a talking animation in battle
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0010 )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0011 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0014 )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0012 )
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 000F0005 )
+            EndSwitch
+        Case == 8 % Lakilester
+            Switch *Var0
+                Case == 0 % idle
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100001 )
+                Case == 1 % walk
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100002 )
+                Case == 2 % run
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100003 )
+                Case == 3 % talking
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100000 ) % laki don't have a talking animation in battle
+                Case == 4 % hurt
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100008 )
+                Case == 5 % happy
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100007 )
+                Case == 6 % guard
+                    Call  SetAnimation  ( .Actor:Partner 00000000 0010001A )
+                Case == 7 % Item
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100018 )
+                Case == 8 % static
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100000 )
+                Case == 9 % jump
+                    Call  SetAnimation  ( .Actor:Partner 00000000 00100001 ) % idle
+            EndSwitch
+    EndSwitch
+    Return
+    End
+}
+
+#export $BattleScript_EatItem
+#export $BattleScript_DrinkItem
+#export $BattleScript_GoBackToHome_Item
+#export $BattleScript_GoBackToHome_HealingItem
+#export $SetPartnerAnimation_Battle
+#export $Heal_PlayerTeam
+#export $HealActor

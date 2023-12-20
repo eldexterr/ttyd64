@@ -1,0 +1,628 @@
+% This .mpat works along with Minigames_Data.patch
+
+#define .Npc:Bartender 00000007
+
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList]  $EntryList
+	[EntryCount] 3
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+	~Vec4f:Entry2
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:ToadTown
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Call  $RunFunction ( $Function_ClearMinigameData_Bar )
+	Call  MakeNpcs ( .False $NpcGroupList_mac08 )
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+    Exec  $Script_CreateExitTriggers
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:Club64 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+	Exec	$Script_UpdateModels
+	Call	GetEntryID ( *Var0 )
+	Switch *Var0
+		Case == 1 % Game Over
+			Call	DisablePlayerInput ( .True )
+			Call	SpeakToPlayer ( .Npc:Bartender 00AC0005 00AC0001 00000000 $String_Bartender_GameOver )
+			Call	DisablePlayerInput ( .False )
+		Case == 2 % Game Beaten
+			Call	DisablePlayerInput ( .True )
+			Call	SetNpcPos ( .Npc:Bartender ~Vec3d:NPC_Bartender2 )
+			Exec 	$Script_UpdateModels
+			Call	TranslateGroup ( ~Model:box1 -745` 0 95` )
+			Call	SpeakToPlayer ( .Npc:Bartender 00AC0005 00AC0001 00000000 $String_Bartender_Beaten1 )
+			%
+			SetF	*Var0 *Fixed[25.0] % speed
+			SetF	*Var1 *Fixed[255.0]  % dark
+			ExecWait $Script_FadeScreenOut
+			%
+			Call	TranslateGroup ( ~Model:box1 0 0 0 )
+			Set 	*GF_MAC08_Item .True
+			Call	EnableGroup ( ~Model:boxes .False )
+			Call	EnableModel ( ~Model:boxes_left .True )
+			Call    ModifyColliderFlags 	( .False ~Collider:boxes_right 7FFFFE00 )
+			Call    ModifyColliderFlags 	( .False ~Collider:boxes_left 7FFFFE00 )
+			% disable fuzzies shadows
+			Call	SetEnemyFlagBits ( 00000000 00002000 .True )
+			Call	SetEnemyFlagBits ( 00000001 00002000 .True )
+			Call	SetEnemyFlagBits ( 00000002 00002000 .True )
+			Call	SetEnemyFlagBits ( 00000003 00002000 .True )
+			Call	SetEnemyFlagBits ( 00000004 00002000 .True )
+			Thread
+				Loop 8
+					Call    PlaySound ( 0332 ) % fuzzy jump sfx
+					Wait	10`
+				EndLoop
+			EndThread
+			Call    PlaySound ( 2081 ) % mario jump sfx
+			Wait	10`
+			Call    PlaySound ( 00E1 ) % hit sfx
+			Wait	15`
+			Call    PlaySound ( 00E1 ) % hit sfx
+			Wait	15`
+			Call    PlaySound ( 00E1 ) % hit sfx
+			Wait	15`
+			Call    PlaySound ( 00E1 ) % hit sfx
+			Wait	30`
+			Call    PlaySound ( 000B )
+			%
+			SetF	*Var0 *Fixed[25.0] % speed
+			SetF	*Var1 *Fixed[5.0]  % fully bright
+			Exec 	$Script_FadeScreenIn
+			%
+			Call	SpeakToPlayer ( .Npc:Bartender 00AC0005 00AC0001 00000000 $String_Bartender_Beaten2 )
+			Call    ShowGotItem ( .Item:FPDrain .True 00000000 )
+			Call    AddBadge ( .Item:FPDrain 00000000 )
+			%
+			SetF	*Var0 *Fixed[25.0] % speed
+			SetF	*Var1 *Fixed[255.0]  % dark
+			ExecWait $Script_FadeScreenOut
+			%
+			Call	SetNpcPos ( .Npc:Bartender 0 -1000` 0 )
+			Wait	5
+			%
+			SetF	*Var0 *Fixed[25.0] % speed
+			SetF	*Var1 *Fixed[5.0]  % fully bright
+			Exec 	$Script_FadeScreenIn
+			Call	DisablePlayerInput ( .False )
+	EndSwitch
+	Return
+	End
+}
+
+#new:Script $Script_UpdateModels
+{
+	Call	EnableGroup ( ~Model:boxes .False )
+	Call    ModifyColliderFlags ( .False ~Collider:boxes_left 7FFFFE00 )
+	Call    ModifyColliderFlags ( .False ~Collider:boxes_right 7FFFFE00 )
+	If *GF_MAC08_Item == .False
+		Call	EnableGroup ( ~Model:boxes .True )
+		Call	EnableModel ( ~Model:boxes_left .False )
+		Call    ModifyColliderFlags ( .True ~Collider:boxes_right 7FFFFE00 )
+	Else
+		Call	EnableModel ( ~Model:boxes_left .True )
+		Call    ModifyColliderFlags ( .True ~Collider:boxes_left 7FFFFE00 )
+	EndIf
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorTouch ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+    SetGroup  0000001B
+	Call  $RunFunction ( $Function_ClearMinigameData_Bar )
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "mac_05" 00000004 )
+    Wait  100`
+    Return
+    End
+}
+
+% NPCs
+
+#new:NpcGroupList $NpcGroupList_mac08
+{
+00000001 $NpcGroup_Bartender 00000000
+00000001 $NpcGroup_Fuzzy1 	 00000000
+00000001 $NpcGroup_Fuzzy2 	 00000000
+00000001 $NpcGroup_Fuzzy3 	 00000000
+00000001 $NpcGroup_Fuzzy4 	 00000000
+00000001 $NpcGroup_Fuzzy5 	 00000000
+00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Bartender
+{
+	.Npc:Bartender $NpcSettings_Generic ~Vec3f:NPC_Bartender1
+	00110D09 $Script_Init_Bartneder 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Bartender1
+	~AnimationTable:NPC_Bartender1
+	00000000 00000000 00000000 001A0052 % He runs this restaurant. He just opened it. He als ...
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy1
+{
+	00000000 $NpcSettings_Generic ~Vec3f:NPC_Fuzzy
+	19700F00 $Script_Init_Fuzzy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Fuzzy
+	~AnimationTable:NPC_Fuzzy
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy2
+{
+	00000001 $NpcSettings_Generic ~Vec3f:NPC_Fuzzy
+	19700F00 $Script_Init_Fuzzy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Fuzzy
+	~AnimationTable:NPC_Fuzzy
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy3
+{
+	00000002 $NpcSettings_Generic ~Vec3f:NPC_Fuzzy
+	19700F00 $Script_Init_Fuzzy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Fuzzy
+	~AnimationTable:NPC_Fuzzy
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy4
+{
+	00000003 $NpcSettings_Generic ~Vec3f:NPC_Fuzzy
+	19700F00 $Script_Init_Fuzzy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Fuzzy
+	~AnimationTable:NPC_Fuzzy
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy5
+{
+	00000004 $NpcSettings_Generic ~Vec3f:NPC_Fuzzy
+	19700F00 $Script_Init_Fuzzy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Fuzzy
+	~AnimationTable:NPC_Fuzzy
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy6
+{
+	00000005 $NpcSettings_Generic ~Vec3f:NPC_Fuzzy
+	19700F00 $Script_Init_Fuzzy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Fuzzy
+	~AnimationTable:NPC_Fuzzy
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy7
+{
+	00000006 $NpcSettings_Generic ~Vec3f:NPC_Fuzzy
+	19700F00 $Script_Init_Fuzzy 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Fuzzy
+	~AnimationTable:NPC_Fuzzy
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Generic
+{
+	00000000 001E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_Init_Bartneder
+{
+	If *GF_MAC08_Item == .True
+		Call	SetNpcPos ( .Npc:Self 0 -1000` 0 )
+	EndIf
+	Call	BindNpcInteract ( .Npc:Self $Script_Bartender_Interact )
+	Call	BindNpcIdle 	( .Npc:Self $Script_Bartender_Idle )
+	Return
+	End
+}
+
+#new:Script $Script_Bartender_Interact
+{
+	If *GF_MAC08_FirstTalk == .False
+		Call	SpeakToPlayer ( .Npc:Self 00AC0005 00AC0001 00000000 $String_Bartender_FirstTime1 )
+		Call	SpeakToPlayer ( .Npc:Self 00AC0005 00AC0001 00000000 $String_Bartender_FirstTime2 )
+		Set	*GF_MAC08_FirstTalk .True
+	EndIf
+	Call	SpeakToPlayer ( .Npc:Self 00AC0005 00AC0001 00000000 $String_Bartender_Hi )
+	Call  	ShowChoice    ( 001E000D ) % Yes No
+	If *Var0 != 0
+		Call	ContinueSpeech ( .Npc:Self 00AC0005 00AC0001 00000000 $String_Bartender_Cancel )
+		Return
+	EndIf
+	Call	CloseMessage
+	Call	SpeakToPlayer ( .Npc:Self 00AC0005 00AC0001 00000000 $String_Bartender_Instructions )
+	Call	InterpNpcYaw ( .Npc:Self 90` 0 )
+	Wait	15`
+	Call	PlaySound ( 00FA )
+	Call	EnableGroup ( ~Model:box1 .False )
+	Wait	15`
+	Call	InterpNpcYaw ( .Npc:Self -90` 0 )
+	Wait	15`
+	Call	SpeakToPlayer ( .Npc:Self 00AC0005 00AC0001 00000000 $String_Bartender_ImReady )
+	SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[255.0]  % dark
+    ExecWait $Script_FadeScreenOut
+	ExecWait $Script_InitGame
+	Return
+	End
+}
+
+#new:Script $Script_InitGame
+{
+	Call  	FadeOutMusic  ( 00000000 500` )
+	Call	SetNpcPos ( .Npc:Bartender ~Vec3d:Pos_Minigame_Start )
+	Call	GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+	Add		*Var0 30` % x
+	Call	SetPlayerPos ( *Var0 *Var1 *Var2 )
+	Call	InterpPlayerYaw ( -90` 0 )
+	Call	InterpNpcYaw ( .Npc:Bartender -90` 0 )
+	Call	TeleportPartnerToPlayer
+	Set		*MapVar[0] 100` % bartender HP
+	Call 	$WriteAddress ( $GameState_Bartender 0 1 .False .False )
+	Call	SetPlayerFlagBits ( 00000100 .True ) % Lock opening the items, partners lists and pausing the game
+	%Call	SetNpcAnimation ( .Npc:Self 002F0012 )
+	Call	SetEnemyFlagBits ( .Npc:Self 08000000 .True ) % Disable interact script
+	Wait	15`
+	SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[5.0]  % fully bright
+    ExecWait $Script_FadeScreenIn
+	Wait	95`
+	Exec	$Script_FreeFuzzies
+	Call  	PushSong  ( .Song:Playroom 00000000 )
+	Return
+	End
+}
+
+#new:Script $Script_FreeFuzzies
+{
+	Call	SetNpcVar ( 00000000 00000000 .True )
+	Wait	100`
+	Call	SetNpcVar ( 00000001 00000000 .True )
+	Wait	100`
+	Call	SetNpcVar ( 00000002 00000000 .True )
+	Wait	300`
+	Call	SetNpcVar ( 00000003 00000000 .True )
+	Wait	200`
+	Call	SetNpcVar ( 00000004 00000000 .True )
+	Return
+	End
+}
+
+% track if the bartender reached the finish line
+#new:Script $Script_Bartender_Idle
+{
+	Loop
+		Call 	$ReadAddress ( $GameState_Bartender 0 *Var0 .False .False )
+		If *Var0 == 2 % Minigame has started
+			Exec	$Script_MoveBartender
+			Loop
+				Call	GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+				If *Var0 <= ~PosXd:Entry2
+					% Minigame won!
+					SuspendAll 2
+					Call	DisablePlayerInput ( .True )
+					Call	GotoMap ( "mac_08" 2 )
+					Return
+				EndIf
+				Wait	1
+			EndLoop
+		EndIf
+		Wait	1
+	EndLoop
+	Return
+	End
+}
+
+#new:Script $Script_MoveBartender
+{
+	SetGroup 1
+	Call	SetNpcAnimation ( .Npc:Self 00AC0002 ) % walking
+	Loop
+		Call	GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+		Switch *MapVar[1] % amount of fuzzies active
+			Case == 0
+				Set *Var3 1
+			Case == 1
+				Set *Var3 2
+			Case == 2
+				Set *Var3 3
+			Case == 3
+				Set *Var3 4
+			Case == 4
+				Set *Var3 5
+			Case == 5
+				Set *Var3 6
+			Case == 6
+				Set *Var3 7
+		EndSwitch
+		Sub		*Var0 1
+		Call	SetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+		Wait	*Var3
+	EndLoop
+	Return
+	End
+}
+
+% Fuzzies
+
+#new:Script $Script_Init_Fuzzy
+{
+    Call  BindNpcAux    ( .Npc:Self $Script_Aux_Fuzzy )
+    Call  BindNpcHit    ( .Npc:Self $Script_Hit_Fuzzy )
+	If *GF_MAC08_Item == .True
+		Call	SetEnemyFlagBits ( .Npc:Self 00002000 .True ) % disable shadow
+	EndIf
+	Call	SetEnemyFlagBits ( .Npc:Self 00002000 .True )
+	Call	SetNpcFlagBits ( .Npc:Self 00000000 .True )
+    Return
+    End
+}
+
+#new:Script $Script_Aux_Fuzzy {
+	Loop
+		Call	GetSelfVar ( 00000000 *Var5 )
+		If *Var5 == .False % hide fuzzy
+			Call  SetNpcPos ( .Npc:Self 0 -1000` 0 )
+		Else
+			BreakLoop
+		EndIf
+		Wait 1
+	EndLoop
+	% Fuzzy comes from the duct
+	Call	SetNpcPos ( .Npc:Self ~Vec3d:NPC_Fuzzy )
+	Call	SetNpcJumpscale ( .Npc:Self *Fixed[1.0] )
+	Call  	NpcJump0  ( .Npc:Self ~Vec3d:JumpPos_Fuzzy_Start_1 10` )
+	Call  	PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+	Call  	NpcJump0  ( .Npc:Self ~Vec3d:JumpPos_Fuzzy_Start_2 20` )
+	Call	SetNpcJumpscale ( .Npc:Self *Fixed[0.5] )
+	Add		*MapVar[1] 1 % increase amount of fuzzies active
+	%
+	Label	2
+	Call	GetNpcPos ( .Npc:Bartender *Var0 *Var1 *Var2 )
+	Call	GetNpcPos ( .Npc:Self *Var3 *Var4 *Var5 )
+	If *Var3 > *Var0
+		Set *Var3 .False
+	Else
+		Set *Var3 .True
+	EndIf
+	% get X
+	Call	RandInt ( 15` *Var4 )
+	Set		*Var5 30`
+	Add		*Var5 *Var4
+	If *Var3 == .False
+		Mul *Var5 -1
+	EndIf
+	% get Z
+	Set		*Var6 25`
+	Call	RandInt ( 32` *Var4 )
+	Add		*Var6 *Var4
+	Call	RandInt ( 1 *Var4 )
+	If *Var4 != .False
+		Mul	*Var6 -1
+	EndIf
+	Add		*Var0 *Var5
+	Add		*Var2 *Var6
+	Call  	PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+	Call  	NpcJump0  ( .Npc:Self *Var0 *Var1 *Var2 0 )
+	% decrease HP
+	If *MapVar[0] != .False
+		Sub		*MapVar[0] 1
+	EndIf
+	If *MapVar[0] == .False
+		SetGroup 0
+		SuspendAll 2
+		Call	DisablePlayerInput ( .True )
+		Call    PlaySound ( 20E3 )
+		Call	GotoMap ( "mac_08" 1 ) % game over
+		Return
+	EndIf
+	Wait	1
+    Goto  	2
+    Return
+    End
+}
+
+#new:Script $Script_Hit_Fuzzy {
+	Call  SetSelfEnemyFlagBits ( 00000021 .True ) % Disable hitbox & kill idle, interact & aux scripts
+	% decrease amount of fuzzies active
+	If *MapVar[1] != .False
+		Sub   *MapVar[1] 1
+	EndIf
+    Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+    Call  SetNpcAnimation   ( .Npc:Self 002B0008 )
+    Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+    Call  NpcJump0          ( .Npc:Self *Var0 0 *Var2 25` )
+    Add   *Var0  40`
+    Add   *Var2  -40`
+    Call  SetNpcAnimation   ( .Npc:Self 002B0008 )
+    Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+    Call  NpcJump0          ( .Npc:Self *Var0 0 *Var2 15` )
+    Add   *Var0  30`
+    Add   *Var2  -30`
+    Call  SetNpcAnimation   ( .Npc:Self 002B0009 )
+    Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+    Call  NpcJump0          ( .Npc:Self *Var0 0 *Var2 13` )
+    Add   *Var0  20`
+    Add   *Var2  -20`
+    Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+    Call  NpcJump0          ( .Npc:Self *Var0 0 *Var2 11` )
+    Add   *Var0  10`
+    Add   *Var2  10`
+    Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+    Call  NpcJump0          ( .Npc:Self *Var0 0 *Var2 9 )
+    Add   *Var0  80`
+    Add   *Var2  -80`
+    Call  SetNpcAnimation   ( .Npc:Self 002B0003 )
+    Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+    Call  NpcJump0          ( .Npc:Self *Var0 0 *Var2 15` )
+    Call  EnableNpcShadow   ( .Npc:Self .False )
+    Call  SetNpcPos         ( .Npc:Self 0 -1000` 0 ) % hide fuzzy
+	Wait  50`
+	Call  RestartNpcAux ( .Npc:Self )
+	Call  SetSelfEnemyFlagBits ( 00000021 .False ) % enable hitbox idle, interact & aux scripts
+    Return
+    End
+}
+
+#string $String_Bartender_GameOver
+{
+[Style Right]
+Well that didn't turn out as[BR]
+expected... they're too fast!
+[Wait][End]
+}
+
+#string $String_Bartender_Beaten1
+{
+[Style Right]
+Good job, we have a box, let's go[BR]
+for the others ones.
+[Wait][End]
+}
+
+#string $String_Bartender_Beaten2
+{
+[Style Right]
+Wow, thank you so much Mario,[BR]
+I really wouldn't know how I would[BR]
+have done it without you.[BR]
+[Wait][Next]
+And looks like all those fuzzies[BR]
+actually left, thank you, you know[BR]
+what?[BR]
+[Wait][Next]
+Take this as a token of[BR]
+appreciation my friend.
+[Wait][End]
+}
+
+#string $String_Bartender_FirstTime1
+{
+[Style Right]
+Look Mario... I feel bad admitting[BR]
+this, but I have a Fuzzy problem,[BR]
+I really need someone's help![BR]
+[Wait][Next]
+And I think you're the only one[BR]
+I can trust.[BR]
+[Wait][Next]
+Basically there's a nest of[BR]
+fuzzies in the freezer's duct![BR]
+[Wait][End]
+}
+
+#string $String_Bartender_FirstTime2
+{
+[Style Right]
+And I have to move these boxes[BR]
+to the other end of the room but[BR]
+those fuzzies won't let me.[BR]
+[Wait][Next]
+Could you please stop them while[BR]
+I move all these boxes?
+[Wait][End]
+}
+
+#string $String_Bartender_Hi
+{
+[Style Right]
+So... will you help me?[BR]
+I promise you, I will pay you back.[BR]
+[Yield][End]
+}
+
+#string $String_Bartender_Cancel
+{
+[Next]
+Oh I understand, you have other[BR]
+issues to attend first, don't[BR]
+worry, I'll wait here for you, but[BR]
+please don't take too much time.[BR]
+[Wait][Next]
+I don't want the problem to grow[BR]
+even more.
+[Wait][End]
+}
+
+#string $String_Bartender_Instructions
+{
+[Style Right]
+This is what you need to do Mario,[BR]
+try to stop those fuzzies until I[BR]
+reach the other side of the[BR]
+warehouse, ok?
+[Wait][End]
+}
+
+#string $String_Bartender_ImReady
+{
+[Style Right]
+Okay, I think I'm ready, let's go,[BR]
+we can do it.
+[Wait][End]
+}
+
+#new:Function $Function_GetTattle
+{
+    LIO       V0, $String_Tattle
+    JR        RA
+    RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+I have a lot of questions about how[BR]
+exactly those Fuzzies got to this[BR]
+place, but I think the biggest[BR]
+question I have is...[BR]
+[Wait][Next]
+Why is the warehouse bigger than[BR]
+Club64?
+[Wait][End]
+}

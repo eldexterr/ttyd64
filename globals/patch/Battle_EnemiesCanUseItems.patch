@@ -1,0 +1,1234 @@
+% This file adds support for enemies actors to be able
+% to hold Items or Badges in battle and use them.
+
+% Item Data will be placed here:
+% actorData(0x04) - u16 itemID
+% actorData(0x06) - u8  itemEntityIndex
+
+% And for an item to get spawned it needs to be placed here:
+% formation struct (battle files)
+% actorData(0x1C) = dropTableData*
+
+/% How to make actors spawn with a badge/item:
+
+Place the itemDropTable data in to the last argument
+#new:Formation $Formation_00
+{
+	$Goomba 00000000 0000000A 00000000 00000000 00000000 itemData*
+}
+
+#export:Data $ItemDropTable_Goomba
+{
+                    Hold Weight     Drop Weight
+    itemID              5s              5s
+    itemID              0s              5s
+    FFFFFFFF
+}
+
+You can find more about it in Battle_ItemDropsHoldTables.patch
+%/
+
+% From ~Func:create_actor
+%
+% Init Item Data for this actor
+@Hook 194594 % 80265CB4
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S2
+    % Clear ItemData when the actor is initializated
+    %
+    % S1 = ActorDataPointer
+    SW      R0, 4 (S1) % nuke
+    % Check if this actor has a pointer in var3
+    %
+    LBU     S6, 94 (S1) % read ActorVar3(byte1)
+    ORI     V0, R0, 80 % check if starts with `80`
+    BNE     S6, V0, .End
+    NOP
+    % check if the 2nd byte isn't empty
+    LBU     S6, 95 (S1) % read ActorVar3(byte2)
+    BEQ     S6, R0, .End
+    NOP
+    % Var3 is a pointer
+    LW      S6, 94 (S1) % get ActorVar3
+    % save pointer
+    JAL     $get_actor_itemTableData
+    LHU     A0, 192 (S1) % actorID
+    SW      S6, 0 (V0)
+    % battle is being initializated?
+    LAW     A0, 800DC068 % battleStatus
+    ORI     A1, R0, 1 % .BattleState:BeginNormal
+    BNE     A0, A1, .MidBattleEnemy
+    NOP
+    % save pointer in original data too
+    JAL     $get_actor_itemTableData_OriginalFormation
+    LHU     A0, 192 (S1) % actorID
+    SW      S6, 0 (V0)
+    .MidBattleEnemy
+    COPY    S0, S6
+    % check which item will spawn
+    %
+    % get total hold weight (sum all items hold weights)
+    CLEAR   S2
+    .Loop_TotalWeight
+    LW      A0, 0 (S0) % itemID
+    LHU     A1, 4 (S0) % hold weight
+    ADDIU   S0, S0, 8 % next item
+    ADDI    A2, R0, -1 % end of the table
+    BNEL    A0, A2, .Loop_TotalWeight
+    ADDU    S2, S2, A1
+    COPY    S0, S6
+    .Loop_NextItemData
+    LW      A1, 0 (S0)
+    ADDI    A2, R0, -1 % end of the table
+    BEQ     A2, A1, .End
+    NOP
+    % check if this item will be the one to spawn
+    %
+    % S2=Total weight
+    LHU     A2, 4 (S0) % hold weight
+    BEQL    A2, R0, .Loop_NextItemData
+    ADDIU   S0, S0, 8 % read next item
+    ORI     A3, R0, 200`
+    ADDU    A3, A3, S2
+    DIV     A3, A2
+    JAL     ~Func:rand_int
+    MFLO    A0 % weight/(200+allItemsHoldWeights)
+    BEQL    V0, R0, .SkipZero
+    ORI     V0, R0, 1
+    .SkipZero
+    ORI     A0, R0, 1
+    BNEL    A0, V0, .Loop_NextItemData
+    ADDIU   S0, S0, 8 % read next item
+    % This item will be the one to spawn
+    LW      S6, 0 (S0) % itemID
+    JAL     $Function_Mode_Random_GetEnemyItem % from Mode_Randomized.patch
+    NOP
+    SLL     S6, S6, 16`
+    JAL     $Function_SpawnEnemyItem
+    SW      S6, 4 (S1) % write itemData
+    % write item data in enemyItemTableData
+    JAL     $get_actor_itemTableData
+    LHU     A0, 192 (S1) % actorID
+    LW      A0, 94 (S1) % enemy drop table
+    COPY    V1, V0
+    SW      A0, 0 (V1)
+    LW      A0, 0 (S0) % itemID
+    SH      A0, 4 (V1)
+    % battle is being initializated?
+    LAW     A0, 800DC068 % battleStatus
+    ORI     A1, R0, 1 % .BattleState:BeginNormal
+    BNE     A0, A1, .End
+    NOP
+    % It is, write in enemyItemTableData_Original too
+    JAL     $get_actor_itemTableData_OriginalFormation
+    LHU     A0, 192 (S1) % actorID
+    LW      A0, 94 (S1) % enemy drop table
+    SW      A0, 0 (V0)
+    LW      A0, 0 (S0) % itemID
+    SH      A0, 4 (V0)
+    ORI     A0, R0, 1
+    SB      A0, 6 (V0) % enemyType
+    SB      A0, 6 (V1) % enemyType(not original)
+    .End
+    SW      R0, 94 (S1) % nuke ActorVar3
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S2
+    % restore vanilla code
+    LW	    RA, 0034 (SP)
+    J       80265CBC
+    LW	    S6, 0030 (SP)
+}
+
+% Patch DoDeath
+%
+% Remove item when the actor dies & attach LifeShroom code
+@Script:Battle 1C97A0 % DoDeath % 8029AEC0
+{
+    ExecWait $DoDeath
+    Return
+    End
+}
+
+#new:Script:Battle $DoDeath
+{
+    ExecWait  Collapse 
+    Call      UseBattleCamPreset  ( 00000002 )
+    ExecWait  ForceNextTarget
+    % get item
+    Call    $GetActorPointer ( .Actor:Self *Var0 )
+    Call    $ReadAddress ( *Var0 1 *Var1 4 .False ) % $actor(0x04)= u16 itemID
+    % Clear item data
+    Call $ReadAddress ( *Var0 2 *Var2 4 .False ) % ActorData(0x04) = itemData
+    If *Var2 != .False
+        Call $ReadAddress ( *Var0 0 *Var2 6 .False ) % ActorData(0x06) = itemIndex
+        Call RemoveItemEntity ( *Var2 )
+        Call $WriteAddress ( *Var0 2 .False 4 .False ) % nuke data
+        % Life Shroom
+        %
+        % var1 = itemID
+        If *Var1 == .Item:LifeShroom
+            % Use LifeShroom
+            ExecWait $UseLifeShroom_Actor
+            Return
+        EndIf
+    EndIf
+    Call    $Function_DeleteData_EnemyItemDropTable_SelfActor
+    Call    RemoveActor   ( .Actor:Self )
+    Return
+    End
+}
+
+% Don't drop star points if actor has a Life Shroom
+%
+% From DropStarPoints(API)
+@Hook 1AB1D8 % 8027C8F8
+{
+    PUSH    RA, A0, A1, V0
+    % S1 = $actor
+    % Check if actor is holding an item
+    LHU     A0, 4 (S1) % get itemID
+    BEQ     A0, R0, .End
+    NOP
+    % check if item isn't a badge
+    JAL     $get_item_flags
+    CLEAR   A1
+    ANDI    V0, V0, 0040 % badge
+    BNE     V0, R0, .End
+    NOP
+    % check if item is a Life Shroom
+    ORI     V0, R0, 0095 % .Item:LifeShroom
+    LHU     AT, 4 (S1) % get itemID
+    BNE     AT, V0, .End
+    NOP
+    % actor is holding a life shroom, go
+    % to the end of the function
+    POP     RA, A0, A1, V0
+    J       8027CA50
+    NOP
+    .End
+    POP     RA, A0, A1, V0
+    % restore vanilla code
+    LW	    V0, 0008 (S1)
+    J       8027C900
+    LBU 	V0, 0006 (V0)
+}
+
+@Script:Battle 80298BF0 % ForceNextTarget (1C74D0)
+{
+    ExecWait $ForceNextTarget
+    Return
+    End
+}
+
+% Add check if actor used a Life Shroom
+#new:Script:Battle $ForceNextTarget % 80298BF0 (1C74D0)
+{
+    0:  Call  GetOwnerID    ( *VarA )
+   10:  Call  EnemyCreateTargetList ( 00008002 )
+   20:  Call  InitTargetIterator
+   2C:  Label  0
+   38:  Call  GetOwnerTarget        ( *Var0 *Var1 )
+   4C:  If  *Var0  !=  *VarA 
+   5C:  	Call  GetOriginalActorType  ( *Var0 *Var2 )
+   70:  	If  *Var2  !=  00000047  % Dry Bones
+   80:  		Return
+   88:  	EndIf
+   90:  EndIf
+   98:  Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+   AC:  If  *Var0  !=  FFFFFFFF % FFFFFFFF
+   BC:  	Goto  0
+   C8:  EndIf
+   D0:  Call  EnemyCreateTargetList ( 00008002 )
+   E0:  Call  InitTargetIterator
+   EC:  Label  1
+   F8:  Call  GetOwnerTarget        ( *Var0 *Var1 )
+  10C:  If  *Var0  !=  *VarA 
+  11C:  	Call  GetActorVar   ( *Var0 00000008 *Var3 )
+  134:  	If  *Var3  !=  00000001 
+  144:  		Return
+  14C:  	EndIf
+  154:  EndIf
+  15C:  Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+  170:  If  *Var0  !=  FFFFFFFF % FFFFFFFF
+  180:  	Goto  1
+  18C:  EndIf
+  194:  Call  EnemyCreateTargetList ( 00008002 )
+  1A4:  Call  InitTargetIterator
+  1B0:  Label  2
+  1BC:  Call  GetOwnerTarget    ( *Var0 *Var1 )
+        % Skip if actor has a Life Shroom
+        Call    $GetActorPointer ( *Var0 *Var1 )
+        Call    $ReadAddress ( *Var1 1 *Var1 4 .False ) % $actor(0x04)= u16 itemID
+        If *Var1 != .Item:LifeShroom % 95
+            Call  SetActorFlagBits  ( *Var0 00600000 .True )
+        EndIf
+  1E8:  Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+  1FC:  If  *Var0  !=  FFFFFFFF % FFFFFFFF
+  20C:  	Goto  2
+  218:  EndIf
+  220:  Return
+  228:  End
+}
+
+% From ~Func:state_step_battle
+%
+% Move items according to actors' positions
+@Hook ECEC % 800338EC
+{
+    PUSH    RA
+    JAL     $Function_UpdateActorsItems
+    NOP
+    POP     RA
+    % restore vanilla code
+    LIO     S0, 800A0900
+    J       800338F4
+    RESERVED
+}
+
+% From ~Func:btl_state_update_begin_turn
+%
+% Unhide enemies items when the heroes turn starts
+@Hook:Battle 1708D0 % 80241FF0
+{
+    PUSH    RA
+    JAL     $Function_ActorsItems_Unhide
+    NOP
+    POP     RA
+    % restore vanilla code
+    JAL     ~Func:btl_set_state
+    NOP
+    J       80241FF8
+    NOP
+}
+
+% Hide enemies items at the start of enemies turn
+@Hook:Battle 1721B4 % 802438D4
+{
+    PUSH    RA, V0
+    % If State about to be set isn't 0x14 skip
+    %
+    % A0 = NextBattleState
+    ORI     V0, R0, 14 % .BattleState:NextEnemy
+    BNE     A0, V0, .End
+    NOP
+    JAL     $Function_ActorsItems_Hide
+    NOP
+    /% All this NOPs are to stop a crash when starting the game,
+    % sometimes Star Rod use a wrong address for the end of globals
+    % this address is needed for a few functions.
+    %
+    % Looks like if you change the globals size enough star rod
+    % will use the correct address sonner or later.
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP
+    NOP%/
+    .End
+    POP     RA, V0
+    % restore vanilla code
+    JAL     ~Func:btl_set_state
+    NOP
+    J       802438DC
+    NOP
+}
+
+#new:Function $Function_ActorsItems_Unhide
+{
+    PUSH    RA, A0, V0, V1, S0, S1, S2
+    LIO     S0, 800DC148 % Actors Data table
+    ADDIU   S0, S0, 8 % skip Player and Partner data
+    CLEAR   S1
+    .ReadNextActor
+    LW      S2, 0 (S0)
+    BEQ     S2, R0, .GetNextActor
+    NOP
+    % check if this enemy has an item
+    LW      A0, 4 (S2)
+    BEQ     A0, R0, .GetNextActor
+    NOP
+    % get itemFlags
+    JAL     ~Func:get_item_entity
+    LBU     A0, 6 (S2)
+    LW      A0, 0 (V0) % load flags
+    LIO     V1, 00000002 % Flags(0x04) - bit1 = ShowEntityFlag
+    OR      A0, A0, V1
+    SW      A0, 0 (V0) % Enable ShowEntityFlag
+    .GetNextActor
+    % read next actor data
+    ADDIU   S0, S0, 4
+    ADDIU   S1, S1, 1
+    SLTIU   S2, S1, 24` % the max amount of actors is 24`
+    BNE     S2, R0, .ReadNextActor
+    NOP
+    POP     RA, A0, V0, V1, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+#new:Function $Function_ActorsItems_Hide
+{
+    PUSH    RA, A0, V0, V1, S0, S1, S2
+    LIO     S0, 800DC148 % Actors Data table
+    ADDIU   S0, S0, 8 % skip Player and Partner data
+    CLEAR   S1
+    .ReadNextActor
+    LW      S2, 0 (S0)
+    BEQ     S2, R0, .GetNextActor
+    NOP
+    % check if this enemy has an item
+    LW      A0, 4 (S2)
+    BEQ     A0, R0, .GetNextActor
+    NOP
+    % get itemFlags
+    JAL     ~Func:get_item_entity
+    LBU     A0, 6 (S2)
+    LW      A0, 0 (V0) % load flags
+    ADDI	V1, R0, FFFD  % Flags(0x04) - bit1(Inverted) = ShowEntityFlag
+    AND     A0, A0, V1
+    SW      A0, 0 (V0) % Disable ShowEntityFlag
+    .GetNextActor
+    % read next actor data
+    ADDIU   S0, S0, 4
+    ADDIU   S1, S1, 1
+    SLTIU   S2, S1, 24` % the max amount of actors is 24`
+    BNE     S2, R0, .ReadNextActor
+    NOP
+    POP     RA, A0, V0, V1, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+% Check each actor itemID and update the position of the item
+% according to the actor pos. 
+#new:Function $Function_UpdateActorsItems
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, F0
+    LIO     S0, 800DC148 % Actors Data table
+    ADDIU   S0, S0, 8 % skip Player and Partner data
+    CLEAR   S1
+    .ReadNextActor
+    LW      S2, 0 (S0)
+    BEQ     S2, R0, .GetNextActor
+    NOP
+    % check if this enemy has an item
+    LW      A0, 4 (S2)
+    BEQ     A0, R0, .GetNextActor
+    NOP
+    % get itemPos
+    JAL     ~Func:get_item_entity
+    LBU     A0, 6 (S2)
+    %===========
+    % X
+    %===========
+    % get actor pos
+    LW      A1, 144 (S2) % load x (float)
+    % convert to fixed point
+    MTC1    A1, F0
+    TRUNC.W.S F0, F0
+    MFC1    A1, F0
+    LB      A2, 190 (S2) % get actor x size
+    ORI     A3, R0, 2 % get 50% of size
+    DIV     A2, A3
+    MFLO    A2
+    %ADDI    A2, A2, FFFE % x % -2`, using 50% of size is enough
+    ADD     A1, A1, A2
+    % convert back to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    SWC1	F0, 8 (V0) % write item x pos (f32)
+    %===========
+    % Y
+    %===========
+    LW      A2, 148 (S2) % load y (float)
+    % convert to fixed point
+    MTC1    A2, F0
+    TRUNC.W.S F0, F0
+    MFC1    A2, F0
+    % check if the enemy is on the ceiling
+    LW      A3, 0 (S2) % actorFlags
+    ANDI    A3, A3, 0800 % cealing flag
+    BEQ     A3, R0, .SetItemPos_YPos
+    ADDI    A2, A2, 2 % y
+    LB      A3, 191 (S2) % get actor y size
+    SUB     A2, A2, A3 % y
+    .SetItemPos_YPos
+    % convert back to float
+    MTC1    A2, F0
+    CVT.S.W F0, F0
+    SWC1	F0, C (V0) % write item y pos (f32)
+    %===========
+    % Z
+    %===========
+    LW      A3, 14C (S2) % load z (float)
+    % convert to fixed point
+    MTC1    A3, F0
+    TRUNC.W.S F0, F0
+    MFC1    A3, F0
+    ADDI    A3, A3, FFFD % z % -3
+    % convert back to float
+    MTC1    A3, F0
+    CVT.S.W F0, F0
+    SWC1	F0, 10 (V0) % write item z pos (f32)
+    .GetNextActor
+    % read next actor data
+    ADDIU   S0, S0, 4
+    ADDIU   S1, S1, 1
+    SLTIU   S2, S1, 24` % the max amount of actors is 24`
+    BNE     S2, R0, .ReadNextActor
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, F0
+    JR      RA
+    NOP
+}
+
+% From ~Func:btl_delete_actor
+%
+% Remove the item after the actor dies, the item should be already removed
+% at this point because is attached to DoDeath too, but I add it here anyways
+% just to be sure.
+%
+% Also remove the ice pillar if enemy actor was frozen.
+@Hook 16F4A8 % 80240BC8
+{
+    PUSH    T0, A0, V1, RA
+    % S1 = Actor's pointer
+    %
+    % Check if is an enemy
+    LH      T0, 192 (S1) % load ActorID
+    SLTI    T0, T0, 200 % Only enemies Actors (200 = .Actor:Enemy0 )
+    BNE     T0, R0, .End
+    NOP
+    % remove buffs data
+    JAL     $Function_RemoveBuffs_ActorID % from Battle_NewStatuses.patch
+    LH      A0, 192 (S1) % load ActorID
+    % Check if this Actor had an item
+    LW      T0, 4 (S1)
+    BEQ     T0, R0, .RemoveIcePillar
+    NOP
+    % Actor had an item
+    JAL     $Function_DespawnEnemyItem
+    NOP
+    %================
+    .RemoveIcePillar
+    %================
+    % check if status is Frozen
+    LBU     V0, 0210 (S1) % get debuff
+    ORI     A0, R0, 7 % .Status:Frozen
+    BNE     V0, A0 .End
+    NOP
+    % remove ice pillar
+    JAL 	~Func:sfx_play_sound
+    ADDIU	A0, R0, 00E7
+    % S1 = partnerActorData
+    LW	    V1, 0228 (S1) % load debuffFX data (only used by Frozen?)
+    LW	    V0, 0000 (V1)
+    ORI	    V0, V0, 0010 % destroy pillar
+    SW	    V0, 0000 (V1)
+    .End
+    POP     T0, A0, V1, RA
+    % restore vanilla code
+    SW	    S0, 0020 (SP)
+    J       80240BD0
+    CLEAR   S0
+}
+
+% S1 = ActorPointer
+#new:Function $Function_SpawnEnemyItem
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0
+    LHU     A0, 4 (S1) % load itemID
+    % always spawn at zero the one that moves the item is $Function_UpdateActorsItems
+    CLEAR   A1 % x
+    CLEAR   A2 % y
+    CLEAR   A3 % z
+    ORI     V0, R0, 1 % .ItemSpawnMode:Decoration
+    SW      V0, 10 (SP)
+    JAL     ~Func:make_item_entity_nodelay
+    SW      R0, 14 (SP) % Don't use a pickupFlag
+    % V0 = itemEntityIndex
+    SB      V0, 6 (S1) % save in ActorItemData(0x03)
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0
+    JR      RA
+    NOP
+}
+
+% S1 = ActorPointer
+#new:Function $Function_DespawnEnemyItem
+{
+    PUSH    RA, A0, V0
+    LBU     A0, 6 (S1) % load itemIndex
+    JAL     ~Func:remove_item_entity_by_index
+    SW      R0, 4 (S1) % nuke ItemData    
+    POP     RA, A0, V0
+    JR      RA
+    NOP
+}
+
+% From ~Func:btl_state_update_enemy_move
+%
+% Check if the enemy is holding an item
+% to bind the Item Script in TakeTurn instead
+@Hook 175FD4 % 802476F4
+{
+    PUSH    RA, A1, V0, T0, T1
+    LW	    A0, 01C4 (S0) % load $TakeTurn script
+    % check if actor have a correct itemID
+    LHU     A1, 4 (S0) % load itemID
+    BEQ     A1, R0, .End
+    NOP
+    COPY    A0, A1
+    JAL     $get_item_flags
+    CLEAR   A1
+    LW	    A0, 01C4 (S0) % load $TakeTurn script
+    ANDI    V0, V0, 0040 % badge
+    BNE     V0, R0, .Charge
+    NOP
+    % Enemy have an actual item
+    SAW     A0, $Stack_TakeTurnScript % push Actor's original TakeTurn script
+    LIO     A0, $EnemyUseItem % load this script instead
+    BEQ     R0, R0, .End
+    NOP
+    .Charge
+    % Check if enemy is holding a Charge Badge
+    LHU     T0, 4 (S0) % load itemID
+    ORI     T1, R0, 016D % .Item:Charge
+    BEQ     T0, T1, .EnemyCharge
+    ORI     T1, R0, 017D % .Item:ChargeP
+    BEQ     T0, T1, .EnemyCharge
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .EnemyCharge
+    % Enemy has a charge badge
+    SAW     A0, $Stack_TakeTurnScript % push Actor's original TakeTurn script
+    LIO     A0, $EnemyUseCharge % load this script instead % from Battle_EnemiesBadges.patch
+    .End
+    POP     RA, A1, V0, T0, T1
+    J       802476FC
+    SB	    R0, 01A7 (S6)
+}
+
+#export:Data $Stack_TakeTurnScript
+{ 00000000 }
+
+% Enemies items dispatcher
+#new:Script:Battle $EnemyUseItem
+{   
+    % get item
+    Call    $GetActorPointer ( .Actor:Self *Var0 )
+    Call    $ReadAddress ( *Var0 1 *Var1 4 .False ) % $actor(0x04)= u16 itemID
+    % var1 = itemID
+    If *Var1 == .Item:LifeShroom % never use a life shroom
+        % Run former TakeTurn script and finish
+        Call    $ReadAddress ( $Stack_TakeTurnScript 2 *Var0 .False .False )
+        ExecWait *Var0
+        Return
+    EndIf
+    % check if Actor has HP (needed because Dry Bones)
+    Call  GetActorHP ( .Actor:Self *Var2 )
+    If *Var2 == 0
+        % Run former TakeTurn script and finish
+        Call    $ReadAddress ( $Stack_TakeTurnScript 2 *Var0 .False .False )
+        ExecWait *Var0
+        Return
+    EndIf
+    % check if Actor is flipped
+    Call $GetActorExtraData ( .Actor:Self C *Var2 )
+    If *Var2 != .False
+        % Run former TakeTurn script and finish
+        Call    $ReadAddress ( $Stack_TakeTurnScript 2 *Var0 .False .False )
+        ExecWait *Var0
+        Return
+    EndIf
+    % get target actor to use item
+    Call  EnemyCreateTargetList ( 00000000 )
+    Call  $GetItemFlags ( *Var1 *Var2 *Var3 )
+    If *Var3 & 00000008 % targetFlags = TargetPlayer
+        %===================
+        % Healing/Buff Item
+        %===================
+        %
+        % Get self data
+        Call  GetOwnerID ( *Var4 )
+        Set   *VarA *Var4
+        Call  GetActorHP ( *Var4 *VarB )
+        Call  GetEnemyMaxHP ( *Var4 *VarC )
+        % check if owner is missing at least 1HP.
+        Set   *Var5 *VarC
+        Sub   *Var5 *VarB
+        If *Var5 < 1 % Isn't missing 1 or more
+            Set *VarB 00FFFFFF % currentTargetHP
+            Set *VarC 00FFFFFF % currentTargetMaxHP
+        EndIf
+        % VarA = currentTargetActorID
+        % VarB = currentTargetHP
+        % VarC = currentTargetMaxHP
+        %
+        % Check which enemy has less HP and cure the one with less HP
+        Label GetActorHP
+        Call  GetActorHP ( *Var4 *Var5 )
+        Call  GetEnemyMaxHP ( *Var4 *Var6 )
+        If *Var5 < *VarB
+            % check if this actor has at least a difference of 1HP or more between HP and Max HP
+            Set *Var7 *Var6 % copy MaxHP into Var7
+            Sub *Var7 *Var5
+            If *Var7 >= 1
+                Set *VarA *Var4 % set targetActorID
+                Set *VarB *Var5 % set targetHP
+                Set *VarC *Var6 % set targetMaxHP
+            EndIf
+        EndIf
+        Call  ChooseNextTarget  ( .Iter:Next *Var4 )
+        If  *Var4  !=  FFFFFFFF
+            Call  GetOwnerTarget ( *Var4 .False )
+            Goto  GetActorHP
+        EndIf
+        % Check if this enemy is missing at least 1HP or more
+        Set *Var7 *VarC % copy MaxHP into Var7
+        Sub *Var7 *VarB
+        If *VarC == 00FFFFFF % Means self actor can't be healed
+            Set *Var7 .False
+        EndIf
+        % Check if current Item is a Healing one or a buff one
+        % for buff items isn't neccesary to check if actor is
+        % missing 1 or more HP.
+        Switch *Var1
+            CaseOR == .Item:StoneCap % unused
+            CaseOR == .Item:ElectroPop
+            CaseOR == .Item:RepelGel
+            CaseOR == .Item:StrangeCake
+            CaseOR == .Item:VoltShroom
+            CaseOR == .Item:CourageShell
+            CaseOR == .Item:GradualSyrup
+            CaseOR == .Item:HotSauce
+            CaseOR == .Item:PointSwap
+            CaseOR == .Item:PowerPunch
+            CaseOR == .Item:SlowShroom            
+                Set *Var7 1
+            EndCaseGroup
+        EndSwitch
+        If *Var7 < 1
+            % Enemy has too many HP, skip using the item
+            %
+            % Run former TakeTurn script and finish
+            Call     $ReadAddress ( $Stack_TakeTurnScript 2 *Var0 .False .False )
+            ExecWait *Var0
+            Return
+        EndIf
+        Call  SetTargetActor ( .Actor:Self *VarA )
+        Wait  1
+        Goto  RemoveItemEntity
+    Else
+        %===================
+        % Offensive Item
+        %===================
+        If *Var3 & 00000001 % Single target
+            Call  RandInt ( 100` *Var2 )
+            If *Var2 <= 50`
+                Call  SetTargetActor ( .Actor:Self .Actor:Player )
+            Else
+                % Check if Partner is available
+                Call  $GetPartnerHP_API ( *Var2 )
+                If *Var2 > 0
+                    Call  SetTargetActor ( .Actor:Self .Actor:Partner )
+                Else
+                    Call  SetTargetActor ( .Actor:Self .Actor:Player )
+                EndIf
+            EndIf
+        Else % Multi-target
+            Call  SetTargetActor ( .Actor:Self .Actor:Player ) % Always attack Mario first
+        EndIf
+    EndIf
+    % get if is time to use the item
+    Call  RandInt ( 100` *Var2 )
+    If *Var2 >= 60` % 40% chance to not use it
+        % Run former TakeTurn script and finish
+        Call    $ReadAddress ( $Stack_TakeTurnScript 2 *Var0 .False .False )
+        ExecWait *Var0
+        Return
+    EndIf
+    % remove item entity
+    Label RemoveItemEntity
+    Call  $ReadAddress ( *Var0 0 *Var2 6 .False ) % $actor(0x06)= u8 itemIndex
+    Call  RemoveItemEntity ( *Var2 )
+    Call  $SetActorItemData ( .Actor:Self .False ) % nuke itemData
+    % This need to be done manually because enemies doesn't
+    % use GetMenuSelection or any of those kind of functions.
+    Call  $WriteAddress ( 800DC070 1 *Var1 17A .False ) % 800DC070(0x17A)= s16 selectedItemID (needed by item scripts)
+    Call  $WriteAddress ( 800DC070 1 0 17C .False ) % 800DC070(0x17C)= s16 selectedMoveID
+    Call  $LoadItemScriptEnemy
+    ExecWait *Var0
+    Return
+    End
+}
+
+% Call  $GetItemFlags ( itemID typeFlags targetFlags )
+#export:Function $GetItemFlags
+{
+    PUSH    RA, A0, A1, A2, A3, S0, S1
+    LW      S0, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0) % load arg0
+    LIO     V1, 800878E0 % item table
+    SLL	    S1, V0, 5
+    ADDU	S1, S1, V1
+    % S1 = itemData
+    LW      A0, 14 (SP)
+    LW      A1, 4 (S0) % load arg1
+    JAL     ~Func:set_variable
+    LHU     A2, 18 (S1) % load typeFlags
+    LW      A0, 14 (SP)
+    LW      A1, 8 (S0) % load arg2
+    JAL     ~Func:set_variable
+    LW      A2, 8 (S1) % load targetFlags
+    POP     RA, A0, A1, A2, A3, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% A0=itemID
+%
+% A1=typeOfFlags (0x00=typeFlags - 0x01=targetFlags)
+%
+% *out=V0=requestFlags
+#export:Function $get_item_flags
+{
+    PUSH    A0, A1, A2, A3, V1
+    COPY    V0, A0
+    LIO     V1, 800878E0 % item table
+    SLL	    A2, V0, 5
+    ADDU	A2, A2, V1
+    % A1 = typeOfFlagsRequested
+    % A2 = itemData
+    BEQL    A1, R0, .End
+    LHU     V0, 18 (A2) % load typeFlags
+    LW      V0, 8 (A2) % load targetFlags
+    .End
+    POP     A0, A1, A2, A3, V1
+    JR      RA
+    NOP
+}
+
+% A0=itemID
+%
+% V0=itemData*
+%
+% Get data from the globals editor data
+%
+% ==Data Struct==
+%
+% 0x00 = `string name`
+%
+% 0x04 = `u16 itemID`
+%
+% 0x08 = `u32 targetFlags`
+%
+% 0x0D = `u8 sell value`
+%
+% 0x10 = `string fullDesc`
+%
+% 0x14 = `string shortDesc`
+%
+% 0x18 = `u16 typeFlags`
+%
+% 0x1A = `u8 moveID`
+%
+% 0x1B = `u8 power/hpGain`
+%
+% 0x1C = `u8 fpGain`
+#export:Function $get_item_global_data
+{
+    PUSH    A0, A1, A2, A3, V1
+    COPY    V0, A0
+    LIO     V1, 800878E0 % item table
+    SLL	    A2, V0, 5
+    ADDU	V0, A2, V1
+    POP     A0, A1, A2, A3, V1
+    JR      RA
+    NOP
+}
+
+% `Call    $GetItemGlobalData ( itemID *out )`
+%
+% Get data from the globals editor data
+%
+% ==Data Struct==
+%
+% 0x00 = `string name`
+%
+% 0x04 = `u16 itemID`
+%
+% 0x08 = `u32 targetFlags`
+%
+% 0x0D = `u8 sell value`
+%
+% 0x10 = `string fullDesc`
+%
+% 0x14 = `string shortDesc`
+%
+% 0x18 = `u16 typeFlags`
+%
+% 0x1A = `u8 moveID`
+%
+% 0x1B = `u8 power/hpGain`
+%
+% 0x1C = `u8 fpGain`
+#export:Function $GetItemGlobalData
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % arg0
+    JAL     $get_item_global_data
+    COPY    A0, V0
+    % save var
+    COPY    A2, V0
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:set_variable
+    LW      A1, 4 (A1) % arg1
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% `Call    $GetMoveData ( moveID *out )`
+%
+% Get data from the globals editor data
+%
+% ==Data Struct==
+%
+% 0x00 = `string name`
+%
+% 0x04 = `u32 targetFlags`
+%
+% 0x08 = `string shortDesc`
+%
+% 0x0C = `string fullDesc`
+%
+% 0x10 = `u8 unknown`
+%
+% 0x11 = `u8 fpCost`
+%
+% 0x12 = `u8 bpCost`
+%
+% 0x13 = `u8 inputPopup`
+#export:Function $GetMoveData
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % arg0
+    LIO     A0, 8008F060 % MoveTable
+    SLL	    V1, V0, 2
+    ADDU	V1, V1, V0
+    SLL	    V1, V1, 2
+    ADDU    A2, V1, A0
+    % save var
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:set_variable
+    LW      A1, 4 (A1) % arg1
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call  $SetActorItemData ( actorID itemData )
+#new:Function:Battle $SetActorItemData
+{
+    PUSH    RA, A0, S0, S1, S2, S3
+    COPY    S2, A0
+    LW      S0, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0) % get arg 0
+    COPY    S1, V0
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0) % get arg 1
+    COPY    S3, V0
+    % S1 = actorID
+    % .Actor:Self was used?
+    LIO     V0, FFFFFF81
+    BNE	    S1, V0, .GetPointer
+    NOP
+    LW	    S1, 0148 (S2) % load self id
+    .GetPointer
+    JAL		~Func:get_actor
+    COPY    A0, S1
+    % V0 = $actor
+    % S3 = itemData
+    SW      S3, 4 (V0) % save itemData
+    POP     RA, A0, S0, S1, S2, S3
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Is basically LoadItemScript but with some parts about
+% reading mario's inventory and double/triple Dip cut.
+%
+% And sets Var1 as True instead of False at the end.
+#new:Function $LoadItemScriptEnemy
+{
+ADDIU     SP, SP, -28
+SW        S3, 001C (SP)
+CLEAR     S3
+SW        S0, 0010 (SP)
+CLEAR     S0
+/%LIO       A2, 8010F290
+COPY      A1, A2%/
+SW        S1, 0014 (SP)
+LIO       S1, 800DC070
+SW        RA, 0020 (SP)
+SW        S2, 0018 (SP)
+LH        A0, 017A (S1) % get selectedItemID
+LIO       V1, 800878E0
+SLL       V0, A0, 5
+ADDU      S2, V0, V1
+/%.80267F18
+LH        V0, 01B4 (A1)
+BEQ       R0, R0, .80267F88 % .80267F30
+SLL       V1, S0, 1
+ADDIU     A1, A1, 0002
+J         .80267F18
+ADDIU     S0, S0, 0001
+.80267F30
+ADDU      V0, A2, V1
+JAL       ~Func:sort_items
+SH        R0, 01B4 (V0)%/
+/%LH        V1, 017C (S1) % load moveID
+ADDIU     V0, R0, 0035 % Double Dip
+BNE       V1, V0, .80267F6C
+ADDIU     V0, R0, 0036 % Triple Dip
+LB        V1, 0088 (S1)
+ADDIU     V0, R0, 0002
+BNE       V1, V0, .80267F64
+NOP       
+JAL       ~Func:deduct_current_move_fp
+NOP       
+.80267F64
+LH        V1, 017C (S1) % load moveID
+ADDIU     V0, R0, 0036
+.80267F6C
+BNE       V1, V0, .80267F88
+ADDIU     V0, R0, 0003
+LB        V1, 0088 (S1)
+BNE       V1, V0, .80267F88
+NOP       
+JAL       ~Func:deduct_current_move_fp
+NOP%/
+.80267F88
+LIO       V1, 80293B80
+LW        V0, 0000 (V1)
+BEQ       V0, R0, .80267FC4
+CLEAR     S0
+LH        A0, 017A (S1) % get selectedItemID
+LW        V0, 0000 (V1)
+.80267FA4
+BEQ       V0, A0, .80267FBC
+ADDIU     V1, V1, 0004
+LW        V0, 0000 (V1)
+BNEL      V0, R0, .80267FA4
+ADDIU     S0, S0, 0001
+LW        V0, 0000 (V1)
+.80267FBC
+BNE       V0, R0, .80267FD0
+NOP       
+.80267FC4 
+LHU       V0, 0018 (S2)
+ANDI      V0, V0, 0080
+SLTIU     S0, V0, 0001
+.80267FD0
+LIO       V0, 80293C04
+SLL       S0, S0, 4
+ADDU      S0, S0, V0
+LW        A0, 0000 (S0)
+LW        A1, 0004 (S0)
+JAL       ~Func:dma_copy
+LW        A2, 0008 (S0)
+LW        V1, 000C (S0)
+LW        S3, 0014 (SP) % load $ScriptData
+SW        V1, 0084 (S3) % save $itemScript var0
+ORI       S2, R0, 1
+SW        S2, 0088 (S3) % save $itemScript var1
+LW        RA, 0020 (SP)
+LW        S3, 001C (SP)
+LW        S2, 0018 (SP)
+LW        S1, 0014 (SP)
+LW        S0, 0010 (SP)
+ADDIU     V0, R0, 0002
+JR        RA
+ADDIU     SP, SP, 28
+}
+
+%==============================================================
+% Patch ItemDamageEnemy to being able to hurt Mario & Partner.
+%==============================================================
+
+% Decrease target HP
+%
+% Add support for mario and partner HP
+@Hook 18036C % 80251A8C
+{
+    PUSH    RA, A0, A1, A2, A3, V1
+    % S3 = targetActor*
+    LHU     A0, 192 (S3) % load targetActorID
+    BNE     A0, R0, .CheckPartner
+    NOP
+    .DecreaseMarioHP
+    LIO     A1, 8010F290 % PlayerData
+    LB      V0, 2 (A1) % get player hp
+    LW      A0, 14 (SP) % pop A0
+    SUBU	V0, V0, A0
+    SB      V0, 2 (A1) % set HP
+    % mario died?
+    BGTZ	V0, .End
+    NOP
+    SAB     R0, 8010F292 % clear current HP
+    BEQ     R0, R0, .End
+    ORI     S2, R0, 20 % .Event:Death
+    .CheckPartner
+    ORI     A1, R0, 100 % .Actor:Partner
+    BNE     A0, A1, .DecreaseEnemyHP
+    NOP
+    .DecreasePartnerHP
+    JAL     $GetPartnerHP
+    NOP
+    LW      A0, 14 (SP) % pop A0
+    JAL     $SetPartnerHP
+    SUBU	A0, V0, A0
+    COPY    V0, A0
+    % partner died?
+    BGTZ	V0, .End
+    NOP
+    JAL     $SetPartnerHP
+    CLEAR   A0
+    BEQ     R0, R0, .End
+    ORI     S2, R0, 20 % .Event:Death
+    .DecreaseEnemyHP
+    LBU 	V0, 01B8 (S3)
+    LW      A0, 14 (SP) % pop A0
+    SUBU	V0, V0, A0
+    SB	    V0, 01B8 (S3)
+    % enemy died?
+    BGTZ	V0, .End
+    NOP
+    SB	    R0, 01B8 (S3)
+    ORI     S2, R0, 20 % .Event:Death
+    .End
+    POP     RA, A0, A1, A2, A3, V1
+    J       80251AAC
+    NOP
+}
+
+% Unknown HP reading
+%
+% Add support for mario and partner HP
+@Hook 180444 % 80251B64
+{
+    PUSH    RA, A0, A1, A2, A3, V1
+    % S3 = targetActor*
+    LHU     A0, 192 (S3) % load targetActorID
+    BNE     A0, R0, .CheckPartner
+    NOP
+    % get Mario HP
+    LIO     A0, 8010F290 % PlayerData
+    BEQ     R0, R0, .End
+    LBU     V0, 2 (A0) % get player hp
+    .CheckPartner
+    ORI     A1, R0, 100 % .Actor:Partner
+    BNE     A0, A1, .GetEnemyHP
+    NOP
+    % get partner HP
+    JAL     $GetPartnerHP
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .GetEnemyHP
+    LBU	    V0, 01B8 (S3)
+    .End
+    POP     RA, A0, A1, A2, A3, V1
+    % restore vanilla code
+    BGTZ	V0, .80251B8C
+    ADDIU	V0, R0, 0019
+    J       80251B70
+    NOP
+    .80251B8C
+    J       80251B8C
+    NOP
+}
+
+% Use ~Func:dispatch_event_general to being able to dispatch events for everyone not only
+% enemies actors.
+@Function:Battle 180A90 % 802521B0
+{
+    JAL     ~Func:dispatch_event_general
+    COPY    A1, S2
+}
+
+% Don't KO'd the partner if got hurt by an item.
+%
+% From ~Func:calc_item_damage_enemy
+@Function:Battle 802521E4
+{
+    NOP
+}
+
+% Use the actorData acording to the attackerID instead of always the Player data.
+%
+% From ~Func:calc_item_damage_enemy
+@Hook:Battle 8025172C
+{ 
+
+    LHU     V0, 192 (A1) % selfActorID
+    SH      V0, 1A8 (S4) % attackerID (battleStatus(0x1A8))
+    COPY    S6, A1
+    J       80251734
+    LHU	    V0, 01A0 (S4)
+}
+
+% If target is player or partner, check if Outta Sight is active.
+%
+% From ~Func:calc_item_check_hit
+@Hook:Battle 80251648
+{
+    LHU	    V1, 0192 (S0) % targetID
+    BEQ     V1, R0, .CheckOuttaSight
+    ORI     V0, R0, 0100 % .Actor:Partner
+    BEQ     V1, V0, .CheckOuttaSight
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .CheckOuttaSight
+    LBU     V1, 9A (S3) % battleStatus(0x9A)=outtaSightActive
+    BNE     V1, R0, .OuttaSight
+    NOP
+    .End
+    % restore code
+    LB	    V1, 0218 (S0) % load transparent byte
+    J       80251650
+    ADDIU	V0, R0, 000E % .Status:Transparent
+    .OuttaSight
+    J       802516CC
+    ADDIU	V0, R0, 0006 % .HitResult:Miss
+}
+
+
+#export $SetActorItemData
+#export $EnemyUseItem

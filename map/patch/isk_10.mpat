@@ -1,0 +1,34 @@
+% Add new item
+
+@ $Script_Main_EnterWalk
+{
+      [13C]  Set   *Var0  $Script_MakeExits % Script_80240F34
+}
+
+#new:Script $Script_MakeExits % Script_80240F34
+{
+    Bind  $Script_ExitWalk_80240E20 .Trigger:FloorAbove ~Collider:deilin 00000001 00000000
+    Bind  $Script_ExitWalk_80240E7C .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Bind  $Script_ExitWalk_80240ED8 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+    % new
+    Call  MakeItemEntity ( .Item:PDownDUpP ~Vec3d:itemPos .ItemSpawnMode:Fixed_NeverVanish *GF_ISK10_Item )
+    Return
+    End
+}
+
+% Patch super block to give a shine sprite instead
+
+#delete $Script_802412C8 % original super block script
+
+@ $Script_MakeEntities {
+    [44]  Call  AssignScript      ( $Script_Entity_Shine1 )
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_ISK10_SuperBlock % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}

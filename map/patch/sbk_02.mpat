@@ -1,0 +1,133 @@
+% Add new exit to isk_20
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000009
+    [Background]  80200000
+    [MapTattle]   $Function_GetTattle
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 % -475.0    0.0    0.0   90.0
+    ~Vec4f:Entry1 %  475.0    0.0    0.0  270.0
+    ~Vec4f:Entry2 %    0.0    0.0 -475.0  180.0
+    ~Vec4f:Entry3 %    0.0    0.0  475.0    0.0
+    ~Vec4f:Entry4 %    0.0   80.0 -195.0  180.0
+    ~Vec4f:Entry5 %   20.0    0.0  110.0  270.0
+    ~Vec4f:Entry6 %  -80.0    0.0   80.0  180.0
+    ~Vec4f:Entry7 %   80.0    0.0   80.0   90.0
+    ~Vec4f:Entry8
+}
+
+@ $Script_Main
+{
+    [230]  		Exec  $Script_80243B38_2
+}
+
+#delete $Script_80243B38
+
+#new:Script $Script_80243B38_2 % Script_80243B38
+{
+    0:  Call  PlaySound     ( 0000005C )
+   10:  Call  DisablePlayerInput    ( .True )
+   20:  Call  802CF56C      ( 00000001 )
+   30:  Call  802D2884      ( 00000000 00000000 00000000 )
+   48:  Call  ModifyColliderFlags   ( 00000000 ~Collider:iwa 7FFFFE00 )
+   60:  Call  EnableModel   ( ~Model:point_iwa .False )
+   74:  Call  EnableGroup   ( ~Model:day_version .False )
+   88:  Thread
+   90:  	Call  ShakeCam  ( .Cam:Default 00000000  400` *Fixed[0.2] )
+   AC:  EndThread
+   B4:  Call  UseSettingsFrom       ( .Cam:Default  0`  0`  0` )
+   D0:  Call  SetPanTarget  ( .Cam:Default  210`  0`  137` )
+   EC:  Call  SetCamPosA    ( .Cam:Default *Fixed[150.0] *Fixed[500.0] )
+  104:  Call  SetCamPosB    ( .Cam:Default *Fixed[-450.0] *Fixed[-500.0] )
+  11C:  Call  SetCamPitch   ( .Cam:Default *Fixed[8.0] *Fixed[-9.0] )
+  134:  Call  SetCamDistance        ( .Cam:Default *Fixed[500.0] )
+  148:  Call  SetCamSpeed   ( .Cam:Default *Fixed[90.0] )
+  15C:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  174:  Call  $Function_80240040    ( 00000002 00000000 00000003 )
+  18C:  Call  $Function_80240040    ( 00000001 FFFFFFFF 00000003 )
+  1A4:  Call  $Function_80240040    ( 00000001 $???_80241418 00000000 )
+  1BC:  Call  $Function_80240040    ( 00000000 $???_80241424 00000000 )
+  1D4:  Call  $Function_80240364    ( 0000002C 00000020 000000B1 00000000 00000000 00000000 00000000 )
+  1FC:  Exec  $Script_802422F0
+  208:  Exec  $Script_80243268
+  214:  Call  CloneModel    ( ~Model:o225 00002710 )
+  228:  Exec  $Script_802414FC
+  234:  Exec  $Script_802418B4
+  240:  Exec  $Script_802419F0
+  24C:  Wait  20`
+  258:  Exec  $Script_80241C90
+  264:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  278:  Call  UseSettingsFrom       ( .Cam:Default  0`  0`  0` )
+  294:  Call  SetPanTarget  ( .Cam:Default  0`  0`  0` )
+  2B0:  Call  SetCamPitch   ( .Cam:Default *Fixed[4.0] *Fixed[-6.5] )
+  2C8:  Call  SetCamDistance        ( .Cam:Default *Fixed[790.0] )
+  2DC:  Call  SetCamSpeed   ( .Cam:Default *Fixed[0.2] )
+  2F0:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  308:  Wait  100`
+  314:  Exec  $Script_80242928
+  320:  Wait  100`
+  32C:  ExecWait  $Script_80243310
+  338:  Call  ModifyColliderFlags   ( 00000001 ~Collider:ruin 7FFFFE00 )
+        Call  ModifyColliderFlags   ( 00000001 ~Collider:exit5_group 7FFFFE00 )
+  350:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  364:  Wait  60`
+  370:  Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+  388:  Call  UseSettingsFrom       ( .Cam:Default *Var0 *Var1 *Var2 )
+  3A4:  Call  SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+  3C0:  Call  SetCamSpeed   ( .Cam:Default *Fixed[90.0] )
+  3D4:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  3E8:  Call  PanToTarget   ( .Cam:Default 00000000 00000000 )
+  400:  Call  802CF56C      ( 00000000 )
+  410:  Call  DisablePlayerInput    ( .False )
+  420:  Return
+  428:  End
+}
+
+@ $Script_80243A00
+{
+    0:  Switch  *GB_StoryProgress
+    C:  	Case  <  .Story:Ch2_GotPulseStone % FFFFFFC1
+   18:  		Call  EnableGroup   ( ~Model:day_version .False )
+   2C:  		Call  ModifyColliderFlags   ( 00000000 ~Collider:ruin 7FFFFE00 )
+                Call  ModifyColliderFlags   ( 00000000 ~Collider:exit5_group 7FFFFE00 )
+   44:  	Case  <  .Story:Ch2_UncoveredDryDryRuins % FFFFFFC2
+   50:  		Call  EnableGroup   ( ~Model:day_version .False )
+   64:  		Call  ModifyColliderFlags   ( 00000000 ~Collider:ruin 7FFFFE00 )
+                Call  ModifyColliderFlags   ( 00000000 ~Collider:exit5_group 7FFFFE00 )
+   7C:  		BindLock  $Script_8024358C .Trigger:WallPressA ~Collider:iwa $ItemList_80241250 00000000 00000001
+   9C:  	Default
+   A4:  		Call  EnableModel   ( ~Model:point_iwa .False )
+   B8:  		Call  ModifyColliderFlags   ( 00000000 ~Collider:pikapika 7FFFFE00 )
+   D0:  EndSwitch
+   D8:  Call  EnableGroup   ( ~Model:ruins .False )
+   EC:  Call  EnableGroup   ( ~Model:step .False )
+  100:  Call  EnableModel   ( ~Model:upper_light .False )
+  114:  Call  EnableModel   ( ~Model:o225 .False )
+  128:  Return
+  130:  End
+}
+
+@ $Script_80240EB0 {
+    Bind  $Script_ExitWalk_80240D40 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Bind  $Script_ExitWalk_80240D9C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+    Bind  $Script_ExitWalk_80240DF8 .Trigger:FloorAbove ~Collider:deilis 00000001 00000000
+    Bind  $Script_ExitWalk_80240E54 .Trigger:FloorAbove ~Collider:deili1 00000001 00000000
+    Bind  $Script_Exit5 .Trigger:FloorAbove ~Collider:Exit5 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit5
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry8 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "isk_20" 00000000 )
+    Wait  100`
+    Return
+    End
+}

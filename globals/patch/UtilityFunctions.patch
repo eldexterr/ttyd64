@@ -1,0 +1,1943 @@
+% This file contains a few global functions and scripts
+
+
+% V0 = bool : A0 = badge ID
+%
+% Doesn't follow calling convention, deal with it.
+% Function made by Clover (y)
+#new:Function $IsBadgeEquipped
+{
+PUSH	S1, S2, S3
+.Init
+LIO		S2, 8010F498	% position in list
+ADDIU	S3, S2, 78		% end of list
+.Loop
+LH		S1, 0 (S2)
+BEQL	A0, S1, .End
+ADDIU	V0, R0, 1 % return true
+BNE		S2, S3, .Loop
+ADDIU	S2, S2, 2
+ADDIU	V0, R0, 0 % return false
+.End
+POP		S1, S2, S3
+JR		RA
+NOP
+}
+
+% A0 = posX
+%
+% A1 = posY
+%
+% A2 = sizeX
+%
+% A3 = sizeY
+%
+% T0 = style
+%
+% T1 = opacity
+%
+% Draw box dispatcher by Clover
+#new:Function $DrawBox
+{
+ADDIU         SP, SP, -58
+SW            RA, 50 (SP)
+% setup call to DrawBox
+SW            R0, 10 (SP) % posZ
+SW            A2, 14 (SP) % width
+SW            A3, 18 (SP) % height
+SW            T1, 1C (SP) % opacity
+COPY          A2, A0 % posX
+COPY          A3, A1 % posY
+CLEAR         A0 % flags
+COPY          A1, T0 % flags
+SW            R0, 20 (SP) % fogRGB
+SW            R0, 24 (SP) % scaleX (unused)
+SW            R0, 28 (SP) % scaleY (unused)
+SW            R0, 2C (SP) % rotX (unused)
+SW            R0, 30 (SP) % rotY (unused)
+SW            R0, 34 (SP) % rotZ (unused)
+SW            R0, 38 (SP) % fpDrawContents (optional) % expect an address(?)
+SW            R0, 3C (SP) % drawContents() arg0 (optional)
+SW            R0, 40 (SP) % txMtx (unused)
+SW            R0, 44 (SP) % txShiftY (unused)
+SW            R0, 48 (SP) % txShiftX (unused)
+JAL           ~Func:draw_box
+SW            R0, 4C (SP) % unk
+LW            RA, 50 (SP)
+JR            RA
+ADDIU         SP, SP, 58
+}
+
+% Var0 = Badge ID
+%
+% It returns a bool in Var0
+%
+% [!] Writes in Var1 and 2
+#new:Script:Global $IsBadgeEquipped_Script
+{
+Set *Var1 8010F498 % badge inventory - start
+Loop
+    Call $ReadAddress ( *Var1 1 *Var2 .False .False )
+    If *Var0 == *Var2 % Is badge equipped?
+        Set *Var0 .True
+        BreakLoop
+    EndIf
+    Add *Var1 2 % read next slot
+    If *Var1 >= 8010F510 % badge inventory - end (read 60 slots)
+        Set *Var0 .False
+        BreakLoop
+    EndIf
+EndLoop
+Return
+End
+}
+
+% Call  PlayerHasBadge ( itemID *out )
+#new:Function $PlayerHasBadge
+{
+PUSH    RA, S0, S1, S2, S3
+LW      A1, C (A0)
+COPY    S3, A1
+JAL     ~Func:get_variable
+LW      A1, 0 (S3) % load arg1
+COPY    S0, V0
+LW      V0, 4 (S3) % load arg2
+% S0 = itemID
+% V0 = *out
+.Init
+LIO		S2, 8010F344	% position in list
+ADDIU	S3, S2, FE		% end of list
+.Loop
+LH		S1, 0 (S2)
+BEQL	S0, S1, .End
+ADDIU	A2, R0, 1 % return true
+BNE		S2, S3, .Loop
+ADDIU	S2, S2, 2
+ADDIU	A2, R0, 0 % return false
+.End
+POP		RA, S0, S1, S2, S3
+COPY    GP, RA % push RA
+JAL     ~Func:set_variable
+COPY    A1, V0
+COPY    RA, GP % pop RA
+JR		RA
+ORI     V0, R0, 2
+}
+
+% Call $WriteAddress ( Address ByteSize NewValue Offset FollowPointer )
+%
+% EXAMPLE 1:
+% Call $WriteAddress ( 8010F290 0 5 2 .False ) = 8010F290(+2) = 5 (Save as Byte)
+%
+% EXAMPLE 2 (reading pointers):
+% Call $WriteAddress ( 802DF588 1 5 28 .True ) = Follow Pointer in 802DF588 > Pointer(+28) = 5 (Save as Half)
+%
+#new:Function $WriteAddress
+{
+    PUSH    RA, S0, S1, S2, S3, S4
+    LW      S0, C (A0)
+    % Get Argument 5
+    JAL     ~Func:get_variable
+    LW      A1, 10 (S0)
+    COPY    S4, V0
+    % Get Argument 4
+    JAL     ~Func:get_variable
+    LW      A1, C (S0)
+    COPY    S3, V0
+    % Get Argument 3
+    JAL     ~Func:get_variable
+    LW      A1, 8 (S0) % load Var from arg2
+    COPY    S2, V0
+    % Get Argument 2
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    COPY    S1, V0
+    % Get Argument 1
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    /%
+    Arg1=V0=Address
+    Arg2=S1=ByteSize
+    Arg3=S2=NewValue
+    Arg4=S3=Offset
+    Arg5=S4=Pointer Flag
+    %/
+    % A pointer need to be followed?
+    BNEL    S4, R0, .ReadPointer
+    LW      V0, 0 (V0)
+    .ReadPointer
+    % Read Offset
+    ADDU    V0, V0, S3
+    % Write 1, 2 or 4 Bytes
+    % Byte
+    BEQL    S1, R0, .End
+    SB      S2, 0 (V0)
+    % Half
+    ORI     T2, R0, 1
+    BEQL    S1, T2, .End
+    SH      S2, 0 (V0)
+    % Word
+    ORI     T2, R0, 2
+    BEQ     R0, R0, .End
+    SW      S2, 0 (V0)
+    .End
+    POP     RA, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $WriteAddressFloat ( Address ByteSize NewValue Offset FollowPointer )
+%
+% Treats the new value to set as a float
+#new:Function $WriteAddressFloat
+{
+    PUSH    RA, S0, S1, S2, S3, S4, S5
+    COPY    S5, A0
+    LW      S0, C (A0)
+    % Get Argument 5
+    COPY    A0, S5
+    JAL     ~Func:get_variable
+    LW      A1, 10 (S0)
+    COPY    S4, V0
+    % Get Argument 4
+    COPY    A0, S5
+    JAL     ~Func:get_variable
+    LW      A1, C (S0)
+    COPY    S3, V0
+    % Get Argument 3
+    COPY    A0, S5
+    JAL     ~Func:get_float_variable
+    LW      A1, 8 (S0) % load Var from arg2
+    MFC1    V0, F0
+    COPY    S2, V0
+    % Get Argument 2
+    COPY    A0, S5
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    COPY    S1, V0
+    % Get Argument 1
+    COPY    A0, S5
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    /%
+    Arg1=V0=Address
+    Arg2=S1=ByteSize
+    Arg3=S2=NewValue
+    Arg4=S3=Offset
+    Arg5=S4=Pointer Flag
+    %/
+    % A pointer need to be followed?
+    BNEL    S4, R0, .ReadPointer
+    LW      V0, 0 (V0)
+    .ReadPointer
+    % Read Offset
+    ADDU    V0, V0, S3
+    % Write 1, 2 or 4 Bytes
+    % Byte
+    BEQL    S1, R0, .End
+    SB      S2, 0 (V0)
+    % Half
+    ORI     T2, R0, 1
+    BEQL    S1, T2, .End
+    SH      S2, 0 (V0)
+    % Word
+    ORI     T2, R0, 2
+    BEQ     R0, R0, .End
+    SW      S2, 0 (V0)
+    .End
+    POP     RA, S0, S1, S2, S3, S4, S5
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $ReadAddress ( Address ByteSize *out offset FollowPointer )
+#new:Function $ReadAddress
+{
+    PUSH    RA, S0, S1, S2, S3, S4
+    LW      S0, C (A0)
+    % Get Argument 5
+    JAL     ~Func:get_variable
+    LW      A1, 10 (S0)
+    COPY    S4, V0
+    % Get Argument 4
+    JAL     ~Func:get_variable
+    LW      A1, C (S0)
+    COPY    S3, V0
+    % Get Argument 3
+    LW      S2, 8 (S0) % load Var from arg2
+    % Get Argument 2
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    COPY    S1, V0
+    % Get Argument 1
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    /%
+    Arg1=V0=Address
+    Arg2=S1=ByteSize
+    Arg3=S2=*out
+    Arg4=S3=Offset
+    Arg5=S4=Pointer Flag
+    %/
+    % A pointer need to be followed?
+    BNEL    S4, R0, .ReadPointer
+    LW      V0, 0 (V0)
+    .ReadPointer
+    % Read Offset
+    ADDU    V0, V0, S3
+    % Read 1, 2 or 4 Bytes
+    % Byte
+    BEQL    S1, R0, .WriteVar
+    LBU     A2, 0 (V0)
+    % Half
+    ORI     T2, R0, 1
+    BEQL    S1, T2, .WriteVar
+    LHU     A2, 0 (V0)
+    % Word
+    ORI     T2, R0, 2
+    BEQ     R0, R0, .WriteVar
+    LW      A2, 0 (V0)
+    .WriteVar
+    % Get Argument 3 and write output
+    JAL 	~Func:set_variable
+    COPY    A1, S2  % copy *out in to A1
+    POP     RA, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $ReadAddress_Unsigned ( Address ByteSize *out offset FollowPointer )
+#export:Function $ReadAddress_Unsigned
+{
+    PUSH    RA, S0, S1, S2, S3, S4
+    LW      S0, C (A0)
+    % Get Argument 5
+    JAL     ~Func:get_variable
+    LW      A1, 10 (S0)
+    COPY    S4, V0
+    % Get Argument 4
+    JAL     ~Func:get_variable
+    LW      A1, C (S0)
+    COPY    S3, V0
+    % Get Argument 3
+    LW      S2, 8 (S0) % load Var from arg2
+    % Get Argument 2
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    COPY    S1, V0
+    % Get Argument 1
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    /%
+    Arg1=V0=Address
+    Arg2=S1=ByteSize
+    Arg3=S2=*out
+    Arg4=S3=Offset
+    Arg5=S4=Pointer Flag
+    %/
+    % A pointer need to be followed?
+    BNEL    S4, R0, .ReadPointer
+    LW      V0, 0 (V0)
+    .ReadPointer
+    % Read Offset
+    ADDU    V0, V0, S3
+    % Read 1, 2 or 4 Bytes
+    % Byte
+    BEQL    S1, R0, .WriteVar
+    LB      A2, 0 (V0)
+    % Half
+    ORI     T2, R0, 1
+    BEQL    S1, T2, .WriteVar
+    LH      A2, 0 (V0)
+    % Word
+    ORI     T2, R0, 2
+    BEQ     R0, R0, .WriteVar
+    LW      A2, 0 (V0)
+    .WriteVar
+    % Get Argument 3 and write output
+    JAL 	~Func:set_variable
+    COPY    A1, S2  % copy *out in to A1
+    POP     RA, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $ReadAddressFloat ( Address ByteSize *out offset FollowPointer )
+%
+% Uses set_float_variable for *out
+#new:Function $ReadAddressFloat
+{
+    PUSH    RA, S0, S1, S2, S3, S4
+    LW      S0, C (A0)
+    % Get Argument 5
+    JAL     ~Func:get_variable
+    LW      A1, 10 (S0)
+    COPY    S4, V0
+    % Get Argument 4
+    JAL     ~Func:get_variable
+    LW      A1, C (S0)
+    COPY    S3, V0
+    % Get Argument 3
+    LW      S2, 8 (S0) % load Var from arg2
+    % Get Argument 2
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    COPY    S1, V0
+    % Get Argument 1
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    /%
+    Arg1=V0=Address
+    Arg2=S1=ByteSize
+    Arg3=S2=*out
+    Arg4=S3=Offset
+    Arg5=S4=Pointer Flag
+    %/
+    % A pointer need to be followed?
+    BNEL    S4, R0, .ReadPointer
+    LW      V0, 0 (V0)
+    .ReadPointer
+    % Read Offset
+    ADDU    V0, V0, S3
+    % Read 1, 2 or 4 Bytes
+    % Byte
+    BEQL    S1, R0, .WriteVar
+    LBU     A2, 0 (V0)
+    % Half
+    ORI     T2, R0, 1
+    BEQL    S1, T2, .WriteVar
+    LHU     A2, 0 (V0)
+    % Word
+    ORI     T2, R0, 2
+    BEQ     R0, R0, .WriteVar
+    LW      A2, 0 (V0)
+    .WriteVar
+    % Get Argument 3 and write output
+    JAL 	~Func:set_float_variable
+    COPY    A1, S2  % copy *out in to A1
+    POP     RA, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $WriteBitFlag ( Address FollowPointer offset bitIndex(0-7) NewValue )
+%
+% Write a single bit from an address
+#new:Function $WriteBitFlag
+{
+    PUSH    RA, S0, S1, S2, S3, S4
+    LW      S0, C (A0)
+    % Get Argument 5
+    JAL     ~Func:get_variable
+    LW      A1, 10 (S0)
+    COPY    S4, V0
+    % Get Argument 4
+    JAL     ~Func:get_variable
+    LW      A1, C (S0)
+    COPY    S3, V0
+    % Get Argument 3
+    JAL     ~Func:get_variable
+    LW      A1, 8 (S0)
+    COPY    S2, V0
+    % Get Argument 2
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    COPY    S1, V0
+    % Get Argument 1
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    /%
+    Arg1=V0=Address
+    Arg2=S1=FollowPointer
+    Arg3=S2=Offset
+    Arg4=S3=bitIndex
+    Arg5=S4=NewValue
+    %/
+    % A pointer need to be followed?
+    BNEL    S1, R0, .ReadPointer
+    LW      V0, 0 (V0)
+    .ReadPointer
+    % Read Offset
+    ADDU    V0, V0, S2
+    % Read bit
+    LBU     A2, 0 (V0) % load address
+    COPY    T0, A2
+    /%
+    Bits as hex
+    bit0=1
+    bit1=2
+    bit2=4
+    bit3=8
+    bit4=10
+    bit5=20
+    bit6=40
+    bit7=80
+    %/
+    %===============
+    .bit0
+    %===============
+    BNE     S3, R0, .bit1
+    NOP
+    % get current bit boolean value
+    SLL    	T0, T0, 31` % bit0
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit0_as_False
+    NOP
+    .Set_bit0_as_True
+    % Check if bit0 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit0 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 1
+    .Set_bit0_as_False
+    % Check if bit0 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit0 as False
+    ORI     T1, R0, 1
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    %===============
+    .bit1
+    %===============
+    ORI     T1, R0, 1
+    BNE     S3, T1, .bit2
+    NOP
+    % get current bit boolean value
+    SLL    	T0, T0, 30` % bit1
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit1_as_False
+    NOP
+    .Set_bit1_as_True
+    % Check if bit1 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit1 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 2
+    .Set_bit1_as_False
+    % Check if bit1 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit1 as False
+    ORI     T1, R0, 2
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    %===============
+    .bit2
+    %===============
+    ORI     T1, R0, 2
+    BNE     S3, T1, .bit3
+    NOP
+    % get current bit boolean value
+    SLL    	T0, T0, 29` % bit2
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit2_as_False
+    NOP
+    .Set_bit2_as_True
+    % Check if bit2 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit2 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 4
+    .Set_bit2_as_False
+    % Check if bit2 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit2 as False
+    ORI     T1, R0, 4
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    %===============
+    .bit3
+    %===============
+    ORI     T1, R0, 3
+    BNE     S3, T1, .bit4
+    NOP
+    % get current bit boolean value
+    SLL    	T0, T0, 28` % bit3
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit3_as_False
+    NOP
+    .Set_bit3_as_True
+    % Check if bit3 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit3 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 8
+    .Set_bit3_as_False
+    % Check if bit3 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit3 as False
+    ORI     T1, R0, 8
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    %===============
+    .bit4
+    %===============
+    ORI     T1, R0, 4
+    BNE     S3, T1, .bit5
+    NOP
+    % get current bit boolean value
+    SLL    	T0, T0, 27` % bit4
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit4_as_False
+    NOP
+    .Set_bit4_as_True
+    % Check if bit4 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit4 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 10
+    .Set_bit4_as_False
+    % Check if bit4 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit4 as False
+    ORI     T1, R0, 10
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    %===============
+    .bit5
+    %===============
+    ORI     T1, R0, 5
+    BNE     S3, T1, .bit6
+    NOP
+    % get current bit boolean value
+    SLL    	T0, T0, 26` % bit5
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit5_as_False
+    NOP
+    .Set_bit5_as_True
+    % Check if bit5 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit5 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 20
+    .Set_bit5_as_False
+    % Check if bit5 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit5 as False
+    ORI     T1, R0, 20
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    %===============
+    .bit6
+    %===============
+    ORI     T1, R0, 6
+    BNE     S3, T1, .bit7
+    NOP
+    % get current bit boolean value
+    SLL    	T0, T0, 25` % bit6
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit6_as_False
+    NOP
+    .Set_bit6_as_True
+    % Check if bit6 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit6 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 40
+    .Set_bit6_as_False
+    % Check if bit6 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit6 as False
+    ORI     T1, R0, 40
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    %===============
+    .bit7
+    %===============
+    % get current bit boolean value
+    SLL    	T0, T0, 24` % bit7
+    SRL 	T0, T0, 31` % Get Bool
+    % New value will be False?
+    BEQ     S4, R0, .Set_bit7_as_False
+    NOP
+    .Set_bit7_as_True
+    % Check if bit7 is already true
+    BNE     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit7 as True
+    BEQ     R0, R0, .SaveBit
+    ADDIU   A2, A2, 80
+    .Set_bit7_as_False
+    % Check if bit7 is already False
+    BEQ     T0, R0, .End % it is, bypass everything
+    NOP
+    % Set bit7 as False
+    ORI     T1, R0, 80
+    BEQ     R0, R0, .SaveBit
+    SUBU    A2, A2, T1
+    .SaveBit
+    SB      A2, 0 (V0)
+    .End
+    POP     RA, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $ReadBitFlag ( Address FollowPointer offset bitIndex(0-7) *out )
+%
+% Read a single bit from an address
+#new:Function $ReadBitFlag
+{
+    PUSH    RA, S0, S1, S2, S3, S4
+    LW      S0, C (A0)
+    % Get Argument 5
+    LW      S4, 10 (S0) % load *out from arg5
+    % Get Argument 4
+    JAL     ~Func:get_variable
+    LW      A1, C (S0)
+    COPY    S3, V0
+    % Get Argument 3
+    JAL     ~Func:get_variable
+    LW      A1, 8 (S0)
+    COPY    S2, V0
+    % Get Argument 2
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    COPY    S1, V0
+    % Get Argument 1
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    /%
+    Arg1=V0=Address
+    Arg2=S1=FollowPointer
+    Arg3=S2=Offset
+    Arg4=S3=bitIndex
+    Arg5=S4=*out
+    %/
+    % A pointer need to be followed?
+    BNEL    S1, R0, .ReadPointer
+    LW      V0, 0 (V0)
+    .ReadPointer
+    % Read Offset
+    ADDU    V0, V0, S2
+    % Read bit
+    LBU     A2, 0 (V0) % load address
+    BEQL    S3, R0, .GetBit
+    SLL    	A2, A2, 31` % bit0
+    ORI     T0, R0, 1
+    BEQL    S3, T0, .GetBit
+    SLL    	A2, A2, 30` % bit1
+    ORI     T0, R0, 2
+    BEQL    S3, T0, .GetBit
+    SLL    	A2, A2, 29` % bit2
+    ORI     T0, R0, 3
+    BEQL    S3, T0, .GetBit
+    SLL    	A2, A2, 28` % bit3
+    ORI     T0, R0, 4
+    BEQL    S3, T0, .GetBit
+    SLL    	A2, A2, 27` % bit4
+    ORI     T0, R0, 5
+    BEQL    S3, T0, .GetBit
+    SLL    	A2, A2, 26` % bit5
+    ORI     T0, R0, 6
+    BEQL    S3, T0, .GetBit
+    SLL    	A2, A2, 25` % bit6
+    ORI     T0, R0, 7
+    BEQL    S3, T0, .GetBit
+    SLL    	A2, A2, 24` % bit7
+    .GetBit
+    SRL 	A2, A2, 31` % Get Bool
+    % Get Argument 5 and write output
+    JAL 	~Func:set_variable
+    COPY    A1, S4  % copy *out in to A1
+    POP     RA, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call $GetModelPointer ( ~ModelID *out )
+%
+% Get the data pointer from a model by reading his ID
+#new:Function $GetModelPointer
+{
+PUSH    RA, A0, S0
+% Get Arg 1
+LW      S0, C (A0)
+JAL     ~Func:get_variable
+LW      A1, 0 (S0)
+% A0 = ModelID
+JAL		~Func:get_model_list_index_from_tree_index
+COPY    A0, V0
+JAL		~Func:get_model_from_list_index
+COPY	A0, V0
+% Save pointer data before POPing
+COPY    T0, S0
+POP     RA, A0, S0
+PUSH    RA
+% Write Var
+COPY    A2, V0
+JAL     ~Func:set_variable
+LW      A1, 4 (T0) % Get Arg 2
+POP     RA
+JR      RA
+ORI     V0, R0, 2
+}
+
+% Call $GetActorPointer ( ActorID *out )
+#new:Function:Battle $GetActorPointer
+{
+    PUSH    RA, A0, S0, S1, S2
+    COPY    S2, A0
+    % Get Arg 1
+    LW      S0, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    COPY    S1, V0
+    % S1 = actorID
+    % .Actor:Self was used?
+    LIO     V0, FFFFFF81
+    BNE	    S1, V0, .GetPointer
+    NOP
+    LW	    S1, 0148 (S2) % load self id
+    .GetPointer
+    JAL		~Func:get_actor
+    COPY    A0, S1
+    % Save pointer data before POPing
+    COPY    T0, S0
+    POP     RA, A0, S0, S1, S2
+    PUSH    RA
+    % Write Var
+    COPY    A2, V0
+    JAL     ~Func:set_variable
+    LW      A1, 4 (T0) % Get Arg 2
+    POP     RA
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call  $GetActorPart ( actorID partIndex *out )
+#export:Function:Battle $GetActorPart
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4
+    COPY    S0, A0
+    LW      S1, C (A0)
+    % get args
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S1)
+    COPY    S2, V0
+    COPY    A0, S0
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S1)
+    COPY    S3, V0
+    COPY    A0, S0
+    LW      S4, 8 (S1)
+    % S2 = actorID
+    % S3 = partIndex
+    % S4 = *out
+    % .Actor:Self was used?
+    LIO     V0, FFFFFF81
+    BNE	    S2, V0, .GetPointer
+    NOP
+    LW	    S2, 0148 (S0) % load self id
+    .GetPointer
+    JAL		~Func:get_actor
+    COPY    A0, S2
+    COPY    A1, S3
+    JAL     ~Func:get_actor_part
+    COPY    A0, V0
+    % save *out
+    COPY    A0, S0
+    COPY    A1, S4
+    JAL     ~Func:set_variable
+    COPY    A2, V0
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% *Var0 = actorID
+%
+% *Var1 = intensity (usually 2)
+%
+% *Var2 = delay (usually 1)
+%
+% Will run endlessly, use Kill to stop the script, remember to clear ActorDispOffset after you do that.
+%
+% Base code grabbed from Huff N' Puff
+#export:Script:Battle $Script_ShakeActor {
+    Set   *Flag[00]  .False 
+    Set   *VarA  00000000 
+    Set   *VarB  00000000 
+    Label  0
+    If  *Flag[00]  ==  .False 
+        Call  RandInt   ( *Var1 *VarA )
+        Call  RandInt   ( *Var1 *VarB )
+        Set   *Flag[00]  .True 
+    Else
+        Mul   *VarA  FFFFFFFF 
+        Mul   *VarB  FFFFFFFF 
+        Set   *Flag[00]  .False 
+    EndIf
+    Call  SetActorDispOffset    ( *Var0 *VarA *VarB 00000000 )
+    Wait  *Var2
+    Goto  0
+    Return
+    End
+}
+
+% `Call $GetEnemyPointer ( npcID *out )`
+%
+% Get a NPC's enemy data.
+#export:Function $GetEnemyPointer
+{
+PUSH    RA, A0, A1, A2, A3, V1, S0, S1, S2
+COPY    S2, A0
+% Get Arg 1
+LW      S0, C (A0)
+JAL     ~Func:get_variable
+LW      A1, 0 (S0)
+COPY    S1, V0
+% S1 = npcID
+% .Npc:Self was used?
+ADDIU	V0, R0, FFFF
+BNE	    S1, V0, .GetPointer
+NOP
+LW	    S1, 144 (S2) % get self ID
+.GetPointer
+JAL		~Func:get_enemy
+COPY    A0, S1
+% write Var
+COPY    A0, S2
+LW      A1, C (A0)
+LW      A1, 4 (A1) % get arg 2
+JAL     ~Func:set_variable
+COPY    A2, V0
+POP     RA, A0, A1, A2, A3, V1, S0, S1, S2
+JR      RA
+ORI     V0, R0, 2
+}
+
+% Call  $GetEntityPointer ( EntityID *out )
+%
+% Get the data pointer from an entity by reading his ID
+#new:Function $GetEntityPointer
+{
+/% Why double PUSH/POP?
+Because ASM is awesome and when using set_variable the value
+wasn't actually being saved.
+
+(Actually looks like was because A0)
+%/
+PUSH    RA, A0, S0
+% Get Arg 1
+LW      S0, C (A0)
+JAL     ~Func:get_variable
+LW      A1, 0 (S0)
+% A0 = Entity ID
+JAL     ~Func:get_entity_by_index
+COPY    A0, V0
+% Save pointer data before POPing
+COPY    T0, S0
+POP     RA, A0, S0
+PUSH    RA
+% Write Var
+COPY    A2, V0
+JAL     ~Func:set_variable
+LW      A1, 4 (T0) % Get Arg 2
+POP     RA
+JR      RA
+ORI     V0, R0, 2
+}
+
+% Restore Player's Input, Physics and Partner's AI
+%
+% Close all Active Message Dialogs too.
+#new:Script:Map $RestoreInputs
+{
+    Call 	$WriteAddress ( 80155128 0 3 0 .False ) % Close active dialog bubble
+    % Check if Mario's Physics and Inputs are disabled
+    % bit4=PlayerPhysics
+    % bit5=PlayerInputs
+    Call 	$ReadBitFlag ( 8010EFCA .False .False 4 *Var0 )
+    If *Var0 == .True % DisablePlayerPhysics == True
+        Call 	$WriteAddress ( 8010EFDC 0 .True 0 .False ) % Player Physic's Byteflag
+        Call 	DisablePlayerPhysics ( .False )
+    EndIf
+    Call 	$ReadBitFlag ( 8010EFCA .False .False 5 *Var0 )
+    If *Var0 == .True % DisablePlayerInputs == True
+        Call 	$WriteAddress ( 8010EFDD 0 .True 0 .False ) % Player Inputs's Byteflag
+        Call 	DisablePlayerInput ( .False )
+    EndIf
+    % Enable Partner AI
+    % Check if Mario even have a partner
+    Call    GetCurrentPartnerID ( *Var0 )
+    If  *Var0 != .Partner:None
+        Call	EnablePartnerAI
+    EndIf
+    Return
+    End
+}
+
+% Var0 = String
+%
+% Var1 = MessageFlags
+%
+% -> Var2 PartnerID
+#new:Script:Map $SpeakPartnerToPlayer
+{
+    Call	GetCurrentPartnerID ( *Var2 )
+	Switch  *Var2
+		Case == 1 % Goombario
+			Call	SpeakToPlayer		( .Npc:Partner 00010008 00010001 *Var1 *Var0 )
+		Case == 2 % Kooper
+			Call	SpeakToPlayer		( .Npc:Partner 0002000D 00020003 *Var1 *Var0 )
+		Case == 3 % Bombette
+			Call	SpeakToPlayer		( .Npc:Partner 0003000E 00030003 *Var1 *Var0 )
+		Case == 4 % Parakarry
+			Call	SpeakToPlayer		( .Npc:Partner 00040006 00040001 *Var1 *Var0 )
+		Case == 9 % Bow
+			Call	SpeakToPlayer		( .Npc:Partner 00050004 00050001 *Var1 *Var0 )
+		Case == 6 % Watt
+			Call	SpeakToPlayer		( .Npc:Partner 00060004 00060001 *Var1 *Var0 )
+		Case == 7 % Sushie
+			Call	SpeakToPlayer		( .Npc:Partner 00070004 00070001 *Var1 *Var0 )
+		Case == 8 % Lakilester
+			Call	SpeakToPlayer		( .Npc:Partner 00080009 00080001 *Var1 *Var0 )
+	EndSwitch
+    Return
+    End
+}
+
+% Var2 = npcID
+%
+% Var3 = Angle
+%
+% Var4 = Time (usually 10`)
+%
+% -> Var0, Var1, Vars[B-F] (done by MakeLerp and UpdateLerp)
+#new:Script:Map $InterpNpcYaw
+{
+    Call     MakeLerp    	( 0 *Var3 *Var4 .Easing:Linear )
+    Loop
+        Call     UpdateLerp
+        Call     InterpNpcYaw ( *Var2 *Var0 1 )
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+        Wait 1
+    EndLoop
+    Return
+    End
+}
+
+% Var0 = newAnimID
+%
+% Var1 = ! or ? bubble
+%
+% -> Var2 PartnerID
+%
+% -
+%
+% Animation IDs
+%
+% 0 = Idle
+%
+% 1 = Walk
+%
+% 2 = Run
+%
+% 3 = Talking
+%
+% 4 = Hurt
+%
+% 5 = Happy
+%
+% -
+%
+% Bubbles
+%
+% 0 = none
+%
+% 1 = !
+%
+% 2 = ?
+%
+#new:Script:Map $SetPartnerAnimation
+{
+    Call	GetCurrentPartnerID ( *Var2 )
+    Switch  *Var2
+        Case == 1 % Goombario
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00010001 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00010002 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00010003 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 00010008 )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 00010007 )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 00010009 )
+            EndSwitch
+        Case == 2 % Kooper
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00020003 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00020004 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00020005 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 0002000D )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 0002000C )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 00020011 )
+            EndSwitch
+        Case == 3 % Bombette
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00030003 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00030005 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00030007 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 0003000E )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 0003000D )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 0003000F )
+            EndSwitch
+        Case == 4 % Parakarry
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00040001 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00040002 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00040003 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 00040006 )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 00040005 )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 00040007 )
+            EndSwitch
+        Case == 9 % Bow
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00050001 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00050002 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00050003 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 00050004 )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 0005000C )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 0005000A )
+            EndSwitch
+        Case == 6 % Watt
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00060001 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00060002 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00060003 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 00060004 )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 00060007 )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 00060006 )
+            EndSwitch
+        Case == 7 % Sushie
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00070001 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00070002 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00070003 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 00070004 )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 00070007 )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 00070006 )
+            EndSwitch
+        Case == 8 % Lakilester
+            Switch *Var0
+                Case == 0 % idle
+                    Call	SetNpcAnimation ( .Npc:Partner 00080001 )
+                Case == 1 % walk
+                    Call	SetNpcAnimation ( .Npc:Partner 00080005 )
+                Case == 2 % run
+                    Call	SetNpcAnimation ( .Npc:Partner 00080007 )
+                Case == 3 % talking
+                    Call	SetNpcAnimation ( .Npc:Partner 00080009 )
+                Case == 4 % hurt
+                    Call	SetNpcAnimation ( .Npc:Partner 00080004 )
+                Case == 5 % happy
+                    Call	SetNpcAnimation ( .Npc:Partner 0008000D )
+            EndSwitch
+    EndSwitch
+    % !/? bubble
+    If *Var2 != .Partner:None
+        Switch *Var1
+            Case == 1 % !
+                Call    PlaySoundAtNpc  ( .Npc:Partner 0262 0 ) % !
+		        Call    ShowEmote       ( .Npc:Partner .Emote:Exclamation -45` 20` 1 0 0 0 0 )
+            Case >= 2 % ?
+                Call    PlaySoundAtNpc  ( .Npc:Partner 0263 0 ) % ?
+		        Call    ShowEmote       ( .Npc:Partner .Emote:Question -45` 20` 1 0 0 0 0 )
+        EndSwitch
+    EndIf
+    Return
+    End
+}
+
+% Set a player animation only for a particular amount of frames
+%
+% Var0 = animID
+%
+% Var1 = ! or ? bubble
+%
+% Var2 = Time/Frames (usually 35`)
+%
+% -
+%
+% Bubbles
+%
+% 0 = none
+%
+% 1 = !
+%
+% 2 = ?
+#new:Script:Map $SetPlayerAnimation
+{
+    Call    SetPlayerAnimation ( .PlayerAnim:StandStill )
+    Call    SetPlayerAnimation ( *Var0 )
+    Switch *Var1
+        Case == 1 % !
+            Call    PlaySoundAtPlayer ( 0262 0 ) % !
+            Call    ShowEmote       ( 0 .Emote:Exclamation -45` 20` 0 0 0 0 0 )
+        Case >= 2 % ?
+            Call    PlaySoundAtPlayer ( 0263 0 ) % ?
+            Call    ShowEmote       ( 0 .Emote:Question -45` 20` 0 0 0 0 0 )
+    EndSwitch
+    Loop *Var2 % frames
+        Wait 1
+    EndLoop
+    Call    SetPlayerAnimation ( .PlayerAnim:StandStill )
+    Return
+    End
+}
+
+% void
+#new:Script:Map $MovePartnerBehindMario
+{
+    Call	GetCurrentPartnerID ( *Var0 )
+	If *Var0 == .Partner:None
+          Return
+    EndIf
+    Call	DisablePartnerAI ( 0 )
+    % move partner a little bit to the left
+    Set *Var0 1 % walking animation
+    Set *Var1 .False
+    ExecWait $SetPartnerAnimation
+    Call	GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Call    $ReadAddress ( 8010F070 2 *Var7 .False .False ) % load Mario's angle
+    If *Var7 == 0 % Mario is looking to the Left
+        Add	*Var0 35` % x
+    Else % Mario is looking to the right
+        Add	*Var0 -35` % x
+    EndIf
+    Add	*Var1 10` % y
+    Call	PartnerIsFlying ( *Var3 )
+    If *Var3 == .False
+         Call NpcFlyTo ( .Npc:Partner *Var0 *Var1 *Var2 15` 0 .Easing:Linear )
+    Else
+         Call NpcMoveTo ( .Npc:Partner *Var0 *Var2 15` )
+    EndIf
+    Set *Var0 0 % idle
+    Set *Var1 .False
+    ExecWait $SetPartnerAnimation
+    % Look at Mario
+    If *Var7 == 0 % mario is looking to the left
+        Call    InterpNpcYaw ( .Npc:Partner -90` 0 )
+    Else % mario is looking to the right
+        Call    InterpNpcYaw ( .Npc:Partner 90` 0 )
+    EndIf
+	Wait    10`
+    Call	EnablePartnerAI
+    Return
+    End
+}
+
+#new:Script:Map $MovePartnerInFrontOfMario
+{
+    Call	GetCurrentPartnerID ( *Var0 )
+	If *Var0 == .Partner:None
+          Return
+    EndIf
+    Call	DisablePartnerAI ( 0 )
+    % move partner a little bit to the left
+    Set *Var0 1 % walking animation
+    Set *Var1 .False
+    ExecWait $SetPartnerAnimation
+    Call	GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Call    $ReadAddress ( 8010F070 2 *Var7 .False .False ) % load Mario's angle
+    If *Var7 == 0 % Mario is looking to the Left
+        Add	*Var0 -35` % x
+    Else % Mario is looking to the right
+        Add	*Var0 35` % x
+    EndIf
+    Add	*Var1 10` % y
+    Call	PartnerIsFlying ( *Var3 )
+    If *Var3 == .False
+         Call NpcFlyTo ( .Npc:Partner *Var0 *Var1 *Var2 15` 0 .Easing:Linear )
+    Else
+         Call NpcMoveTo ( .Npc:Partner *Var0 *Var2 15` )
+    EndIf
+    Set *Var0 0 % idle
+    Set *Var1 .False
+    ExecWait $SetPartnerAnimation
+    % Look at Mario
+    If *Var7 == 0 % mario is looking to the left
+        Call    InterpNpcYaw ( .Npc:Partner 90` 0 )
+    Else % mario is looking to the right
+        Call    InterpNpcYaw ( .Npc:Partner -90` 0 )
+    EndIf
+	Wait    10`
+    Call	EnablePartnerAI
+    Return
+    End
+}
+
+/% Texture Panner - copy this script
+#new:Script $Script_TexturePanning
+{
+    Call     EnableTexPanning 	( ~Model:myModel .True )
+	Thread
+		Set  *Var0  0 % panner id
+		% Texture Pan Rate
+		Set  *Var1  0 	    % Main U
+		Set  *Var2  0         % Main V
+		Set  *Var3  0 	    % Aux U
+		Set  *Var4  0 	    % Aux V
+		% Delay Between Updates
+		Set  *Var5  .False	% Main U
+		Set  *Var6  .False	% Main V
+		Set  *Var7  .False	% Aux U
+		Set  *Var8  .False	% Aux V
+		% Initial Offset
+		Set  *Var9  .False	% Main U 
+		Set  *VarA  .False	% Main V
+		Set  *VarB  .False 	% Aux U
+		Set  *VarC  .False 	% Aux V
+		Exec $Script_TexturePanning % from globals/patch/UtilityFunctions.patch
+    EndThread
+	Return
+	End
+}
+%/
+
+#new:Script:Global $Script_TexturePanning
+{
+	SetGroup 0
+	If  *Var5  ==  .True
+		If  *Var6  ==  .True 
+			If  *Var7  ==  .True 
+				If  *Var8  ==  .True 
+					Call     $Func_AnimateTexture_DelayAll
+					Return
+				EndIf
+			EndIf
+		EndIf
+	EndIf
+	Call     $Function_AnimateTexture
+	Return
+	End
+}
+   
+#new:Function $Function_AnimateTexture
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  DADDU     S0, A0, R0
+    C:  BEQ       A1, R0, .o24
+   10:  SW        RA, 14 (SP)
+   14:  SW        R0, 70 (S0)
+   18:  SW        R0, 74 (S0)
+   1C:  SW        R0, 78 (S0)
+   20:  SW        R0, 7C (S0)
+        .o24
+   24:  LW        V0, 70 (S0)
+   28:  BNE       V0, R0, .o64
+   2C:  NOP
+   30:  LW        V1, A8 (S0)
+   34:  LW        V0, 88 (S0)
+   38:  ADDU      V1, V1, V0
+   3C:  BGEZ      V1, .o50
+   40:  SW        V1, A8 (S0)
+   44:  LUI       V0, 2
+   48:  BEQ       R0, R0, .o60
+   4C:  ADDU      V0, V1, V0
+        .o50
+   50:  LUI       A0, 2
+   54:  SLT       V0, A0, V1
+   58:  BEQ       V0, R0, .o64
+   5C:  SUBU      V0, V1, A0
+        .o60
+   60:  SW        V0, A8 (S0)
+        .o64
+   64:  LW        V0, 74 (S0)
+   68:  BNE       V0, R0, .oA4
+   6C:  NOP
+   70:  LW        V1, AC (S0)
+   74:  LW        V0, 8C (S0)
+   78:  ADDU      V1, V1, V0
+   7C:  BGEZ      V1, .o90
+   80:  SW        V1, AC (S0)
+   84:  LUI       V0, 2
+   88:  BEQ       R0, R0, .oA0
+   8C:  ADDU      V0, V1, V0
+        .o90
+   90:  LUI       A0, 2
+   94:  SLT       V0, A0, V1
+   98:  BEQ       V0, R0, .oA4
+   9C:  SUBU      V0, V1, A0
+        .oA0
+   A0:  SW        V0, AC (S0)
+        .oA4
+   A4:  LW        V0, 78 (S0)
+   A8:  BNE       V0, R0, .oE4
+   AC:  NOP
+   B0:  LW        V1, B0 (S0)
+   B4:  LW        V0, 90 (S0)
+   B8:  ADDU      V1, V1, V0
+   BC:  BGEZ      V1, .oD0
+   C0:  SW        V1, B0 (S0)
+   C4:  LUI       V0, 2
+   C8:  BEQ       R0, R0, .oE0
+   CC:  ADDU      V0, V1, V0
+        .oD0
+   D0:  LUI       A0, 2
+   D4:  SLT       V0, A0, V1
+   D8:  BEQ       V0, R0, .oE4
+   DC:  SUBU      V0, V1, A0
+        .oE0
+   E0:  SW        V0, B0 (S0)
+        .oE4
+   E4:  LW        V0, 7C (S0)
+   E8:  BNE       V0, R0, .o124
+   EC:  NOP
+   F0:  LW        V1, B4 (S0)
+   F4:  LW        V0, 94 (S0)
+   F8:  ADDU      V1, V1, V0
+   FC:  BGEZ      V1, .o110
+  100:  SW        V1, B4 (S0)
+  104:  LUI       V0, 2
+  108:  BEQ       R0, R0, .o120
+  10C:  ADDU      V0, V1, V0
+        .o110
+  110:  LUI       A0, 2
+  114:  SLT       V0, A0, V1
+  118:  BEQ       V0, R0, .o124
+  11C:  SUBU      V0, V1, A0
+        .o120
+  120:  SW        V0, B4 (S0)
+        .o124
+  124:  LW        A0, 84 (S0)
+  128:  JAL       ~Func:set_main_pan_u
+  12C:  LW        A1, A8 (S0)
+  130:  LW        A0, 84 (S0)
+  134:  JAL       ~Func:set_main_pan_v
+  138:  LW        A1, AC (S0)
+  13C:  LW        A0, 84 (S0)
+  140:  JAL       ~Func:set_aux_pan_u
+  144:  LW        A1, B0 (S0)
+  148:  LW        A0, 84 (S0)
+  14C:  JAL       ~Func:set_aux_pan_v
+  150:  LW        A1, B4 (S0)
+  154:  LW        V0, 70 (S0)
+  158:  LW        V1, 78 (S0)
+  15C:  LW        A0, 98 (S0)
+  160:  ADDIU     V0, V0, 1
+  164:  SW        V0, 70 (S0)
+  168:  LW        V0, 74 (S0)
+  16C:  ADDIU     V1, V1, 1
+  170:  SW        V1, 78 (S0)
+  174:  LW        V1, 70 (S0)
+  178:  ADDIU     V0, V0, 1
+  17C:  SW        V0, 74 (S0)
+  180:  LW        V0, 7C (S0)
+  184:  SLT       V1, V1, A0
+  188:  ADDIU     V0, V0, 1
+  18C:  BNE       V1, R0, .o198
+  190:  SW        V0, 7C (S0)
+  194:  SW        R0, 70 (S0)
+        .o198
+  198:  LW        V0, 74 (S0)
+  19C:  LW        V1, 9C (S0)
+  1A0:  SLT       V0, V0, V1
+  1A4:  BEQL      V0, R0, .o1AC
+  1A8:  SW        R0, 74 (S0)
+        .o1AC
+  1AC:  LW        V0, 78 (S0)
+  1B0:  LW        V1, A0 (S0)
+  1B4:  SLT       V0, V0, V1
+  1B8:  BEQL      V0, R0, .o1C0
+  1BC:  SW        R0, 78 (S0)
+        .o1C0
+  1C0:  LW        V0, 7C (S0)
+  1C4:  LW        V1, A4 (S0)
+  1C8:  SLT       V0, V0, V1
+  1CC:  BEQL      V0, R0, .o1D4
+  1D0:  SW        R0, 7C (S0)
+        .o1D4
+  1D4:  LW        RA, 14 (SP)
+  1D8:  LW        S0, 10 (SP)
+  1DC:  DADDU     V0, R0, R0
+  1E0:  JR        RA
+  1E4:  ADDIU     SP, SP, 18
+}
+   
+#new:Function $Func_AnimateTexture_DelayAll
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  DADDU     S0, A0, R0
+    C:  SW        RA, 14 (SP)
+   10:  LW        V1, A8 (S0)
+   14:  LW        V0, 88 (S0)
+   18:  ADDU      V1, V1, V0
+   1C:  BGEZ      V1, .o30
+   20:  SW        V1, A8 (S0)
+   24:  LUI       V0, 2
+   28:  BEQ       R0, R0, .o40
+   2C:  ADDU      V0, V1, V0
+        .o30
+   30:  LUI       A0, 2
+   34:  SLT       V0, A0, V1
+   38:  BEQ       V0, R0, .o44
+   3C:  SUBU      V0, V1, A0
+        .o40
+   40:  SW        V0, A8 (S0)
+        .o44
+   44:  LW        V1, AC (S0)
+   48:  LW        V0, 8C (S0)
+   4C:  ADDU      V1, V1, V0
+   50:  BGEZ      V1, .o64
+   54:  SW        V1, AC (S0)
+   58:  LUI       V0, 2
+   5C:  BEQ       R0, R0, .o74
+   60:  ADDU      V0, V1, V0
+        .o64
+   64:  LUI       A0, 2
+   68:  SLT       V0, A0, V1
+   6C:  BEQ       V0, R0, .o78
+   70:  SUBU      V0, V1, A0
+        .o74
+   74:  SW        V0, AC (S0)
+        .o78
+   78:  LW        V1, B0 (S0)
+   7C:  LW        V0, 90 (S0)
+   80:  ADDU      V1, V1, V0
+   84:  BGEZ      V1, .o98
+   88:  SW        V1, B0 (S0)
+   8C:  LUI       V0, 2
+   90:  BEQ       R0, R0, .oA8
+   94:  ADDU      V0, V1, V0
+        .o98
+   98:  LUI       A0, 2
+   9C:  SLT       V0, A0, V1
+   A0:  BEQ       V0, R0, .oAC
+   A4:  SUBU      V0, V1, A0
+        .oA8
+   A8:  SW        V0, B0 (S0)
+        .oAC
+   AC:  LW        V1, B4 (S0)
+   B0:  LW        V0, 94 (S0)
+   B4:  ADDU      V1, V1, V0
+   B8:  BGEZ      V1, .oCC
+   BC:  SW        V1, B4 (S0)
+   C0:  LUI       V0, 2
+   C4:  BEQ       R0, R0, .oDC
+   C8:  ADDU      V0, V1, V0
+        .oCC
+   CC:  LUI       A0, 2
+   D0:  SLT       V0, A0, V1
+   D4:  BEQ       V0, R0, .oE0
+   D8:  SUBU      V0, V1, A0
+        .oDC
+   DC:  SW        V0, B4 (S0)
+        .oE0
+   E0:  LW        A0, 84 (S0)
+   E4:  JAL       ~Func:set_main_pan_u
+   E8:  LW        A1, A8 (S0)
+   EC:  LW        A0, 84 (S0)
+   F0:  JAL       ~Func:set_main_pan_v
+   F4:  LW        A1, AC (S0)
+   F8:  LW        A0, 84 (S0)
+   FC:  JAL       ~Func:set_aux_pan_u
+  100:  LW        A1, B0 (S0)
+  104:  LW        A0, 84 (S0)
+  108:  JAL       ~Func:set_aux_pan_v
+  10C:  LW        A1, B4 (S0)
+  110:  LW        RA, 14 (SP)
+  114:  LW        S0, 10 (SP)
+  118:  DADDU     V0, R0, R0
+  11C:  JR        RA
+  120:  ADDIU     SP, SP, 18
+}
+
+% Fade screen brightness from black
+%
+% *Var0 (Float) = Fade Speed (Normally 25.0)
+%
+% *Var1 (Float) = New Brightness (0.00 - 255.0)(255.0 = Fully Black)
+%
+% Fade Color = 8015C790 (isn't implement in this Script)
+%
+% [ ! ] Writes in Var2
+#new:Script:Global $Script_FadeScreenIn
+{
+	Loop
+		Call 	$WriteAddress ( 80156903 0 0 .False .False ) % remove brightness lock
+		Call 	$ReadAddressFloat  ( 80156904 2 *Var2 .False .False ) % load brightness
+		SubF	*Var2 *Var0 % fade speed
+		If *Var2 <= *Var1
+			SetF 	*Var2 *Var1
+            Call 	$WriteAddress ( 80156903 0 1 .False .False ) % Use default fade shape
+			Call 	$WriteAddressFloat  ( 80156904 2 *Var2 .False .False ) % save brightness
+			BreakLoop
+		EndIf
+		Call 	$WriteAddressFloat  ( 80156904 2 *Var2 .False .False ) % save brightness
+		Wait 	1
+	EndLoop
+	Return
+	End
+}
+
+% Fade screen brightness to black
+%
+% *Var0 (Float) = Fade Speed (Normally 25.0)
+%
+% *Var1 (Float) = New Brightness (0.00 - 255.0)(255.0 = Fully Black)
+%
+% Fade Color = 8015C790 (isn't implement in this Script)
+%
+% [ ! ] Writes in Var2
+#new:Script:Global $Script_FadeScreenOut
+{
+	Loop
+		Call 	$WriteAddress ( 80156903 0 0 .False .False ) % remove brightness lock
+		Call 	$ReadAddressFloat  ( 80156904 2 *Var2 .False .False ) % load brightness
+		AddF	*Var2 *Var0 % fade speed
+		If *Var2 >= *Var1
+			SetF 	*Var2 *Var1
+            Call 	$WriteAddress ( 80156903 0 1 .False .False ) % Use default fade shape
+			Call 	$WriteAddressFloat  ( 80156904 2 *Var2 .False .False ) % save brightness
+			BreakLoop
+		EndIf
+		Call 	$WriteAddressFloat  ( 80156904 2 *Var2 .False .False ) % save brightness
+		Wait 	1
+	EndLoop
+	Return
+	End
+}
+
+% Run argumentless functions\
+% Call    $RunFunction ( 800E9B6C ) % ~Func:sync_status_menu
+#new:Function $RunFunction
+{
+    PUSH    RA, A0
+    LW      A1, C (A0)
+    LW      A1, 0 (A1)
+    JALR    A1, RA
+    NOP
+    POP     RA, A0
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Force Player to stop using Watt or Lakilester
+#new:Script:Map $PlayerStopUsingPartner
+{
+    % Player is using Watt?
+    Call    $ReadBitFlag ( 8010EFCC .False 3 0 *Var0 ) % 8010EFCC = PlayerFlags2
+    If  *Var0 == .True
+        Call    $WriteBitFlag ( 8010EFCC .False 3 2 .True ) % stop using partner
+    EndIf
+    % Player is ridding Lakilester?
+    Call    $ReadAddress ( 802BFF17 0 *Var0 .False .False ) % 802BFF17 = Lakilester's Cloud State
+    If *Var0 == .True
+        Call    $WriteBitFlag ( 8010EFCC .False 3 2 .True ) % stop using partner
+        Wait    20`
+    EndIf
+    Return
+    End
+}
+
+%================
+
+% Var0 = modelID
+%
+% Var1 = fade/unfade (bool) (fade - 00/ unfade - 01)
+%
+% Var2 = speed (15` looks good enough)
+%
+% [!] Model should have render mode: `13 Surface_XLU_No_AA`
+#export:Script $Script_UpdateModelAlpha
+{
+    Set   *Var6 *Var0
+    Set   *Var7 *Var1
+    Set   *Var8 *Var2
+    Call  SetModelCustomGfx ( *Var6 00000001 FFFFFFFF )
+    Call  SetCustomGfxBuilders  ( 00000001 $Function_InitDisplayListCode 00000000 )
+    If *Var7 == .False % 0x00 - Fade
+        Set *Var0 FF % start opacity
+        Set *Var1 0 % final opacity
+    Else % 0x01 - Unfade
+        Set *Var0 0
+        Set *Var1 FF
+    EndIf
+    Call  MakeLerp  ( *Var0 *Var1 *Var8 .Easing:Linear )
+    Loop
+        Call  UpdateLerp
+        Call  $WriteAddress ( $Data_ModelOpacity 2 *Var0 .False .False )
+        Wait  1`
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+% Same as `Script_UpdateModelAlpha` but you can specify the opacity
+%
+% Var0 = modelID
+%
+% Var1 = speed (15` looks good enough)
+%
+% Var2 = start opacity
+%
+% Var3 = target opacity
+%
+% [!] Model should have render mode: `13 Surface_XLU_No_AA`
+#export:Script $Script_AdvancedUpdateModelAlpha
+{
+    Set   *Var6 *Var0
+    Set   *Var7 *Var1
+    Set   *Var8 *Var2
+    Set   *Var9 *Var3
+    Call  SetModelCustomGfx ( *Var6 00000001 FFFFFFFF )
+    Call  SetCustomGfxBuilders  ( 00000001 $Function_InitDisplayListCode 00000000 )
+    Call  MakeLerp  ( *Var8 *Var9 *Var7 .Easing:Linear )
+    Loop
+        Call  UpdateLerp
+        Call  $WriteAddress ( $Data_ModelOpacity 2 *Var0 .False .False )
+        Wait  1`
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+#new:Data $Data_ModelOpacity
+{
+	00000000
+}
+
+#new:Function $Function_InitDisplayListCode
+{
+    LI        A2, FC121624 % G_SETCOMBINE
+    LUI       A1, FF2F % G_SETCIMG
+    LA        A0, 8009A66C
+    LW        V0, 0 (A0)
+    ORI       A1, A1, FFFF
+    COPY      V1, V0
+    ADDIU     V0, V0, 8
+    SW        V0, 0 (A0)
+    SW        A2, 0 (V1)
+    SW        A1, 4 (V1)
+    ADDIU     V1, V0, 8
+    SW        V1, 0 (A0)
+    LAW       A0, $Data_ModelOpacity
+    LUI       V1, FA00 % G_SETPRIMCOLOR
+    SW        V1, 0 (V0)
+    JR        RA
+    SW        A0, 4 (V0)
+}
+
+%================
+
+% Call    $SetNpcGroupBattleID ( NpcGroupIndex formationID )
+#new:Function $SetNpcGroupBattleID
+{
+    PUSH	RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    COPY    S0, A0
+    % load arg0
+    LW      A1, C (S0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    COPY    S1, V0 % NpcGroupIndex
+    % load arg1
+    LW      A1, C (S0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1)
+    COPY    S2, V0
+    % S1 = NpcGroupIndex
+    % S2 = formationID
+    LIO     T0, 800B0F38 % NpcGroup0 pointer data
+    ORI     T1, R0, 4
+    MULT    T1, S1 % get offset
+    MFLO    T1
+    ADDU    T0, T0, T1 % final address
+    LW      T0, 0 (T0)
+	SH		S2, 44 (T0) % save new formationID
+	POP		RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+	JR		RA
+	ADDIU	V0, R0, 2
+}
+
+% Replicate the animation from function DoNpcDefeat
+%
+% var0 = NpcID
+%
+% var1 = Hurt Animation
+#new:Script:Map $DoNpcDefeat
+{
+    Call	SetNpcAnimation ( *Var0 *Var1 )
+    Wait	20`
+    % Npc Start flashing
+    Thread
+        Loop 5
+            Call	SetNpcFlagBits ( *Var0 01000000 .True )
+            Wait	1
+            Call	SetNpcFlagBits ( *Var0 01000000 .False )
+            Wait	1
+        EndLoop
+        % Disappear Npc
+        Call	SetNpcFlagBits ( *Var0 01000000 .True )
+        Call    EnableNpcShadow ( *Var0 .False )
+    EndThread
+    % FXs
+    Wait	3
+    Call	PlaySoundAtNpc ( *Var0 03E5 0 ) % NpcDefeat
+    Call	GetNpcPos ( *Var0 *Var2 *Var3 *Var4 )
+    Call  	PlayEffect 	( ~FX:BigSmokePuff *Var2 *Var3 *Var4 .False .False .False .False .False .False .False .False .False )
+    Call  	PlayEffect 	( ~FX:Stars:Fountain2 *Var2 *Var3 *Var4 0 -100` 10` 8 .False .False .False .False .False ) % XYZ Angle YRadious Height Stars
+    Return
+    End
+}
+
+% Stop all Sounds currently playing
+%
+% Call    $ClearSoundFXs
+#new:Function $ClearSoundFXs % unused, is kinda buggy
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % The game can play 8 sounds at most, stop all sounds currently playing
+    % Each Sound pointer has a negative 0xAC offset between them
+    % So Sound #1 Data is located at 801D9780
+    % And Sound #8 Data is located at 801D92CC (0xAC*7(Because 7 more sounds slots) = 4B4 = 801D92CC(0x4B4) = Sound #1 Data )
+    LIO     T0, 801D92CC % Sound #8 Pointer Data
+    LIO     T1, 801D9780 % Sound #1 Pointer Data
+    .Loop
+    % Start stopping sounds from highest slot to the lowest
+    % Stop and nuke this sound data
+    SW      R0, 0, (T0) % Sound Data Pointer
+    SW      R0, 8C, (T0) % SoundID
+    SW      R0, 94, (T0) % ?
+    ORI     T2, R0, 1
+    SB      T2, 9A, (T0) % ?
+    ADDIU   T0, T0, AC % go for the next sound
+    % All sounds have been nuked?
+    SLTU    T2, T1, T0
+    BEQ     T2, R0, .Loop
+    NOP
+    .BreakLoop
+    % Play a dummy sfx to stop everything
+    ADDIU	A0, R0, 0100 % Sound ID
+    ADDIU	A2, R0, 18
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    CLEAR 	A1
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Convert Float to Int
+%
+% Call $Function_ConvertToInt ( float *out )
+#export:Function $Function_ConvertToInt
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    MTC1    V0, F0
+    CVT.W.S F0, F0
+    MFC1	A2, F0
+    NOP
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:set_variable
+    LW      A1, 4 (A1)
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+#export $IsBadgeEquipped
+#export $RestoreInputs
+#export $WriteAddress
+#export $ReadAddress
+#export $WriteAddressFloat
+#export $ReadAddressFloat
+#export $WriteBitFlag
+#export $ReadBitFlag
+#export $GetModelPointer
+#export $GetActorPointer
+#export $GetEntityPointer
+#export $RunFunction
+#export $IsBadgeEquipped_Script
+#export $DrawBox % by Clover
+#export $PlayerHasBadge
+#export $Script_TexturePanning
+#export $Script_FadeScreenIn
+#export $Script_FadeScreenOut
+% Cutscenes Scripts
+#export $SpeakPartnerToPlayer
+#export $InterpNpcYaw
+#export $SetPartnerAnimation
+#export $SetPlayerAnimation
+#export $MovePartnerBehindMario
+#export $MovePartnerInFrontOfMario
+#export $DoNpcDefeat
+%
+#export $PlayerStopUsingPartner
+#export $SetNpcGroupBattleID
+#export $ClearSoundFXs

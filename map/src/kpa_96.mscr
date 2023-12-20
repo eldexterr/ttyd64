@@ -1,0 +1,244 @@
+% Script File: kpa_96.mscr
+% Decoded from: 0 to 9A0 (kpa_96)
+
+#define .NpcID:SpikedGoomba_00      00
+
+#new:Function $Function_80240000
+{
+    0:  LAH       V0, 8010F29C
+    8:  BLEZ      V0, .o18
+    C:  LI        V0, 1
+   10:  BEQ       R0, R0, .o1C
+   14:  SW        R0, 84 (A0)
+        .o18
+   18:  SW        V0, 84 (A0)
+        .o1C
+   1C:  JR        RA
+   20:  LI        V0, 2
+}
+
+PADDING: 80240024 to 80240030 (00000024 to 00000030)
+00000000 00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  210.0    0.0  100.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000001
+	[Background]  00000000
+	[MapTattle]   0019016C
+}
+
+#new:Script $Script_80240080
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000006 )
+   50:  EndThread
+   58:  Return
+   60:  End
+}
+
+PADDING: 802400E8 to 802400F0 (000000E8 to 000000F0)
+00000000 00000000
+
+#new:Script $Script_ExitDoubleDoor_802400F0
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  ~Entry:Entry0
+   2C:  Set   *Var1  ~Collider:deilittw
+   3C:  Set   *Var2  ~Model:o881
+   4C:  Set   *Var3  ~Model:o882
+   5C:  Exec  ExitDoubleDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_80240990 00000003 ) % kpa_32
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_80240194
+{
+    0:  Bind  $Script_ExitDoubleDoor_802400F0 .Trigger:WallPressA ~Collider:deilittw 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_EnterDoubleDoor_802401C0
+{
+    0:  Set   *Var0  00000000
+   10:  Set   *Var2  ~Model:o881
+   20:  Set   *Var3  ~Model:o882
+   30:  Exec  EnterDoubleDoor
+   3C:  Exec  $Script_80240194
+   48:  Return
+   50:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  Call  MakeNpcs  ( .True $NpcGroupList_80240970 )
+   98:  Exec  $Script_80240494
+   A4:  Exec  $Script_EnterDoubleDoor_802401C0
+   B0:  Wait  1`
+   BC:  Exec  $Script_80240080
+   C8:  Return
+   D0:  End
+}
+
+#new:IntTable $IntTable_802402F0
+{
+	002700BC 002700BD 002700BE 002700BF 002700C0 002700C1 002700C2 002700C3
+	002700C4 002700C5 002700C6 002700C7 002700C8 002700C9 002700CA 002700CB
+	002700CC 002700CD 002700CE 002700CF 002700D0 002700D1 002700D2
+}
+
+#new:ShopInventory $ShopInventory_8024034C
+{
+	.Item:Mystery        00000005 0024002B % Who knows what it does... Take a chance to find ou ...
+	.Item:DizzyDial      00000019 00240029 % If it works, dazes and paralyzes all enemies brief ...
+	.Item:POWBlock       0000000F 00240027 % Flips shell enemies and inflicts 2 damage points o ...
+	.Item:ThunderRage    0000001E 00240002 % Lightning that strikes all enemies. Attack Power:  ...
+	.Item:MapleSyrup     0000001E 00240017 % Delicious maple syrup. Restores 10 FP.
+	.Item:SuperShroom    0000001E 0024000A % A truly super Mushroom. Restores 10 HP.
+	00000000 00000000 00000000
+}
+
+#new:ShopPriceList $ShopPriceList_802403A0
+{
+	.Item:FrightJar      0000000F 00000000
+	.Item:EggMissile     0000001E 00000000
+	.Item:Pebble         00000014 00000000
+	.Item:Mistake        00000014 00000000
+	.Item:LifeShroom     00000019 00000000
+	.Item:ShootingStar   00000014 00000000
+	.Item:SuperSoda      0000000A 00000000
+	.Item:StopWatch      00000014 00000000
+	00000000 00000000 00000000
+}
+
+#new:Script $Script_8024040C
+{
+    0:  Switch  *Var0
+    C:  	Case  ==  00000003
+   18:  	Case  ==  00000004
+   24:  	Case  ==  00000001
+   30:  	Case  ==  00000001
+   3C:  EndSwitch
+   44:  Return
+   4C:  End
+}
+
+#new:ShopItemPositions $ShopItemPositions_80240460
+{
+	~Short:Model:o831 ~Short:Collider:o865
+	~Short:Model:o832 ~Short:Collider:o864
+	~Short:Model:o833 ~Short:Collider:o863
+	~Short:Model:o834 ~Short:Collider:o862
+	~Short:Model:o835 ~Short:Collider:o861
+	~Short:Model:o836 ~Short:Collider:o860
+}
+
+#new:ShopOwnerNPC $ShopOwnerNPC_80240478
+{
+	00000000 00270001 00270002 $Script_8024040C 00000000 00000000 $IntTable_802402F0
+}
+
+#new:Script $Script_80240494
+{
+    0:  Call  ModifyColliderFlags   ( 00000000 ~Collider:o860 7FFFFE00 )
+   18:  Call  ModifyColliderFlags   ( 00000000 ~Collider:o861 7FFFFE00 )
+   30:  Call  ModifyColliderFlags   ( 00000000 ~Collider:o862 7FFFFE00 )
+   48:  Call  ModifyColliderFlags   ( 00000000 ~Collider:o863 7FFFFE00 )
+   60:  Call  ModifyColliderFlags   ( 00000000 ~Collider:o864 7FFFFE00 )
+   78:  Call  ModifyColliderFlags   ( 00000000 ~Collider:o865 7FFFFE00 )
+   90:  Call  MakeShop  ( $ShopItemPositions_80240460 $ShopInventory_8024034C $ShopPriceList_802403A0 00000000 )
+   AC:  Call  MakeShopOwner ( $ShopOwnerNPC_80240478 )
+   BC:  Return
+   C4:  End
+}
+
+#new:NpcSettings $NpcSettings_80240560
+{
+	00000000 00160018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630010
+}
+
+#new:Script $Script_Interact_8024058C
+{
+    0:  If  *MapVar[0]  ==  00000000
+   10:  	Call  SpeakToPlayer ( .Npc:Self 00270002 00270001 00000000 0013004F ) % Whuhhh? Who're you, man!? I don't know your face.  ...
+   30:  	Call  ShowChoice    ( 001E0013 ) % Yes No
+   40:  	If  *Var0  ==  00000000
+   50:  		Call  $Function_80240000 ( )
+   5C:  		If  *Var0  ==  00000000
+   6C:  			Call  ContinueSpeech        ( .Npc:Self 00270002 00270001 00000000 00130051 ) % Oh, you're loaded, man! Take a look around. I'll s ...
+   8C:  			Call  ModifyColliderFlags   ( 00000001 ~Collider:o860 7FFFFE00 )
+   A4:  			Call  ModifyColliderFlags   ( 00000001 ~Collider:o861 7FFFFE00 )
+   BC:  			Call  ModifyColliderFlags   ( 00000001 ~Collider:o862 7FFFFE00 )
+   D4:  			Call  ModifyColliderFlags   ( 00000001 ~Collider:o863 7FFFFE00 )
+   EC:  			Call  ModifyColliderFlags   ( 00000001 ~Collider:o864 7FFFFE00 )
+  104:  			Call  ModifyColliderFlags   ( 00000001 ~Collider:o865 7FFFFE00 )
+  11C:  			Call  ModifyColliderFlags   ( 00000000 ~Collider:o964 7FFFFE00 )
+  134:  			Set   *MapVar[0]  00000001
+  144:  		Else
+  14C:  			Call  ContinueSpeech    ( .Npc:Self 00270002 00270001 00000000 00130052 ) % You think I'm stupid, man? You're a terrible liar.
+  16C:  		EndIf
+  174:  	Else
+  17C:  		Call  ContinueSpeech    ( .Npc:Self 00270002 00270001 00000000 00130050 ) % What? You've got nothing? Lame...
+  19C:  	EndIf
+  1A4:  Else
+  1AC:  	ExecWait  ItemShopInteract
+  1B8:  EndIf
+  1C0:  Return
+  1C8:  End
+}
+
+#new:Script $Script_Init_8024075C
+{
+    0:  Call  BindNpcInteract   ( .Npc:Self $Script_Interact_8024058C )
+   14:  Return
+   1C:  End
+}
+
+#new:NpcGroup $NpcGroup_80240780
+{
+	.NpcID:NPC_SpikedGoomba_00 $NpcSettings_80240560 ~Vec3f:NPC_SpikedGoomba_00 % -122 0 163
+	00512D09 $Script_Init_8024075C 00000000 00000000 0000005A
+	~NoDrops
+	~Movement:NPC_SpikedGoomba_00
+	~AnimationTable:NPC_SpikedGoomba_00 % .Sprite:SpikedGoomba
+	00000000 00000000 00000000 001A011F % He's one of Bowser's followers. He got bored guard ...
+}
+
+#new:NpcGroupList $NpcGroupList_80240970
+{
+	00000001 $NpcGroup_80240780 00000000
+	00000000 00000000 00000000
+}
+
+PADDING: 80240988 to 80240990 (00000988 to 00000990)
+00000000 00000000
+
+#new:ASCII $ASCII_80240990
+{
+	"kpa_32"
+}
+
+PADDING: 80240998 to 802409A0 (00000998 to 000009A0)
+00000000 00000000
+

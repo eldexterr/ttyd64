@@ -1,0 +1,263 @@
+% Script File: dgb_11.mscr
+% Decoded from: 0 to B10 (dgb_11)
+
+
+#new:Function $Function_80240000
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  CLEAR     A0
+    C:  LI        A1, *MapVar[0]
+   10:  JAL       ~Func:get_variable
+   14:  RESERVED
+   18:  JAL       ~Func:get_entity_by_index
+   1C:  COPY      A0, V0
+   20:  BEQL      V0, R0, .o40
+   24:  CLEAR     V0
+   28:  LH        A0, 14 (V0)
+   2C:  LA        A1, 000001E4
+   34:  JAL       ~Func:play_model_animation
+   38:  NOP
+   3C:  LI        V0, 2
+        .o40
+   40:  LW        RA, 10 (SP)
+   44:  JR        RA
+   48:  ADDIU     SP, SP, 18
+}
+
+PADDING: 8024004C to 80240050 (0000004C to 00000050)
+00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  450.0    0.0  -40.0    0.0
+	~Vec4f:Entry1 %  500.0  180.0 -100.0  180.0
+	~Vec4f:Entry2 %  500.0  180.0 -250.0  180.0
+	~Vec4f:Entry3 %  375.0  180.0 -250.0  180.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000004
+	[Background]  00000000
+	[MapTattle]   001900CB
+}
+
+#new:Script $Script_802400D0
+{
+    0:  Switch  *GB_StoryProgress
+    C:  	Case  <  .Story:Ch3_TubbaWokeUp % FFFFFFE3
+   18:  		Call  SetMusicTrack ( 00000000 .Song:TubbasManor 00000000 00000008 )
+   34:  	Case  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+   40:  		Call  SetMusicTrack ( 00000000 .Song:TubbaEscape 00000000 00000008 )
+   5C:  	Default
+   64:  		Call  SetMusicTrack ( 00000000 .Song:TubbasManor 00000000 00000008 )
+   80:  EndSwitch
+   88:  Return
+   90:  End
+}
+
+PADDING: 80240168 to 80240170 (00000168 to 00000170)
+00000000 00000000
+
+#new:Script $Script_ExitSingleDoor_80240170
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Basic )
+   2C:  Set   *Var0  ~Entry:Entry0
+   3C:  Set   *Var1  ~Collider:deilits
+   4C:  Set   *Var2  ~Model:o109
+   5C:  Set   *Var3  .DoorSwing:Out % FFFFFFFF
+   6C:  Exec  ExitSingleDoor
+   78:  Wait  17`
+   84:  Call  GotoMap   ( $ASCII_80240B00 00000003 ) % dgb_02
+   98:  Wait  100`
+   A4:  Return
+   AC:  End
+}
+
+#new:Script $Script_EnterSingleDoor_80240224
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Call  UseDoorSounds ( .DoorSounds:Basic )
+   38:  		Set   *Var2  ~Model:o109
+   48:  		Set   *Var3  .DoorSwing:Out % FFFFFFFF
+   58:  		ExecWait  EnterSingleDoor
+   64:  		Return
+   6C:  	Case  ==  ~Entry:Entry1
+   78:  		Call  UseSettingsFrom   ( .Cam:Default  500`  0`  -100` )
+   94:  		Call  SetPanTarget      ( .Cam:Default  500`  0`  -100` )
+   B0:  		Set   *Var3  00000001
+   C0:  	Case  ==  ~Entry:Entry2
+   CC:  		Call  UseSettingsFrom   ( .Cam:Default  500`  75`  -250` )
+   E8:  		Call  SetPanTarget      ( .Cam:Default  500`  75`  -250` )
+  104:  		Set   *Var3  0000004B
+  114:  	Case  ==  ~Entry:Entry3
+  120:  		Call  SetZoneEnabled    ( ~Zone:o203 .False )
+  134:  		Call  UseSettingsFrom   ( .Cam:Default  375`  0`  -175` )
+  150:  		Call  SetPanTarget      ( .Cam:Default  375`  0`  -175` )
+  16C:  		Set   *AreaFlag[002]  .True
+  17C:  		Set   *Var3  00000001
+  18C:  EndSwitch
+  194:  Call  DisablePlayerInput    ( .True )
+  1A4:  Call  InterpPlayerYaw   (  180`  0` )
+  1B8:  Call  SetCamSpeed       ( .Cam:Default *Fixed[90.0] )
+  1CC:  Call  PanToTarget       ( .Cam:Default 00000000 00000001 )
+  1E4:  Loop
+  1F0:  	Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+  208:  	If  *Var1  <=  *Var3
+  218:  		BreakLoop
+  220:  	EndIf
+  228:  	Wait  1`
+  234:  EndLoop
+  23C:  Call  PanToTarget   ( .Cam:Default 00000000 00000000 )
+  254:  Call  DisablePlayerInput    ( .False )
+  264:  Return
+  26C:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:TubbasManor
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  ExecWait  $Script_MakeEntities
+   90:  Exec  $Script_802400D0
+   9C:  Bind  $Script_ExitSingleDoor_80240170 .Trigger:WallPressA ~Collider:deilits 00000001 00000000
+   B8:  Exec  $Script_EnterSingleDoor_80240224
+   C4:  Return
+   CC:  End
+}
+
+PADDING: 8024056C to 80240570 (0000056C to 00000570)
+00000000
+
+#new:Script $Script_80240570
+{
+    0:  Label  0
+    C:  Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+   24:  If  *Var1  >=  *Var3
+   34:  	Set   *Var1  *Var3
+   44:  EndIf
+   4C:  Call  SetCamTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+   68:  Wait  1`
+   74:  Goto  0
+   80:  Return
+   88:  End
+}
+
+#new:Script $Script_80240600
+{
+    0:  Call  PlayerJump    ( ~Vec3d:JumpDest_80240600  20` )
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_8024062C
+{
+    0:  If  *AreaFlag[003]  ==  .True
+   10:  	Return
+   18:  EndIf
+   20:  Set   *AreaFlag[003]  .True
+   30:  Call  DisablePlayerInput    ( .True )
+   40:  Call  SetZoneEnabled        ( ~Zone:o203 .False )
+   54:  If  *AreaFlag[002]  ==  .False
+   64:  	If  *GF_DGB10_BoardedFloor3  ==  .False
+   74:  		Call  DisablePlayerPhysics  ( .True )
+   84:  		Call  SetPlayerActionState  ( .ActionState:Jump )
+   94:  		Wait  1`
+   A0:  		Set   *Var3  000001F4
+   B0:  		Exec  $Script_80240570 *VarA
+   C0:  		Call  SetPlayerJumpscale    ( *Fixed[0.7] )
+   D0:  		Exec  $Script_80240600 *VarB
+   E0:  		Loop
+   EC:  			Wait  1`
+   F8:  			Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+  110:  			If  *Var1  >=  000000A5
+  120:  				BreakLoop
+  128:  			EndIf
+  130:  		EndLoop
+  138:  		Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+  150:  		Call  SetPlayerPos  ( *Var0  165` *Var2 )
+  168:  		Kill  *VarB
+  174:  		Call  SetPlayerAnimation    ( 00080015 )
+  184:  		Call  ShakeCam  ( .Cam:Default 00000000  20` *Fixed[1.0] )
+  1A0:  		Wait  10`
+  1AC:  		Call  SetPlayerAnimation    ( 00010002 )
+  1BC:  		Call  SetPlayerJumpscale    ( *Fixed[0.0] )
+  1CC:  		Call  PlayerJump1   (  375`  25`  -250`  10` )
+  1E8:  		Call  $Function_80240000 ( )
+  1F4:  		Call  PlaySoundAtPlayer     ( 00002086 00000000 )
+  208:  		Call  SetPlayerJumpscale    ( *Fixed[0.7] )
+  218:  		Call  PlayerJump    ( ~Vec3d:JumpDest_80240844  15` )
+  234:  		Kill  *VarA
+  240:  		Call  SetPlayerActionState  ( .ActionState:Idle )
+  250:  		Wait  2`
+  25C:  		Call  SetZoneEnabled        ( ~Zone:o203 .True )
+  270:  		Call  DisablePlayerPhysics  ( .False )
+  280:  		Call  DisablePlayerInput    ( .False )
+  290:  		Set   *AreaFlag[003]  .False
+  2A0:  	Else
+  2A8:  		Call  DisablePlayerPhysics  ( .True )
+  2B8:  		Call  SetPlayerActionState  ( .ActionState:Jump )
+  2C8:  		Wait  1`
+  2D4:  		Thread
+  2DC:  			Wait  8`
+  2E8:  			Call  GotoMap   ( $ASCII_80240B08 00000001 ) % dgb_10
+  2FC:  			Wait  100`
+  308:  		EndThread
+  310:  		Set   *Var3  000001F4
+  320:  		Exec  $Script_80240570 *VarA
+  330:  		Call  SetPlayerJumpscale    ( *Fixed[0.7] )
+  340:  		Call  PlayerJump    ( ~Vec3d:JumpDest_8024096C  20` )
+  35C:  		Set   *AreaFlag[003]  .False
+  36C:  	EndIf
+  374:  Else
+  37C:  	Call  SetPlayerActionState  ( .ActionState:Jump )
+  38C:  	Wait  1`
+  398:  	Set   *Var3  00000019
+  3A8:  	Call  SetPlayerJumpscale    ( *Fixed[0.7] )
+  3B8:  	Call  PlayerJump    ( ~Vec3d:JumpDest_802409E4  15` )
+  3D4:  	Set   *AreaFlag[002]  .False
+  3E4:  	Kill  *VarA
+  3F0:  	Call  SetPlayerActionState  ( .ActionState:Idle )
+  400:  	Wait  2`
+  40C:  	Call  SetZoneEnabled        ( ~Zone:o203 .True )
+  420:  	Call  DisablePlayerInput    ( .False )
+  430:  	Set   *AreaFlag[003]  .False
+  440:  EndIf
+  448:  Return
+  450:  End
+}
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeItemEntity    ( .Item:DDownJump ~Vec3d:Item80240A84 .ItemSpawnMode:Fixed_NeverVanish *GF_DGB11_Item_DDownJump )
+   24:  Call  MakeEntity        ( .Entity:ScriptSpring ~Vec4d:Entity80240AA8 80000000 )
+   48:  Call  AssignScript      ( $Script_8024062C )
+   58:  Set   *MapVar[0]  *Var0
+   68:  Return
+   70:  End
+}
+
+PADDING: 80240AFC to 80240B00 (00000AFC to 00000B00)
+00000000
+
+#new:ASCII $ASCII_80240B00
+{
+	"dgb_02"
+}
+
+#new:ASCII $ASCII_80240B08
+{
+	"dgb_10"
+}
+

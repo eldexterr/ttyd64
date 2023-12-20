@@ -1,0 +1,139 @@
+%====================%
+%                    %
+%  Init Playthrough  %
+%                    %
+%====================%
+
+
+%    0x00 - u8 Description Box - State
+%    0x01 - u8 Description Box - Opacity
+%    0x02 - u8 Navigation Arrows - State
+%    0x03 - u8 Navigation Arrows - X Offset
+%
+%    0x04 - u8 Navigation arrows - Timer
+%    0x05 - u8 unused
+%    0x06 - u16 unused
+%
+%    0x08 - u32 box's string
+#export:Data $AnimationData
+{
+    00b % Description Box - State
+    00b % Description Box - Opacity
+    00b % Navigation Arrows - State
+    00b % Navigation Arrows - X Offset
+
+    00b % Navigation arrows - Timer
+    00b % unused
+    0000s % unused
+
+    00000000 % box's string
+}
+
+#export:Function $Function_kmr31_DrawDescriptionBox
+{
+    PUSH    R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     S0, $AnimationData
+    LBU     A0, 0 (S0)
+    BEQ     A0, R0, .End
+    NOP
+    ORI     A0, R0, 0014 % posX
+    ORI     A1, R0, 00BA % posY
+    ORI     A2, R0, 0118 % sizeX
+    ORI     A3, R0, 0020 % sizeY
+    LBU     T1, 1 (S0) % opacity
+    JAL     $DrawBox
+    ORI     T0, R0, 3 % style
+    %=================
+    % Draw box's string
+    %=================
+    LW      A0, 8 (S0)
+    ORI     A1, R0, 001D % posX
+    ORI     A2, R0, 00BA % posY
+    LBU     A3, 1 (S0) % opacity
+    JAL     ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    %=================
+    % Update arrows
+    %=================
+    LBU     A0, 4 (S0) % load timer
+    SLTIU   A1, A0, 2
+    BEQ     A1, R0, .Arrows_MoveOffset
+    NOP
+    .Arrows_AdvanceTimer
+    ADDIU   A0, A0, 1
+    BEQ     R0, R0, .DrawArrows
+    SB      A0, 4 (S0)
+    .Arrows_MoveOffset
+    SB      R0, 4 (S0) % clear timer
+    LBU     A1, 2 (S0) % get arrows state
+    LBU     A2, 3 (S0) % get x offset
+    BEQ     A1, R0, .CheckOffset_State0
+    NOP
+    % Current state is 0x01
+    BLEZ    A2, .UpdateArrowsState
+    CLEAR   A1
+    BEQ     R0, R0, .UpdateOffset
+    NOP
+    .CheckOffset_State0
+    SLTIU   A1, A2, 3
+    BNE     A1, R0, .UpdateOffset
+    NOP
+    LBU     A1, 2 (S0) % get arrows state
+    ORI     A1, R0, 1
+    .UpdateArrowsState
+    SB      A1, 2 (S0)
+    .UpdateOffset
+    % A2 = arrows' offset
+    LBU     A1, 2 (S0) % get arrows state
+    BEQL    A1, R0, .MoveOffset
+    ADDI    A2, A2, 1
+    ADDI    A2, A2, -1
+    .MoveOffset
+    SB      A2, 3 (S0) % save offset
+    %=============
+    .DrawArrows
+    %=============
+    % Left Arrow
+    LIO     A0, $String_Arrow_Left
+    ADDI    A1, R0, 0018 % x
+    LBU     A2, 3 (S0) % get arrows ofset
+    SUB     A1, A1, A2
+    ADDIU   A2, R0, 0076 % y
+    LBU     A3, 1 (S0) % opacity
+    JAL     ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    % Right Arrow
+    LIO     A0, $String_Arrow_Right
+    ADDI    A1, R0, 0117 % x
+    LBU     A2, 3 (S0) % get arrows ofset
+    ADD     A1, A1, A2
+    ADDIU   A2, R0, 0076 % y
+    LBU     A3, 1 (S0) % opacity
+    JAL     ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    .End
+    POP     R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    JR      RA
+    NOP
+}
+
+#string $String_Arrow_Left
+{
+[Size 24][LEFT][End]
+}
+
+#string $String_Arrow_Right
+{
+[Size 24][RIGHT][End]
+}
+
+% Clear `$AnimationData`
+#export:Function $Function_ClearData_KMR31_ExtraData
+{
+    LIO     V0, $AnimationData
+    SW      R0, 0 (V0)
+    SW      R0, 4 (V0)
+    SW      R0, 8 (V0)
+    JR      RA
+    ORI     V0, R0, 2
+}

@@ -1,0 +1,146 @@
+% Add new exit
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  00000000
+    [MapTattle]   0019009B
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 % -283.0 -390.0  530.0  110.0
+    ~Vec4f:Entry1 %  560.0 -340.0  217.0  210.0
+    ~Vec4f:Entry2
+}
+
+@ $Script_Main_EnterWalk {
+    [178]  Set   *Var0  $Script_BindExits % Script_80240228
+}
+
+#delete $Script_80240228
+
+#new:Script $Script_BindExits % Script_80240228
+{
+    0:  Bind  $Script_ExitWalk_80240170 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802401CC .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+        Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+@ $Script_80241F50 {
+    0:  Call  ParentColliderToModel ( ~Collider:o2022 ~Model:g313 )
+   14:  Bind  $Script_80241F90 .Trigger:FloorTouch ~Collider:o2022 00000001 00000000
+        Exec  $Script_InitNewStuff
+   30:  Return
+   38:  End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    If *GF_ISK07_SecretDoor == .True
+        Call    EnableGroup ( ~Model:secret .False )
+        Call    ModifyColliderFlags 	( .False ~Collider:secretDoor 7FFFFE00 )
+    Else
+        Bind  $Script_OpenSecret .Trigger:WallPressA ~Collider:secretDoor 00000001 00000000
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_OpenSecret
+{
+    SetGroup 0
+    SuspendAll 2
+    Call    DisablePlayerInput ( .True )
+    Call    PlaySound ( 01D1 )
+    % Z
+    Call    MakeLerp ( 0 -16` 15` .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Call    TranslateGroup ( ~Model:secret 0 0 *Var0 )
+        Wait    1
+        If *Var1 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Call    PlaySound ( 0266 )
+    % X
+    Call    MakeLerp ( 0 52` 15` .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Call    TranslateGroup ( ~Model:secret *Var0 0 -16` )
+        Wait    1
+        If *Var1 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    %
+    Call    EnableGroup ( ~Model:secret .False )
+    Call    ModifyColliderFlags 	( .False ~Collider:secretDoor 7FFFFE00 )
+    Call    PlaySound ( 000A )
+    Wait    15`
+    Call    DisablePlayerInput ( .False )
+    Set     *GF_ISK07_SecretDoor .True
+    ResumeAll 2
+    Return
+    End
+}
+
+#new:Script $Script_Exit2
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 00000028 ~Entry:Entry2 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "isk_21" 00000000 )
+    Wait  100`
+    Return
+    End
+}
+
+%====== Fix some stuff releated to the models.
+
+@ $Script_8024286C {
+    Set   *AreaFlag[00A]  .True
+    Set   *Var3 ~Model:g323 % 6B
+    ExecWait  $Script_80242750
+    Set   *AreaFlag[00A]  .False
+    Call  ModifyColliderFlags   ( 00000000 ~Collider:o2036 7FFFFE00 )
+    Call  ModifyColliderFlags   ( 00000001 ~Collider:o2039 7FFFFE00 )
+    Return
+    End
+}
+
+@ $Script_802428E8 {
+    Set   *AreaFlag[00B]  .True
+    Set   *Var3 ~Model:g327 % 74
+    ExecWait  $Script_80242750
+    Set   *AreaFlag[00B]  .False
+    Call  ModifyColliderFlags   ( 00000000 ~Collider:o2037 7FFFFE00 )
+    Call  ModifyColliderFlags   ( 00000001 ~Collider:o2040 7FFFFE00 )
+    Return
+    End
+}
+
+@ $Script_80242964 {
+    Set   *AreaFlag[00C]  .True
+    Set   *Var3 ~Model:g331 % 7D
+    ExecWait  $Script_80242750
+    Set   *AreaFlag[00C]  .False
+    Call  ModifyColliderFlags   ( 00000000 ~Collider:o2038 7FFFFE00 )
+    Call  ModifyColliderFlags   ( 00000001 ~Collider:o2041 7FFFFE00 )
+    Return
+    End
+}
+
+@ $Script_80242190 {
+    [460]  	Call  TranslateModel    ( ~Model:g323 00000026 00000000 0000000D )
+    [47C]  	Call  RotateModel       ( ~Model:g323 00000023 00000000 00000001 00000000 )
+    [49C]  	Call  TranslateModel    ( ~Model:g327 00000026 00000000 0000000D )
+    [4B8]  	Call  RotateModel       ( ~Model:g327 00000023 00000000 00000001 00000000 )
+    [4D8]  	Call  TranslateModel    ( ~Model:g331 00000026 00000000 0000000D )
+    [4F4]  	Call  RotateModel       ( ~Model:g331 00000023 00000000 00000001 00000000 )
+  }
+
+%====

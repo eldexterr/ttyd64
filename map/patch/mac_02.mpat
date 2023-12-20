@@ -1,0 +1,1153 @@
+% Add new hidden item, and add TTYD recipes into PM64
+
+@ $Script_MakeEntities
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  If  *Var0  ==  ~Entry:Entry5
+   20:  	If  *GF_MAC02_UnlockedHouse  ==  .False
+   30:  		Call  MakeEntity    ( .Entity:Padlock ~Vec4d:Entity80245E20 80000000 )
+   54:  		Set   *MapVar[0]  *Var0
+   64:  		BindLock  $Script_80245C58 .Trigger:WallPressA 00004000 $ItemList_80245C50 00000000 00000001
+   84:  	EndIf
+   8C:  EndIf
+   94:  Call  MakeItemEntity    ( .Item:OddKey ~Vec3d:Item80245E84 .ItemSpawnMode:Fixed_NeverVanish *GF_MAC02_Item_OddKey )
+   B8:  Call  MakeEntity        ( .Entity:HiddenPanel ~Vec4d:Entity80245EA8 ~Model:o236 80000000 )
+   E0:  Call  AssignPanelFlag   ( *GF_MAC02_HiddenPanel )
+   F0:  Call  MakeEntity        ( .Entity:Signpost ~Vec4d:Entity80245EE0 80000000 )
+  114:  Call  AssignScript      ( $Script_80245D60 )
+  124:  Bind  $Script_80245DA8 .Trigger:WallPressA ~Collider:sign 00000001 00000000
+        Exec  $Script_InitNewStuff
+  140:  Return
+  148:  End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Call  MakeEntity    ( .Entity:WoodenCrate ~Vec4d:toadHouse_box .Item:StarPiece 80000000 )
+    Call  AssignCrateFlag   ( *GF_MAC02_Box )
+    Return
+    End
+}
+
+%==========================================
+% Recipes
+%==========================================
+
+% COOKING OVERHAUL
+% By JaThePlayer, with some code from ShadeBlade
+
+#define .InstantCooking .False % Set to .True to make Tayce T immediately give you the cooked item
+
+#define .CookbookItemID .Item:Cookbook % Item that needs to be delivered to Tayce T to get access to two item cooking
+
+% Tayce T's reactions:
+#define .rMistake 0 % Oh... I'm so sorry. This recipe didn't work out.
+#define .rNormal 1 % Here you are! This recipe's not too bad. 
+#define .rDelicious 2 % All done! It smells delicious! 
+#define .rSpecialty 3 % Oh, sweet success! This dish is one of my specialties...
+#define .rIdk 4 % OK, all finished! ...I don't exactly know what it is...
+% If you want more, define them in $Script_80249684
+
+% Item1, Item2(FFFFFFFF if it's a 1 item recipe), Out
+#new:IntTable $IntTable_RecipeTable
+{
+.Item:Apple         .Item:CakeMix           .Item:ApplePie
+.Item:Egg           .Item:CakeMix           .Item:BigCookie
+.Item:Goomnut       .Item:CakeMix           .Item:BigCookie
+.Item:RedBerry      .Item:CakeMix           .Item:BigCookie
+.Item:YellowBerry   .Item:CakeMix           .Item:BigCookie
+.Item:BlueBerry     .Item:CakeMix           .Item:BigCookie
+.Item:KoopaLeaf     .Item:Goomnut           .Item:BlandMeal
+.Item:KoopaLeaf     .Item:RedBerry          .Item:BlandMeal
+.Item:KoopaLeaf     .Item:YellowBerry       .Item:BlandMeal
+.Item:KoopaLeaf     .Item:BlueBerry         .Item:BlandMeal
+.Item:StrangeLeaf   .Item:Goomnut           .Item:BlandMeal
+.Item:StrangeLeaf   .Item:DriedPasta        .Item:BlandMeal
+.Item:IcedPotato    .Item:Mushroom          .Item:BlandMeal
+.Item:IcedPotato    .Item:VoltShroom        .Item:BlandMeal
+.Item:IcedPotato    .Item:SuperShroom       .Item:BlandMeal
+.Item:IcedPotato    .Item:LifeShroom        .Item:BlandMeal
+.Item:IcedPotato    .Item:CakeMix           .Item:BlandMeal
+.Item:IcedPotato    .Item:Egg               .Item:BlandMeal
+.Item:IcedPotato    .Item:Coconut           .Item:BlandMeal
+.Item:IcedPotato    .Item:DriedPasta        .Item:BlandMeal
+.Item:FireFlower    .Item:Goomnut           .Item:BlandMeal
+.Item:FireFlower    .Item:VoltShroom        .Item:BlandMeal
+.Item:FireFlower    .Item:SuperShroom       .Item:BlandMeal
+.Item:FireFlower    .Item:LifeShroom        .Item:BlandMeal
+.Item:FriedShroom   .Item:PotatoSalad       .Item:BlandMeal
+% Now gives Omelette Meal
+%.Item:Egg           .Item:Mushroom          .Item:BlandMeal
+%.Item:Egg           .Item:SuperShroom       .Item:BlandMeal
+%.Item:Egg           .Item:LifeShroom        .Item:BlandMeal
+.Item:Egg           .Item:VoltShroom        .Item:BlandMeal
+.Item:Egg           .Item:DriedPasta        .Item:BlandMeal
+.Item:DriedPasta    .Item:Goomnut           .Item:BlandMeal
+.Item:DriedPasta    .Item:Coconut           .Item:BlandMeal
+.Item:DriedPasta    .Item:Mushroom          .Item:BlandMeal
+.Item:DriedPasta    .Item:VoltShroom        .Item:BlandMeal
+.Item:DriedPasta    .Item:SuperShroom       .Item:BlandMeal
+.Item:DriedPasta    .Item:LifeShroom        .Item:BlandMeal
+.Item:DriedPasta    .Item:RedBerry          .Item:BlandMeal
+.Item:DriedPasta    .Item:YellowBerry       .Item:BlandMeal
+.Item:DriedPasta    .Item:BlueBerry         .Item:BlandMeal
+.Item:Egg           .Item:StrangeLeaf       .Item:BoiledEgg
+.Item:Egg           .Item:StinkyHerb        .Item:BoiledEgg
+.Item:CakeMix       FFFFFFFF                .Item:MousseCake % previously Cake
+.Item:Coconut       .Item:CakeMix           .Item:CocoCandy  % previously Coco Pop
+.Item:PotatoSalad   .Item:ShroomSteak       .Item:DeluxeFeast
+.Item:WhackasBump   .Item:StrangeLeaf       .Item:DeluxeFeast
+.Item:StrangeLeaf   FFFFFFFF                .Item:DizzyDial
+.Item:StrangeLeaf   .Item:VoltShroom        .Item:DizzyDial
+.Item:StrangeLeaf   .Item:StinkyHerb        .Item:DizzyDial
+.Item:FireFlower    .Item:Egg               .Item:EggMissile
+.Item:VoltShroom    .Item:CakeMix           .Item:ElectroPop
+.Item:DriedFruit    .Item:StrangeLeaf       .Item:FireFlower
+.Item:CakeMix       .Item:FireFlower        .Item:FirePop
+.Item:Egg           FFFFFFFF                .Item:FriedEgg
+.Item:DriedShroom   FFFFFFFF                .Item:FriedShroom
+.Item:Mushroom      FFFFFFFF                .Item:FriedShroom
+.Item:SuperShroom   FFFFFFFF                .Item:FriedShroom
+.Item:DriedShroom   .Item:Mushroom          .Item:FriedShroom
+.Item:DriedShroom   .Item:FireFlower        .Item:FriedShroom
+.Item:FireFlower    .Item:IcedPotato        .Item:FrozenFries
+.Item:SpecialShake  .Item:StinkyHerb        .Item:HealthyJuice
+.Item:SpecialShake  .Item:DriedShroom       .Item:HealthyJuice
+.Item:SpecialShake  .Item:StrangeLeaf       .Item:HealthyJuice
+.Item:CakeMix       .Item:HoneySyrup        .Item:HoneyCandy
+.Item:Mushroom      .Item:HoneySyrup        .Item:HoneyShroom
+.Item:SuperShroom   .Item:HoneySyrup        .Item:HoneySuper
+.Item:LifeShroom    .Item:HoneySyrup        .Item:HoneySuper
+.Item:VoltShroom    .Item:HoneySyrup        .Item:HoneySuper
+.Item:UltraShroom   .Item:HoneySyrup        .Item:HoneyUltra
+.Item:DriedShroom   .Item:SuperShroom       .Item:HotShroom
+.Item:Mushroom      .Item:SuperShroom       .Item:HotShroom
+.Item:DriedShroom   .Item:VoltShroom        .Item:HotShroom
+.Item:Mushroom      .Item:VoltShroom        .Item:HotShroom
+.Item:SuperShroom   .Item:VoltShroom        .Item:HotShroom
+.Item:Mushroom      .Item:FireFlower        .Item:HotShroom
+.Item:LifeShroom    FFFFFFFF                .Item:HotShroom
+.Item:VoltShroom    FFFFFFFF                .Item:HotShroom
+.Item:CakeMix       .Item:JamminJelly       .Item:JellyCandy % previously Jelly Pop
+.Item:Mushroom      .Item:JamminJelly       .Item:JellyShroom1
+.Item:SuperShroom   .Item:JamminJelly       .Item:JellySuper
+.Item:LifeShroom    .Item:JamminJelly       .Item:JellySuper
+.Item:VoltShroom    .Item:JamminJelly       .Item:JellySuper
+.Item:UltraShroom   .Item:JamminJelly       .Item:JellyUltra
+.Item:CakeMix       .Item:KoopaLeaf         .Item:KookyCookie
+.Item:CakeMix       .Item:StinkyHerb        .Item:KookyCookie
+.Item:CakeMix       .Item:MapleSyrup        .Item:KookyCookie
+.Item:KoopaLeaf     .Item:DriedPasta        .Item:Koopasta
+.Item:KoopaLeaf     FFFFFFFF                .Item:KoopaTea
+.Item:Lemon         .Item:CakeMix           .Item:LemonCandy
+.Item:SuperShroom   .Item:KoopaLeaf         .Item:LifeShroom
+.Item:VoltShroom    .Item:KoopaLeaf         .Item:LifeShroom
+.Item:UltraShroom   .Item:KoopaLeaf         .Item:LifeShroom
+.Item:LifeShroom    .Item:KoopaLeaf         .Item:LifeShroom
+.Item:SuperShroom   .Item:Goomnut           .Item:LifeShroom
+.Item:VoltShroom    .Item:Goomnut           .Item:LifeShroom
+.Item:UltraShroom   .Item:Goomnut           .Item:LifeShroom
+.Item:LifeShroom    .Item:Goomnut           .Item:LifeShroom
+.Item:SuperShroom   .Item:StrangeLeaf       .Item:LifeShroom
+.Item:UltraShroom   .Item:StrangeLeaf       .Item:LifeShroom
+.Item:LifeShroom    .Item:StrangeLeaf       .Item:LifeShroom
+.Item:Lime          .Item:CakeMix           .Item:LimeCandy
+.Item:Mushroom      .Item:MapleSyrup        .Item:MapleShroom
+.Item:SuperShroom   .Item:MapleSyrup        .Item:MapleSuper
+.Item:LifeShroom    .Item:MapleSyrup        .Item:MapleSuper
+.Item:VoltShroom    .Item:MapleSyrup        .Item:MapleSuper
+.Item:UltraShroom   .Item:MapleSyrup        .Item:MapleUltra
+.Item:Goomnut       FFFFFFFF                .Item:NuttyCake
+.Item:IcedPotato    FFFFFFFF                .Item:PotatoSalad
+.Item:Mushroom      .Item:CakeMix           .Item:ShroomCake
+.Item:SuperShroom   .Item:CakeMix           .Item:ShroomCake
+.Item:UltraShroom   FFFFFFFF                .Item:ShroomSteak
+.Item:UltraShroom   .Item:Mushroom          .Item:ShroomSteak
+.Item:UltraShroom   .Item:SuperShroom       .Item:ShroomSteak
+.Item:LifeShroom    .Item:Mushroom          .Item:ShroomSteak
+.Item:LifeShroom    .Item:SuperShroom       .Item:ShroomSteak
+.Item:LifeShroom    .Item:UltraShroom       .Item:ShroomSteak
+.Item:VoltShroom    .Item:UltraShroom       .Item:ShroomSteak
+.Item:DriedShroom   .Item:UltraShroom       .Item:ShroomSteak
+.Item:DriedShroom   .Item:LifeShroom        .Item:ShroomSteak
+.Item:RedBerry      .Item:StrangeLeaf       .Item:SleepySheep
+.Item:YellowBerry   .Item:StrangeLeaf       .Item:SleepySheep
+.Item:BlueBerry     .Item:StrangeLeaf       .Item:SleepySheep
+.Item:DriedPasta    FFFFFFFF                .Item:Spaghetti
+.Item:Melon         FFFFFFFF                .Item:SpecialShake
+.Item:Melon         .Item:Lime              .Item:SpecialShake
+.Item:Melon         .Item:Lemon             .Item:SpecialShake
+.Item:Melon         .Item:HoneySyrup        .Item:SpecialShake
+.Item:Melon         .Item:MapleSyrup        .Item:SpecialShake
+.Item:Melon         .Item:JamminJelly       .Item:SpecialShake
+.Item:Melon         .Item:Apple             .Item:SpecialShake
+.Item:Melon         .Item:RedBerry          .Item:SpecialShake
+.Item:Melon         .Item:YellowBerry       .Item:SpecialShake
+.Item:Melon         .Item:BlueBerry         .Item:SpecialShake
+.Item:Melon         .Item:KoopaLeaf         .Item:SpecialShake
+.Item:Melon         .Item:StrangeLeaf       .Item:SpecialShake
+.Item:JamminJelly   .Item:Coconut           .Item:SpecialShake
+.Item:JamminJelly   .Item:Lime              .Item:SpecialShake
+.Item:JamminJelly   .Item:Lemon             .Item:SpecialShake
+.Item:JamminJelly   .Item:HoneySyrup        .Item:SpecialShake
+.Item:JamminJelly   .Item:MapleSyrup        .Item:SpecialShake
+.Item:JamminJelly   .Item:Apple             .Item:SpecialShake
+.Item:JamminJelly   .Item:RedBerry          .Item:SpecialShake
+.Item:JamminJelly   .Item:YellowBerry       .Item:SpecialShake
+.Item:JamminJelly   .Item:BlueBerry         .Item:SpecialShake
+.Item:FireFlower    FFFFFFFF                .Item:SpicySoup
+.Item:StrangeLeaf   .Item:CakeMix           .Item:LovePudding % previously Strange Cake
+.Item:Egg           .Item:MangoDelight      .Item:LovePudding
+.Item:HoneySyrup    FFFFFFFF                .Item:FreshJuice % previously Super Soda
+.Item:MapleSyrup    FFFFFFFF                .Item:FreshJuice
+.Item:Apple         FFFFFFFF                .Item:FreshJuice
+.Item:BlueBerry     FFFFFFFF                .Item:FreshJuice
+.Item:RedBerry      FFFFFFFF                .Item:FreshJuice
+.Item:YellowBerry   FFFFFFFF                .Item:FreshJuice
+.Item:JamminJelly   FFFFFFFF                .Item:FreshJuice
+.Item:HoneySyrup    .Item:MapleSyrup        .Item:FreshJuice
+.Item:HoneySyrup    .Item:KoopaLeaf         .Item:FreshJuice
+.Item:Lime          .Item:MapleSyrup        .Item:FreshJuice
+.Item:Apple         .Item:MapleSyrup        .Item:FreshJuice
+.Item:Lime          .Item:KoopaLeaf         .Item:FreshJuice
+.Item:Lime          .Item:Lemon             .Item:FreshJuice
+.Item:Lime          .Item:BlueBerry         .Item:FreshJuice
+.Item:Lime          .Item:RedBerry          .Item:FreshJuice
+.Item:Lime          .Item:YellowBerry       .Item:FreshJuice
+.Item:Lime          .Item:Apple             .Item:FreshJuice
+.Item:Lemon         .Item:BlueBerry         .Item:FreshJuice
+.Item:Lemon         .Item:RedBerry          .Item:FreshJuice
+.Item:Lemon         .Item:YellowBerry       .Item:FreshJuice
+.Item:Lemon         .Item:MapleSyrup        .Item:FreshJuice
+.Item:Lemon         .Item:KoopaLeaf         .Item:FreshJuice
+.Item:Lemon         .Item:Apple             .Item:FreshJuice
+.Item:Apple         .Item:BlueBerry         .Item:FreshJuice
+.Item:Apple         .Item:RedBerry          .Item:FreshJuice
+.Item:Apple         .Item:YellowBerry       .Item:FreshJuice
+.Item:JamminJelly   .Item:KoopaLeaf         .Item:FreshJuice
+.Item:YellowBerry   .Item:BlueBerry         .Item:FreshJuice
+.Item:YellowBerry   .Item:RedBerry          .Item:FreshJuice
+.Item:BlueBerry     .Item:RedBerry          .Item:FreshJuice
+.Item:Coconut       .Item:BlueBerry         .Item:FreshJuice
+.Item:Coconut       .Item:RedBerry          .Item:FreshJuice
+.Item:Coconut       .Item:YellowBerry       .Item:FreshJuice
+.Item:Coconut       .Item:Apple             .Item:FreshJuice
+.Item:Coconut       .Item:Melon             .Item:FreshJuice
+.Item:Coconut       .Item:KoopaLeaf         .Item:FreshJuice
+.Item:BlueBerry     .Item:MapleSyrup        .Item:FreshJuice
+.Item:RedBerry      .Item:MapleSyrup        .Item:FreshJuice
+.Item:YellowBerry   .Item:MapleSyrup        .Item:FreshJuice
+.Item:KoopaLeaf     .Item:MapleSyrup        .Item:FreshJuice
+.Item:Coconut       .Item:MapleSyrup        .Item:FreshJuice
+%.Item:CakeMix       .Item:UltraShroom       .Item:SweetShroom
+.Item:CakeMix       .Item:LifeShroom        .Item:SweetShroom
+.Item:RedBerry      .Item:HoneySyrup        .Item:TastyTonic
+.Item:YellowBerry   .Item:HoneySyrup        .Item:TastyTonic
+.Item:BlueBerry     .Item:HoneySyrup        .Item:TastyTonic
+.Item:Apple         .Item:HoneySyrup        .Item:TastyTonic
+.Item:Lemon         .Item:HoneySyrup        .Item:TastyTonic
+.Item:Lime          .Item:HoneySyrup        .Item:TastyTonic
+.Item:Coconut       .Item:HoneySyrup        .Item:TastyTonic
+.Item:Lime          FFFFFFFF                .Item:TastyTonic
+.Item:Lemon         FFFFFFFF                .Item:TastyTonic
+.Item:BubbleBerry   FFFFFFFF                .Item:TastyTonic
+.Item:Coconut       FFFFFFFF                .Item:TastyTonic
+.Item:DriedFruit    .Item:VoltShroom        .Item:ThunderRage
+.Item:Mushroom      .Item:KoopaLeaf         .Item:VoltShroom
+.Item:Mushroom      .Item:Goomnut           .Item:VoltShroom
+.Item:Mushroom      .Item:StrangeLeaf       .Item:VoltShroom
+.Item:Mushroom      .Item:DriedFruit        .Item:VoltShroom
+.Item:SuperShroom   .Item:DriedFruit        .Item:VoltShroom
+.Item:UltraShroom   .Item:DriedFruit        .Item:VoltShroom
+.Item:LifeShroom    .Item:DriedFruit        .Item:VoltShroom
+.Item:Melon         .Item:CakeMix           .Item:YoshiCookie
+.Item:WhackasBump   FFFFFFFF                .Item:YummyMeal
+.Item:DriedFruit    .Item:DriedPasta        .Item:YummyMeal
+.Item:DriedFruit    .Item:IcedPotato        .Item:YummyMeal
+.Item:FireFlower    .Item:UltraShroom       .Item:YummyMeal
+.Item:DriedPasta    .Item:UltraShroom       .Item:YummyMeal
+.Item:Egg           .Item:UltraShroom       .Item:YummyMeal
+.Item:IcedPotato    .Item:UltraShroom       .Item:YummyMeal
+.Item:StrangeLeaf   .Item:IcedPotato        .Item:YummyMeal
+.Item:HotShroom     .Item:PotatoSalad       .Item:YummyMeal
+.Item:Spaghetti     .Item:PotatoSalad       .Item:YummyMeal
+%========
+% new
+%========
+% ttyd items
+.Item:PointSwap     .Item:MrSoftener        .Item:CourageShell
+.Item:DriedBouquet  .Item:CourageMeal       .Item:CourageShell
+.Item:PointSwap     .Item:ThunderBolt       .Item:EarthQuake
+.Item:PointSwap     .Item:FireFlower        .Item:IceStorm
+.Item:PointSwap     .Item:PowerPunch        .Item:MiniMrMini
+.Item:PointSwap     .Item:CourageShell      .Item:MrSoftener
+.Item:InkySauce     .Item:SlowShroom        .Item:PoisonShroom
+.Item:PointSwap     .Item:SlowShroom        .Item:PoisonShroom
+.Item:DriedBouquet  .Item:TrialStew         .Item:PoisonShroom
+.Item:GoldbarX3     .Item:PointSwap         .Item:Goldbar
+.Item:PointSwap     .Item:SpitePouch        .Item:RuinPowder
+.Item:MiniMrMini    .Item:PointSwap         .Item:PowerPunch
+.Item:RuinPowder    .Item:PointSwap         .Item:SpitePouch
+.Item:SlowShroom    .Item:GradualSyrup      .Item:SlowShroom
+% ttyd recipe only items
+.Item:InkySauce     .Item:CakeMix           .Item:ChocoCake
+.Item:InkySauce     .Item:MousseCake        .Item:ChocoCake
+.Item:Coconut       .Item:FireFlower        .Item:CoconutBomb
+.Item:SnowBunny     .Item:SpicySoup         .Item:CouplesCake
+.Item:CourageShell  .Item:TayceDeluxe       .Item:CourageMeal
+.Item:CourageShell  .Item:TayceDinner       .Item:CourageMeal
+.Item:CourageShell  .Item:TayceSpecial      .Item:CourageMeal
+.Item:KeelMango     .Item:GradualSyrup      .Item:FruitParfait
+.Item:KeelMango     .Item:HoneySyrup        .Item:FruitParfait
+.Item:KeelMango     .Item:JamminJelly       .Item:FruitParfait
+.Item:KeelMango     .Item:MapleSyrup        .Item:FruitParfait
+.Item:KeelMango     .Item:PeachyPeach       .Item:FruitParfait
+.Item:PeachyPeach   .Item:HoneySyrup        .Item:FruitParfait
+.Item:PeachyPeach   .Item:JamminJelly       .Item:FruitParfait
+.Item:PeachyPeach   .Item:MapleSyrup        .Item:FruitParfait
+.Item:KoopaLeaf     .Item:GoldenLeaf        .Item:HealthySalad
+.Item:KoopaLeaf     .Item:Horsetail         .Item:HealthySalad
+.Item:RuinPowder    .Item:CakeMix           .Item:HeartfulCake
+.Item:RuinPowder    .Item:PeachyPeach       .Item:HeartfulCake
+.Item:HoneySyrup    .Item:IceStorm          .Item:IciclePop
+.Item:HoneySyrup    .Item:SnowmanDoll       .Item:IciclePop
+.Item:InkySauce     .Item:FreshPasta        .Item:InkPasta
+.Item:InkySauce     .Item:Koopasta          .Item:InkPasta
+.Item:InkySauce     .Item:Spaghetti         .Item:InkPasta
+.Item:InkySauce     .Item:SpicyPasta        .Item:InkPasta
+.Item:HotSauce      .Item:FreshJuice        .Item:InkySauce
+.Item:HotSauce      .Item:KoopaTea          .Item:InkySauce
+.Item:HotSauce      .Item:ShroomBroth       .Item:InkySauce
+.Item:HotSauce      .Item:KoopaLeaf         .Item:InkySauce
+.Item:HotSauce      .Item:TayceTea          .Item:InkySauce
+.Item:HotSauce      .Item:TastyTonic        .Item:InkySauce
+.Item:KeelMango     .Item:KoopaLeaf         .Item:KoopaBun
+.Item:CakeMix       .Item:KeelMango         .Item:MangoDelight
+.Item:ShootingStar  .Item:FriedShroom       .Item:MeteorMeal
+.Item:ShootingStar  .Item:ShroomRoast       .Item:MeteorMeal
+.Item:ShootingStar  .Item:ShroomSteak       .Item:MeteorMeal
+.Item:Egg           .Item:Horsetail         .Item:OmeletteMeal
+.Item:Egg           .Item:Mushroom          .Item:OmeletteMeal
+.Item:Egg           .Item:SuperShroom       .Item:OmeletteMeal
+.Item:Egg           .Item:LifeShroom        .Item:OmeletteMeal
+.Item:PeachyPeach   .Item:CakeMix           .Item:PeachTart
+.Item:GoldenLeaf    .Item:PoisonShroom      .Item:ShroomBroth
+.Item:GoldenLeaf    .Item:SlowShroom        .Item:ShroomBroth
+.Item:KoopaLeaf     .Item:PoisonShroom      .Item:ShroomBroth
+.Item:KoopaLeaf     .Item:SlowShroom        .Item:ShroomBroth
+.Item:CakeMix       .Item:UltraShroom       .Item:ShroomCrepe
+.Item:SlowShroom    FFFFFFFF                .Item:ShroomRoast
+.Item:LifeShroom    .Item:VoltShroom        .Item:ShroomRoast
+.Item:Mushroom      .Item:FireFlower        .Item:ShroomRoast
+.Item:Mushroom      .Item:SuperShroom       .Item:ShroomRoast
+.Item:Mushroom      .Item:VoltShroom        .Item:ShroomRoast
+.Item:Mushroom      .Item:GradualSyrup      .Item:ShroomRoast
+.Item:SuperShroom   .Item:DriedShroom       .Item:ShroomRoast
+.Item:SuperShroom   .Item:VoltShroom        .Item:ShroomRoast
+.Item:SuperShroom   .Item:KoopaLeaf         .Item:ShroomRoast
+.Item:SuperShroom   .Item:GoldenLeaf        .Item:ShroomRoast
+.Item:GoldenLeaf    .Item:IceStorm          .Item:SnowBunny
+.Item:DriedBouquet  .Item:Mushroom          .Item:SpaceFood
+.Item:DriedBouquet  .Item:SuperShroom       .Item:SpaceFood
+.Item:DriedBouquet  .Item:UltraShroom       .Item:SpaceFood
+.Item:DriedBouquet  .Item:LifeShroom        .Item:SpaceFood
+.Item:HotSauce      .Item:FreshPasta        .Item:SpicyPasta
+.Item:HotSauce      .Item:Spaghetti         .Item:SpicyPasta
+.Item:HotSauce      .Item:Koopasta          .Item:SpicyPasta
+.Item:CakeMix       .Item:GradualSyrup      .Item:TayceCookie
+.Item:CakeMix       .Item:MapleSyrup        .Item:TayceCookie
+.Item:CakeMix       .Item:Egg               .Item:TayceCookie
+.Item:WhackasBump   .Item:GoldenLeaf        .Item:TayceDeluxe
+.Item:ShroomSteak   .Item:HealthySalad      .Item:TayceDeluxe
+.Item:UltraShroom   .Item:FreshPasta        .Item:TayceDeluxe
+.Item:Mushroom      .Item:Horsetail         .Item:TayceDinner
+.Item:SuperShroom   .Item:FireFlower        .Item:TayceDinner
+.Item:SuperShroom   .Item:GradualSyrup      .Item:TayceDinner
+.Item:SuperShroom   .Item:Horsetail         .Item:TayceDinner
+.Item:SuperShroom   .Item:KeelMango         .Item:TayceDinner
+.Item:SuperShroom   .Item:PeachyPeach       .Item:TayceDinner
+.Item:UltraShroom   .Item:KeelMango         .Item:TayceDinner
+.Item:UltraShroom   .Item:PeachyPeach       .Item:TayceDinner
+.Item:LifeShroom    .Item:FireFlower        .Item:TayceDinner
+.Item:LifeShroom    .Item:GradualSyrup      .Item:TayceDinner
+.Item:LifeShroom    .Item:Horsetail         .Item:TayceDinner
+.Item:FreshPasta    .Item:DriedShroom       .Item:TayceDinner
+.Item:FreshPasta    .Item:Mushroom          .Item:TayceDinner
+.Item:FreshPasta    .Item:SuperShroom       .Item:TayceDinner
+.Item:FreshPasta    .Item:LifeShroom        .Item:TayceDinner
+.Item:FreshPasta    .Item:Egg               .Item:TayceDinner
+.Item:FreshPasta    .Item:Coconut           .Item:TayceDinner
+.Item:FreshPasta    .Item:HealthySalad      .Item:TayceDinner
+.Item:HealthySalad  .Item:FriedShroom       .Item:TayceDinner
+.Item:HealthySalad  .Item:Koopasta          .Item:TayceDinner
+.Item:HealthySalad  .Item:Spaghetti         .Item:TayceDinner
+.Item:SpicyPasta    .Item:Coconut           .Item:TayceDinner
+.Item:MeteorMeal    .Item:FruitParfait      .Item:TayceDinner
+.Item:EggMissile    .Item:CoconutBomb       .Item:TayceDynamite
+.Item:IceStorm      .Item:MapleSyrup        .Item:TayceFrappe
+.Item:IceStorm      .Item:JamminJelly       .Item:TayceFrappe
+.Item:WhackasBump   FFFFFFFF                .Item:TayceSpecial
+.Item:UltraShroom   .Item:FreshPasta        .Item:TayceSpecial
+.Item:UltraShroom   .Item:FireFlower        .Item:TayceSpecial
+.Item:UltraShroom   .Item:GradualSyrup      .Item:TayceSpecial
+.Item:UltraShroom   .Item:Horsetail         .Item:TayceSpecial
+.Item:UltraShroom   .Item:InkPasta          .Item:TayceSpecial
+.Item:UltraShroom   .Item:ShroomRoast       .Item:TayceSpecial
+.Item:UltraShroom   .Item:SpicyPasta        .Item:TayceSpecial
+.Item:GoldenLeaf    FFFFFFFF                .Item:TayceTea
+.Item:MapleSyrup    .Item:JamminJelly       .Item:TayceTea
+.Item:PoisonShroom  .Item:CouplesCake       .Item:TrialStew
+.Item:ThunderBolt   .Item:ThunderRage       .Item:TrialStew
+% new items combinations (only the ones that're exclusive to ttyd, due to them using ttyd's new items)
+.Item:IceStorm      .Item:PointSwap         .Item:FireFlower
+.Item:SnowmanDoll   .Item:PointSwap         .Item:FireFlower
+.Item:GradualSyrup  .Item:PointSwap         .Item:HoneySyrup
+.Item:Mushroom      .Item:PointSwap         .Item:HoneySyrup
+.Item:UltraShroom   .Item:PointSwap         .Item:JamminJelly
+.Item:SuperShroom   .Item:PointSwap         .Item:MapleSyrup
+.Item:DriedShroom   .Item:PointSwap         .Item:Mushroom
+.Item:DriedShroom   .Item:PowerPunch        .Item:Mushroom
+.Item:DriedShroom   .Item:HotSauce          .Item:Mushroom
+.Item:DriedShroom   .Item:PeachyPeach       .Item:Mushroom
+.Item:Goldbar       .Item:PointSwap         .Item:Mushroom
+.Item:ThunderRage   .Item:PointSwap         .Item:ShootingStar
+.Item:TastyTonic    .Item:PointSwap         .Item:SleepySheep
+.Item:MapleSyrup    .Item:PointSwap         .Item:SuperShroom
+.Item:LifeShroom    .Item:PointSwap         .Item:SuperShroom
+.Item:VoltShroom    .Item:PointSwap         .Item:SuperShroom
+.Item:SleepySheep   .Item:PointSwap         .Item:TastyTonic
+.Item:EarthQuake    .Item:PointSwap         .Item:ThunderBolt
+.Item:ShootingStar  .Item:PointSwap         .Item:ThunderRage
+.Item:DriedBouquet  .Item:VoltShroom        .Item:ThunderRage
+.Item:PoisonShroom  .Item:PointSwap         .Item:UltraShroom
+.Item:JamminJelly   .Item:PointSwap         .Item:UltraShroom
+.Item:DriedBouquet  .Item:CoconutBomb       .Item:Coconut
+.Item:MrSoftener    .Item:LifeShroom        .Item:DriedShroom
+.Item:MrSoftener    .Item:Mushroom          .Item:DriedShroom
+.Item:MrSoftener    .Item:SuperShroom       .Item:DriedShroom
+.Item:MrSoftener    .Item:UltraShroom       .Item:DriedShroom
+.Item:DriedBouquet  .Item:TayceDynamite     .Item:EggMissile
+.Item:HotSauce      .Item:CakeMix           .Item:FirePop
+.Item:GoldenLeaf    .Item:Mushroom          .Item:LifeShroom
+.Item:GoldenLeaf    .Item:SuperShroom       .Item:LifeShroom
+.Item:GoldenLeaf    .Item:UltraShroom       .Item:LifeShroom
+.Item:GoldenLeaf    .Item:LifeShroom        .Item:LifeShroom
+.Item:SlowShroom    .Item:JamminJelly       .Item:MapleSuper
+% Dried Pasta and Fresh Pasta share the same recipes
+.Item:StrangeLeaf   .Item:FreshPasta        .Item:BlandMeal
+.Item:GoldenLeaf    .Item:FreshPasta        .Item:BlandMeal
+.Item:GoldenLeaf    .Item:DriedPasta        .Item:BlandMeal
+.Item:FreshPasta    .Item:Goomnut           .Item:BlandMeal
+.Item:FreshPasta    .Item:Coconut           .Item:BlandMeal
+.Item:FreshPasta    .Item:Mushroom          .Item:BlandMeal
+.Item:FreshPasta    .Item:VoltShroom        .Item:BlandMeal
+.Item:FreshPasta    .Item:SuperShroom       .Item:BlandMeal
+.Item:FreshPasta    .Item:LifeShroom        .Item:BlandMeal
+.Item:FreshPasta    .Item:RedBerry          .Item:BlandMeal
+.Item:FreshPasta    .Item:YellowBerry       .Item:BlandMeal
+.Item:FreshPasta    .Item:BlueBerry         .Item:BlandMeal
+.Item:KoopaLeaf     .Item:FreshPasta        .Item:Koopasta
+.Item:GoldenLeaf    .Item:FreshPasta        .Item:Koopasta
+.Item:GoldenLeaf    .Item:DriedPasta        .Item:Koopasta
+.Item:FreshPasta    FFFFFFFF                .Item:Spaghetti
+.Item:DriedFruit    .Item:FreshPasta        .Item:YummyMeal
+% Dried Fruit and Dried Bouquet share the same recipes
+.Item:DriedBouquet  .Item:FreshPasta        .Item:YummyMeal
+.Item:DriedBouquet  .Item:DriedPasta        .Item:YummyMeal
+.Item:FreshPasta    .Item:UltraShroom       .Item:YummyMeal
+.Item:DriedBouquet  .Item:StrangeLeaf       .Item:FireFlower
+.Item:DriedBouquet  .Item:GoldenLeaf        .Item:FireFlower
+.Item:DriedFruit    .Item:GoldenLeaf        .Item:FireFlower
+.Item:DriedBouquet  .Item:VoltShroom        .Item:ThunderRage
+.Item:Mushroom      .Item:DriedBouquet      .Item:VoltShroom
+.Item:SuperShroom   .Item:DriedBouquet      .Item:VoltShroom
+.Item:UltraShroom   .Item:DriedBouquet      .Item:VoltShroom
+.Item:LifeShroom    .Item:DriedBouquet      .Item:VoltShroom
+.Item:DriedBouquet  .Item:IcedPotato        .Item:YummyMeal
+.Item:GoldenLeaf    .Item:Goomnut           .Item:BlandMeal
+% Strange Leaf and Golden Leaf share the same recipes
+.Item:Egg           .Item:GoldenLeaf        .Item:BoiledEgg
+.Item:WhackasBump   .Item:GoldenLeaf        .Item:DeluxeFeast
+.Item:GoldenLeaf    FFFFFFFF                .Item:DizzyDial
+.Item:GoldenLeaf    .Item:VoltShroom        .Item:DizzyDial
+.Item:GoldenLeaf    .Item:StinkyHerb        .Item:DizzyDial
+.Item:SpecialShake  .Item:GoldenLeaf        .Item:HealthyJuice
+.Item:RedBerry      .Item:GoldenLeaf        .Item:SleepySheep
+.Item:YellowBerry   .Item:GoldenLeaf        .Item:SleepySheep
+.Item:BlueBerry     .Item:GoldenLeaf        .Item:SleepySheep
+.Item:Melon         .Item:GoldenLeaf        .Item:SpecialShake
+.Item:GoldenLeaf    .Item:CakeMix           .Item:LovePudding
+.Item:Mushroom      .Item:GoldenLeaf        .Item:VoltShroom
+.Item:GoldenLeaf    .Item:IcedPotato        .Item:YummyMeal
+70707070 70707070 70707070 % end of table
+70707070 70707070 70707070 % end of table (please)
+}
+
+
+
+%reads around 8024F534 ish
+
+% ReactionIndex - Item
+% If an item isn't present here, it defaults to .rNormal (1)
+#new:IntTable $IntTable_ItemReactions
+{
+.rMistake   .Item:Mistake
+.rDelicious .Item:BlandMeal
+.rDelicious .Item:OmeletteMeal
+.rDelicious .Item:BigCookie
+.rDelicious .Item:YoshiCookie
+.rDelicious .Item:LovePudding
+.rDelicious .Item:SpecialShake 
+.rDelicious .Item:YummyMeal
+.rSpecialty .Item:DeluxeFeast
+.rSpecialty .Item:HealthyJuice
+.rIdk       .Item:DizzyDial 
+.rIdk       .Item:SleepySheep 
+.rIdk       .Item:ThunderRage
+.rIdk       .Item:FireFlower 
+.rIdk		.Item:RepelGel
+FFFFFFFF FFFFFFFF % End of table
+}
+
+% ItemID - ScriptPtr
+% If a specified item is cooked on its own, the corresponding script will be called instead of the regular script
+% The replacement script should change *Var6 to choose which item should be the result of the cooking
+#new:IntTable $SpecialCookingResultHandlers
+{
+    .Item:Mystery $Script_HandleMysteryCooked
+    FFFFFFFF FFFFFFFF % end of table
+}
+
+/%
+    If you add recipes to items previously uncookable, add the ItemID of said item to $RecipesDiscovedIDs and a flag in $RecipesDiscovedFlags
+    Then, in kmr_20.mpat, change $DataTable_80252DC0 to be the same as $RecipesDiscovedFlags, and increase the counter in the @ $Function_802421A0 hook
+%/
+% indexes for discovered Recipe flags (RecipesDiscovedFlags) The numbers are ItemID's
+@ $RecipesDiscovedIDs {
+
+    .Item:SpicySoup         .Item:ApplePie      .Item:HoneyUltra        .Item:MapleUltra        .Item:JellyUltra
+    .Item:Koopasta          .Item:FriedShroom   .Item:ShroomCake        .Item:ShroomSteak       .Item:HotShroom
+    .Item:SweetShroom       .Item:BlandMeal     .Item:YummyMeal         .Item:DeluxeFeast       .Item:SpecialShake
+    .Item:HealthyJuice      .Item:BigCookie     .Item:MousseCake        .Item:Mistake           .Item:KoopaTea
+    .Item:HoneySuper        .Item:MapleSuper    .Item:JellySuper        .Item:Spaghetti         .Item:EggMissile
+    .Item:FriedEgg          .Item:HoneyShroom   .Item:HoneyCandy        .Item:ElectroPop        .Item:FirePop
+    .Item:LimeCandy         .Item:CocoCandy     .Item:LemonCandy        .Item:JellyCandy        .Item:LovePudding
+    .Item:KookyCookie       .Item:FrozenFries   .Item:PotatoSalad       .Item:NuttyCake         .Item:MapleShroom
+    .Item:BoiledEgg         .Item:YoshiCookie   .Item:JellyShroom1      .Item:TastyTonic        .Item:DizzyDial
+    .Item:FreshJuice        .Item:RepelGel      .Item:LifeShroom        .Item:VoltShroom        .Item:SleepySheep
+    .Item:ThunderRage       .Item:FireFlower
+    % NEW
+    .Item:EarthQuake        .Item:Goldbar       .Item:IceStorm          .Item:MiniMrMini        .Item:MrSoftener
+    .Item:PoisonShroom      .Item:RuinPowder    .Item:CourageShell      .Item:PowerPunch        .Item:SpitePouch
+    .Item:SlowShroom        .Item:ChocoCake     .Item:CoconutBomb       .Item:CouplesCake       .Item:CourageMeal
+    .Item:FruitParfait      .Item:HealthySalad  .Item:HeartfulCake      .Item:IciclePop         .Item:InkPasta
+    .Item:InkySauce         .Item:KoopaBun      .Item:MangoDelight      .Item:MeteorMeal        .Item:OmeletteMeal
+    .Item:PeachTart         .Item:ShroomBroth   .Item:ShroomCrepe       .Item:ShroomRoast       .Item:SnowBunny
+    .Item:SpaceFood         .Item:SpicyPasta    .Item:TrialStew         .Item:TayceCookie       .Item:TayceDeluxe
+    .Item:TayceDinner       .Item:TayceDynamite .Item:TayceFrappe       .Item:TayceSpecial      .Item:TayceTea
+    00000000
+}
+
+%0x71 is a placeholder for another item (not counted in recipe count)
+
+%Problem: 56 entries but there are less recognized recipes (~54)
+%	Items not recognized as real recipes
+%		Mistake
+%		Super soda?
+%		
+
+% discovered Recipe flags - mirrored in kmr_20 as $DataTable_80252DC0, these are locations of GlobalFlags[136-169]
+@ $RecipesDiscovedFlags
+{
+	*GF_MAC02_DiscoveredRecipeNEW_00 *GF_MAC02_DiscoveredRecipeNEW_01 *GF_MAC02_DiscoveredRecipeNEW_02 *GF_MAC02_DiscoveredRecipeNEW_03
+	*GF_MAC02_DiscoveredRecipeNEW_04 *GF_MAC02_DiscoveredRecipeNEW_05 *GF_MAC02_DiscoveredRecipeNEW_06 *GF_MAC02_DiscoveredRecipeNEW_07
+	*GF_MAC02_DiscoveredRecipeNEW_08 *GF_MAC02_DiscoveredRecipeNEW_09 *GF_MAC02_DiscoveredRecipeNEW_0A *GF_MAC02_DiscoveredRecipeNEW_0B
+	*GF_MAC02_DiscoveredRecipeNEW_0C *GF_MAC02_DiscoveredRecipeNEW_0D *GF_MAC02_DiscoveredRecipeNEW_0E *GF_MAC02_DiscoveredRecipeNEW_0F
+	*GF_MAC02_DiscoveredRecipeNEW_10 *GF_MAC02_DiscoveredRecipeNEW_11 *GF_MAC02_DiscoveredRecipeNEW_13 *GF_MAC02_DiscoveredRecipeNEW_14
+	*GF_MAC02_DiscoveredRecipeNEW_15 *GF_MAC02_DiscoveredRecipeNEW_16 *GF_MAC02_DiscoveredRecipeNEW_17 *GF_MAC02_DiscoveredRecipeNEW_18
+	*GF_MAC02_DiscoveredRecipeNEW_19 *GF_MAC02_DiscoveredRecipeNEW_1A *GF_MAC02_DiscoveredRecipeNEW_1B *GF_MAC02_DiscoveredRecipeNEW_1C
+	*GF_MAC02_DiscoveredRecipeNEW_1D *GF_MAC02_DiscoveredRecipeNEW_1E *GF_MAC02_DiscoveredRecipeNEW_1F *GF_MAC02_DiscoveredRecipeNEW_20
+	*GF_MAC02_DiscoveredRecipeNEW_21 *GF_MAC02_DiscoveredRecipeNEW_22 *GF_MAC02_DiscoveredRecipeNEW_23 *GF_MAC02_DiscoveredRecipeNEW_24
+	*GF_MAC02_DiscoveredRecipeNEW_25 *GF_MAC02_DiscoveredRecipeNEW_26 *GF_MAC02_DiscoveredRecipeNEW_27 *GF_MAC02_DiscoveredRecipeNEW_28
+	*GF_MAC02_DiscoveredRecipeNEW_29 *GF_MAC02_DiscoveredRecipeNEW_2A *GF_MAC02_DiscoveredRecipeNEW_2B *GF_MAC02_DiscoveredRecipeNEW_2C
+	*GF_MAC02_DiscoveredRecipeNEW_2D *GF_MAC02_DiscoveredRecipeNEW_2F *GF_MAC02_DiscoveredRecipeNEW_30 *GF_MAC02_DiscoveredRecipeNEW_31
+	*GF_MAC02_DiscoveredRecipeNEW_32 *GF_MAC02_DiscoveredRecipeNEW_33
+    % NEW
+    *GF_MAC02_DiscoveredRecipeNEW_34 *GF_MAC02_DiscoveredRecipeNEW_35 *GF_MAC02_DiscoveredRecipeNEW_36 *GF_MAC02_DiscoveredRecipeNEW_37 
+    *GF_MAC02_DiscoveredRecipeNEW_38 *GF_MAC02_DiscoveredRecipeNEW_39 *GF_MAC02_DiscoveredRecipeNEW_3A *GF_MAC02_DiscoveredRecipeNEW_3B 
+    *GF_MAC02_DiscoveredRecipeNEW_3C *GF_MAC02_DiscoveredRecipeNEW_3D *GF_MAC02_DiscoveredRecipeNEW_3E *GF_MAC02_DiscoveredRecipeNEW_3F 
+    *GF_MAC02_DiscoveredRecipeNEW_40 *GF_MAC02_DiscoveredRecipeNEW_41 *GF_MAC02_DiscoveredRecipeNEW_42 *GF_MAC02_DiscoveredRecipeNEW_43
+    *GF_MAC02_DiscoveredRecipeNEW_44 *GF_MAC02_DiscoveredRecipeNEW_45 *GF_MAC02_DiscoveredRecipeNEW_46 *GF_MAC02_DiscoveredRecipeNEW_47
+    *GF_MAC02_DiscoveredRecipeNEW_48 *GF_MAC02_DiscoveredRecipeNEW_49 *GF_MAC02_DiscoveredRecipeNEW_4A *GF_MAC02_DiscoveredRecipeNEW_4B
+    *GF_MAC02_DiscoveredRecipeNEW_4C *GF_MAC02_DiscoveredRecipeNEW_4D *GF_MAC02_DiscoveredRecipeNEW_4E *GF_MAC02_DiscoveredRecipeNEW_4F
+    *GF_MAC02_DiscoveredRecipeNEW_50 *GF_MAC02_DiscoveredRecipeNEW_51 *GF_MAC02_DiscoveredRecipeNEW_52 *GF_MAC02_DiscoveredRecipeNEW_53
+    *GF_MAC02_DiscoveredRecipeNEW_54 *GF_MAC02_DiscoveredRecipeNEW_55 *GF_MAC02_DiscoveredRecipeNEW_56 *GF_MAC02_DiscoveredRecipeNEW_57
+    *GF_MAC02_DiscoveredRecipeNEW_58 *GF_MAC02_DiscoveredRecipeNEW_59 *GF_MAC02_DiscoveredRecipeNEW_5A *GF_MAC02_DiscoveredRecipeNEW_5B
+    00000000
+}
+
+%for some stupid reason, this function puts literally everything in the stack
+/%
+@ $Function_80242F60
+{
+	[0]   ADDIU     SP, SP, -308	%was -200 earlier 	
+    [4]   SW        RA, 300 (SP)
+	[24]  ADDIU     A0, V0, 120		%D0 -> 100
+	[54]  ADDIU     V1, SP, 130		%E0 -> 110
+	[60]  ADDIU     A0, V0, 120		%D0 -> 100
+	[94]  ADDIU     A1, SP, 130		%E0 -> 110 (must be multiple of 0x10)
+	[C4]  SLTI      V0, A0, 48
+    [D0]  LW        RA, 300 (SP)
+    [DC]  ADDIU     SP, SP, 308	
+}
+%/
+
+%screw this, rewrite it to actually make sense - by ShadeBlade
+@ $Function_80242F60
+{
+	PUSH	  	RA, S0, S1, S2, S3, S4
+	LW        	V0, C (A0)
+	JAL       	~Func:get_variable
+	LW        	A1, 0 (V0)
+	COPY      	S4, V0
+	%S4 = V0	
+	LA        	S0, $RecipesDiscovedIDs	
+	LA        	S1, $RecipesDiscovedFlags
+	.looptop
+	LW			S3, 0 (S0)
+	BNE			S3, S4, .postcheck
+	NOP
+	%success, set flag to 1
+	CLEAR     	A0
+	LW		  	A1, 0 (S1)
+	JAL       	~Func:set_variable
+	LI        	A2, 1
+	BEQ			R0, R0, .end
+	NOP
+	.postcheck
+	%post check
+	ADDI	  	S0, S0, 4
+	ADDI	  	S1, S1, 4
+	LW		  	S2, 0 (S1)
+	BEQ			S2, R0, .end
+	NOP
+	BEQ			R0, R0, .looptop
+	NOP
+	.end
+	POP			RA, S0, S1, S2, S3, S4
+	JR			RA
+	LI			V0, 2
+}
+
+
+% MYSTERY
+#define .mysteryMistakeChance 500` % chance for a mystery to turn into a mistake, multiplied by 10
+#define .mysteryMistakeItem .Item:Mistake
+#define .mysteryItemCount 23` % How many items are in $IntTable_8024909C
+
+% ItemID's that a mystery can turn into if it's not a mistake.
+% Be sure to update .mysteryItemCount!
+@ $IntTable_8024909C
+{
+	.Item:FireFlower    .Item:TastyTonic    .Item:FreshJuice    .Item:SleepySheep   .Item:LifeShroom
+    .Item:DizzyDial     .Item:VoltShroom    .Item:FriedShroom   .Item:Koopasta      .Item:SpicySoup
+	.Item:KoopaTea      .Item:Spaghetti     .Item:FriedEgg      .Item:BoiledEgg     .Item:PotatoSalad
+    .Item:HoneyShroom   .Item:BlandMeal     .Item:ThunderRage   .Item:EggMissile    .Item:ApplePie
+	.Item:KookyCookie   .Item:BigCookie     .Item:SpecialShake
+}
+
+/%========================================================================
+  DON'T TOUCH ANYTHING PAST THIS POINT UNLESS YOU KNOW WHAT YOU'RE DOING!
+========================================================================%/
+
+#new:Script $Script_HandleMysteryCooked 
+{
+    % *Var6 -> ItemID of cooked item
+    Declare *RandomNumber
+
+    % Try to turn into a mistake
+    Call RandInt ( 1000` *RandomNumber )
+    If *RandomNumber > .mysteryMistakeChance
+        Set *Var6 .mysteryMistakeItem
+        Return
+    EndIf
+
+    % Turn into a random item from the table
+    Call RandInt ( 10000` *RandomNumber )
+    Mod *RandomNumber .mysteryItemCount
+    Add *RandomNumber 1`
+
+    UseIntBuffer $IntTable_8024909C
+    Loop *RandomNumber
+        Get1Int *Var6 % ItemID
+    EndLoop
+
+    Return
+    End
+}
+
+#new:Script $TayceT_WalkToCook 
+{
+    If .InstantCooking == .False
+        ExecWait $Script_802490F8
+    EndIf
+    Return
+    End
+}
+
+%The frying pan / cake script
+@ $Script_8024926C
+{
+    0:  If  *GF_MAC02_TayceT_HoldingCake  ==  .True
+   10:  	Call  $Function_80243088    ( *Var0 )
+   20:  	If  *Var0  !=  00000000
+   30:  		Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 0004001A ) % Here's the Cake!
+   50:  		Set   *Var0  .Item:MousseCake % 1B7
+   60:  		Set   *Var1  00000000
+   70:  		ExecWait  $Script_80246154
+   7C:  		Call  AddItem       ( .Item:MousseCake *Var0 )
+   90:  		Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 0004001B ) % This is my most delicious Cake. One taste of it wo ...
+   B0:  		Set   *GB_StoryProgress  .Story:Ch4_GotTayceTsCake
+   C0:  	Else
+   C8:  		Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 0004001C ) % Oh, my... You're carrying too much. You can't poss ...
+   E8:  		Set   *GF_MAC02_TayceT_HoldingCake  .True
+   F8:  	EndIf
+  100:  	Return
+  108:  EndIf
+  110:  Call  SpeakToPlayer ( 00000000 00AA0004 00AA0006 00000000 00040017 ) % Oh...hello there, hon. Thank you for coming to vis ...
+  130:  Set   *Var0  $???_80249264
+  140:  Set   *Var1  00000000
+  150:  ExecWait  $Script_802488C4
+  15C:  Switch  *Var0
+  168:  	Case  ==  00000000
+  174:  	Case  ==  FFFFFFFF
+  180:  		Call  SpeakToPlayer ( 00000000 00AA0004 00AA0006 00000000 00040018 ) % But...you aren't going to give me back my Frying P ...
+  1A0:  	Default
+  1A8:  		Call  SpeakToPlayer ( 00000000 00AA0005 00AA0001 00000000 00040019 ) % Oh, Mario! My dear, dear Frying Pan! You saved it  ...
+  1C8:  		ExecWait  $Script_802490F8
+  1D4:  		Call  $Function_80243088    ( *Var0 )
+  1E4:  		If  *Var0  !=  00000000
+  1F4:  			Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 0004001A ) % Here's the Cake!
+  214:  			Set   *Var0  .Item:MousseCake % 1B7
+  224:  			Set   *Var1  00000000
+  234:  			ExecWait  $Script_80246154
+  240:  			Call  AddItem       ( .Item:MousseCake *Var0 )
+  254:  			Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 0004001B ) % This is my most delicious Cake. One taste of it wo ...
+  274:  			Set   *GB_StoryProgress  .Story:Ch4_GotTayceTsCake
+  284:  		Else
+  28C:  			Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 0004001C ) % Oh, my... You're carrying too much. You can't poss ...
+  2AC:  			Set   *GF_MAC02_TayceT_HoldingCake  .True
+  2BC:  		EndIf
+  2C4:  EndSwitch
+  2CC:  Return
+  2D4:  End
+}
+
+@ $Script_Interact_8024A034
+{
+    0:  If  *GB_StoryProgress  >=  .Story:Ch3_StarSpritDeparted % FFFFFFF3
+   10:  	If  *GB_StoryProgress  <  .Story:Ch4_GotTayceTsCake % FFFFFFFD
+   20:  		ExecWait  $Script_8024926C
+   2C:  		Return
+   34:  	EndIf
+   3C:  EndIf
+   44:  Call  FindKeyItem   ( .Item:Cookbook *Var0 )
+   58:  If  *Var0  ==  FFFFFFFF
+   68:  	ExecWait  $Script_80249684
+   74:  Else
+   7C:  	ExecWait  $Script_80249550
+   88:  EndIf
+   90:  Return
+   98:  End
+}
+
+
+
+% Allow access to new items?
+@ $Function_802430D0
+{
+    0:  LI        A0, D9		%5A		%??? table has this many entries *Good thing to know: this is another way the game filters out key items from regular inventory?
+    4:  LA        V1, $End[6CC] %$End[4D0]
+    C:  LI        V0, DF		%DA
+        .o10
+   10:  SW        V0, 0 (V1)
+   14:  ADDIU     V1, V1, FFFC
+   18:  ADDIU     A0, A0, FFFF
+   1C:  BGEZ      A0, .o10
+   20:  ADDIU     V0, V0, FFFF
+   24:  SAW       R0, $End[6D0]
+   2C:  JR        RA
+   30:  LI        V0, 2
+}
+
+% Tayce T's "give cookbook" script
+% Completely changed to fix the bug that made Tayce T stop working after obtaining the cookbook
+@ $Script_80249550
+{
+  Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 0004001D ) % Oh, my! Oh, good heavens!! That book you have! It  ...
+  Set   *GF_MAC02_TayceT_HasCookbook  .True
+  Call  FindKeyItem   ( .CookbookItemID *Var0 )
+  Call  RemoveKeyItemAt ( *Var0 )
+  Call  SpeakToPlayer ( 00000000 00AA0004 00AA0001 00000000 00040020 ) % Ooh! I can have it? Oh, how delightful! With this  ...
+  Return
+  End
+}
+
+
+#new:String $AllRecipes
+{
+	[Style Right]
+	Wow! It looks like I've made[BR]
+	everything in this cookbook![BR]
+	I couldn't have done it without[BR]
+	you, Mario. [Heart][BR]
+	[Wait][Next]
+}
+
+% some label definitions, don't edit!
+#define .lOneItemCook 5
+#define .lHandleCook 6
+% Tayce T's talk script
+@ $Script_80249684 {
+        %Set *GF_MAC02_TayceT_HasCookbook 1 % debug
+    0:  Call     DisablePlayerInput 	( .True )
+   10:  If  *Flag_MAC_96  ==  00000000 
+            % met first time
+   20:  	Set  *Flag_MAC_96  00000001 
+   30:  	Set  *AreaFlag[001]  00000001 
+   40:  	Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040000 ) % Oh my goodness, it's Mario! My name is Tayce T. I  ...
+   60:  Else
+   68:  	If  *AreaFlag[001]  ==  00000000 
+   78:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040001 ) % Oh, it's Mario! Hi there! Would you like me to coo ...
+   98:  		Set  *AreaFlag[001]  00000001 
+   A8:  	Else
+   B0:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040002 ) % Yes, honey? Would you like me to cook you somethin ...
+   D0:  	EndIf
+   D8:  EndIf
+   E0:  Call     $Function_80243040 ( *Var[0] )
+   F0:  If  *Var[0]  <=  00000000 
+  100:  	Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 00040003 ) % Oh my. You don't have any ingredients for me. I ca ...
+  120:  	Goto     00000009 
+  12C:  EndIf
+  134:  Call     ShowChoice  	( 001E0010 ) % Yes No 
+  144:  If  *Var[0]  ==  00000001 
+  154:  	Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 00040004 ) % Oh, that's too bad. I was so excited to show you m ...
+  174:  	Goto     00000009 
+  180:  EndIf
+  188:  Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 00040005 ) % Which ingredient would you like me to use?
+  1A8:  Label    00000001 
+  1B4:  Set  *Var[3]  00000000 
+  1C4:  Call     $Function_802430D0 ( )
+  1D0:  Set  *Var[0]  $End[368] 
+  1E0:  Set  *Var[1]  00000000 
+  1F0:  ExecWait $Script_80248A48 
+  1FC:  Switch  *Var[0] 
+  208:  	Case  ==  00000000 
+  214:  	Case  ==  FFFFFFFF 
+  220:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040006 ) % You don't want me to cook? 
+  240:  		Call     ShowChoice  	( 001E0009 ) % Don't Cook Cook 
+  250:  		If  *Var[0]  ==  00000000 
+  260:  			Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 00040004 ) % Oh, that's too bad. I was so excited to show you m ...
+  280:  			Goto     00000009 
+  28C:  		EndIf
+  294:  		Call     802D0A98 ( )
+  2A0:  		Set  *Var[3]  00000001 
+  2B0:  	Default
+  2B8:  		Set  *Var[8]  *Var[0] 
+  2C8:  		Call     AddItem     	( *Var[0] *Var[1] )
+  2DC:  EndSwitch
+  2E4:  If  *Var[3]  ==  00000001 
+  2F4:  	Goto     00000001 
+  300:  EndIf
+  308:  If  *GF_MAC02_TayceT_HasCookbook  ==  .False 
+  318:  	Goto     .lOneItemCook 
+  324:  EndIf
+  32C:  Call     $Function_80243040 ( *Var[0] )
+  33C:  If  *Var[0]  <  00000002 
+  34C:  	Goto     .lOneItemCook  
+  358:  EndIf
+  360:  Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040007 ) % Would you like me to use another ingredient? 
+  380:  Call     ShowChoice  	( 001E0010 ) % Yes No 
+  390:  Call     802D0A98 ( )
+  39C:  If  *Var[0]  ==  00000001 
+  3AC:  	Goto     .lOneItemCook  
+  3B8:  EndIf
+  3C0:  Label    00000002 
+  3CC:  Call     RemoveItem  	( *Var[8] *Var[0] )
+  3E0:  Set  *Var[3]  00000000 
+  3F0:  Call     $Function_802430D0 ( )
+  3FC:  Set  *Var[0]  $End[368] 
+  40C:  Set  *Var[1]  00000000 
+  41C:  ExecWait $Script_80248A48 
+  428:  Call     AddItem     	( *Var[8] *Var[1] )
+  43C:  Switch  *Var[0] 
+  448:  	Case  ==  00000000 
+  454:  	Case  ==  FFFFFFFF 
+  460:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040008 ) % What's the matter, honey? 
+  480:  		Call     ShowChoice  	( 001E0008 ) % Make with one Choose the second Stop 
+  490:  		If  *Var[0]  ==  00000000 
+  4A0:  			Call     802D0A98 ( )
+  4AC:  			Goto     .lOneItemCook  
+  4B8:  		EndIf
+  4C0:  		If  *Var[0]  ==  00000002 
+  4D0:  			Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 00040004 ) % Oh, that's too bad. I was so excited to show you m ...
+  4F0:  			Goto     00000009 
+  4FC:  		EndIf
+  504:  		Call     802D0A98 ( )
+  510:  		Set  *Var[3]  00000001 
+  520:  	Default
+  528:  		Set  *Var[9]  *Var[0] 
+  538:  		Call     AddItem     	( *Var[0] *Var[1] )
+  54C:  		If  *Var[8]  ==  *Var[9] 
+  55C:  			Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040009 ) % This is the same kind as the first ingredient. Ple ...
+  57C:  			Set  *Var[3]  00000001 
+  58C:  		EndIf
+  594:  EndSwitch
+  59C:  If  *Var[3]  ==  00000001 
+  5AC:  	Goto     00000002 
+  5B8:  EndIf
+  5C0:  Set  *Var[0]  *Var[8] 
+  5D0:  Call     $Function_80241874 ( *Var[0] )
+  5E0:  Call     SetMessageString 	( *Var[0] 00000000 )
+  5F4:  Set  *Var[1]  *Var[9] 
+  604:  Call     $Function_80241874 ( *Var[1] )
+  614:  Call     SetMessageString 	( *Var[1] 00000001 )
+  628:  Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 0004000B ) % Then I shall cook with  and . 
+  648:  Call     ShowChoice  	( 001E0010 ) % Yes No 
+  658:  If  *Var[0]  ==  00000001 
+  668:  	Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 0004000C ) % Oh my. You don't want me to cook now? Well, come b ...
+  688:  	Goto     00000009 
+  694:  EndIf
+  % Cook double item recipe:
+  %69C:  Call     $Function_80242DBC ( *Var[6] *Var[7] *Var[8] *Var[9] )
+        ExecWait $Script_Get2ItemRecipe
+  6B8:  Call     RemoveItem  	( *Var[8] *Var[0] )
+  6CC:  Call     RemoveItem  	( *Var[9] *Var[0] )
+  6E0:  Goto     .lHandleCook
+  % One Item
+  6EC:  Label    .lOneItemCook 
+  6F8:  Set  *Var[0]  *Var[8] 
+  708:  Call     $Function_80241874 ( *Var[0] )
+  718:  Call     SetMessageString 	( *Var[0] 00000000 )
+  72C:  Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 0004000A ) % Then I shall cook with . 
+  74C:  Call     ShowChoice  	( 001E0010 ) % Yes No 
+  75C:  If  *Var[0]  ==  00000001 
+  76C:  	Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 0004000C ) % Oh my. You don't want me to cook now? Well, come b ...
+  78C:  	Goto     00000009 
+  798:  EndIf
+  %7A0:  Call     $Function_80242C44 ( *Var[6] *Var[7] *Var[8] *Flag_MAC_98 ) % GetOneItemRecipe
+        ExecWait $Script_Get1ItemRecipe
+  7BC:  Call     RemoveItem  	( *Var[8] *Var[0] )
+  % End, give the item
+  % *Var[6] -> Received item
+  % *Var[7] -> Reaction
+  7D0:  Label    .lHandleCook 
+  7DC:  Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 0004000D ) % I'll whip something special up just for you, honey ...
+  7FC:  ExecWait $TayceT_WalkToCook 
+  808:  Switch  *Var[7] 
+  814:  	Case  ==  .rMistake
+  820:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040012 ) % Oh... I'm so sorry. This recipe didn't work out. O ...
+  840:  	Case  ==  .rDelicious 
+  84C:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 0004000F ) % All done! It smells delicious! 
+  86C:  	Case  ==  .rSpecialty 
+  878:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040010 ) % Oh, sweet success! This dish is one of my specialt ...
+  898:  	Case  ==  .rIdk 
+  8A4:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040013 ) % OK, all finished! ...I don't exactly know what it  ...
+  8C4:  	Default % .rNormal
+  8CC:  		Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040011 ) % Here you are! This recipe's not too bad. 
+  8EC:  EndSwitch
+  8F4:  Call     ContinueSpeech 	( 00000000 00AA0004 00AA0001 00000000 00040014 ) % Here, please!
+  914:  Call     $Function_80242F60 ( *Var[6] ) % Handles unlocked recipe flags - uses $???_8024E470, which is copied in kmr_20 as $???_80252DC0
+  924:  Set  *Var[0]  *Var[6] 
+  934:  Set  *Var[1]  00000000 
+  944:  ExecWait $Script_80246154 % ShowGotItem
+  950:  Call     AddItem     	( *Var[6] *Var[0] )
+		%Check all recipes
+		If *GF_MAC02_DiscoveredAllRecipes == .False
+			%check using the missing recipe function
+			Call	 $Function_UnusedItem ( *Var2 )
+			If *Var2 == FFFFFFFF
+				Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 $AllRecipes ) % Oh, it's Mario! Hi there! Would you like me to coo ...
+				Set     *GF_MAC02_DiscoveredAllRecipes .True
+			EndIf
+        EndIf
+  964:  Call     SpeakToPlayer 	( 00000000 00AA0004 00AA0001 00000000 00040015 ) % Come back anytime, hon. I look forward to it!
+  984:  Label    00000009 
+  990:  Call     DisablePlayerInput 	( .False )
+  9A0:  Return
+  9A8:  End
+}
+
+% in *Var[6] -> Item
+% out *Var[7] -> Reaction index
+#new:Script $Script_GetReaction
+{
+    UseIntBuffer $IntTable_ItemReactions
+    Loop 
+        Get1Int *Var[7] % Reaction Index
+        Get1Int *Var[D] % Item
+        If *Var[D] == *Var[6]
+            Return
+        EndIf
+        If *Var[D] == FFFFFFFF % End of table
+            Set *Var[7] .rNormal
+            Return
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+% out *Var[6] -> Received item
+% out *Var[7] -> Reaction
+% in *Var[8] -> Item used for cooking
+#new:Script $Script_Get1ItemRecipe
+{
+    % Var[8] -> used ItemID
+
+    % Check if there's a special handler for this ItemID
+    UseIntBuffer $SpecialCookingResultHandlers
+    Loop
+        Get1Int *Var[D] % item
+        If *Var[D] == FFFFFFFF % end of table
+            BreakLoop
+        EndIf
+        Get1Int *Var[7] % Script
+        If *Var[D] == *Var[8]
+            % Custom handler exists, just use that
+            ExecWait *Var[7]
+            ExecWait $Script_GetReaction % Sets *Var[7] to reactionID
+            Return
+        EndIf
+    EndLoop
+    
+    UseIntBuffer $IntTable_RecipeTable
+    % 1 Item
+    Loop
+        Get1Int *Var[D] % Item1
+        If *Var[D] == 70707070
+            % End of table, no recipe :(
+            Set *Var[6] .Item:Mistake
+            Set *Var[7] 0
+            Return
+        EndIf
+        If *Var[D] == FFFFFFFF
+            % End of table, no recipe :(
+            Set *Var[6] .Item:Mistake
+            Set *Var[7] 0
+            Return
+        EndIf
+        Get1Int *Var[7] % Item2, not used but we still need to check for FFFFFFFF
+        Get1Int *Var[6] % Received item
+        If *Var[D] == *Var[8]
+        If *Var[7] == FFFFFFFF
+            % Recipe exists:
+            ExecWait $Script_GetReaction % Sets *Var[7]
+            Return
+        EndIf
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+% out *Var[6] -> Received item
+% out *Var[7] -> Reaction
+% in *Var[8] -> Item used for cooking
+% in *Var[9] -> 2nd Item used for cooking
+#new:Script $Script_Get2ItemRecipe {
+    UseIntBuffer $IntTable_RecipeTable
+    % 2 Items
+    Loop
+        Get1Int *Var[D] % Item1
+        If *Var[D] == 70707070
+            % End of table, no recipe :(
+            Set *Var[6] .Item:Mistake
+            Set *Var[7] 0
+            Return
+        EndIf
+        If *Var[D] == FFFFFFFF
+            % End of table, no recipe :(
+            Set *Var[6] .Item:Mistake
+            Set *Var[7] 0
+            Return
+        EndIf
+        Get1Int *Var[E] % Item 2
+        Get1Int *Var[6] % Received item
+        If *Var[D] == *Var[8] % Item1 == Item1
+            If *Var[E] == *Var[9] % Item2 == Item2
+                % Recipe exists:
+                ExecWait $Script_GetReaction % Sets *Var[7]
+                Return
+            EndIf
+        EndIf
+        If *Var[D] == *Var[9] % Item1 == Item2
+            If *Var[E] == *Var[8] % Item2 == Item1
+                % Recipe exists:
+                ExecWait $Script_GetReaction % Sets *Var[7]
+                Return
+            EndIf
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+#new:Function $Function_UnusedItem %arg 1 = output (FFFFFFFF if all recipes are done)
+{
+	PUSH	  RA, S1, S2, S3
+	COPY	  S2, A0
+	LW        V0, C (S2)
+	COPY	  S1, V0
+	JAL		  $FindUnusedRecipeItem
+	NOP
+	COPY	  A0, V0
+	LW        V0, C (S2)
+	COPY	  A2, A0
+	COPY	  A0, S2
+	JAL       ~Func:set_variable
+	LW        A1, 0 (S1) 
+	POP 	  RA, S1, S2, S3
+	JR		  RA
+	ORI 	  V0, R0, 2
+}
+
+#new:Function $FindUnusedRecipeItem		
+{
+	PUSH 	  RA, S1, S2, S3
+	COPY	  S1, R0
+	LA        S2, $RecipesDiscovedFlags
+    .o5C
+	LW        A1, 0 (S2)
+	BEQ       A1, R0, .o84
+	SLL       V0, S1, 10
+	JAL       ~Func:get_variable
+	CLEAR     A0
+	BEQ		  V0, R0, .found
+	NOP
+    .o78
+	ADDIU     S2, S2, 4
+	BEQ       R0, R0, .o5C
+	ADDIU     S0, S0, 1
+    .o84
+	ADDI	  S1, R0, FFFF
+	BEQ		  R0, R0, .notfound
+	NOP
+	.found
+	LI		  S3, $RecipesDiscovedFlags
+	SUB		  S2, S2, S3					%now S2 is an offset value
+	LI		  S3, $RecipesDiscovedIDs
+	ADD		  S2, S2, S3
+	LW		  S1, 0 (S2)
+	.notfound
+	COPY	  V0, S1
+	POP 	  RA, S1, S2, S3
+	JR		  RA
+	NOP
+}
+
+@ $Function_802418FC
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_802418FC[1E4]
+}

@@ -1,0 +1,151 @@
+% Add fireplace entrance
+
+#alias $Script_80241D60 $Script_InitPanners
+#alias $Script_802428D0 $Script_BindScripts
+#alias $Script_80244BF4 $Script_UpdateVinylPlayerTrigger
+#alias $Script_80241C50 $Script_EnterSplitSingleDoor
+#alias $Script_80241BE0 $Script_SetMusicTrack
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000002
+    [Background]  80200000
+    [MapTattle]   001900B8
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 %   68.0    0.0  235.0    0.0
+    ~Vec4f:Entry1
+}
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:BoosMansion
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  MakeNpcs  ( .False $NpcGroupList_80243054 )
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_InitPanners
+    Exec  $Script_BindScripts
+    Exec  $Script_UpdateVinylPlayerTrigger
+    Exec  $Script_TrackEntry
+    Exec  $Script_SetMusicTrack
+    Return
+    End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_80241CAC .Trigger:WallPressA ~Collider:tt1 00000001 00000000
+    Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry1 )
+	Exec     ExitWalk
+	Call     GotoMap   ( "obk_10" ~Entry:obk_10:Entry0 )
+	Wait     100`
+	Return
+	End
+}
+
+#new:Script $Script_TrackEntry
+{
+    Call    GetEntryID ( *Var0 )
+    If *Var0 == 0
+        Exec  $Script_CreateExitTriggers
+        Exec  $Script_EnterSplitSingleDoor
+    Else
+        Set   *Var0  $Script_CreateExitTriggers
+        Exec  EnterWalk
+        Wait  1`
+    EndIf
+    If *GF_OBK07_OpenFireplace == .True
+        Call    EnableModel ( ~Model:ma .False )
+        Call    ModifyColliderFlags   ( .False ~Collider:o283 7FFFFE00 )
+    EndIf
+    Return
+    End
+}
+
+@ $Script_BindScripts {
+    Bind  $Script_BurnMario .Trigger:WallPressA ~Collider:o283 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_BurnMario {
+    If  *MapVar[0]  ==  00000001
+        Return
+    EndIf
+    Set   *MapVar[0]  00000001
+    Call  DisablePlayerInput    ( .True )
+    Thread
+        Call  AdjustCam ( .Cam:Default *Fixed[4.0]  0` *Fixed[250.0] *Fixed[17.5] *Fixed[-10.0] )
+    EndThread
+    Wait  10`
+    Thread
+        Call  DisablePartnerAI  ( 00000000 )
+        Wait  1`
+        Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+        Sub   *Var0  00000019
+        Call  SetNpcFlagBits    ( .Npc:Partner 00000100 .True )
+        Call  NpcMoveTo ( .Npc:Partner *Var0 *Var2  10` )
+        Call  SetNpcFlagBits    ( .Npc:Partner 00000100 .False )
+        Call  EnablePartnerAI ( )
+        Call  InterpPlayerYaw   (  90`  0` )
+        Call  InterpNpcYaw      ( .Npc:Partner  90`  0` )
+    EndThread
+    Call  PlaySoundAtPlayer     ( 000000F5 00000000 )
+    Set   *Var0  $???_802421C0
+    Exec  $Script_802422BC
+    Set   *Var0  $???_80242214
+    Exec  $Script_802422BC
+    Set   *Var0  $???_80242268
+    Exec  $Script_802422BC
+    Wait  5`
+    Call  SetPlayerAnimation    ( .PlayerAnim:Charred )
+    Wait  60`
+    ExecWait  $Script_80242588
+    Wait  40`
+    If *GF_OBK07_OpenFireplace == .False
+        % open obk_10 entrance
+        Set  *Var2 10`
+        Call MakeLerp ( 0 90` *Var2 .Easing:Linear )
+        Loop     
+            Call     UpdateLerp
+            Call     RotateModel ( ~Model:ma *Var0 -1 0 0 )
+            Sub     *Var2 1
+            If *Var2 == 3 % Play smoke fx
+                Call    GetModelCenter ( ~Model:ma )
+                Add     *Var1 3` % y
+                Call    PlayEffect  	( ~FX:Steam:TinyOutward *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+                Call    PlaySoundAtModel ( ~Model:ma 03FB 0 )
+            EndIf
+            Wait     1
+            If  *Var1  ==  .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Call    ModifyColliderFlags   ( .False ~Collider:o283 7FFFFE00 )
+        Set     *GF_OBK07_OpenFireplace .True
+    EndIf
+    Wait 5
+    Set	*Var0 00080016 % surprised
+    Set	*Var1 1 % !
+    Set	*Var2 35`
+    ExecWait $SetPlayerAnimation
+    Call  SetPlayerAnimation    ( 00010002 )
+    Call  ResetCam  ( .Cam:Default *Fixed[4.0] )
+    Set   *MapVar[0]  00000000
+    Call  DisablePlayerInput    ( .False )
+    Return
+    End
+}

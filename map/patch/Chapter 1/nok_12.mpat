@@ -1,0 +1,208 @@
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:PleasantPath
+    Call  SetSpriteShading  ( .Shading:None )
+    Set   *AreaFlag[001]  .False
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  GetDemoState      ( *Var0 )
+    If  *Var0  ==  00000000
+        Call  MakeNpcs  ( .False $NpcGroupList_80245300 )
+    Else
+        Call  GetEntryID    ( *Var0 )
+        If  *Var0  ==  ~Entry:Entry2
+            Call  MakeNpcs  ( .False $NpcGroupList_8024533C )
+        EndIf
+    EndIf
+    ExecWait  $Script_MakeEntities
+    ExecWait  $Script_802441A8
+    Exec  $Script_80242290
+    Exec  $Script_802423DC
+    Exec  $Script_80243468
+    Call  GetDemoState  ( *Var0 )
+    If  *Var0  !=  00000000
+        Call  GetEntryID    ( *Var0 )
+        If  *Var0  ==  ~Entry:Entry2
+            ExecWait  $Script_802459D0
+        Else
+            ExecWait  $Script_80245A18
+        EndIf
+        Return
+    EndIf
+    Exec  $Script_80242220
+    Exec  $Script_80242140
+    Exec  $Script_EnterWalk_80242640
+    Exec  $Script_CanesBadge
+    Wait  1`
+    Set   *GF_MAC01_RowfBadgesChosen  .False
+    Return
+    End
+}
+
+#new:Script $Script_CanesBadge
+{
+    If *GF_NOK12_CandyCanes == .False
+        Bind  $Script_Cane_C1 .Trigger:WallPressA ~Collider:c1 00000001 *MapVar[2]
+        Bind  $Script_Cane_C2 .Trigger:WallPressA ~Collider:c2 00000001 *MapVar[3]
+        Bind  $Script_Cane_C3 .Trigger:WallPressA ~Collider:c3 00000001 *MapVar[4]
+        Bind  $Script_Cane_C4 .Trigger:WallPressA ~Collider:c4 00000001 *MapVar[5]
+        Bind  $Script_Cane_C5 .Trigger:WallPressA ~Collider:c5 00000001 *MapVar[6]
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_Cane_C1
+{
+    Set     *Var5 1
+    Set     *Var6 ~Model:c1
+    ExecWait $Script_Cane_Main
+    Return
+    End
+}
+
+#new:Script $Script_Cane_C2
+{
+    Set     *Var5 2
+    Set     *Var6 ~Model:c2
+    ExecWait $Script_Cane_Main
+    Return
+    End
+}
+
+#new:Script $Script_Cane_C3
+{
+    Set     *Var5 3
+    Set     *Var6 ~Model:c3
+    ExecWait $Script_Cane_Main
+    Return
+    End
+}
+
+#new:Script $Script_Cane_C4
+{
+    Set     *Var5 4
+    Set     *Var6 ~Model:c4
+    ExecWait $Script_Cane_Main
+    Return
+    End
+}
+
+#new:Script $Script_Cane_C5
+{
+    Set     *Var5 5
+    Set     *Var6 ~Model:c5
+    ExecWait $Script_Cane_Main
+    Return
+    End
+}
+
+#new:Script $Script_Cane_Main
+{
+    Switch *Var5
+        Case == 1 % 4th
+            If *MapVar[1] == 2
+                Set *Var7 .True
+            Else
+                Set *Var7 .False
+            EndIf
+        Case == 2 % 3rd
+            If *MapVar[1] == 5
+                Set *Var7 .True
+            Else
+                Set *Var7 .False
+            EndIf
+        Case == 3 % 5th
+            If *MapVar[1] == 1
+                Set *Var7 .True
+            Else
+                Set *Var7 .False
+            EndIf
+        Case == 4 % 1st
+            If *MapVar[1] == 0
+                Set *Var7 .True
+            Else
+                Set *Var7 .False
+            EndIf
+        Case == 5 % 2nd
+            If *MapVar[1] == 4
+                Set *Var7 .True
+            Else
+                Set *Var7 .False
+            EndIf
+    EndSwitch
+    If *Var7 == .False
+        Call    PlaySound ( 021D ) % error
+        Set     *MapVar[1] .False
+        SetGroup 0
+		SuspendAll 2
+        Call    DisablePlayerInput ( .True )
+        % Model animation
+        %
+        % <---
+        Call    MakeLerp ( 0 -5 3 .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    RotateModel ( *Var6 *Var0 0 1 0 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        % --->
+        Call    MakeLerp ( -5 5 6 .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    RotateModel ( *Var6 *Var0 0 1 0 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        % <---
+        %
+        % go back to the original axis
+        Call    MakeLerp ( 5 0 3 .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    RotateModel ( *Var6 *Var0 0 1 0 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        ResumeAll 2
+        Call    DisablePlayerInput ( .False )
+    Else
+        Set     *MapVar[1] *Var5
+        Call    PlaySound ( 000B ) % correct
+        If *MapVar[1] == 3 % last cane?
+            SetGroup 0
+		    SuspendAll 2
+            Call    DisablePlayerInput ( .True )
+            % Cane flash
+            Call    PlaySound ( 20F3 )
+            Call    GetModelCenter ( ~Model:c3 )
+            Add     *Var0 -2 % x
+            Add     *Var1 5 % y
+            Call	PlayEffect ( ~FX:LensFlare:Rotating *Var0 *Var1 *Var2 15` .False .False .False .False .False .False .False .False )
+            Call    GetModelCenter ( ~Model:c3 )
+            Add     *Var0 6 % x
+            Add     *Var1 5 % y
+            Call	PlayEffect ( ~FX:LensFlare:Rotating *Var0 *Var1 *Var2 15` .False .False .False .False .False .False .False .False )
+            Wait    10`
+            Call    MakeItemEntity   ( .Item:LastStandP ~Vec3d:CanesReward .ItemSpawnMode:Fall_NeverVanish *GF_NOK12_CandyCanes )
+            Wait    35`
+            % Delete triggers
+            Call    DeleteTrigger ( *MapVar[2] )
+            Call    DeleteTrigger ( *MapVar[3] )
+            Call    DeleteTrigger ( *MapVar[4] )
+            Call    DeleteTrigger ( *MapVar[5] )
+            Call    DeleteTrigger ( *MapVar[6] )
+            ResumeAll 2
+            Call    DisablePlayerInput ( .False )
+        EndIf
+    EndIf
+    Return
+    End
+}

@@ -1,0 +1,702 @@
+% Script File: osr_04.mscr
+% Decoded from: 0 to 1FE0 (osr_04)
+
+
+#new:Function_Init $Function_Init
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LA        A0, 800D9230
+    C:  LA        A1, $ASCII_80241FB0
+   14:  LAW       V1, 8007419C
+   1C:  LI        V0, 2
+   20:  SW        RA, 10 (SP)
+   24:  JAL       ~Func:sprintf
+   28:  SB        V0, 84 (V1)
+   2C:  LA        A0, 800D91E0
+   34:  LA        A1, $ASCII_80241FC0
+   38:  JAL       ~Func:sprintf
+   3C:  RESERVED
+   40:  LW        RA, 10 (SP)
+   44:  CLEAR     V0
+   48:  JR        RA
+   4C:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_80240050
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  SW        RA, 18 (SP)
+   10:  SW        S1, 14 (SP)
+   14:  LW        S1, C (S0)
+   18:  JAL       ~Func:get_variable
+   1C:  LW        A1, 0 (S1)
+   20:  MTC1      V0, F12
+   24:  NOP
+   28:  JAL       ~Func:sin_deg
+   2C:  CVT.S.W   F12, F12
+   30:  LIF       F2, 20.0
+   38:  NOP
+   3C:  MUL.S     F0, F0, F2
+   40:  NOP
+   44:  LW        A1, 0 (S1)
+   48:  TRUNC.W.S F4, F0
+   4C:  MFC1      A2, F4
+   50:  JAL       ~Func:set_variable
+   54:  COPY      A0, S0
+   58:  LW        RA, 18 (SP)
+   5C:  LW        S1, 14 (SP)
+   60:  LW        S0, 10 (SP)
+   64:  LI        V0, 2
+   68:  JR        RA
+   6C:  ADDIU     SP, SP, 20
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %    0.0    0.0  604.0    0.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000001
+	[Background]  80200000
+	[MapTattle]   00000000
+}
+
+#new:Script $Script_80240110
+{
+    0:  SetGroup  00000000
+    C:  Call  SetTexPanner  ( 0000006D 00000000 )
+   20:  Call  SetTexPanner  ( 0000006F 00000001 )
+   34:  Call  SetTexPanner  ( 00000071 00000002 )
+   48:  Set   *Var0  00000000
+   58:  Set   *Var1  00000000
+   68:  Label  A
+   74:  Loop  00000005
+   80:  	Call  SetTexPanOffset   ( 00000000 00000000 *Var0 *Var1 )
+   9C:  	Call  SetTexPanOffset   ( 00000001 00000000 *Var0 *Var1 )
+   B8:  	Call  SetTexPanOffset   ( 00000002 00000000 *Var0 *Var1 )
+   D4:  	Add   *Var1  00000064
+   E4:  	Wait  1`
+   F0:  EndLoop
+   F8:  Add   *Var0  00002000
+  108:  Goto  A
+  114:  Return
+  11C:  End
+}
+
+#new:Script $Script_80240234
+{
+    0:  Exec  $Script_802417A0
+    C:  Exec  $Script_80240110
+   18:  Return
+   20:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:None
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   84:  Call  FadeOutMusic      ( 00000000 000001F4 )
+   98:  Exec  $Script_80240234
+   A4:  Wait  1`
+   B0:  Return
+   B8:  End
+}
+
+PADDING: 8024031C to 80240320 (0000031C to 00000320)
+00000000
+
+#new:IntTable $IntTable_80240320
+{
+	FFFFFE48 0000044C 0000001E FFFFFF42 00000406 00000028 FFFFFF97 0000044C
+	0000001E FFFFFEA2 00000258 00000037 FFFFFF1A 000004B0 00000023 FFFFFE0C
+	0000041A 0000001E FFFFFE66 00000384 00000023 0000004F 00000302 00000037
+	FFFFFFFF
+}
+
+#new:Script $Script_80240384
+{
+    0:  UseIntBuffer  $IntTable_80240320
+    C:  Loop
+   18:  	Get3Int  *Var2 *Var3 *Var4
+   2C:  	If  *Var2  ==  FFFFFFFF
+   3C:  		Return
+   44:  	EndIf
+   4C:  	Call  MakeLerp  ( 000001F4 00000000 *Var4 .Easing:QuadraticIn )
+   68:  	Loop
+   74:  		Call  UpdateLerp ( )
+   80:  		Call  TranslateGroup    ( 00000075 *Var2 *Var0 *Var3 )
+   9C:  		Call  RotateGroup       ( 00000075 *Var4 00000001 00000001 00000001 )
+   BC:  		Sub   *Var4  0000000F
+   CC:  		Wait  1`
+   D8:  		If  *Var1  ==  00000000
+   E8:  			BreakLoop
+   F0:  		EndIf
+   F8:  	EndLoop
+  100:  	Wait  1`
+  10C:  EndLoop
+  114:  Return
+  11C:  End
+}
+
+#new:IntTable $IntTable_802404A8
+{
+	FFFFFEAC 000003C0 00000032 FFFFFE66 00000384 00000037 FFFFFF1A 000004B0
+	0000002D FFFFFE0C 000003AC 00000028 FFFFFF1A 000003F2 00000032 FFFFFE0C
+	000003AC 00000028 FFFFFEA2 00000258 00000037 FFFFFFFF
+}
+
+#new:Script $Script_80240500
+{
+    0:  UseIntBuffer  $IntTable_802404A8
+    C:  Loop
+   18:  	Get3Int  *Var2 *Var3 *Var4
+   2C:  	If  *Var2  ==  FFFFFFFF
+   3C:  		Return
+   44:  	EndIf
+   4C:  	Call  MakeLerp  ( 000001F4 00000000 *Var4 .Easing:QuadraticIn )
+   68:  	Loop
+   74:  		Call  UpdateLerp ( )
+   80:  		Call  TranslateGroup    ( 00000077 *Var2 *Var0 *Var3 )
+   9C:  		Call  RotateGroup       ( 00000077 *Var4 00000001 00000001 00000001 )
+   BC:  		Add   *Var4  0000000F
+   CC:  		Wait  1`
+   D8:  		If  *Var1  ==  00000000
+   E8:  			BreakLoop
+   F0:  		EndIf
+   F8:  	EndLoop
+  100:  	Wait  1`
+  10C:  EndLoop
+  114:  Return
+  11C:  End
+}
+
+#new:Script $Script_80240624
+{
+    0:  Call  MakeLerp  ( 000001F4 00000000 00000050 .Easing:QuadraticIn )
+   1C:  Loop
+   28:  	Call  UpdateLerp ( )
+   34:  	Call  TranslateGroup    ( 0000007A FFFFFEAC *Var0 0000033E )
+   50:  	Call  RotateGroup       ( 0000007A *Var4 00000001 00000001 00000001 )
+   70:  	Sub   *Var4  0000001E
+   80:  	Wait  1`
+   8C:  	If  *Var1  ==  00000000
+   9C:  		BreakLoop
+   A4:  	EndIf
+   AC:  EndLoop
+   B4:  Return
+   BC:  End
+}
+
+#new:IntTable $IntTable_802406E8
+{
+	FFFFFEA2 00000258 0000003C FFFFFF1A 000004B0 00000028 FFFFFEAC 000003C0
+	00000028 FFFFFFFF
+}
+
+#new:Script $Script_80240710
+{
+    0:  UseIntBuffer  $IntTable_802406E8
+    C:  Loop
+   18:  	Get3Int  *Var2 *Var3 *Var4
+   2C:  	If  *Var2  ==  FFFFFFFF
+   3C:  		Return
+   44:  	EndIf
+   4C:  	Call  MakeLerp  ( 000001F4 00000000 *Var4 .Easing:QuadraticIn )
+   68:  	Loop
+   74:  		Call  UpdateLerp ( )
+   80:  		Call  TranslateGroup    ( 0000007C *Var2 *Var0 *Var3 )
+   9C:  		Call  RotateGroup       ( 0000007C *Var4 00000001 00000001 00000001 )
+   BC:  		Add   *Var4  0000000F
+   CC:  		Wait  1`
+   D8:  		If  *Var1  ==  00000000
+   E8:  			BreakLoop
+   F0:  		EndIf
+   F8:  	EndLoop
+  100:  	Wait  1`
+  10C:  EndLoop
+  114:  Return
+  11C:  End
+}
+
+#new:Script $Script_80240834
+{
+    0:  Call  MakeLerp  ( 000001F4 00000000 00000050 .Easing:QuadraticIn )
+   1C:  Loop
+   28:  	Call  UpdateLerp ( )
+   34:  	Call  TranslateGroup    ( 0000007E FFFFFF42 *Var0 00000406 )
+   50:  	Call  RotateGroup       ( 0000007E *Var4 00000001 00000001 00000001 )
+   70:  	Sub   *Var4  0000000F
+   80:  	Wait  1`
+   8C:  	If  *Var1  ==  00000000
+   9C:  		BreakLoop
+   A4:  	EndIf
+   AC:  EndLoop
+   B4:  Return
+   BC:  End
+}
+
+#new:IntTable $IntTable_802408F8
+{
+	FFFFFE0C 000003AC 00000014 00000050 00000302 0000003C FFFFFEAC 000003C0
+	0000000F FFFFFEAC 000003C0 0000002D FFFFFE0C 0000041A 0000000F FFFFFF1A
+	000004B0 00000023 FFFFFEA2 00000258 00000028 FFFFFFFF
+}
+
+#new:Script $Script_80240950
+{
+    0:  UseIntBuffer  $IntTable_802408F8
+    C:  Loop
+   18:  	Get3Int  *Var2 *Var3 *Var4
+   2C:  	If  *Var2  ==  FFFFFFFF
+   3C:  		Return
+   44:  	EndIf
+   4C:  	Call  MakeLerp  ( 000001F4 00000000 *Var4 .Easing:QuadraticIn )
+   68:  	Loop
+   74:  		Call  UpdateLerp ( )
+   80:  		Call  TranslateGroup    ( 00000080 *Var2 *Var0 *Var3 )
+   9C:  		Call  RotateGroup       ( 00000080 *Var4 00000001 00000001 00000001 )
+   BC:  		Add   *Var4  0000000F
+   CC:  		Wait  1`
+   D8:  		If  *Var1  ==  00000000
+   E8:  			BreakLoop
+   F0:  		EndIf
+   F8:  	EndLoop
+  100:  	Wait  1`
+  10C:  EndLoop
+  114:  Return
+  11C:  End
+}
+
+#new:Script $Script_80240A74
+{
+    0:  Loop
+    C:  	Call  MakeLerp  ( 0000005A FFFFFFA6 0000001E .Easing:Linear )
+   28:  	Loop
+   34:  		Call  UpdateLerp ( )
+   40:  		Call  TranslateGroup        ( 00000019 00000000 *MapVar[E] 00000000 )
+   5C:  		Call  $Function_80240050    ( *Var0 )
+   6C:  		Call  RotateGroup   ( 00000019 *Var0 00000000 00000000 00000001 )
+   8C:  		Wait  1`
+   98:  		If  *Var1  ==  00000000
+   A8:  			BreakLoop
+   B0:  		EndIf
+   B8:  	EndLoop
+   C0:  	Loop  00000002
+   CC:  		Call  TranslateGroup    ( 00000019 00000000 *MapVar[E] 00000000 )
+   E8:  		Call  RotateGroup       ( 00000019 FFFFFFEC 00000000 00000000 00000001 )
+  108:  		Wait  1`
+  114:  	EndLoop
+  11C:  	Call  MakeLerp  ( FFFFFFA6 0000005A 0000001E .Easing:Linear )
+  138:  	Loop
+  144:  		Call  UpdateLerp ( )
+  150:  		Call  TranslateGroup        ( 00000019 00000000 *MapVar[E] 00000000 )
+  16C:  		Call  $Function_80240050    ( *Var0 )
+  17C:  		Call  RotateGroup   ( 00000019 *Var0 00000000 00000000 00000001 )
+  19C:  		Wait  1`
+  1A8:  		If  *Var1  ==  00000000
+  1B8:  			BreakLoop
+  1C0:  		EndIf
+  1C8:  	EndLoop
+  1D0:  	Loop  00000002
+  1DC:  		Call  TranslateGroup    ( 00000019 00000000 *MapVar[E] 00000000 )
+  1F8:  		Call  RotateGroup       ( 00000019 00000014 00000000 00000000 00000001 )
+  218:  		Wait  1`
+  224:  	EndLoop
+  22C:  EndLoop
+  234:  Return
+  23C:  End
+}
+
+#new:Script $Script_80240CB8
+{
+    0:  Loop
+    C:  	Call  MakeLerp  ( 0000002D FFFFFFD3 0000003C .Easing:QuadraticOut )
+   28:  	Loop
+   34:  		Call  UpdateLerp ( )
+   40:  		Call  RotateGroup   ( 0000000C *Var0 00000000 00000001 00000000 )
+   60:  		Wait  1`
+   6C:  		If  *Var1  ==  00000000
+   7C:  			BreakLoop
+   84:  		EndIf
+   8C:  	EndLoop
+   94:  	Call  MakeLerp  ( FFFFFFD3 0000002D 0000003C .Easing:QuadraticOut )
+   B0:  	Loop
+   BC:  		Call  UpdateLerp ( )
+   C8:  		Call  RotateGroup   ( 0000000C *Var0 00000000 00000001 00000000 )
+   E8:  		Wait  1`
+   F4:  		If  *Var1  ==  00000000
+  104:  			BreakLoop
+  10C:  		EndIf
+  114:  	EndLoop
+  11C:  EndLoop
+  124:  Return
+  12C:  End
+}
+
+#new:Script $Script_80240DEC
+{
+    0:  Thread
+    8:  	Wait  120`
+   14:  	Call  SetMusicTrack ( 00000000 .Song:BowserAttacks 00000000 00000008 )
+   30:  EndThread
+   38:  Set   *MapVar[E]  00000000
+   48:  Thread
+   50:  	Wait  20`
+   5C:  	Call  MakeLerp  ( 00000000 000009C4 000001C2 .Easing:QuadraticIn )
+   78:  	Loop
+   84:  		Call  UpdateLerp ( )
+   90:  		Set   *MapVar[E]  *Var0
+   A0:  		Call  TranslateGroup    ( 00000008 00000000 *Var0 00000000 )
+   BC:  		Call  TranslateGroup    ( 0000001D 00000000 *Var0 00000000 )
+   D8:  		Call  TranslateGroup    ( 00000045 00000000 *Var0 00000000 )
+   F4:  		Wait  1`
+  100:  		If  *Var1  ==  00000000
+  110:  			BreakLoop
+  118:  		EndIf
+  120:  	EndLoop
+  128:  EndThread
+  130:  Exec  $Script_80240A74
+  13C:  Exec  $Script_80240CB8
+  148:  Thread
+  150:  	Loop
+  15C:  		Call  MakeLerp  ( 0000000A FFFFFFF6 00000028 .Easing:Linear )
+  178:  		Loop
+  184:  			Call  UpdateLerp ( )
+  190:  			Add   *MapVar[E]  *Var0
+  1A0:  			Call  TranslateGroup    ( 0000000C 00000000 *MapVar[E] 00000000 )
+  1BC:  			Wait  1`
+  1C8:  			If  *Var1  ==  00000000
+  1D8:  				BreakLoop
+  1E0:  			EndIf
+  1E8:  		EndLoop
+  1F0:  		Call  MakeLerp  ( FFFFFFF6 0000000A 00000028 .Easing:Linear )
+  20C:  		Loop
+  218:  			Call  UpdateLerp ( )
+  224:  			Add   *MapVar[E]  *Var0
+  234:  			Call  TranslateGroup    ( 0000000C 00000000 *MapVar[E] 00000000 )
+  250:  			Wait  1`
+  25C:  			If  *Var1  ==  00000000
+  26C:  				BreakLoop
+  274:  			EndIf
+  27C:  		EndLoop
+  284:  	EndLoop
+  28C:  EndThread
+  294:  Label  16
+  2A0:  If  *MapVar[E]  <  000003E8
+  2B0:  	Wait  1`
+  2BC:  	Goto  16
+  2C8:  EndIf
+  2D0:  Thread
+  2D8:  	Loop  0000012C
+  2E4:  		Sub   *MapVar[1]  00000003
+  2F4:  		Wait  1`
+  300:  	EndLoop
+  308:  EndThread
+  310:  Label  17
+  31C:  If  *MapVar[E]  <  0000047E
+  32C:  	Wait  1`
+  338:  	Goto  17
+  344:  EndIf
+  34C:  Set   *Var3  00000000
+  35C:  Exec  $Script_80240384
+  368:  Exec  $Script_80240500
+  374:  Exec  $Script_80240950
+  380:  Wait  10`
+  38C:  Exec  $Script_80240624
+  398:  Exec  $Script_80240710
+  3A4:  Exec  $Script_80240834
+  3B0:  Wait  150`
+  3BC:  Return
+  3C4:  End
+}
+
+#new:Script $Script_802411B8
+{
+    0:  Set   *MapVar[1]  00000000
+   10:  Thread
+   18:  	Call  PlaySound ( 00000036 )
+   28:  	Call  MakeLerp  ( 00000000 0000028A 00000028 .Easing:CubicOut )
+   44:  	Loop
+   50:  		Call  UpdateLerp ( )
+   5C:  		Add   *Var0  *MapVar[1]
+   6C:  		Call  TranslateGroup    ( 0000006E 00000000 *Var0 00000000 )
+   88:  		Wait  1`
+   94:  		If  *Var1  ==  00000000
+   A4:  			BreakLoop
+   AC:  		EndIf
+   B4:  	EndLoop
+   BC:  	Loop
+   C8:  		Call  MakeLerp  ( 00000258 0000028A 00000019 .Easing:CubicOut )
+   E4:  		Loop
+   F0:  			Call  UpdateLerp ( )
+   FC:  			Add   *Var0  *MapVar[1]
+  10C:  			Call  TranslateGroup    ( 0000006E 00000000 *Var0 00000000 )
+  128:  			Wait  1`
+  134:  			If  *Var1  ==  00000000
+  144:  				BreakLoop
+  14C:  			EndIf
+  154:  		EndLoop
+  15C:  		Call  MakeLerp  ( 0000028A 00000258 00000023 .Easing:Linear )
+  178:  		Loop
+  184:  			Call  UpdateLerp ( )
+  190:  			Add   *Var0  *MapVar[1]
+  1A0:  			Call  TranslateGroup    ( 0000006E 00000000 *Var0 00000000 )
+  1BC:  			Wait  1`
+  1C8:  			If  *Var1  ==  00000000
+  1D8:  				BreakLoop
+  1E0:  			EndIf
+  1E8:  		EndLoop
+  1F0:  	EndLoop
+  1F8:  EndThread
+  200:  Thread
+  208:  	Wait  20`
+  214:  	Call  PlaySound ( 00000037 )
+  224:  	Call  MakeLerp  ( 00000000 00000190 0000001E .Easing:CubicOut )
+  240:  	Loop
+  24C:  		Call  UpdateLerp ( )
+  258:  		Call  TranslateGroup    ( 00000070 00000000 *Var0 00000000 )
+  274:  		Wait  1`
+  280:  		If  *Var1  ==  00000000
+  290:  			BreakLoop
+  298:  		EndIf
+  2A0:  	EndLoop
+  2A8:  	Loop
+  2B4:  		Call  MakeLerp  ( 0000015E 00000190 0000000C .Easing:CubicOut )
+  2D0:  		Loop
+  2DC:  			Call  UpdateLerp ( )
+  2E8:  			Add   *Var0  *MapVar[1]
+  2F8:  			Call  TranslateGroup    ( 00000070 00000000 *Var0 00000000 )
+  314:  			Wait  1`
+  320:  			If  *Var1  ==  00000000
+  330:  				BreakLoop
+  338:  			EndIf
+  340:  		EndLoop
+  348:  		Call  MakeLerp  ( 00000190 0000015E 00000011 .Easing:Linear )
+  364:  		Loop
+  370:  			Call  UpdateLerp ( )
+  37C:  			Add   *Var0  *MapVar[1]
+  38C:  			Call  TranslateGroup    ( 00000070 00000000 *Var0 00000000 )
+  3A8:  			Wait  1`
+  3B4:  			If  *Var1  ==  00000000
+  3C4:  				BreakLoop
+  3CC:  			EndIf
+  3D4:  		EndLoop
+  3DC:  	EndLoop
+  3E4:  EndThread
+  3EC:  Thread
+  3F4:  	Wait  40`
+  400:  	Call  PlaySound ( 00000038 )
+  410:  	Call  MakeLerp  ( 00000000 000000C8 00000014 .Easing:CubicOut )
+  42C:  	Loop
+  438:  		Call  UpdateLerp ( )
+  444:  		Call  TranslateGroup    ( 00000072 00000000 *Var0 00000000 )
+  460:  		Wait  1`
+  46C:  		If  *Var1  ==  00000000
+  47C:  			BreakLoop
+  484:  		EndIf
+  48C:  	EndLoop
+  494:  	Loop
+  4A0:  		Call  MakeLerp  ( 00000096 000000C8 00000019 .Easing:CubicOut )
+  4BC:  		Loop
+  4C8:  			Call  UpdateLerp ( )
+  4D4:  			Add   *Var0  *MapVar[1]
+  4E4:  			Call  TranslateGroup    ( 00000072 00000000 *Var0 00000000 )
+  500:  			Wait  1`
+  50C:  			If  *Var1  ==  00000000
+  51C:  				BreakLoop
+  524:  			EndIf
+  52C:  		EndLoop
+  534:  		Call  MakeLerp  ( 000000C8 00000096 00000023 .Easing:Linear )
+  550:  		Loop
+  55C:  			Call  UpdateLerp ( )
+  568:  			Add   *Var0  *MapVar[1]
+  578:  			Call  TranslateGroup    ( 00000072 00000000 *Var0 00000000 )
+  594:  			Wait  1`
+  5A0:  			If  *Var1  ==  00000000
+  5B0:  				BreakLoop
+  5B8:  			EndIf
+  5C0:  		EndLoop
+  5C8:  	EndLoop
+  5D0:  EndThread
+  5D8:  Return
+  5E0:  End
+}
+
+#new:Script $Script_802417A0
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  DisablePlayerPhysics  ( .True )
+   20:  Call  EnableGroup   ( 0000002F .False )
+   34:  Call  SetPlayerPos  (  0`  0`  2000` )
+   4C:  Thread
+   54:  	Call  PlaySound ( 80000057 )
+   64:  	Call  ShakeCam  ( .Cam:Default 00000000  450` *Fixed[2.0] )
+   80:  	Call  ShakeCam  ( .Cam:Default 00000000  100` *Fixed[1.0] )
+   9C:  EndThread
+   A4:  Wait  50`
+   B0:  Thread
+   B8:  	Wait  30`
+   C4:  	Call  MakeLerp  ( 00000000 0000002D 0000001E .Easing:Linear )
+   E0:  	Loop
+   EC:  		Call  UpdateLerp ( )
+   F8:  		Call  RotateGroup   ( 00000066 *Var0 00000000 00000000 00000001 )
+  118:  		Wait  1`
+  124:  		If  *Var1  ==  00000000
+  134:  			BreakLoop
+  13C:  		EndIf
+  144:  	EndLoop
+  14C:  	Call  MakeLerp  ( 00000000 00000064 0000001E .Easing:Linear )
+  168:  	Loop
+  174:  		Call  UpdateLerp ( )
+  180:  		Call  RotateGroup   ( 00000066 0000002D 00000000 00000000 00000001 )
+  1A0:  		Call  RotateGroup   ( 00000066 *Var0 00000001 00000000 00000000 )
+  1C0:  		Wait  1`
+  1CC:  		If  *Var1  ==  00000000
+  1DC:  			BreakLoop
+  1E4:  		EndIf
+  1EC:  	EndLoop
+  1F4:  	Call  EnableGroup   ( 00000066 .False )
+  208:  EndThread
+  210:  Thread
+  218:  	Wait  45`
+  224:  	Call  MakeLerp  ( 00000000 0000001E 0000001E .Easing:QuadraticIn )
+  240:  	Loop
+  24C:  		Call  UpdateLerp ( )
+  258:  		Call  RotateGroup   ( 00000069 *Var0 00000000 00000000 00000001 )
+  278:  		Wait  1`
+  284:  		If  *Var1  ==  00000000
+  294:  			BreakLoop
+  29C:  		EndIf
+  2A4:  	EndLoop
+  2AC:  	Call  MakeLerp  ( 00000000 00000064 00000064 .Easing:Linear )
+  2C8:  	Loop
+  2D4:  		Call  UpdateLerp ( )
+  2E0:  		Call  RotateGroup   ( 00000069 0000001E 00000000 00000000 00000001 )
+  300:  		Call  RotateGroup   ( 00000069 *Var0 FFFFFFFF 00000000 00000000 )
+  320:  		Wait  1`
+  32C:  		If  *Var1  ==  00000000
+  33C:  			BreakLoop
+  344:  		EndIf
+  34C:  	EndLoop
+  354:  	Call  EnableGroup   ( 00000069 .False )
+  368:  EndThread
+  370:  Thread
+  378:  	Wait  75`
+  384:  	Call  MakeLerp  ( 00000000 00000064 00000064 .Easing:Linear )
+  3A0:  	Loop
+  3AC:  		Call  UpdateLerp ( )
+  3B8:  		Call  TranslateGroup    ( 0000006B 00000000 *Var0 00000000 )
+  3D4:  		Wait  1`
+  3E0:  		If  *Var1  ==  00000000
+  3F0:  			BreakLoop
+  3F8:  		EndIf
+  400:  	EndLoop
+  408:  EndThread
+  410:  Thread
+  418:  	Call  PlaySound ( 00000035 )
+  428:  	Call  MakeLerp  ( 00000000 0000001E 00000032 .Easing:Linear )
+  444:  	Loop
+  450:  		Call  UpdateLerp ( )
+  45C:  		Call  TranslateGroup    ( 00000050 00000000 *Var0 00000000 )
+  478:  		Wait  1`
+  484:  		If  *Var1  ==  00000000
+  494:  			BreakLoop
+  49C:  		EndIf
+  4A4:  	EndLoop
+  4AC:  EndThread
+  4B4:  Thread
+  4BC:  	Wait  10`
+  4C8:  	Call  MakeLerp  ( 00000000 00000028 00000028 .Easing:Linear )
+  4E4:  	Loop
+  4F0:  		Call  UpdateLerp ( )
+  4FC:  		Call  TranslateGroup    ( 00000052 00000000 *Var0 00000000 )
+  518:  		Wait  1`
+  524:  		If  *Var1  ==  00000000
+  534:  			BreakLoop
+  53C:  		EndIf
+  544:  	EndLoop
+  54C:  EndThread
+  554:  Thread
+  55C:  	Call  MakeLerp  ( 00000000 00000014 00000032 .Easing:Linear )
+  578:  	Loop
+  584:  		Call  UpdateLerp ( )
+  590:  		Call  TranslateGroup    ( 00000056 00000000 *Var0 00000000 )
+  5AC:  		Wait  1`
+  5B8:  		If  *Var1  ==  00000000
+  5C8:  			BreakLoop
+  5D0:  		EndIf
+  5D8:  	EndLoop
+  5E0:  EndThread
+  5E8:  Thread
+  5F0:  	Wait  15`
+  5FC:  	Call  MakeLerp  ( 00000000 0000000A 00000023 .Easing:Linear )
+  618:  	Loop
+  624:  		Call  UpdateLerp ( )
+  630:  		Call  TranslateGroup    ( 00000059 00000000 *Var0 00000000 )
+  64C:  		Wait  1`
+  658:  		If  *Var1  ==  00000000
+  668:  			BreakLoop
+  670:  		EndIf
+  678:  	EndLoop
+  680:  EndThread
+  688:  Thread
+  690:  	Call  MakeLerp  ( 00000000 FFFFFFEC 00000032 .Easing:Linear )
+  6AC:  	Loop
+  6B8:  		Call  UpdateLerp ( )
+  6C4:  		Call  TranslateGroup    ( 0000005B 00000000 *Var0 00000000 )
+  6E0:  		Wait  1`
+  6EC:  		If  *Var1  ==  00000000
+  6FC:  			BreakLoop
+  704:  		EndIf
+  70C:  	EndLoop
+  714:  EndThread
+  71C:  Call  MakeLerp  ( 00000000 FFFFFFF6 00000032 .Easing:Linear )
+  738:  Loop
+  744:  	Call  UpdateLerp ( )
+  750:  	Call  TranslateGroup    ( 0000005D 00000000 *Var0 00000000 )
+  76C:  	Wait  1`
+  778:  	If  *Var1  ==  00000000
+  788:  		BreakLoop
+  790:  	EndIf
+  798:  EndLoop
+  7A0:  Exec  $Script_802411B8
+  7AC:  ExecWait  $Script_80240DEC
+  7B8:  Call  GotoMap   ( $ASCII_80241FCC 00000001 ) % kkj_03
+  7CC:  Wait  100`
+  7D8:  Call  DisablePlayerPhysics  ( .False )
+  7E8:  Call  DisablePlayerInput    ( .False )
+  7F8:  Return
+  800:  End
+}
+
+PADDING: 80241FA8 to 80241FB0 (00001FA8 to 00001FB0)
+00000000 00000000
+
+#new:ASCII $ASCII_80241FB0
+{
+	"osr_03_shape"
+}
+
+#new:ASCII $ASCII_80241FC0
+{
+	"osr_03_hit"
+}
+
+#new:ASCII $ASCII_80241FCC
+{
+	"kkj_03"
+}
+
+PADDING: 80241FD4 to 80241FE0 (00001FD4 to 00001FE0)
+00000000 00000000 00000000
+

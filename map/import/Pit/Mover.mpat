@@ -1,0 +1,189 @@
+% This file has the data for the movers in the Pit
+
+#new:NpcGroupList $NpcGroupList_Mover
+{
+	00000001 $NpcGroup_Mover 00000000
+	00000000 00000000 00000000
+}
+
+#new:Npc $NpcGroup_Mover
+{
+	00000000 $NpcSettings_Mover ~Vec3f:NPC_Mover
+	00112D09 $Script_Init_Mover 00000000 00000000 00000000
+	~NoDrops
+	~NoMovement
+	~AnimationTable:NPC_Mover
+	00000000 00000000 00000000 $Tattle_Mover
+}
+
+#new:NpcSettings $NpcSettings_Mover
+{
+	00000000 00300020 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_Init_Mover
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Mover_Interact )
+    Return
+    End
+}
+
+#new:Script $Script_Mover_Interact
+{
+	Call	SetMessageValue ( *AreaByte[0] 00000000 )
+    Call    SpeakToPlayer ( .Npc:Self 00960104 00960101 00000000 $String_Mover_Hi )
+    Call    ShowChoice ( $String_Choice_Mover )
+    Switch *Var0
+        CaseOR == 0
+        CaseOR == 1
+		CaseOR == 2
+            Set     *Var4 *Var0
+            Call    AddCoin ( 0 )
+            Switch *Var4
+				Case == 0
+					Set *Var1 10`
+					Set *Var2 2
+				Case == 1
+					Set *Var1 30`
+					Set *Var2 5
+				Case == 2
+					Set *Var1 30`
+					Set *Var2 0
+			EndSwitch
+            % Check if player has enough coins
+            If *Var0 < *Var1
+                Call    ContinueSpeech ( .Npc:Self 00960104 00960101 00000000 $String_Mover_NotEnoughCoins )
+                Return
+            EndIf
+            Mul     *Var1 -1
+            Call    AddCoin ( *Var1 )
+            Call    ContinueSpeech ( .Npc:Self 00960104 00960101 00000000 $String_Mover_CloseYourEyes )
+            Set     *Var1 *AreaByte[0]
+            Add     *Var1 *Var2
+			If *Var2 == .False % Going back to the entrance
+				Set *Var1 .False
+			EndIf
+            % hide partner
+            Call	GetCurrentPartnerID ( *Var0 )
+            If	*Var0 != .False
+				Call	$Function_SwitchPartners ( .Partner:None *VarA )
+                Wait    30`
+                Call    $WriteAddress ( 8010F2A2 0 *VarA .False .False ) % restore partnerID
+            EndIf
+            % animation (grabbed from Black Pit)
+            Thread
+                Wait	135`
+                Call    $WriteAddress ( $FX_Underwater_Mover 2 .True .False .False )
+                Call	PlayEffect ( ~FX:Underwater 0 0 0 0 0 0 1000` ) % arg7 = time
+            EndThread
+            Set	*Var0 *Fixed[0.0]
+            Loop
+                AddF	*Var0  *Fixed[0.2]
+                Call    802D2520 ( 00000000 4 0 *Var0 0 0 ) % npcID fxToLoad distortionX distortionY ? ?
+                Call    802CFD30 ( .Npc:Self 4 0 *Var0 0 0 )
+                Wait	3
+                If	*Var0 == *Fixed[12.0]
+                    BreakLoop
+                EndIf
+            EndLoop
+            Call 	PlaySound   ( 00DC )
+            Thread
+                Wait 	38`
+                Call    $WriteAddress ( $FX_Underwater_Mover 2 .False .False .False )
+            EndThread
+			Set *Var0 *Var1
+			If *Var0 != .False
+				ExecWait $Script_GoToNextMap
+			Else
+				Set *AreaByte[0] .False
+				Call  GotoMap   ( "pit_00" 00000002 )
+			EndIf
+        EndCaseGroup
+        Case == 3 % cancel
+            Call    CloseMessage
+            Return
+    EndSwitch
+    Return
+    End
+}
+
+% Call $Function_SwitchPartners ( newPartner *out_oldPartner )
+#new:Function $Function_SwitchPartners
+{
+	PUSH	RA, A0, A1, A2, A3, V1, S0, S1
+	COPY	S0, A0
+	LW		A1, C (A0)
+	JAL		~Func:get_variable
+	LW		A1, 0 (A1)
+	COPY	S1, V0
+	COPY	A0, S0
+	LW		A1, C (A0)
+	LW		A1, 4 (A1)
+	LABU	A2, 8010F2A2 % partnerID
+	JAL		~Func:set_variable
+	RESERVED
+	JAL		~Func:switch_to_partner
+	COPY	A0, S1
+	POP		RA, A0, A1, A2, A3, V1, S0, S1
+	JR		RA
+	ORI		V0, R0, 2
+}
+
+% Strings
+
+#string $String_Mover_Hi
+{
+[Style Right]
+How's everything going Mario.[BR]
+I'm a Mover. I know a few things[BR]
+about getting through this[BR]
+place.[BR]
+[Wait][Next]
+For a few coins, I can move you[BR]
+where you wanna go.[BR]
+[Wait][Next]
+Where do you wanna go?[BR][BR][BR]
+Current Floor: [SaveColor][Color:19][Var 0][RestoreColor][BR]
+[Yield][End]
+}
+
+#string $String_Choice_Mover
+{
+[Style Choice pos=35,90 size=255,62]
+[StartChoice]
+[Option 0]Go down 2 floors: [SaveColor][Color:20]10[RestoreColor] coins[BR]
+[Option 1]Go down 5 floors: [SaveColor][Color:20]30[RestoreColor] coins[BR]
+[Option 2]Back to the entrance: [SaveColor][Color:20]10[RestoreColor] coins[BR]
+[EndChoice cancel=3][End]
+}
+
+#string $String_Mover_CloseYourEyes
+{
+[Next]
+Okay, let me start the magic![BR]
+[Wait][Next]
+Remember Mario, you don't have[BR]
+to open your eyes at all!
+[Wait][End]
+}
+
+#string $String_Mover_NotEnoughCoins
+{
+[Next]
+Sorry Mario, it seems like you[BR]
+don't have enough coins, and [BR]
+I have a family to feed, you know[BR]
+how it is...
+[Wait][End]
+}
+
+#string $Tattle_Mover
+{
+[Style Tattle][EnableCDownNext]
+This is a Mover, for a few coins he[BR]
+can help us skip some floors in the[BR]
+pit, why don't you talk to him?[BR]
+A little help would be nice here.
+[Wait][End]
+}

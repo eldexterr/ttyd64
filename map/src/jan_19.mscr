@@ -1,0 +1,111 @@
+% Script File: jan_19.mscr
+% Decoded from: 0 to 320 (jan_19)
+
+
+#new:Function $Function_80240000
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  JAL       ~Func:enable_world_fog
+    C:  NOP
+   10:  LW        RA, 10 (SP)
+   14:  LI        V0, 2
+   18:  JR        RA
+   1C:  ADDIU     SP, SP, 18
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -220.0    0.0   10.0   90.0
+	~Vec4f:Entry1 %  190.0  450.0  110.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  00000000
+	[MapTattle]   00190101
+}
+
+#new:Script $Script_80240080
+{
+    0:  Call  ClearAmbientSounds    ( 000000FA )
+   10:  Return
+   18:  End
+}
+
+#new:Script $Script_ExitWalk_802400A0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240310 00000001 ) % jan_18
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_802400FC
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240318 00000000 ) % jan_23
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240158
+{
+    0:  Bind  $Script_ExitWalk_802400A0 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802400FC .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:JadeJungle
+   10:  Call  SetSpriteShading  ( .Shading:jan_19 )
+   20:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   34:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   54:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  ExecWait  $Script_MakeEntities
+   90:  Call  $Function_80240000 ( )
+   9C:  Call  ModifyColliderFlags   ( 00000000 ~Collider:deilitw 7FFFFE00 )
+   B4:  Call  ModifyColliderFlags   ( 00000000 ~Collider:deilite 7FFFFE00 )
+   CC:  Set   *Var0  $Script_80240158
+   DC:  Exec  EnterWalk
+   E8:  ExecWait  $Script_80240080
+   F4:  Return
+   FC:  End
+}
+
+PADDING: 802402A4 to 802402B0 (000002A4 to 000002B0)
+00000000 00000000 00000000
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeEntity    ( .Entity:PinkFlower ~Vec4d:Entity802402B0 80000000 )
+   24:  Call  MakeEntity    ( .Entity:PinkFlower ~Vec4d:Entity802402D4 80000000 )
+   48:  Return
+   50:  End
+}
+
+PADDING: 80240308 to 80240310 (00000308 to 00000310)
+00000000 00000000
+
+#new:ASCII $ASCII_80240310
+{
+	"jan_18"
+}
+
+#new:ASCII $ASCII_80240318
+{
+	"jan_23"
+}
+

@@ -1,0 +1,369 @@
+%% This file handle all the hooks that needs to be running at all time (And a few other misc stuff)
+
+@Hook 82758 % 800E92A8
+{
+/%
+JAL     $GodMode
+NOP
+JAL     $Debugging_TestStuffwLButton
+NOP%/
+JAL     $Function_FFWD
+NOP
+% Track Inputs
+JAL     $TrackInput % track an input and return a bool
+NOP
+JAL     $UseItem_ShowHealMenu % from PartnersHP.patch
+NOP
+% Update DrawBoxes
+JAL     $Function_kmr31_DrawDescriptionBox
+NOP
+JAL     $Function_mac01_DrawShopCurrentPage
+NOP
+JAL     $Draw_ShinesCounter
+NOP
+% Minigames
+JAL     $Function_UpdateMinigames
+NOP
+J       800E92B0
+LW      RA, 008C (SP)
+}%/
+
+%%%% Printing Code made by Rain %%%%%
+#new:Data $PointerToStoreAsciiTo
+{
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000 %allocate space to store result
+}
+
+#new:Data $PointerToStoreStringTo
+{
+FF0D0F0F % set font to 0F width, 0F height
+FF0500F7 % set color to 00 (black)
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+}
+
+#new:Data $Formatters
+{
+20202020 20202020 20202020 20202564 00000000
+%above hex is ascii for: "        %d"
+}
+
+#string $String_x
+{
+x[End]
+}
+
+% Made by Rain
+#new:Function $ConvertAsciiToPM64String %takes args a0, a1
+{
+% a0 = where to store converted result
+% a1 = where to read from
+PUSH a0, a1
+ORI t1, r0, 0020 %space
+.loop
+LB t0, 0000 (a1)
+BEQ t0, r0, .endofascii
+NOP
+BEQ t0, t1, .isspace
+NOP
+ADDIU t0, t0, FFE0 %subtract 0x20 from ascii to get pm64 string hex
+.store
+SB t0, 0008 (a0)
+ADDIU a0, a0, 0001
+BEQ r0, r0, .loop
+ADDIU a1, a1, 0001
+.endofascii
+ORI t0, r0, 00FD %pm64 string terminator
+SB t0, 0008 (a0) %store terminator
+POP a0, a1
+JR RA
+NOP
+.isspace
+BEQ r0, r0, .store
+ORI t0, r0, 00F7
+}
+
+#export $ConvertAsciiToPM64String
+
+#new:ASCII $ASCII_Format_Half
+{
+"%5u"
+}
+
+#new:ASCII $ASCII_Format_Byte
+{
+"%3u"
+}
+
+#new:ASCII $ASCII_Format_Time
+{
+"%02u"
+}
+
+#new:ASCII $ASCII_Buffer
+{
+"          "
+}
+
+#string $String_Buffer
+{
+[Color:00]             [END]
+}
+
+#new:ASCII $ASCII_Format_UByte
+{
+"%2u"
+}
+
+#string $String_Buffer_Color0A
+{
+[Color:0A]             [END]
+}
+
+#export $ASCII_Buffer
+#export $ASCII_Format_UByte % used by PartnersHP.patch
+#export $String_Buffer_Color0A % used by PartnersHP.patch
+
+% Lock Player Inputs when you open a giant chest with AssignScript
+@Hook 108A84 % 802E7204
+{
+PUSH    RA, A0, A1, A2, A3, V0, V1
+LIO 	A1, *Flag_LockInputs_GiantChest
+JAL 	~Func:get_variable
+RESERVED
+BEQ     V0, R0, .End
+NOP
+% Disable Player Inputs
+JAL     ~Func:disable_player_input
+NOP
+.End
+POP     RA, A0, A1, A2, A3, V0, V1
+% Vanilla code
+LW	    V0, 0040 (A0)
+J       802E720C
+ADDIU	A0, R0, 01D3
+}
+
+% From Black Pit
+
+#export:Data $FX_Underwater_Mover
+{ 00000000 }
+
+% Tidal wave FX (non-blue) - used when using a mover
+%
+% Call  PlayEffect 	( ~FX:Underwater ... )
+%
+% osMapTLB - This function loads the fx data in E0
+%
+@Function 3B8DEC % E00BA21C
+{
+% To jump between E0XXXXX and 80XXXXXX addresses
+% you need to jump from a register, that's why JR
+LIO  T0 $Function_TidalWave_RemoveBlue
+JR   T0
+NOP
+}
+
+#new:Function $Function_TidalWave_RemoveBlue
+{
+PUSH    V0, V1, A0, A1, A2, A3, RA
+LAW     V0, $FX_Underwater_Mover
+BEQ     V0, R0, .Falso
+NOP
+POP     V0, V1, A0, A1, A2, A3, RA
+BEQ     R0, R0, .Verdadero
+ORI     A0, R0, 0100 % not blue
+.Falso
+POP     V0, V1, A0, A1, A2, A3, RA
+.Verdadero
+% Vanilla code
+LUI	    AT, 4F00
+MTC1	AT, F2
+LIO     T0, E00BA22C
+JR      T0
+MTC1	A0, F0
+}
+
+% Track an input by using a function instead of only scripting (it still need some scripting tho)
+% Save a bool as true if the tracked input was pressed
+#new:Function $TrackInput
+{
+PUSH    RA, A0, A1, A2, A3, T0, T1, T2, V0
+LIO     A1, *TrackInput
+JAL     ~Func:get_variable
+RESERVED
+BEQ     V0, R0, .End
+NOP
+% Check if the Tracker has been initialitated, if not turn the tracker off and end the function
+LIO     T0, $Data_Inputs % save address
+LW      T2, 4 (T0)
+BNE     T2, R0, .StartTracker
+NOP
+% The track ins't initializated
+SW      R0, 0 (T0)
+SW      R0, 4 (T0)
+LIO     A1, *TrackInput
+JAL     ~Func:set_variable
+CLEAR   A2
+BEQ     R0, R0, .End
+NOP
+.StartTracker
+LIO     T0, $Data_Inputs % save address
+LBU     T1, 1 (T0) % Load Input to Track
+LW      T2, 4 (T0)
+LBU     T2, 0 (T2) % Load Address to Track
+BNE     T1, T2, .End
+NOP
+% Save Bool as true
+ORI     T0, R0, 1
+SAB     T0, $Data_Inputs
+.End
+POP     RA, A0, A1, A2, A3, T0, T1, T2, V0
+JR      RA
+ORI     V0, R0, 2
+}
+
+% XX000000 00000000 = Input pressed bool
+% 00XX0000 00000000 = Button to be tracked
+% 0000XX00 00000000 = Amount of Stylish made on last move
+% 000000XX 00000000 = unused
+% 00000000 XXXXXXXX = Address to track (will always load a single byte)
+#new:Data $Data_Inputs
+{ 00000000 00000000 }
+
+#export $Data_Inputs
+
+#new:Function $ToogleCheats
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LABU    T0, 80074037 % one time inputs
+    ANDI    T1, T0, 20 % bit5 / L Button
+    BEQ     T1, R0, .End
+    NOP
+    LABU    T0, 80074098 % Cheats
+    ORI     T1, R0, 4
+    BEQL    T0, T1, .SetCheat
+    CLEAR   T0 % Set Back to Zero
+    ADDIU   T0, T0, 1
+    .SetCheat
+    SAB     T0, 80074098
+    % Play Sound
+    ADDIU	A0, R0, 00C7 % sfx
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    .End
+    % Print Current Cheat
+    % Convert Data to ASCII
+    LIO     A0, $ASCII_Buffer          % Pointer to Save ASCII
+    LIO     A1, $ASCII_Format_Byte     % Type of Format to use
+    LABU 	A2, 80074098		   % Data to Format
+    JAL     ~Func:sprintf
+    RESERVED
+    % Convert ASCII to String and Print
+    LIO     A1, $ASCII_Buffer       % previously converted ASCII
+    LIO     A0, $String_Buffer      % Pointer to Save Final String
+    JAL     $ConvertAsciiToPM64String % The final result will be stored in A0
+    RESERVED
+    ORI     A1, R0, 0075 % x pos
+    ORI     A2, R0, 00CA % y pos
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    JAL     ~Func:draw_string
+    ORI     A3, R0, 00FF
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% On battle fully heal when you pressing R and enable cheats
+#new:Function $GodMode
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LIO     A1, *GodMode
+    JAL     ~Func:get_variable
+    RESERVED
+    BEQ     V0, R0, .End
+    NOP
+    % Toogle game cheats
+    JAL     $ToogleCheats
+    NOP
+    % check the player is inside battle
+    LABU    T0, 80074094 % game state
+    ORI     T1, R0, 1
+    BNE     T0, T1, .End
+    NOP
+    % check R button
+    LABU    T0, 80074037 % 1 Frame Inputs
+    ANDI    T0, T0, 10 % bit4 = R button
+    BEQ     T0, R0, .End
+    NOP
+    % restore HP, FP and Star Power
+    LABU    T0, 8010F293 % load max hp
+    SAB     T0, 8010F292
+    LABU    T0, 8010F296 % load max fp
+    SAB     T0, 8010F295
+    ORI     T0, R0, 0700 % always set sp as 7
+    SAH     T0, 8010F520
+    % play sound
+    ADDIU	A0, R0, 0010 % Sound ID
+    ADDIU	A2, R0, 18 % Volume
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    CLEAR 	A1
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+#new:Function $Debugging_TestStuffwLButton
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % check the player is inside battle
+    LABU    T0, 80074094 % game state
+    ORI     T1, R0, 1
+    BEQ     T0, T1, .End
+    NOP
+    % check L button
+    LABU    T0, 80074037 % 1 Frame Inputs
+    ANDI    T0, T0, 20 % bit5 = L button
+    BEQ     T0, R0, .End
+    NOP
+    % do this when pressing L
+    JAL     $Function_Debugging_RunTestScript
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+#new:Function $Function_Debugging_RunTestScript
+{
+    PUSH    RA
+    CLEAR   A2
+    LIA	    A0, $Script_Debugging_LButton
+    JAL	    ~Func:start_script
+    ADDIU	A1, R0, 1
+    POP     RA
+    JR      RA
+    NOP
+}
+
+#new:Script:Map $Script_Debugging_LButton
+{
+    SetGroup 0
+    SuspendAll 2
+    Call    DisablePlayerInput ( .True )
+    %Call    GotoMap ( $ASCII_tes00 4 )
+    Call    GotoMap ( $ASCII_other 0 )
+    Return
+    End
+}
+
+#new:ASCII $ASCII_other
+{ "tyd_03" }
+
+#new:ASCII $ASCII_tes00
+{ "tes_00" }

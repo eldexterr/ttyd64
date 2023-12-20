@@ -1,0 +1,539 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:JadeJungle
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_SetupMusic
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_InitRocks
+    Call  $Function_RestereRocksTable
+	Set   *Var0  $Script_MakeExits
+    Exec  EnterWalk
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+    Call  SetMusicTrack ( 00000000 .Song:JadeJungle 00000000 00000008 )
+    Call  ClearAmbientSounds    ( 000000FA )
+    Return
+    End
+}
+
+% Entities
+
+#new:Script $Script_MakeEntities
+{
+    Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+    Set   *MapVar[3] *Var0
+    Call  AssignBlockFlag   ( *GF_JAN25_Shine )
+    Call  AssignScript 	    ( $Script_Entity_Shine1 )
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[3] % entityID
+    SetConst *Var1 *GF_JAN25_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+% Rocks scripts
+
+#new:Script $Script_InitRocks
+{
+    %
+    % Left
+    Bind  $Script_MoveRock_L_1_2 .Trigger:WallPush ~Collider:L_1_2 00000001 00000000
+    Bind  $Script_MoveRock_L_2_2 .Trigger:WallPush ~Collider:L_2_2 00000001 00000000
+    Bind  $Script_MoveRock_L_2_3 .Trigger:WallPush ~Collider:L_2_3 00000001 00000000
+    Bind  $Script_MoveRock_L_3_1 .Trigger:WallPush ~Collider:L_3_1 00000001 00000000
+    Bind  $Script_MoveRock_L_4_1 .Trigger:WallPush ~Collider:L_4_1 00000001 00000000
+    Bind  $Script_MoveRock_L_4_3 .Trigger:WallPush ~Collider:L_4_3 00000001 00000000
+    Bind  $Script_MoveRock_L_5_2 .Trigger:WallPush ~Collider:L_5_2 00000001 00000000
+    % Right
+    Bind  $Script_MoveRock_R_1_2 .Trigger:WallPush ~Collider:R_1_2 00000001 00000000
+    Bind  $Script_MoveRock_R_2_1 .Trigger:WallPush ~Collider:R_2_1 00000001 00000000
+    Bind  $Script_MoveRock_R_2_2 .Trigger:WallPush ~Collider:R_2_2 00000001 00000000
+    Bind  $Script_MoveRock_R_4_1 .Trigger:WallPush ~Collider:R_4_1 00000001 00000000
+    Bind  $Script_MoveRock_R_4_2 .Trigger:WallPush ~Collider:R_4_2 00000001 00000000
+    Bind  $Script_MoveRock_R_4_3 .Trigger:WallPush ~Collider:R_4_3 00000001 00000000
+    %
+    % Parent Colliders
+    %
+    % Left
+    Call    ParentColliderToModel ( ~Collider:L_1_2 ~Model:L_1_2 )
+    Call    ParentColliderToModel ( ~Collider:L_2_2 ~Model:L_2_2 )
+    Call    ParentColliderToModel ( ~Collider:L_2_3 ~Model:L_2_3 )
+    Call    ParentColliderToModel ( ~Collider:L_3_1 ~Model:L_3_1 )
+    Call    ParentColliderToModel ( ~Collider:L_4_1 ~Model:L_4_1 )
+    Call    ParentColliderToModel ( ~Collider:L_4_3 ~Model:L_4_3 )
+    Call    ParentColliderToModel ( ~Collider:L_5_2 ~Model:L_5_2 )
+    % Right
+    Call    ParentColliderToModel ( ~Collider:R_1_2 ~Model:R_1_2 )
+    Call    ParentColliderToModel ( ~Collider:R_2_1 ~Model:R_2_1 )
+    Call    ParentColliderToModel ( ~Collider:R_2_2 ~Model:R_2_2 )
+    Call    ParentColliderToModel ( ~Collider:R_4_1 ~Model:R_4_1 )
+    Call    ParentColliderToModel ( ~Collider:R_4_2 ~Model:R_4_2 )
+    Call    ParentColliderToModel ( ~Collider:R_4_3 ~Model:R_4_3 )
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_L_1_2
+{
+    Set  *Var0 ~Model:L_1_2
+    Set  *Var1 ~Collider:L_1_2
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_L_2_2
+{
+    Set  *Var0 ~Model:L_2_2
+    Set  *Var1 ~Collider:L_2_2
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_L_2_3
+{
+    Set  *Var0 ~Model:L_2_3
+    Set  *Var1 ~Collider:L_2_3
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_L_3_1
+{
+    Set  *Var0 ~Model:L_3_1
+    Set  *Var1 ~Collider:L_3_1
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_L_4_1
+{
+    Set  *Var0 ~Model:L_4_1
+    Set  *Var1 ~Collider:L_4_1
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_L_4_3
+{
+    Set  *Var0 ~Model:L_4_3
+    Set  *Var1 ~Collider:L_4_3
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_L_5_2
+{
+    Set  *Var0 ~Model:L_5_2
+    Set  *Var1 ~Collider:L_5_2
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+% Right
+
+#new:Script $Script_MoveRock_R_1_2
+{
+    Set  *Var0 ~Model:R_1_2
+    Set  *Var1 ~Collider:R_1_2
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_R_2_1
+{
+    Set  *Var0 ~Model:R_2_1
+    Set  *Var1 ~Collider:R_2_1
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_R_2_2
+{
+    Set  *Var0 ~Model:R_2_2
+    Set  *Var1 ~Collider:R_2_2
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_R_4_1
+{
+    Set  *Var0 ~Model:R_4_1
+    Set  *Var1 ~Collider:R_4_1
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_R_4_2
+{
+    Set  *Var0 ~Model:R_4_2
+    Set  *Var1 ~Collider:R_4_2
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock_R_4_3
+{
+    Set  *Var0 ~Model:R_4_3
+    Set  *Var1 ~Collider:R_4_3
+    ExecWait $Script_MoveRock
+    Return
+    End
+}
+
+#new:Script $Script_MoveRock
+{
+    Set     *Var7 *Var0
+    Set     *Var8 *Var1
+    Call    GetPlayerTargetYaw ( *Var0 )
+    Switch *Var0
+        Case == 0 % Up
+            Set *Var9 0 % Vertical
+            Set *VarA 0 % Up
+        Case == 90` % Right
+            Set *Var9 1 % Horizontal
+            Set *VarA 0 % Right
+        Case == 180` % Down
+            Set *Var9 0 % Vertical
+            Set *VarA 1 % Down
+        Case == 270` % Left
+            Set *Var9 1 % Horizontal
+            Set *VarA 1 % Left
+        Default
+            Set *MapVar[0] .False
+            Return
+    EndSwitch
+    % Cooldown
+    %
+    % Wait a few frames to move the rock
+    Set *MapVar[1] *Var7
+    If *MapVar[2] == .False
+        Set *MapVar[2] *MapVar[1]
+    Else
+        If *MapVar[1] != *MapVar[2]
+            Set *MapVar[0] .False % clear timer
+            Set *MapVar[2] *MapVar[1]
+        EndIf
+    EndIf
+    Add     *MapVar[0] 1
+    If *MapVar[0] < 3 % wait this amount of frames
+        Return
+    EndIf
+    Set *MapVar[0] .False
+    Set *MapVar[2] .False
+    %
+    % Check if Rock can be moved
+    Call    $Function_UpdateRockPosInTable ( *Var7 *Var9 *VarA *Var0 )
+    If *Var0 == .False
+        Return
+    EndIf
+    Call    DisablePlayerInput ( .True )
+    % Move rock
+    %
+    % Get model positions offsets
+    Call    $GetModelPointer ( *Var7 *Var0 )
+    Call    $ReadAddress_Unsigned ( *Var0 1 *Var4 30 .False ) % X offset
+    Call    $ReadAddress_Unsigned ( *Var0 1 *Var5 32 .False ) % Y offset
+    Call    $ReadAddress_Unsigned ( *Var0 1 *Var6 34 .False ) % Z offset
+    %
+    Call    PlaySound ( 80000010 )
+    If *Var9 == 0 % Vertical
+        Set *Var1 52` % move rock 52` units
+        If *VarA == 0 % Up
+            Set *Var2 -1
+        Else % Down
+            Set *Var2 1
+        EndIf
+        Mul     *Var1 *Var2
+        Set     *Var3 *Var6
+        Add     *Var3 *Var1
+        Set     *Var9 0 % Loop count
+        Call     MakeLerp    	( *Var6 *Var3 70` .Easing:Linear )
+        Loop     
+            Call    UpdateLerp
+            Set     *Var4 *Var1
+            % Get model positions offsets
+            Call    $GetModelPointer ( *Var7 *Var1 )
+            Call    $ReadAddress_Unsigned ( *Var1 1 *Var2 30 .False ) % X offset
+            Call    TranslateModel ( *Var7 *Var2 0 *Var0 )
+            Call    UpdateColliderTransform ( *Var8 )
+            % update player pos
+            Call    GetModelCenter ( *Var7 )
+            Set     *Var5 -37`
+            If *VarA == 0 % Up
+                Set *Var3 -1
+            Else % Down
+                Set *Var3 1
+            EndIf
+            Mul     *Var5 *Var3
+            Add     *Var2 *Var5
+            Call    GetPlayerPos ( *Var0 *Var1 .False )
+            Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+            Call    SetPlayerActionState  ( 00000014 ) % pushing
+            Add     *Var9 1
+            If *Var9 >= 6
+                % Dust FX
+                Call    GetModelCenter ( *Var7 )
+                Call    GetPlayerPos ( .False *Var1 .False )
+                Set *Var5 26`
+                If *VarA == 0 % Right
+                    Set *Var3 1
+                Else % Left
+                    Set *Var3 -1
+                EndIf
+                Mul     *Var5 *Var3
+                Add     *Var2 *Var5
+                Sub     *Var1 7 % y
+                Sub     *Var0 15` % x
+                Call    PlayEffect    ( ~FX:Steam:SmallPuff *Var0 *Var1 *Var2 00000000 00000000 .False .False .False .False .False .False .False )
+                Add     *Var0 15` % x
+                Call    PlayEffect    ( ~FX:Steam:SmallPuff *Var0 *Var1 *Var2 00000000 00000000 .False .False .False .False .False .False .False )
+                Add     *Var0 15` % x
+                Call    PlayEffect    ( ~FX:Steam:SmallPuff *Var0 *Var1 *Var2 00000000 00000000 .False .False .False .False .False .False .False )
+                Set     *Var9 0 % clear loop counter
+            EndIf
+            Wait    1
+            If  *Var4  ==  .False
+                BreakLoop
+            EndIf
+        EndLoop
+    Else % Horizontal
+        Set *Var1 49` % move rock 49` units
+        If *VarA == 0 % Right
+            Set *Var2 1
+        Else % Left
+            Set *Var2 -1
+        EndIf
+        Mul     *Var1 *Var2
+        Set     *Var3 *Var4
+        Add     *Var3 *Var1
+        Set     *Var9 0 % Loop count
+        Call     MakeLerp    	( *Var4 *Var3 70` .Easing:Linear )
+        Loop     
+            Call    UpdateLerp
+            Set     *Var4 *Var1
+            % Get model positions offsets
+            Call    $GetModelPointer ( *Var7 *Var1 )
+            Call    $ReadAddress_Unsigned ( *Var1 1 *Var2 34 .False ) % Z offset
+            Call    TranslateModel ( *Var7 *Var0 0 *Var2 )
+            Call    UpdateColliderTransform ( *Var8 )
+            % update player pos
+            Call    GetModelCenter ( *Var7 )
+            Set     *Var5 -37`
+            If *VarA == 0 % Right
+                Set *Var3 1
+            Else % Left
+                Set *Var3 -1
+            EndIf
+            Mul     *Var5 *Var3
+            Add     *Var0 *Var5
+            Call    GetPlayerPos ( .False *Var1 *Var2 )
+            Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+            Call    SetPlayerActionState  ( 00000014 ) % pushing
+            Add     *Var9 1
+            If *Var9 >= 6
+                % Dust FX
+                Call    GetModelCenter ( *Var7 )
+                Call    GetPlayerPos ( .False *Var1 .False )
+                Set *Var5 17`
+                If *VarA == 0 % Right
+                    Set *Var3 -1
+                Else % Left
+                    Set *Var3 1
+                EndIf
+                Mul     *Var5 *Var3
+                Add     *Var0 *Var5
+                Sub     *Var1 7 % y
+                Sub     *Var2 15` % z
+                Call    PlayEffect    ( ~FX:Steam:SmallPuff *Var0 *Var1 *Var2 00000000 00000000 .False .False .False .False .False .False .False )
+                Add     *Var2 15` % z
+                Call    PlayEffect    ( ~FX:Steam:SmallPuff *Var0 *Var1 *Var2 00000000 00000000 .False .False .False .False .False .False .False )
+                Add     *Var2 15` % z
+                Call    PlayEffect    ( ~FX:Steam:SmallPuff *Var0 *Var1 *Var2 00000000 00000000 .False .False .False .False .False .False .False )
+                Set     *Var9 0 % clear loop counter
+            EndIf
+            Wait    1
+            If  *Var4  ==  .False
+                BreakLoop
+            EndIf
+        EndLoop
+    EndIf
+    Call    StopSound ( 80000010 )
+    Call    SetPlayerActionState  ( .ActionState:Idle )
+    Wait    10`
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+% `Call  $Function_UpdateRockPosInTable ( modelID horizontal(bool) down/left(bool) *out )`
+%
+% Update the rock new pos and returns a bool in arg3 if the position was possible to update
+#new:Function $Function_UpdateRockPosInTable
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    % get arguments
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % arg0
+    COPY    S1, V0
+    %
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1) % arg1
+    COPY    S2, V0
+    %
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1) % arg2
+    COPY    S3, V0
+    %
+    % S1=modelID
+    % S2=horizontal(bool)
+    % S3=down/left(bool)
+    %
+    % Search for model in the table
+    LIO     A0, $Data_RocksPositionTable % from globals/patch/World_jan25_ExtraData.patch
+    ORI     A3, R0, 0123 % table's last value
+    .Loop
+    LH      A1, 0 (A0)
+    BEQL    A1, A3, .ReturnBool
+    CLEAR   A2 % model was never found
+    BEQ     A1, S1, .BreakLoop
+    NOP
+    % check next slot
+    BEQ     R0, R0, .Loop
+    ADDIU   A0, A0, 2
+    .BreakLoop
+    % Model was found, update the new position on the IntTable
+    BNE     S2, R0, .UpdatePos_Horizontal
+    NOP
+    % Vertical
+    ADDI    A1, A0, -12 % up
+    BNEL    S3, R0, .UpdatePos
+    ADDI    A1, A0, 12 % down
+    BEQ     R0, R0, .UpdatePos
+    NOP
+    .UpdatePos_Horizontal
+    ADDI    A1, A0, 2 % right
+    BNEL    S3, R0, .UpdatePos
+    ADDI    A1, A0, -2 % left
+    .UpdatePos
+    LH      A2, 0 (A1)
+    % the new position is free?
+    BNE     A2, R0, .ReturnBool
+    CLEAR   A2
+    % it's free
+    SH      S1, 0 (A1)
+    SH      R0, 0 (A0)
+    ORI     A2, R0, 1
+    .ReturnBool
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:set_variable
+    LW      A1, C (A1) % arg3
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Copy the data from $Data_RocksPositionTable_Original to $Data_RocksPositionTable
+#new:Function $Function_RestereRocksTable
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, $Data_RocksPositionTable_Original
+    ORI     A2, R0, 0123 % last value in the table
+    LIO     A3, $Data_RocksPositionTable
+    .Loop
+    LH      A1, 0 (A0)
+    SH      A1, 0 (A3)
+    BEQ     A1, A2 .End % Table has been fully restored
+    NOP
+    ADDIU   A0, A0, 2
+    BEQ     R0, R0, .Loop
+    ADDIU   A3, A3, 2
+    .End
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+%
+
+#new:Script $Script_MakeExits
+{
+    Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit0
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "jan_07" 00000001 )
+    Wait  100`
+    Return
+    End
+}
+
+% Tattle
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Wow there's a lot of rocks here![BR]
+It looks like they can be pushed.[BR]
+[Wait][Next]
+Try opening the way by pushing the[BR]
+rocks Mario.[BR]
+[Wait][End]
+}

@@ -1,0 +1,169 @@
+
+/%
+Input Parameters:
+VALUE:LargestAbilityID      max ability index
+VALUE:AttackFXArraySize     size (in bytes) of the attack fx array
+VALUE:BasicCases            
+VALUE:AttackFXCases         
+VALUE:JumpTable             patch body for jump table
+%/
+
+% 0831F8 --> 800E9D48
+@Hook 831F8 % $is_ability_active
+{
+    PUSH    RA
+    JAL     $AutoIsAbilityActive
+    NOP
+    JPOP    RA
+}
+
+#new:Function $AutoIsAbilityActive
+{
+    #DEF      T0, *PlayerData
+    #DEF      T1, *InputArg
+    #DEF      T2, *JumpCaseAddress
+    #DEF      T3, *CurID
+    
+    PUSH[##[VALUE:AttackFXArraySize]] RA
+    COPY      *InputArg, A0
+    LA        *PlayerData, 8010F290
+    
+    #DEF      A1, *MatchCount
+    #DEF      A0, *RandChoiceCount
+    #DEF      A2, *RandChoicePtr
+    #DEF      A3, *LoopIndex
+    
+    CLEAR     *MatchCount
+    CLEAR     *RandChoiceCount
+    
+    %%
+    % Initialize the random fx choice array
+    ADDIU     V1, SP, ##[VALUE:AttackFXArraySize]
+    COPY      V0, SP
+    .ClearArrayLoop
+    ADDIU     V0, V0, 4
+    BNEL      V0, V1, .ClearArrayLoop
+    SW        R0, -4 (V0)
+    COPY      *RandChoicePtr, SP
+    
+    %%
+    % If the player is peach, always return false
+    LAW       V0, 8007419C
+    LBU       V0, 7E (V0)
+    ANDI      V0, V0, 1
+    BNE       V0, R0, .Done
+    CLEAR     V0
+    
+    %%
+    % Loop initialization: check bounds and 
+    % Store the jump case, since it's invariant during iteration
+    BLT       *InputArg, R0, .Done
+    CLEAR     V0
+    LI        V1, ##[VALUE:LargestAbilityID]
+    BGT       *InputArg, V1, .Done
+    CLEAR     V0
+    
+    LA        V1, $IsAbilityActive_JumpTable
+    SLL       V0, *InputArg, 2
+    ADDU      V1, V0, V1
+    LW        *JumpCaseAddress, 0 (V1)
+    BEQ       *JumpCaseAddress, R0, .Done
+    CLEAR     V0
+    CLEAR     *LoopIndex
+    
+    .NextBadge
+    %%
+    % Get moveID for current badge
+    SLL       V0, *LoopIndex, 1
+    ADDU      V0, *PlayerData, V0
+    LH        *CurID, 208 (V0) % get ith equipped badge ID
+    BEQ       *CurID, R0, .o8C
+    SLL       V0, *CurID, 5
+    LTBU      *CurID, V0 (800878FA) % badgeID -> moveID
+    .o8C
+    % jump to move lookup
+    JR        *JumpCaseAddress
+    NOP
+    
+    %%
+    % A series of cases will be generated here:
+##[VALUE:BasicCases]
+    /%
+    .Case_00  % DodgeMaster
+    B         .CheckBadgeID
+    LI        V0, .Move:DodgeMaster
+    .Case_02  % SpikeShield
+    B         .CheckBadgeID
+    LI        V0, .Move:SpikeShield
+    .Case_03  % FirstAttack
+    B         .CheckBadgeID
+    LI        V0, .Move:FirstAttack
+    ...
+    %/
+    
+    %%
+    % special case: gets +1 if it matches and +2 if it matches and hasActionCommands is set
+    .Case_06  % MysteryScroll
+    LB        V0, A (*PlayerData)
+    BNEL      V0, R0, 4
+    ADDIU     *MatchCount, *MatchCount, 1
+    B         .CheckBadgeID
+    LI        V0, .Move:MysteryScroll
+    
+    %%
+    % This case handles attack FX badges, the commented body below will be generated for each
+    % badge with ability set to AttackFX and they will be chained together.
+    .Case_0F  % AttackFX
+##[VALUE:AttackFXCases]
+    /%
+    .CheckAttackFXA
+    LI        V0, .Move:AttackFXA
+    BNE       *CurID, V0, .CheckAttackFXB
+    NOP
+    B         .StoreFXMove
+    LI        V0, 1 % 2, 3, 4, ...
+    ...
+    %/
+    .StoreFXMove
+    SW        V0, 0 (*RandChoicePtr)
+    ADDIU     *RandChoicePtr, *RandChoicePtr, 4
+    ADDIU     *RandChoiceCount, *RandChoiceCount, 1
+    B         .CheckLoopEnd
+    LI        *MatchCount, -1
+    
+    %%
+    % Epilogue for each iteration
+    .CheckBadgeID
+    BEQL      *CurID, V0, .CheckLoopEnd
+    ADDIU     *MatchCount, *MatchCount, 1
+    .CheckLoopEnd
+    ADDIU     *LoopIndex, *LoopIndex, 1
+    SLTI      V0, *LoopIndex, 40 % inventory size
+    BNE       V0, R0, .NextBadge
+    NOP
+    
+    %%
+    % Loop is done. If count < 0, select match at random from array
+    BGEZ      *MatchCount, .Done
+    COPY      V0, *MatchCount
+    JAL       ~Func:rand_int
+    ADDIU     *RandChoiceCount, *RandChoiceCount, -1
+    SLL       V0, V0, 2
+    ADDU      V0, SP, V0
+    LW        V1, 0 (V0)
+    COPY      V0, V1
+    .Done
+    #UNDEF    All
+    JPOP[##[VALUE:AttackFXArraySize]] RA
+}
+
+#new:Data $IsAbilityActive_JumpTable
+{
+##[VALUE:JumpTable]
+    /%
+    $AutoIsAbilityActive[.Case_00]
+    00000000
+    $AutoIsAbilityActive[.Case_02]
+    ...
+    %/
+}

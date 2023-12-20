@@ -1,0 +1,219 @@
+/%
+Increment each actor HP and damage deal according to the current difficulty.
+
+Difficulties
+00=Easy (0.5x HP & Damage)
+01=Normal
+02=Hard (1.5x HP & Damage)
+03=Very Hard (2.0x HP & Damage)
+%/
+
+% write each actor current and max hp
+%
+% ~Func:create_actor
+@Hook 193DE8 % 80265508
+{
+PUSH	RA, A0, A1, A2, A3, V0, V1
+LIO 	A1, *Byte_Settings_Difficulty
+JAL 	~Func:get_variable 
+RESERVED
+COPY	V1, V0
+LW      V0, 24 (SP) % Pop V0
+BEQ     V1, R0, .Easy
+ORI     A0, R0, 1 % Normal
+BEQ     V1, A0, .End
+ORI     A0, R0, 2 % Hard
+BEQ     V1, A0, .Hard
+NOP
+BEQ     R0, R0, .CheckCap % Very Hard
+ADDU    V0, V0, V0 % just sum enemyHP twice = EnemyHPx2
+.Easy
+ORI     T0, R0, 2 % get 50%
+DIV     V0, T0 % EnemyHP / 2 = 50%
+MFLO    V0
+BEQL    V0, R0, .CheckCap
+ORI     V0, R0, 1
+BEQ     R0, R0, .CheckCap
+NOP
+.Hard
+ORI     T0, R0, 2 % get 50%
+DIV     V0, T0 % EnemyHP / 2 = 50%
+MFLO    T0
+ADDU    V0, V0, T0 % EnemyHP+50% = 1.5x HP
+.CheckCap
+% Check if the value isn't above 255
+SLTIU   T0, V0, 256`
+BEQL    T0, R0, .End
+ORI     V0, R0, FF % is above 255, set the HP value back to FF
+.End
+POP		RA, A0, A1, A2, A3, R0, V1
+SB		V0, 01B8 (S1) % write current hp
+J 		80265510
+SB		V0, 01B9 (S1) % write max hp
+}
+
+% Apply damage boost according to the current difficulty.
+%
+% Also change ~DamageType:IgnoreDefense to pierce all player or partner defenses
+% Instead of only the value from their defense tables.
+%
+%
+% Patch EnemyDamageTarget (API)
+@Hook 1AB628 % 8027CD48
+{
+    PUSH    S0
+    JAL     $Function_GetDifficultyAttackBoost
+    NOP
+    JAL     $PiercePlayerTeamDefense
+    COPY    S0, V0
+    ADDU    V0, S0, V0
+    POP     S0
+    % restore vanilla code
+    SH	    V0, 017E (S1)
+    J       8027CD50
+    LW	    A1, 0000 (S0)
+}
+
+% V0 = defense boost
+%
+% Returns a zero if wasn't Player or Partner or if IgnoreDefense wasn't present.
+#new:Function $PiercePlayerTeamDefense
+{
+    PUSH    RA, A0, A1, A2, A3, V1
+    CLEAR   A3
+    % Pierce defense?
+    % Used when an attack has the IgnoreDefense flag or when an enemy have a D Down badge
+    LABU    V0, $PierceDefenseFlag % placed in Battle_EnemiesBadges.patch
+    BNE     V0, R0, .GetTargetID
+    NOP
+    % check if this attack has the IgnoreDefense flag
+    %
+    % S1 = battleStatus
+    LW      V0, 188 (S1) % load battleStatus(0x188) = currentAttackElement
+    LUI     V1, 0800 % ~Flags:DamageType:IgnoreDefense
+    AND     V0, V0, V1
+    BEQ     V0, R0, .End
+    NOP
+    .GetTargetID
+    % Check if current target is Mario or Partner
+    %
+    % S2 = attacker's actor data
+    LHU     V0, 428 (S2) % load targetID
+    BNE     V0, R0, .GetPartnerDef
+    NOP
+    JAL     $Function_GetMarioDefense
+    NOP
+    BEQ     R0, R0, .End
+    COPY    A3, V0
+    .GetPartnerDef
+    ORI     V1, R0, 100 % .Actor:Partner
+    BNE     V0, V1, .End
+    NOP
+    JAL     $Function_GetPartnerDefense
+    NOP
+    COPY    A3, V0
+    .End
+    COPY    V0, A3
+    SAB     R0, $PierceDefenseFlag % nuke
+    POP     RA, A0, A1, A2, A3, V1
+    JR      RA
+    NOP
+}
+
+% *out = V0
+#export:Function $Function_GetMarioDefense
+{
+    PUSH    RA, A0, T0, S0
+	% Check if Mario have any defense boosts
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    CLEAR   S0 % init S0
+    LB      T0, E (V0) % defend command
+    ADDU    S0, S0, T0
+    % Check how many times Mario have the following Badges
+	.CheckDefensePlus
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 00FB % .Item:DefendPlusA
+	BNEL    V0, R0, .CheckPDownDUp
+	ADDU    S0, S0, V0
+	.CheckPDownDUp
+	JAL     $IsBadgeActivated_Stack
+	ADDIU   A0, R0, 0116 % .Item:PDownDUp
+	BNEL    V0, R0, .End
+	ADDU    S0, S0, V0
+    .End
+    COPY    V0, S0
+	POP     RA, A0, T0, S0
+	JR	    RA
+	NOP
+}
+
+% *out = V0
+#export:Function:Battle $Function_GetPartnerDefense
+{
+    PUSH    RA, A0, A1, T0, S0
+    CLEAR   S0 % init S0
+    % check how many def buffs partner have
+    JAL     $GetActorExtraBattleData_Pointer
+    ORI     A0, R0, 0100 % .Actor:Partner
+    LB      T0, E (V0) % defend command
+    ADD     S0, S0, T0
+    % Check how many times Partner have the following Badges
+    .CheckDefensePlus
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0181 % .Item:DefendPlusP
+	BNEL    V0, R0, .CheckPDownDUp
+	ADDU    S0, S0, V0
+	.CheckPDownDUp
+	JAL     $IsBadgeActivated_Stack
+	ADDIU   A0, R0, 0186 % .Item:PDownDUpP
+	BNEL    V0, R0, .End
+	ADDU    S0, S0, V0
+    .End
+    COPY    V0, S0
+	POP     RA, A0, A1, T0, S0
+	JR	    RA
+	NOP
+}
+
+% V0=*out (Difficulty boost)
+%
+% Get amount to deal according to the current difficulty
+#new:Function $Function_GetDifficultyAttackBoost
+{
+    PUSH	RA, A0, A1, A2, A3, V0, V1
+    LIO 	A1, *Byte_Settings_Difficulty
+    JAL 	~Func:get_variable 
+    RESERVED
+    COPY    V1, V0
+    LW      V0, 24 (SP) % Pop V0
+    % V0 = Damage to deal
+    %
+    % Check current difficulty
+    % Normal
+    BEQ		V1, R0, .Easy
+    ORI     A0, R0, 1 % Normal
+    BEQ		V1, A0, .End
+    ORI     A0, R0, 2 % Hard
+    BEQ		V1, A0, .Hard
+    NOP
+    BEQ		R0, R0, .End % Very Hard
+    ADDU    V0, V0, V0 % damage x2
+    .Easy
+    ORI     V1, R0, 2 % get 50%
+    DIV     V0, V1 % damage / 2 = 50%
+    MFLO    V0
+    BEQL    V0, R0, .End
+    ORI     V0, R0, 1
+    BEQ     R0, R0, .End
+    NOP
+    .Hard
+    ORI     V1, R0, 2 % get 50%
+    DIV     V0, V1 % damage / 2 = 50%
+    MFLO    V1
+    ADDU    V0, V0, V1 % damage+50% = 1.5x damage
+    .End
+    POP		RA, A0, A1, A2, A3, R0, V1
+    JR      RA
+    NOP
+}

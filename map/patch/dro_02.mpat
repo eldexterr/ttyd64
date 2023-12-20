@@ -1,0 +1,167 @@
+% Add new exits and add a new hidden item
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000006
+    [Background]  80200000
+    [MapTattle]   00190094
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 % -473.0    0.0   12.0   90.0
+	~Vec4f:Entry1 %  415.0   35.0  -15.0  180.0
+	~Vec4f:Entry2 %    0.0    0.0    0.0    0.0
+	~Vec4f:Entry3 %    0.0    0.0    0.0    0.0
+    ~Vec4f:Entry4
+    ~Vec4f:Entry5
+}
+
+@ $Function_8024043C
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_8024043C[1E4]
+}
+
+#delete $Script_80243C9C
+
+#new:Script $Script_MakeExits % Script_80243C9C
+{
+    Exec  $Script_InitNewStuff
+    Bind  $Script_ExitWalk_80243C40 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    If *GF_DRO02_Entrance == .False
+        Call    MakeEntity    ( .Entity:BoardedFloor ~Vec4d:wooden 80000000 )
+        Call    AssignScript ( $Script_WoodenFloor )
+    EndIf
+    %
+    Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+    Set   *MapVar[0] *Var0
+    Call  AssignBlockFlag   ( *GF_DRO02_Shine )
+    Call  AssignScript 	    ( $Script_Entity_Shine1 )
+    %
+    Bind  $Script_Exit1 .Trigger:FloorTouch ~Collider:Exit4 00000001 00000000 % Inside house
+    Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit5 00000001 00000000 % Town3
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_DRO02_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+#new:Script $Script_WoodenFloor
+{
+    Set *GF_DRO02_Entrance .True
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+    Unbind
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePartnerAI ( 0 )
+    Call    GotoMap   ( "dro_04" 00000000 )
+    Return
+    End
+}
+
+#new:Script $Script_Exit2
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry5 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "dro_03" 00000000 )
+    Wait  100`
+    Return
+    End
+}
+
+% Add support for Entry 4
+@ $Script_Main_EnterWalk {
+    Set   *GB_WorldLocation  .Location:DryDryOutpost
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  MakeNpcs  ( .False $NpcGroupList_8024EEF4 )
+    Call  InitVirtualEntityList ( )
+    ExecWait  $Script_MakeEntities
+    ExecWait  $Script_80244C78
+    Exec  $Script_80243AF0
+    Call  GetEntryID        ( *Var0 )
+    Switch  *Var0
+        CaseOR  ==  ~Entry:Entry2
+        CaseOR  ==  ~Entry:Entry3
+            ExecWait  $Script_80243D10
+        EndCaseGroup
+        Case == ~Entry:Entry4
+            Exec $Script_EnterSpring
+        Default
+            Set   *Var0  $Script_MakeExits
+            Exec  EnterWalk
+    EndSwitch
+    Wait  1`
+    Thread
+        Call  SetTexPanner  ( ~Model:kemuri 00000001 )
+        Set   *Var0  00000000
+        Label  7B
+        Add   *Var0  000001A4
+        If  *Var0  >  00010000
+            Add   *Var0  FFFF0000
+        EndIf
+        Call  SetTexPanOffset   ( 00000001 00000000 00000000 *Var0 )
+        Wait  1`
+        Goto  7B
+    EndThread
+    Set   *MapFlag[00]  .False
+    Bind  $Script_80243CC8 .Trigger:WallPressA ~Collider:poster 00000001 00000000
+    Thread
+        Loop
+            Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+            If  *Var2  <  FFFFFF38
+                Call  EnableGroup   ( ~Model:mazinai .True )
+            Else
+                Call  EnableGroup   ( ~Model:mazinai .False )
+            EndIf
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  SetCamSpeed   ( .Cam:Default *Fixed[1.3339844] )
+    Return
+    End
+}
+
+#new:Script $Script_EnterSpring
+{
+    Call    DisablePlayerPhysics ( .True )
+    Call    SetPlayerJumpscale    ( *Fixed[1.0] )
+    Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Sub     *Var0 50` % x
+    Add     *Var1 52` % y
+    Thread % Update camera
+        Call    UseSettingsFrom ( .Cam:Default *Var0 *Var1 *Var2 )
+        Call    SetCamSpeed 	( .Cam:Default *Fixed[3.0] )
+        Call    SetPanTarget 	( .Cam:Default *Var0 *Var1 *Var2 )
+        Call    PanToTarget 	( .Cam:Default .Easing:Linear 00000001 )
+    EndThread
+    Call    PlayerJump ( *Var0 *Var1 *Var2 20` )
+    Call    ResetCam ( .Cam:Default 2000` )
+    Call    DisablePlayerPhysics ( .False )
+    Exec    $Script_MakeExits
+    Return
+    End
+}

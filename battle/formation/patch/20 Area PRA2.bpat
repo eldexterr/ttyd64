@@ -1,0 +1,246 @@
+% Get actor data from /formation/import
+% to make easier to grab the enemies code from this mod to future projects
+
+#import enemy/20_CrystalKing.bpat
+
+#new:Function $Function_802188B8
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  CLEAR     A0
+    8:  SW        RA, 10 (SP)
+    C:  JAL       ~Func:playFX_45
+   10:  LI        A1, 10
+   14:  LW        RA, 10 (SP)
+   18:  LI        V0, 2
+   1C:  JR        RA
+   20:  ADDIU     SP, SP, 18
+}
+
+% Origin: HEURISTIC
+#new:Function $Function_802188DC
+{
+    0:  ADDIU     SP, SP, FFD0
+    4:  SW        S1, 14 (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 20 (SP)
+   10:  SW        S3, 1C (SP)
+   14:  SW        S2, 18 (SP)
+   18:  SW        S0, 10 (SP)
+   1C:  SDC1      F20, 28 (SP)
+   20:  LW        S0, C (S1)
+   24:  LW        A1, 0 (S0)
+   28:  JAL       ~Func:get_variable
+   2C:  ADDIU     S0, S0, 4
+   30:  LI        V1, 66666667
+   38:  MULT      V0, V1
+   3C:  SRA       V0, V0, 1F
+   40:  LIF       F0, 6.28318
+   4C:  MFHI      A3
+   50:  SRA       V1, A3, 2
+   54:  SUBU      V1, V1, V0
+   58:  MTC1      V1, F12
+   5C:  NOP
+   60:  CVT.S.W   F12, F12
+   64:  MUL.S     F12, F12, F0
+   68:  NOP
+   6C:  LIF       F0, 360.0
+   74:  LIF       F2, 8.0
+   7C:  DIV.S     F12, F12, F0
+   80:  MUL.S     F12, F12, F2
+   84:  NOP
+   88:  LW        S2, 0 (S0)
+   8C:  ADDIU     S0, S0, 4
+   90:  LW        S3, 0 (S0)
+   94:  JAL       ~Func:sin_rad
+   98:  LW        S0, 4 (S0)
+   9C:  COPY      A0, S1
+   A0:  LIF       F2, 10.0
+   A8:  COPY      A1, S2
+   AC:  MUL.S     F20, F0, F2
+   B0:  NOP
+   B4:  JAL       ~Func:set_variable
+   B8:  CLEAR     A2
+   BC:  COPY      A0, S1
+   C0:  TRUNC.W.S F4, F20
+   C4:  MFC1      A2, F4
+   C8:  JAL       ~Func:set_variable
+   CC:  COPY      A1, S3
+   D0:  COPY      A0, S1
+   D4:  COPY      A1, S0
+   D8:  JAL       ~Func:set_variable
+   DC:  CLEAR     A2
+   E0:  LW        RA, 20 (SP)
+   E4:  LW        S3, 1C (SP)
+   E8:  LW        S2, 18 (SP)
+   EC:  LW        S1, 14 (SP)
+   F0:  LW        S0, 10 (SP)
+   F4:  LDC1      F20, 28 (SP)
+   F8:  LI        V0, 2
+   FC:  JR        RA
+  100:  ADDIU     SP, SP, 30
+}
+
+#new:Script $Script_802211F0
+{
+    0:  Call  $Function_802188B8 ( )
+    C:  Loop
+   18:  	Wait  1`
+   24:  EndLoop
+   2C:  Return
+   34:  End
+}
+
+% Origin: HEURISTIC
+#new:Script $Script_8022122C
+{
+    0:  Set   *VarA  *Var0
+   10:  Label  0
+   1C:  Call  RandInt   ( 0000001E *Var0 )
+   30:  Add   *Var0  0000001E
+   40:  Wait  *Var0
+   4C:  Set   *Var1  00000000
+   5C:  Loop  0000000A
+   68:  	Add   *Var1  00000024
+   78:  	Call  RotateModel   ( *VarA *Var1 00000000 00000001 00000000 )
+   98:  	Wait  1`
+   A4:  EndLoop
+   AC:  Goto  0
+   B8:  Return
+   C0:  End
+}
+
+% Origin: HEURISTIC
+#new:Script $Script_802212F4
+{
+    0:  Set   *VarA  *Var0
+   10:  Set   *VarB  *Var1
+   20:  Exec  $Script_8022122C
+   2C:  Set   *Var7  00000000
+   3C:  Label  0
+   48:  Add   *Var7  00000004
+   58:  If  *Var7  >  00000E0F
+   68:  	Sub   *Var7  00000E10
+   78:  EndIf
+   80:  Call  $Function_802188DC    ( *Var7 *Var0 *Var1 *Var2 )
+   9C:  Call  TranslateModel        ( *VarA *Var0 *Var1 *Var2 )
+   B8:  Wait  1`
+   C4:  Goto  0
+   D0:  Return
+   D8:  End
+}
+
+% Origin: HEURISTIC
+#new:Script $Script_802213D4
+{
+    0:  Set   *VarA  *Var0
+   10:  Set   *Var7  00000000
+   20:  Label  0
+   2C:  Add   *Var7  00000004
+   3C:  If  *Var7  >  00000E0F
+   4C:  	Sub   *Var7  00000E10
+   5C:  EndIf
+   64:  Call  $Function_802188DC    ( *Var7 *Var0 *Var1 *Var2 )
+   80:  Call  TranslateModel        ( *VarA *Var0 *Var1 *Var2 )
+   9C:  Wait  1`
+   A8:  Goto  0
+   B4:  Return
+   BC:  End
+}
+
+#new:Script $Script_BeforeBattle_80221498
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Exec  $Script_802211F0
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_AfterBattle_802214C4
+{
+    0:  Return
+    8:  End
+}
+
+#new:Stage $Stage_802214D4
+{
+	$ASCII_80221608  % sam_tex
+	$ASCII_802215F8  % sam_bt04_shape
+	$ASCII_802215E8  % sam_bt04_hit
+	$Script_BeforeBattle_80221498
+	$Script_AfterBattle_802214C4
+	$ASCII_802215E0  % sam_bg
+	00000000
+	00000000
+	00000000
+	00000000
+}
+
+#new:Vector3D $Vector3D_80221500
+{
+	70` 0` 5`
+}
+
+#new:Vector3D $Vector3D_8022150C
+{
+	10` 35` -5`
+}
+
+#new:Vector3D $Vector3D_80221518
+{
+	112` 52` -5`
+}
+
+#new:Vector3D $Vector3D_80221524
+{
+	42` 85` -10`
+}
+
+#new:Formation $Formation_00
+{
+	$20_CrystalKing $Vector3D_80221500 0000000A 00000000 00000000 00000000 00000000
+	$CrystalBitA_20 $Vector3D_8022150C 00000009 00000000 00000000 00000000 00000000
+	$CrystalBitB_20 $Vector3D_80221518 00000008 00000000 00000000 00000000 00000000
+	$CrystalBitC_20 $Vector3D_80221524 00000007 00000000 00000000 00000000 00000000
+}
+
+#new:FormationTable $FormationTable
+{
+	$SJIS_80221610 00000004 $Formation_00 $Stage_802214D4 00000000
+	00000000 00000000 00000000 00000000 00000000
+}
+
+#new:StageTable $StageTable
+{
+	$ASCII_8022161C $Stage_802214D4
+	00000000 00000000
+}
+
+#new:ASCII $ASCII_802215E0
+{
+	"sam_bg"
+}
+
+#new:ASCII $ASCII_802215E8
+{
+	"sam_bt04_hit"
+}
+
+#new:ASCII $ASCII_802215F8
+{
+	"sam_bt04_shape"
+}
+
+#new:ASCII $ASCII_80221608
+{
+	"sam_tex"
+}
+
+#new:SJIS $SJIS_80221610
+{
+	パラレラー % pararera-
+}
+
+#new:ASCII $ASCII_8022161C
+{
+	"sam_04"
+}

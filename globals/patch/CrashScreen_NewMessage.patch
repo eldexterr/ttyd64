@@ -1,0 +1,70 @@
+% The crash screen now display "!SEND THIS TO DEXTER!"
+% Plus the build version
+
+
+% Make entire screen darker
+%
+% From ~func:crash_show_handler
+@Hook 77FC % 8002C3FC
+{
+    % Make entire screen darker
+    ADDIU	A0, R0, 0002 % x pos
+    ADDIU	A1, R0, 0002 % y pos
+    ADDIU	A2, R0, 0150 % x size
+    JAL	    8002BFB0
+    COPY    A3, A2 % y size
+    % Make the new strings area fully dark
+    ADDIU	A0, R0, 0019 % x pos
+    ADDIU	A1, R0, 0006 % y pos
+    ADDIU	A2, R0, 010E % x size
+    JAL	    8002BFB0
+    ADDIU	A3, R0, 00E4 % y size
+    % restore vanilla code
+    ADDIU	A0, R0, 0019
+    J       8002C404
+    ADDIU	A1, R0, 0014
+}
+
+% Print new stuff in the crash screen
+%
+% Display "PJ64 Bug" if is a PJ64 specific crash (implemented by Rain)
+@Hook 7A34 % 8002C634
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % s2 holds context
+    LW	    V0, 00FC (S2) % load PC
+    LIO     V1, E000C160
+    LIO     A2, $ASCII_SendThisToDex
+    BNE     V0, v1, .normalCrash
+    NOP
+    % pj64 crash
+    LIO a2, $ASCII_PJ64Crash
+    .normalCrash
+    ORI     A0, R0, 003A % x
+    JAL     ~Func:crash_printf_string
+    ORI     A1, R0, 000A % y
+    %
+    ORI     A0, R0, 00D2 % x
+    ORI     A1, R0, 00DF % y
+    LIO     A2, $ASCII_Version
+    JAL     ~Func:crash_printf_string
+    RESERVED
+    POP     RA, A0, A1, A2, A3, V0, V1
+    ADDIU	A0, R0, 001E
+    J       8002C63C
+    ADDIU	A1, R0, 00AA
+}
+
+#new:ASCII $ASCII_PJ64Crash {
+"PJ64 BUG! USE DIFFERENT EMULATOR!"
+}
+
+#new:ASCII $ASCII_SendThisToDex
+{
+"X . X !SEND THIS TO DEXTER! X . X"
+}
+
+#new:ASCII $ASCII_Version
+{
+"TTYD64 V1.0.0"
+}

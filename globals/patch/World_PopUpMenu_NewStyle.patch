@@ -1,0 +1,65 @@
+% Isn't exactly a new style but patch popUp menu's style 0x05 to show "Buy" instead of "Sell"
+% when $PopUpMenu_Style05_BuyVersion it's true
+
+% Show "Buy" instead of "Sell" when using PopUp menu box `0x05`
+#export:Data $PopUpMenu_Style05_BuyVersion
+{ 00000000 }
+
+% func_800F4944
+@Hook 800F4A90
+{
+    LAW     A1, $PopUpMenu_Style05_BuyVersion
+    LIO     A0, 001D0065 % Sell
+    BEQ     A1, R0, .End
+    RESERVED
+    LIO     A0, 001D01AD % Buy
+    .End
+    J       800F4A98
+    NOP
+}
+
+% mac_01 - Rowf Shop - Show Inventory Page
+
+#export:Data $Data_Shop_ExtraData
+{ 00000000 00000000 }
+
+#export:Function $Function_mac01_DrawShopCurrentPage
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S0, T0, T1
+    LIO     S0, $Data_Shop_ExtraData
+    LW      A0, 4 (S0)
+    BEQ     A0, R0, .End
+    NOP
+    ORI     A0, R0, 001D % posX
+    ORI     A1, R0, 007D % posY
+    ORI     A2, R0, 005D % sizeX
+    ORI     A3, R0, 001D % sizeY
+    CLEAR   T0 % style
+    JAL     $DrawBox
+    ORI     T1, R0, FF % opacity
+    % strings
+    LW      S0, 0 (S0)
+    LW      A0, AC (S0) % get current page
+    ADDIU   A0, A0, 1
+    JAL     ~Func:set_message_value
+    CLEAR   A1
+    LW      A0, B0 (S0) % get pages amount
+    ADDIU   A0, A0, 1
+    JAL     ~Func:set_message_value
+    ORI     A1, R0, 1
+    LIO     A0, $String_Page
+    ORI     A1, R0, 0027 % posX
+    ORI     A2, R0, 0083 % posY
+    ORI     A3, R0, 00FF % opacity
+    JAL     ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S0, T0, T1
+    JR      RA
+    NOP
+}
+
+#string $String_Page
+{
+[Color:0F]Page: [Var 0]/[Var 1][End]
+}

@@ -1,0 +1,251 @@
+% Add new exit
+
+#define .NpcID:Bzzap_00             00
+#define .NpcID:Dayzee_01            01
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000002
+    [Background]  80200000
+    [MapTattle]   00190125
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 % -230.0    0.0    0.0   90.0
+    ~Vec4f:Entry1
+}
+
+#delete $Script_Main_EnterWalk
+
+#new:Script $Script_Main % Script_Main_EnterWalk
+{
+    Set   *GB_WorldLocation  .Location:FlowerFields
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  MakeNpcs  ( .False $NpcGroupList_80240DE4 )
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_80241F6C
+    Exec  $Script_BindWell % Script_80241528
+    Call  ModifyColliderFlags   ( 00000000 ~Collider:deilitw 7FFFFE00 )
+    Call  GetEntryID        ( *Var0 )
+    If *Var0 == 0
+        Set   *Var0  $Script_802403AC
+        Exec  EnterWalk
+    Else % Spring
+        Exec    $Script_802403AC
+        Exec    $Script_EnterSpring
+    EndIf
+    If *GF_FLO22_ThrewBlueBerryDownWell == .False
+        Exec  $Script_80240E24
+    EndIf
+    ExecWait  $Script_802402E0
+    If  *GB_StoryProgress  >=  .Story:Ch6_DestroyedPuffPuffMachine % 35
+        Call  $Function_80240000 ( )
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_MakeEntities
+{
+    Call  MakeEntity    ( .Entity:ScriptSpring ~Vec4d:Entity_Spring 80000000 )
+    Set   *MapVar[0] *Var0
+	Call  AssignScript    ( $Script_Exit1 )
+    If *GF_FLO22_ThrewBlueBerryDownWell == .False
+        Call    $GetEntityPointer ( *MapVar[0] *Var1 )
+        Call    $WriteAddress ( *Var1 2 0000.0 48 .False ) % posX
+        Call    $WriteAddress ( *Var1 2 -1000.0 4C .False ) % posY
+        Call    $WriteAddress ( *Var1 2 0000.0 50 .False ) % posZ
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+    If  *MapFlag[00]  ==  .True
+        Return
+    EndIf
+	Call  DisablePlayerInput    ( .True )
+	Call  DisablePlayerPhysics  ( .True )
+	Call  SetPlayerActionState  ( .ActionState:Launch )
+	Wait  1`
+    Thread
+        Wait  10`
+        Call  GotoMap   ( "flo_28" 0 )
+	EndThread
+	Call  SetPlayerJumpscale    ( *Fixed[0.7] )
+	Call  PlayerJump            ( ~Vec3d:Entry1 30` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterSpring
+{
+    Call  DisablePlayerInput    ( .True )
+    Call  SetPlayerJumpscale    ( *Fixed[1.5] )
+    Call  PlayerJump    ( ~Vec3d:JumpPos_Entry1  16` )
+    Set   *MapFlag[00] .True
+    Call  PlayerJump    ( ~Vec3d:JumpPos_Entry1_Spring 16` )
+    Call  SetPlayerAnimation    ( 00010002 )
+    Call  DisablePlayerInput    ( .False )
+    Set   *MapFlag[00] .False
+    Return
+    End
+}
+
+#delete $Script_80241528
+
+#new:Script $Script_BindWell % Script_80241528
+{
+   20:  If  *GF_FLO22_ThrewBlueBerryDownWell  ==  .True
+   30:  	Call  MakeItemEntity    ( .Item:FlowerSaverB ~Vec3d:Item80241558 00000000 *GF_FLO22_Item_FlowerSaverB )
+        Else
+            BindLock  $Script_Well .Trigger:WallPressA ~Collider:o5 $ItemList_80240E10 00000000 00000001
+   54:  EndIf
+   5C:  Return
+   64:  End
+}
+
+#delete $Script_80241028
+
+#new:Script $Script_Well % Script_80241028
+{
+    0:  Call  DisablePlayerInput    ( .True )
+    10:  Call  DisablePlayerInput    ( .False )
+    20:  Call  ShowConsumableChoicePopup ( )
+    2C:  Call  CloseChoicePopup ( )
+    38:  Call  DisablePlayerInput    ( .True )
+    48:  Set   *Var8  *Var0
+    58:  Switch  *Var8
+    64:  	Case  <=  FFFFFFFF
+    70:  	Case  <=  00000000
+    7C:  		Call  ShowMessageAtScreenPos    ( 001D015C  160`  40` ) % It's a well.
+    94:  	Case  ==  .Item:BlueBerry % 9E
+    A0:  		ExecWait  $Script_80240E84
+    AC:  		Call  RemoveItemAt  ( *Var1 )
+    BC:  		If  *GF_FLO22_ThrewBlueBerryDownWell  ==  .False
+    CC:  			Call  ShowMessageAtWorldPos ( 001100DD  35`  35`  0` ) % Sniffle!!!!! Who's throwing stuff down into my wel ...
+    E8:  			Set   *GF_FLO22_ThrewBlueBerryDownWell  .True
+    F8:  			Call  MakeItemEntity    ( .Item:FlowerSaverB ~Vec3d:Item80241120 00000000 *GF_FLO22_Item_FlowerSaverB )
+   11C:  			Set   *Var7  *Var0
+   12C:  			Call  SetNpcFlagBits    ( .NpcID:Bzzap_00 00000002 .True )
+   144:  			Call  SetNpcFlagBits    ( .NpcID:Bzzap_00 00000010 .False )
+   15C:  			Call  SetNpcPos ( .NpcID:Bzzap_00  35`  0`  0` )
+   178:  			Call  SetNpcJumpscale   ( .NpcID:Bzzap_00 *Fixed[1.0] )
+   18C:  			Thread
+   194:  				Call  NpcJump0  ( .NpcID:Bzzap_00  -53`  0`  0`  25` )
+   1B4:  				Call  NpcJump0  ( .NpcID:Bzzap_00  -73`  0`  0`  15` )
+   1D4:  				Call  NpcJump0  ( .NpcID:Bzzap_00  -83`  0`  0`  8` )
+   1F4:  			EndThread
+   1FC:  			Loop  00000035
+   208:  				Call  GetNpcPos     ( .NpcID:Bzzap_00 *Var1 *Var2 *Var3 )
+   224:  				Call  SetItemPos    ( *Var7 *Var1 *Var2 *Var3 )
+   240:  				Wait  1`
+   24C:  			EndLoop
+   254:  			Call  SetNpcPos ( .NpcID:Bzzap_00  0`  -1000`  0` )
+   270:  			Call  SetNpcFlagBits    ( .NpcID:Bzzap_00 00000002 .False )
+   288:  			Call  SetNpcFlagBits    ( .NpcID:Bzzap_00 00000010 .True )
+                    ExecWait $Script_SpawnSpring
+                    Unbind
+   2A0:  		Else
+   2A8:  			Call  ShowMessageAtWorldPos ( 001100DE  35`  35`  0` ) % Sniffle!!!!! Burp... No more berries! I'm stuffed  ...
+   2C4:  		EndIf
+   2CC:  	Default
+   2D4:  		ExecWait  $Script_80240E84
+   2E0:  		Call  RemoveItemAt  ( *Var1 )
+   2F0:  		Call  ShowMessageAtWorldPos ( 001100DC  35`  35`  0` ) % Sniffle... Who's throwing stuff down into my well? ...
+   30C:  		Call  RandInt   ( 00000001 *Var1 )
+   320:  		If  *Var1  ==  00000000
+   330:  			Call  SetNpcJumpscale   ( .NpcID:Bzzap_00 *Fixed[0.0] )
+   344:  			Call  NpcFacePlayer ( .NpcID:Bzzap_00 00000000 )
+   358:  			Wait  1`
+   364:  			Call  SetNpcPos     ( .NpcID:Bzzap_00  30`  0`  0` )
+   380:  			Call  SetNpcAnimation   ( .NpcID:Bzzap_00 004B0001 )
+   394:  			Call  NpcJump0      ( .NpcID:Bzzap_00  30`  60`  0`  20` )
+   3B4:  			Wait  10`
+   3C0:  			Call  SetNpcAnimation   ( .NpcID:Bzzap_00 004B0004 )
+   3D4:  			Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+   3EC:  			Add   *Var1  00000014
+   3FC:  			Call  NpcJump0      ( .NpcID:Bzzap_00 *Var0 *Var1 *Var2  5` )
+   41C:  			Set   *MapVar[A]  00000001
+   42C:  		Else
+   434:  			Call  SetNpcPos ( .NpcID:Dayzee_01  30`  0`  0` )
+   450:  			Call  SetNpcAnimation   ( .NpcID:Dayzee_01 0048000E )
+   464:  			Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+   47C:  			Add   *Var1  00000014
+   48C:  			Call  SetNpcJumpscale   ( .NpcID:Dayzee_01 *Fixed[2.0] )
+   4A0:  			Call  NpcJump0  ( .NpcID:Dayzee_01 *Var0 *Var1 *Var2  20` )
+   4C0:  			Set   *MapVar[B]  00000001
+   4D0:  		EndIf
+   4D8:  EndSwitch
+   4E0:  Call  DisablePlayerInput    ( .False )
+   4F0:  Return
+   4F8:  End
+}
+
+#new:VectorList $VectorList_Spring
+{
+%~Path3f:Path_Spring
+35.0    0.0    0.0
+35.0    47.0   9.0
+35.0    69.0   26.0
+35.0    71.0   47.0
+35.0    57.0   68.0
+35.0    41.0   75.0
+34.0    1.0    84.0
+}
+
+#new:Script $Script_SpawnSpring
+{
+    Call    PlaySound		( 2005 ) % Parakarry's kick
+	Call    LoadPath    	( 22` $VectorList_Spring 00000007 00000000 )
+	Loop     
+		Call    GetNextPathPos
+        Call    $GetEntityPointer ( *MapVar[0] *Var9 )
+        Call    $WriteAddressFloat ( *Var9 2 *Var1 48 .False ) % posX
+        Call    $WriteAddressFloat ( *Var9 2 *Var2 4C .False ) % posY
+        Call    $WriteAddressFloat ( *Var9 2 *Var3 50 .False ) % posZ
+		Wait    1
+			If  *Var0  ==  .False 
+				BreakLoop
+			EndIf
+	EndLoop
+    Set     *Var0 ~PosXd:Entity_Spring
+    Set     *Var1 ~PosYd:Entity_Spring
+    Set     *Var2 ~PosZd:Entity_Spring
+    Add     *Var2 30` % z
+    Call    PlayEffect    ( ~FX:Steam:TinyOutward *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+    Call    PlaySound ( 2086 ) % spring
+    Call    $Function_PlaySpringAnimation ( *MapVar[0] )
+    Wait    45`
+    Return
+    End
+}
+
+% Call $Function_PlaySpringAnimation ( entityIndex )
+#new:Function $Function_PlaySpringAnimation % Function_802402BC % from kmr_10
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  LW        V0, C (A0)
+    C:  JAL       ~Func:get_variable
+   10:  LW        A1, 0 (V0)
+   14:  JAL       ~Func:get_entity_by_index
+   18:  COPY      A0, V0
+   1C:  BEQL      V0, R0, .o3C
+   20:  CLEAR     V0
+   24:  LH        A0, 14 (V0)
+   28:  LA        A1, 000001E4
+   30:  JAL       ~Func:play_model_animation
+   34:  NOP
+   38:  LI        V0, 2
+        .o3C
+   3C:  LW        RA, 10 (SP)
+   40:  JR        RA
+   44:  ADDIU     SP, SP, 18
+}

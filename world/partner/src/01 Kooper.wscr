@@ -1,0 +1,1767 @@
+% Script File: 01 Kooper.wscr
+% Decoded from: 31B120 to 31CC70 (01 Kooper)
+
+#new:Function $Function_802BD100
+{
+    0:  LAW       V1, 8010C978
+    8:  ADDIU     SP, SP, FFE8
+    C:  SW        RA, 10 (SP)
+   10:  BLTZ      V1, .o38
+   14:  CLEAR     V0
+   18:  ANDI      V0, V1, 4000
+   1C:  BEQ       V0, R0, .o34
+   20:  LI        A0, BFFF
+   24:  JAL       ~Func:entity_interacts_with_current_partner
+   28:  AND       A0, V1, A0
+   2C:  BEQ       R0, R0, .o38
+   30:  NOP
+        .o34
+   34:  CLEAR     V0
+        .o38
+   38:  LW        RA, 10 (SP)
+   3C:  JR        RA
+   40:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802BD144
+{
+    0:  LAW       V1, 8010C978
+    8:  ADDIU     SP, SP, FFE8
+    C:  BLTZ      V1, .o2C
+   10:  SW        RA, 10 (SP)
+   14:  ANDI      V0, V1, 4000
+   18:  BEQ       V0, R0, .o2C
+   1C:  NOP
+   20:  LI        A0, BFFF
+   24:  JAL       ~Func:entity_interacts_with_current_partner
+   28:  AND       A0, V1, A0
+        .o2C
+   2C:  LW        RA, 10 (SP)
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802BD17C
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  LH        V0, A6 (A0)
+    C:  LWC1      F12, 38 (A0)
+   10:  LWC1      F14, 3C (A0)
+   14:  LW        A2, 40 (A0)
+   18:  MTC1      V0, F0
+   1C:  NOP
+   20:  CVT.S.W   F0, F0
+   24:  MFC1      A3, F0
+   28:  JAL       ~Func:test_item_entity_position
+   2C:  NOP
+   30:  COPY      A1, V0
+   34:  SAW       A1, $End[18]
+   3C:  BLTZ      A1, .o74
+   40:  LI        A0, 1
+   44:  LA        V0, 8009A650
+   4C:  LW        V1, 0 (V0)
+   50:  SAW       A0, $End[1C]
+   58:  COPY      A0, A1
+   5C:  LUI       A1, 20
+   60:  ORI       V1, V1, 40
+   64:  JAL       ~Func:set_item_entity_flags
+   68:  SW        V1, 0 (V0)
+   6C:  BEQ       R0, R0, .o78
+   70:  LI        V0, 1
+        .o74
+   74:  CLEAR     V0
+        .o78
+   78:  LW        RA, 10 (SP)
+   7C:  JR        RA
+   80:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Init
+{
+    0:  LI        V0, 25
+    4:  SH        V0, A8 (A0)
+    8:  LI        V0, 18
+    C:  SH        V0, A6 (A0)
+   10:  LUI       V0, 1
+   14:  SW        V0, 80 (A0)
+   18:  SAW       R0, $End[4]
+   20:  JR        RA
+   24:  NOP
+}
+
+#new:Function $Function_802BD228
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 14 (SP)
+    8:  SW        S0, 10 (SP)
+    C:  BEQ       A1, R0, .o1C
+   10:  LW        S0, 14C (A0)
+   14:  JAL       ~Func:partner_init_get_out
+   18:  COPY      A0, S0
+        .o1C
+   1C:  JAL       ~Func:partner_get_out
+   20:  COPY      A0, S0
+   24:  LW        RA, 14 (SP)
+   28:  LW        S0, 10 (SP)
+   2C:  SLTU      V0, R0, V0
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802BD260
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S0, 18 (SP)
+    8:  LA        S0, 8010F290
+   10:  SW        RA, 28 (SP)
+   14:  SW        S3, 24 (SP)
+   18:  SW        S2, 20 (SP)
+   1C:  SW        S1, 1C (SP)
+   20:  SDC1      F20, 30 (SP)
+   24:  LW        S1, 14C (A0)
+   28:  BEQ       A1, R0, .o50
+   2C:  COPY      A0, S1
+   30:  JAL       ~Func:partner_walking_enable
+   34:  LI        A1, 1
+   38:  LAW       A0, $???_802BEB60
+   40:  JAL       ~Func:mem_clear
+   44:  LI        A1, 1C
+   48:  SAW       R0, 8010C954
+        .o50
+   50:  LA        S3, 8010C954
+   58:  LW        V0, 2FC (S0)
+   5C:  LW        S2, 0 (S3)
+   60:  ADDIU     V0, V0, 1
+   64:  BNE       S2, R0, .o84
+   68:  SW        V0, 2FC (S0)
+   6C:  JAL       ~Func:partner_walking_update_player_tracking
+   70:  COPY      A0, S1
+   74:  JAL       ~Func:partner_walking_update_motion
+   78:  COPY      A0, S1
+   7C:  BEQ       R0, R0, .o374
+   80:  CLEAR     V0
+        .o84
+   84:  LA        S0, $???_802BEB60
+   8C:  LW        A0, 0 (S0)
+   90:  LW        V1, 4 (A0)
+   94:  LI        A1, 1
+   98:  BEQ       V1, A1, .o15C
+   9C:  SLTI      V0, V1, 2
+   A0:  BEQ       V0, R0, .oB8
+   A4:  LI        V0, 2
+   A8:  BEQ       V1, R0, .oD0
+   AC:  CLEAR     V0
+   B0:  BEQ       R0, R0, .o374
+   B4:  NOP
+        .oB8
+   B8:  BEQ       V1, V0, .o324
+   BC:  LI        V0, 3
+   C0:  BEQ       V1, V0, .o344
+   C4:  CLEAR     V0
+   C8:  BEQ       R0, R0, .o374
+   CC:  NOP
+        .oD0
+   D0:  SW        A1, 4 (A0)
+   D4:  LW        V0, 0 (S1)
+   D8:  SW        V0, 8 (A0)
+   DC:  LWC1      F12, 38 (S1)
+   E0:  LWC1      F14, 40 (S1)
+   E4:  LW        A2, 48 (S2)
+   E8:  JAL       ~Func:dist2D
+   EC:  LW        A3, 50 (S2)
+   F0:  LW        V0, 0 (S0)
+   F4:  ABS.S     F0, F0
+   F8:  SWC1      F0, C (V0)
+   FC:  LWC1      F12, 48 (S2)
+  100:  LWC1      F14, 50 (S2)
+  104:  LW        A2, 38 (S1)
+  108:  JAL       ~Func:atan2
+  10C:  LW        A3, 40 (S1)
+  110:  LUI       A0, 4
+  114:  ADDIU     V0, R0, 78
+  118:  LW        V1, 0 (S0)
+  11C:  LIF       F2, 6.0
+  124:  LIF       F4, 50.0
+  12C:  ORI       A0, A0, 148
+  130:  SWC1      F0, 10 (V1)
+  134:  SWC1      F2, 14 (V1)
+  138:  SWC1      F4, 18 (V1)
+  13C:  SW        V0, 0 (V1)
+  140:  LW        V0, 0 (S1)
+  144:  LI        V1, FDFF
+  148:  OR        V0, V0, A0
+  14C:  AND       V0, V0, V1
+  150:  SW        V0, 0 (S1)
+  154:  LA        S0, $???_802BEB60
+        .o15C
+  15C:  LW        V0, 0 (S0)
+  160:  LIF       F0, 6.28318
+  16C:  LWC1      F12, 10 (V0)
+  170:  MUL.S     F12, F12, F0
+  174:  NOP
+  178:  ADDIU     A1, SP, 10
+  17C:  LIF       F0, 360.0
+  184:  ADDIU     A2, SP, 14
+  188:  JAL       ~Func:sin_cos_rad
+  18C:  DIV.S     F12, F12, F0
+  190:  LW        V0, 0 (S0)
+  194:  LWC1      F2, 10 (SP)
+  198:  LWC1      F0, C (V0)
+  19C:  MUL.S     F2, F2, F0
+  1A0:  NOP
+  1A4:  LWC1      F0, 48 (S2)
+  1A8:  ADD.S     F0, F0, F2
+  1AC:  SWC1      F0, 38 (S1)
+  1B0:  LWC1      F2, 14 (SP)
+  1B4:  LWC1      F0, C (V0)
+  1B8:  MUL.S     F2, F2, F0
+  1BC:  NOP
+  1C0:  LWC1      F0, 50 (S2)
+  1C4:  SUB.S     F0, F0, F2
+  1C8:  SWC1      F0, 40 (S1)
+  1CC:  LWC1      F0, 10 (V0)
+  1D0:  LWC1      F12, 14 (V0)
+  1D4:  JAL       ~Func:clamp_angle
+  1D8:  SUB.S     F12, F0, F12
+  1DC:  LW        S0, 0 (S0)
+  1E0:  LIF       F2, 20.0
+  1E8:  LWC1      F4, C (S0)
+  1EC:  C.LT.S    F2, F4
+  1F0:  NOP
+  1F4:  BC1F      .o20C
+  1F8:  SWC1      F0, 10 (S0)
+  1FC:  LIF       F0, 1.0
+  204:  BEQ       R0, R0, .o238
+  208:  SUB.S     F0, F4, F0
+        .o20C
+  20C:  LIF       F0, 19.0
+  214:  NOP
+  218:  C.LT.S    F4, F0
+  21C:  NOP
+  220:  BC1F      .o23C
+  224:  NOP
+  228:  LIF       F0, 1.0
+  230:  NOP
+  234:  ADD.S     F0, F4, F0
+        .o238
+  238:  SWC1      F0, C (S0)
+        .o23C
+  23C:  LA        S0, $???_802BEB60
+  244:  LW        V0, 0 (S0)
+  248:  LIF       F0, 6.28318
+  254:  LWC1      F12, 18 (V0)
+  258:  MUL.S     F12, F12, F0
+  25C:  NOP
+  260:  LIF       F20, 360.0
+  268:  JAL       ~Func:sin_rad
+  26C:  DIV.S     F12, F12, F20
+  270:  LW        V0, 0 (S0)
+  274:  LIF       F4, 3.0
+  27C:  LWC1      F2, 18 (V0)
+  280:  ADD.S     F2, F2, F4
+  284:  LIF       F6, 150.0
+  28C:  NOP
+  290:  C.LT.S    F6, F2
+  294:  SWC1      F2, 18 (V0)
+  298:  MUL.S     F2, F0, F4
+  29C:  NOP
+  2A0:  BC1TL     .o2A8
+  2A4:  SWC1      F6, 18 (V0)
+        .o2A8
+  2A8:  LWC1      F0, 3C (S1)
+  2AC:  ADD.S     F0, F0, F2
+  2B0:  LW        V0, 0 (S0)
+  2B4:  SWC1      F0, 3C (S1)
+  2B8:  LWC1      F12, 10 (V0)
+  2BC:  JAL       ~Func:clamp_angle
+  2C0:  SUB.S     F12, F20, F12
+  2C4:  LW        V0, 0 (S0)
+  2C8:  SWC1      F0, 34 (S1)
+  2CC:  LWC1      F0, 14 (V0)
+  2D0:  LAD       F2, $ConstDouble_802BEBC0
+  2D8:  CVT.D.S   F0, F0
+  2DC:  ADD.D     F0, F0, F2
+  2E0:  LIF       F2, 40.0
+  2E8:  CVT.S.D   F0, F0
+  2EC:  C.LT.S    F2, F0
+  2F0:  NOP
+  2F4:  BC1F      .o300
+  2F8:  SWC1      F0, 14 (V0)
+  2FC:  SWC1      F2, 14 (V0)
+        .o300
+  300:  LW        V1, 0 (S0)
+  304:  LW        V0, 0 (V1)
+  308:  ADDIU     V0, V0, FFFF
+  30C:  BNE       V0, R0, .o370
+  310:  SW        V0, 0 (V1)
+  314:  LW        V0, 4 (V1)
+  318:  ADDIU     V0, V0, 1
+  31C:  BEQ       R0, R0, .o370
+  320:  SW        V0, 4 (V1)
+        .o324
+  324:  LW        V0, 8 (A0)
+  328:  SW        V0, 0 (S1)
+  32C:  LW        V0, 4 (A0)
+  330:  LI        V1, 1E
+  334:  SW        V1, 0 (A0)
+  338:  ADDIU     V0, V0, 1
+  33C:  BEQ       R0, R0, .o370
+  340:  SW        V0, 4 (A0)
+        .o344
+  344:  JAL       ~Func:partner_walking_update_player_tracking
+  348:  COPY      A0, S1
+  34C:  JAL       ~Func:partner_walking_update_motion
+  350:  COPY      A0, S1
+  354:  LW        V1, 0 (S0)
+  358:  LW        V0, 0 (V1)
+  35C:  ADDIU     V0, V0, FFFF
+  360:  BNE       V0, R0, .o370
+  364:  SW        V0, 0 (V1)
+  368:  SW        R0, 4 (V1)
+  36C:  SW        R0, 0 (S3)
+        .o370
+  370:  CLEAR     V0
+        .o374
+  374:  LW        RA, 28 (SP)
+  378:  LW        S3, 24 (SP)
+  37C:  LW        S2, 20 (SP)
+  380:  LW        S1, 1C (SP)
+  384:  LW        S0, 18 (SP)
+  388:  LDC1      F20, 30 (SP)
+  38C:  JR        RA
+  390:  ADDIU     SP, SP, 38
+}
+
+#new:Function $Function_802BD5F4
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LA        A1, 8010C954
+    C:  SW        RA, 10 (SP)
+   10:  LW        V0, 0 (A1)
+   14:  BEQ       V0, R0, .o38
+   18:  NOP
+   1C:  LAW       V1, $???_802BEB60
+   24:  LW        V0, 8 (V1)
+   28:  SW        R0, 0 (A1)
+   2C:  SW        V0, 0 (A0)
+   30:  JAL       ~Func:partner_clear_player_tracking
+   34:  SW        R0, 4 (V1)
+        .o38
+   38:  LW        RA, 10 (SP)
+   3C:  JR        RA
+   40:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802BD638
+{
+    0:  LAB       V0, 800B0F18
+    8:  ADDIU     SP, SP, FFA8
+    C:  SW        S5, 44 (SP)
+   10:  COPY      S5, A0
+   14:  SW        S4, 40 (SP)
+   18:  LA        S4, 8010EFC8
+   20:  SW        S6, 48 (SP)
+   24:  LA        S6, 8010EBB0
+   2C:  SW        RA, 4C (SP)
+   30:  SW        S3, 3C (SP)
+   34:  SW        S2, 38 (SP)
+   38:  SW        S1, 34 (SP)
+   3C:  SW        S0, 30 (SP)
+   40:  SDC1      F20, 50 (SP)
+   44:  LW        S0, 14C (S5)
+   48:  BNE       V0, R0, .o117C
+   4C:  CLEAR     V0
+   50:  BEQ       A1, R0, .oDC
+   54:  NOP
+   58:  JAL       $Function_802BD5F4
+   5C:  COPY      A0, S0
+   60:  LW        V0, 4 (S4)
+   64:  LUI       V1, 10
+   68:  AND       V0, V0, V1
+   6C:  BEQ       V0, R0, .o7C
+   70:  NOP
+        .o74
+   74:  BEQ       R0, R0, .o117C
+   78:  LI        V0, 2
+        .o7C
+   7C:  LAW       V0, $End[4]
+   84:  BNE       V0, R0, .oA4
+   88:  NOP
+   8C:  LB        V0, B4 (S4)
+   90:  SLTIU     V0, V0, 3
+   94:  BEQ       V0, R0, .o74
+   98:  LI        V0, 14
+   9C:  BEQ       R0, R0, .oDC
+   A0:  SW        V0, 70 (S5)
+        .oA4
+   A4:  LB        V0, 0 (S6)
+   A8:  BNE       V0, R0, .oDC
+   AC:  LUI       V1, 2
+   B0:  ORI       V1, V1, 9
+   B4:  LI        V0, 1
+   B8:  SB        V0, 0 (S6)
+   BC:  LI        V0, 2
+   C0:  SB        V0, 3 (S6)
+   C4:  LI        V0, 5
+   C8:  SW        V0, 70 (S5)
+   CC:  LI        V0, 1E
+   D0:  SW        V1, 28 (S0)
+   D4:  SAW       V0, $End[0]
+        .oDC
+   DC:  LW        V0, 70 (S5)
+   E0:  ADDIU     V1, V0, FFFE
+   E4:  SLTIU     V0, V1, 14
+   E8:  BEQ       V0, R0, .oD68
+   EC:  SLL       V0, V1, 2
+   F0:  LTW       V0, V0 ($JumpTable_802BEBC8)
+   FC:  JR        V0
+  100:  NOP
+	% LBL: from $JumpTable_802BEBC8 , entry 18`
+  104:  LB        V0, 15 (S4)
+  108:  BNE       V0, R0, .o117C
+  10C:  LI        V0, 2
+  110:  LH        V0, C0 (S4)
+  114:  BNE       V0, R0, .o117C
+  118:  LI        V0, 2
+  11C:  LW        V0, 0 (S0)
+  120:  ANDI      V0, V0, 1000
+  124:  BEQL      V0, R0, .o117C
+  128:  LI        V0, 2
+  12C:  JAL       ~Func:disable_player_input
+  130:  NOP
+  134:  LB        V0, 15 (S4)
+  138:  LI        A0, 1
+  13C:  SW        V0, 78 (S5)
+  140:  LW        V0, 0 (S0)
+  144:  LI        V1, F5F7
+  148:  SAW       A0, $End[14]
+  150:  SAW       R0, $???_802BEB40
+  158:  SAW       R0, $End[1C]
+  160:  AND       V0, V0, V1
+  164:  ORI       V0, V0, 140
+  168:  SW        V0, 0 (S0)
+  16C:  LI        V0, 2
+  170:  SB        V0, 3 (S6)
+  174:  JAL       800EF4E0
+  178:  SB        A0, 0 (S6)
+  17C:  SAW       V0, $End[8]
+  184:  JAL       ~Func:enable_npc_blur
+  188:  COPY      A0, S0
+  18C:  LWC1      F12, 38 (S0)
+  190:  LWC1      F14, 40 (S0)
+  194:  LI        V0, 4
+  198:  SH        V0, 8E (S0)
+  19C:  LW        A2, 28 (S4)
+  1A0:  JAL       ~Func:atan2
+  1A4:  LW        A3, 30 (S4)
+  1A8:  SWC1      F0, C (S0)
+  1AC:  LW        V0, 70 (S5)
+  1B0:  BEQ       R0, R0, .oD64
+  1B4:  ADDIU     V0, V0, 1
+	% LBL: from $JumpTable_802BEBC8 , entry 19`
+  1B8:  LBU       V0, B4 (S4)
+  1BC:  ADDIU     V0, V0, FFEB
+  1C0:  SLTIU     V0, V0, 3
+  1C4:  BNE       V0, R0, .o1D8
+  1C8:  LUI       A0, 1
+  1CC:  LH        V0, C0 (S4)
+  1D0:  BEQ       V0, R0, .o1E0
+  1D4:  NOP
+        .o1D8
+  1D8:  BEQ       R0, R0, .o394
+  1DC:  ORI       A0, A0, 2
+        .o1E0
+  1E0:  JAL       ~Func:suggest_player_anim_clearUnkFlag
+  1E4:  ORI       A0, A0, 6
+  1E8:  LWC1      F4, 28 (S4)
+  1EC:  LUI       V0, 2
+  1F0:  SWC1      F4, 60 (S0)
+  1F4:  LWC1      F2, 2C (S4)
+  1F8:  ORI       V0, V0, 5
+  1FC:  SWC1      F2, 64 (S0)
+  200:  LWC1      F0, 30 (S4)
+  204:  LUI       A2, 5555
+  208:  SW        V0, 28 (S0)
+  20C:  SWC1      F0, 68 (S0)
+  210:  LHU       V0, B2 (S4)
+  214:  ORI       A2, A2, 5556
+  218:  SLL       V0, V0, 10
+  21C:  SRA       V1, V0, 10
+  220:  MULT      V1, A2
+  224:  ADDIU     A0, S0, 60
+  228:  LW        A3, 80 (S4)
+  22C:  SRA       V0, V0, 1F
+  230:  MFHI      T0
+  234:  SUBU      V0, T0, V0
+  238:  SLL       V0, V0, 10
+  23C:  SRA       V0, V0, 10
+  240:  MTC1      V0, F16
+  244:  NOP
+  248:  CVT.S.W   F16, F16
+  24C:  MFC1      A2, F16
+  250:  SAF       F4, $End[20]
+  258:  SAF       F2, $End[24]
+  260:  SAF       F0, $End[28]
+  268:  JAL       ~Func:add_vec2D_polar
+  26C:  ADDIU     A1, S0, 68
+  270:  LAW       V0, $End[8]
+  278:  LWC1      F12, 80 (S4)
+  27C:  LIF       F0, -90.0
+  284:  BEQ       V0, R0, .o294
+  288:  NOP
+  28C:  LIF       F0, 90.0
+        .o294
+  294:  JAL       ~Func:clamp_angle
+  298:  ADD.S     F12, F12, F0
+  29C:  LH        V0, B2 (S4)
+  2A0:  ADDIU     A0, S0, 60
+  2A4:  BGEZ      V0, .o2B0
+  2A8:  ADDIU     A1, S0, 68
+  2AC:  ADDIU     V0, V0, 3
+        .o2B0
+  2B0:  SRA       V0, V0, 2
+  2B4:  MTC1      V0, F16
+  2B8:  NOP
+  2BC:  CVT.S.W   F16, F16
+  2C0:  MFC1      A3, F0
+  2C4:  MFC1      A2, F16
+  2C8:  JAL       ~Func:add_vec2D_polar
+  2CC:  NOP
+  2D0:  LWC1      F0, 60 (S0)
+  2D4:  LWC1      F10, 38 (S0)
+  2D8:  LH        V0, 8E (S0)
+  2DC:  LWC1      F4, 64 (S0)
+  2E0:  LWC1      F8, 3C (S0)
+  2E4:  LWC1      F6, 40 (S0)
+  2E8:  MTC1      V0, F2
+  2EC:  NOP
+  2F0:  CVT.S.W   F2, F2
+  2F4:  COPY      A0, V0
+  2F8:  SUB.S     F0, F0, F10
+  2FC:  COPY      V1, A0
+  300:  LHU       V0, 8E (S0)
+  304:  SUB.S     F4, F4, F8
+  308:  ADDIU     V0, V0, FFFF
+  30C:  SH        V0, 8E (S0)
+  310:  DIV.S     F0, F0, F2
+  314:  ADD.S     F10, F10, F0
+  318:  LWC1      F2, 68 (S0)
+  31C:  SLL       V0, V0, 10
+  320:  SUB.S     F2, F2, F6
+  324:  MTC1      A0, F0
+  328:  NOP
+  32C:  CVT.S.W   F0, F0
+  330:  DIV.S     F4, F4, F0
+  334:  ADD.S     F8, F8, F4
+  338:  MTC1      V1, F0
+  33C:  NOP
+  340:  CVT.S.W   F0, F0
+  344:  DIV.S     F2, F2, F0
+  348:  ADD.S     F6, F6, F2
+  34C:  SWC1      F10, 38 (S0)
+  350:  SWC1      F8, 3C (S0)
+  354:  BNE       V0, R0, .oD68
+  358:  SWC1      F6, 40 (S0)
+  35C:  JAL       ~Func:disable_npc_blur
+  360:  COPY      A0, S0
+  364:  LB        V1, 15 (S4)
+  368:  LW        V0, 78 (S5)
+  36C:  SLT       V0, V0, V1
+  370:  BEQ       V0, R0, .o3A4
+  374:  LUI       V1, 10
+  378:  LW        V0, 4 (S4)
+  37C:  AND       V0, V0, V1
+  380:  BNE       V0, R0, .o390
+  384:  LUI       A0, 1
+  388:  BEQ       R0, R0, .o394
+  38C:  ORI       A0, A0, 2
+        .o390
+  390:  ORI       A0, A0, 5
+        .o394
+  394:  JAL       ~Func:suggest_player_anim_clearUnkFlag
+  398:  NOP
+  39C:  BEQ       R0, R0, .oD68
+  3A0:  SW        R0, 70 (S5)
+        .o3A4
+  3A4:  LUI       V0, 2
+  3A8:  LWC1      F4, 80 (S4)
+  3AC:  LIF       F0, 18.0
+  3B4:  LIF       F2, 3.0
+  3BC:  ORI       V0, V0, A
+  3C0:  SW        V0, 28 (S0)
+  3C4:  LI        V0, C
+  3C8:  SH        V0, A8 (S0)
+  3CC:  SWC1      F4, C (S0)
+  3D0:  SWC1      F0, 1C (S0)
+  3D4:  SWC1      F2, 14 (S0)
+  3D8:  LWC1      F0, 2C (S4)
+  3DC:  LUI       A0, 5555
+  3E0:  SWC1      F0, 64 (S0)
+  3E4:  LHU       V0, B0 (S4)
+  3E8:  ORI       A0, A0, 5556
+  3EC:  SLL       V0, V0, 10
+  3F0:  SRA       V1, V0, 10
+  3F4:  MULT      V1, A0
+  3F8:  LA        A1, 800B1D80
+  400:  LWC1      F2, 2C (S4)
+  404:  SRA       V0, V0, 1F
+  408:  MFHI      T0
+  40C:  SUBU      V0, T0, V0
+  410:  SLL       V0, V0, 10
+  414:  SRA       V0, V0, 10
+  418:  MTC1      V0, F0
+  41C:  NOP
+  420:  CVT.S.W   F0, F0
+  424:  ADD.S     F2, F2, F0
+  428:  LI        A0, 00010007
+  430:  SWC1      F2, 68 (S0)
+  434:  LW        V0, 0 (S4)
+  438:  LHU       V1, 2 (A1)
+  43C:  ORI       V0, V0, 2
+  440:  ORI       V1, V1, 1
+  444:  SW        V0, 0 (S4)
+  448:  JAL       ~Func:suggest_player_anim_clearUnkFlag
+  44C:  SH        V1, 2 (A1)
+  450:  LI        A0, 2081
+  454:  CLEAR     A1
+  458:  SAW       R0, $End[10]
+  460:  JAL       ~Func:sfx_play_sound_at_npc
+  464:  LI        A2, FFFC
+  468:  LI        V0, 2
+  46C:  SW        V0, 70 (S5)
+	% LBL: from $JumpTable_802BEBC8 , entry 0`
+  470:  LBU       V0, B4 (S4)
+  474:  ADDIU     V0, V0, FFEB
+  478:  SLTIU     V0, V0, 3
+  47C:  BNEL      V0, R0, .oD68
+  480:  SW        R0, 70 (S5)
+  484:  LWC1      F2, 1C (S0)
+  488:  LWC1      F0, 14 (S0)
+  48C:  SUB.S     F2, F2, F0
+  490:  SWC1      F2, 1C (S0)
+  494:  LWC1      F0, 2C (S4)
+  498:  ADD.S     F0, F0, F2
+  49C:  SWC1      F0, 2C (S4)
+  4A0:  LWC1      F2, 1C (S0)
+  4A4:  MTC1      R0, F0
+  4A8:  NOP
+  4AC:  C.LT.S    F2, F0
+  4B0:  NOP
+  4B4:  BC1F      .o4E8
+  4B8:  LUI       A0, 1
+  4BC:  LA        V1, $End[10]
+  4C4:  LW        V0, 0 (V1)
+  4C8:  BNE       V0, R0, .o4EC
+  4CC:  ADDIU     A1, SP, 20
+  4D0:  LI        V0, 1
+  4D4:  SW        V0, 0 (V1)
+  4D8:  LI        A0, 00010008
+  4DC:  JAL       ~Func:suggest_player_anim_clearUnkFlag
+  4E0:  RESERVED
+  4E4:  LUI       A0, 1
+        .o4E8
+  4E8:  ADDIU     A1, SP, 20
+        .o4EC
+  4EC:  ADDIU     A2, SP, 24
+  4F0:  ADDIU     A3, SP, 28
+  4F4:  LHU       V1, B0 (S4)
+  4F8:  LWC1      F2, 28 (S4)
+  4FC:  SLL       V1, V1, 10
+  500:  SRA       V0, V1, 10
+  504:  SRL       V1, V1, 1F
+  508:  ADDU      V0, V0, V1
+  50C:  SRA       V0, V0, 1
+  510:  MTC1      V0, F0
+  514:  NOP
+  518:  CVT.S.W   F0, F0
+  51C:  LHU       V1, B0 (S4)
+  520:  MOV.S     F20, F0
+  524:  SWC1      F2, 20 (SP)
+  528:  LWC1      F2, 2C (S4)
+  52C:  LWC1      F4, 30 (S4)
+  530:  SLL       V1, V1, 10
+  534:  SRA       V0, V1, 10
+  538:  SRL       V1, V1, 1F
+  53C:  ADDU      V0, V0, V1
+  540:  SRA       V0, V0, 1
+  544:  MTC1      V0, F0
+  548:  NOP
+  54C:  CVT.S.W   F0, F0
+  550:  ADD.S     F2, F2, F0
+  554:  LWC1      F0, 1C (S0)
+  558:  ADDIU     V0, SP, 2C
+  55C:  SUB.S     F2, F2, F0
+  560:  SWC1      F4, 28 (SP)
+  564:  SWC1      F20, 2C (SP)
+  568:  SWC1      F2, 24 (SP)
+  56C:  JAL       ~Func:npc_raycast_up
+  570:  SW        V0, 10 (SP)
+  574:  BEQ       V0, R0, .o5C4
+  578:  NOP
+  57C:  LWC1      F0, 2C (SP)
+  580:  C.LT.S    F0, F20
+  584:  NOP
+  588:  BC1F      .o5C4
+  58C:  COPY      A0, S0
+  590:  LH        V0, B0 (S4)
+  594:  LWC1      F2, 24 (SP)
+  598:  LAHU      V1, 8010C97A
+  5A0:  MTC1      V0, F0
+  5A4:  NOP
+  5A8:  CVT.S.W   F0, F0
+  5AC:  SUB.S     F2, F2, F0
+  5B0:  LA        V0, 8015A550
+  5B8:  SH        V1, 8 (V0)
+  5BC:  JAL       $Function_802BD144
+  5C0:  SWC1      F2, 2C (S4)
+        .o5C4
+  5C4:  LWC1      F0, 1C (S0)
+  5C8:  MTC1      R0, F4
+  5CC:  NOP
+  5D0:  C.LT.S    F4, F0
+  5D4:  NOP
+  5D8:  BC1T      .oD68
+  5DC:  NOP
+  5E0:  LWC1      F2, 2C (S4)
+  5E4:  LWC1      F0, 68 (S0)
+  5E8:  C.LT.S    F2, F0
+  5EC:  NOP
+  5F0:  BC1F      .oD68
+  5F4:  LUI       A0, 2
+  5F8:  ORI       A0, A0, 9
+  5FC:  LW        V0, 0 (S0)
+  600:  LIF       F0, 8.0
+  608:  LI        V1, FEFF
+  60C:  SAW       R0, $End[C]
+  614:  AND       V0, V0, V1
+  618:  SW        V0, 0 (S0)
+  61C:  LI        V0, 2
+  620:  SB        V0, 3 (S6)
+  624:  SB        V0, 0 (S6)
+  628:  SWC1      F4, 4C (S0)
+  62C:  SWC1      F4, 10 (S0)
+  630:  SWC1      F0, 18 (S0)
+  634:  SW        A0, 28 (S0)
+  638:  LWC1      F12, 80 (S4)
+  63C:  LI        V0, 1
+  640:  SAW       V0, $???_802BEB40
+  648:  JAL       ~Func:sin_deg
+  64C:  LI        S2, 3
+  650:  LWC1      F12, 80 (S4)
+  654:  JAL       ~Func:cos_deg
+  658:  MOV.S     F20, F0
+  65C:  LH        V0, A8 (S0)
+  660:  LWC1      F4, 3C (S0)
+  664:  LIF       F2, -1.0
+  66C:  NEG.S     F0, F0
+  670:  SWC1      F20, 10 (SP)
+  674:  SWC1      F0, 18 (SP)
+  678:  SW        S2, 1C (SP)
+  67C:  MTC1      V0, F0
+  680:  NOP
+  684:  CVT.S.W   F0, F0
+  688:  ADD.S     F4, F4, F0
+  68C:  SWC1      F2, 14 (SP)
+  690:  LW        A1, 38 (S0)
+  694:  LW        A3, 40 (S0)
+  698:  MFC1      A2, F4
+  69C:  JAL       ~Func:playFX_18
+  6A0:  COPY      A0, S2
+  6A4:  JAL       ~Func:start_bounce_b
+  6A8:  NOP
+  6AC:  LA        S1, $End[14]
+  6B4:  LW        V0, 0 (S1)
+  6B8:  BEQ       V0, R0, .o6D0
+  6BC:  LI        A0, 283
+  6C0:  JAL       ~Func:enable_player_input
+  6C4:  NOP
+  6C8:  SW        R0, 0 (S1)
+  6CC:  LI        A0, 283
+        .o6D0
+  6D0:  CLEAR     A1
+  6D4:  LA        V1, 800B1D80
+  6DC:  SW        S2, 70 (S5)
+  6E0:  LHU       V0, 2 (V1)
+  6E4:  LI        A2, FFFC
+  6E8:  SAW       R0, $End[10]
+  6F0:  ORI       V0, V0, 1
+  6F4:  JAL       ~Func:sfx_play_sound_at_npc
+  6F8:  SH        V0, 2 (V1)
+  6FC:  LI        A0, 284
+  700:  CLEAR     A1
+  704:  JAL       ~Func:sfx_play_sound_at_npc
+  708:  LI        A2, FFFC
+  70C:  BEQ       R0, R0, .oD68
+  710:  NOP
+	% LBL: from $JumpTable_802BEBC8 , entry 1`
+  714:  LBU       V0, B4 (S4)
+  718:  ADDIU     V0, V0, FFEB
+  71C:  SLTIU     V0, V0, 2
+  720:  BNEL      V0, R0, .oD68
+  724:  SW        R0, 70 (S5)
+  728:  ORI       A0, R0, 8000
+  72C:  LWC1      F0, 38 (S0)
+  730:  LWC1      F2, 3C (S0)
+  734:  LWC1      F4, 40 (S0)
+  738:  LWC1      F6, 18 (S0)
+  73C:  LIF       F20, 20.0
+  744:  ADDIU     S2, SP, 20
+  748:  SWC1      F0, 20 (SP)
+  74C:  SWC1      F2, 24 (SP)
+  750:  SWC1      F4, 28 (SP)
+  754:  SWC1      F6, 10 (SP)
+  758:  LWC1      F0, C (S0)
+  75C:  COPY      A1, S2
+  760:  SUB.S     F0, F0, F20
+  764:  ADDIU     S3, SP, 24
+  768:  COPY      A2, S3
+  76C:  SWC1      F0, 14 (SP)
+  770:  LH        V0, A8 (S0)
+  774:  ADDIU     S1, SP, 28
+  778:  MTC1      V0, F0
+  77C:  NOP
+  780:  CVT.S.W   F0, F0
+  784:  SWC1      F0, 18 (SP)
+  788:  LHU       V1, A6 (S0)
+  78C:  COPY      A3, S1
+  790:  SLL       V1, V1, 10
+  794:  SRA       V0, V1, 10
+  798:  SRL       V1, V1, 1F
+  79C:  ADDU      V0, V0, V1
+  7A0:  SRA       V0, V0, 1
+  7A4:  MTC1      V0, F0
+  7A8:  NOP
+  7AC:  CVT.S.W   F0, F0
+  7B0:  JAL       ~Func:npc_test_move_taller_with_slipping
+  7B4:  SWC1      F0, 1C (SP)
+  7B8:  BEQ       V0, R0, .o858
+  7BC:  ORI       A0, R0, 8000
+        .o7C0
+  7C0:  JAL       $Function_802BD100
+  7C4:  COPY      A0, S0
+  7C8:  BNE       V0, R0, .o7DC
+  7CC:  LI        A0, 10C
+  7D0:  CLEAR     A1
+  7D4:  JAL       ~Func:sfx_play_sound_at_npc
+  7D8:  LI        A2, FFFC
+        .o7DC
+  7DC:  LWC1      F12, C (S0)
+  7E0:  JAL       ~Func:sin_deg
+  7E4:  NOP
+  7E8:  LWC1      F12, C (S0)
+  7EC:  JAL       ~Func:cos_deg
+  7F0:  MOV.S     F20, F0
+  7F4:  LI        V0, 1
+  7F8:  LH        V1, A8 (S0)
+  7FC:  LWC1      F4, 3C (S0)
+  800:  LIF       F2, -1.0
+  808:  NEG.S     F0, F0
+  80C:  SWC1      F20, 10 (SP)
+  810:  SWC1      F0, 18 (SP)
+  814:  SW        V0, 1C (SP)
+  818:  MTC1      V1, F0
+  81C:  NOP
+  820:  CVT.S.W   F0, F0
+  824:  ADD.S     F4, F4, F0
+  828:  SWC1      F2, 14 (SP)
+  82C:  LW        A1, 38 (S0)
+  830:  LW        A3, 40 (S0)
+  834:  MFC1      A2, F4
+  838:  JAL       ~Func:playFX_18
+  83C:  LI        A0, 3
+  840:  CLEAR     A0
+  844:  COPY      A1, A0
+  848:  JAL       ~Func:sfx_play_sound_at_npc
+  84C:  LI        A2, FFFC
+  850:  BEQ       R0, R0, .oD64
+  854:  LI        V0, 7
+        .o858
+  858:  LWC1      F0, 38 (S0)
+  85C:  LWC1      F2, 3C (S0)
+  860:  LWC1      F4, 40 (S0)
+  864:  LWC1      F6, 18 (S0)
+  868:  SWC1      F0, 20 (SP)
+  86C:  SWC1      F2, 24 (SP)
+  870:  SWC1      F4, 28 (SP)
+  874:  SWC1      F6, 10 (SP)
+  878:  LWC1      F0, C (S0)
+  87C:  ADD.S     F0, F0, F20
+  880:  COPY      A1, S2
+  884:  SWC1      F0, 14 (SP)
+  888:  LH        V0, A8 (S0)
+  88C:  COPY      A2, S3
+  890:  MTC1      V0, F0
+  894:  NOP
+  898:  CVT.S.W   F0, F0
+  89C:  SWC1      F0, 18 (SP)
+  8A0:  LHU       V1, A6 (S0)
+  8A4:  COPY      A3, S1
+  8A8:  SLL       V1, V1, 10
+  8AC:  SRA       V0, V1, 10
+  8B0:  SRL       V1, V1, 1F
+  8B4:  ADDU      V0, V0, V1
+  8B8:  SRA       V0, V0, 1
+  8BC:  MTC1      V0, F0
+  8C0:  NOP
+  8C4:  CVT.S.W   F0, F0
+  8C8:  JAL       ~Func:npc_test_move_taller_with_slipping
+  8CC:  SWC1      F0, 1C (SP)
+  8D0:  BNE       V0, R0, .o7C0
+  8D4:  ORI       A0, R0, 8000
+  8D8:  LWC1      F0, 38 (S0)
+  8DC:  LWC1      F2, 3C (S0)
+  8E0:  LWC1      F4, 40 (S0)
+  8E4:  LWC1      F6, 18 (S0)
+  8E8:  SWC1      F0, 20 (SP)
+  8EC:  SWC1      F2, 24 (SP)
+  8F0:  SWC1      F4, 28 (SP)
+  8F4:  SWC1      F6, 10 (SP)
+  8F8:  LWC1      F0, C (S0)
+  8FC:  COPY      A1, S2
+  900:  SWC1      F0, 14 (SP)
+  904:  LH        V0, A8 (S0)
+  908:  COPY      A2, S3
+  90C:  MTC1      V0, F0
+  910:  NOP
+  914:  CVT.S.W   F0, F0
+  918:  SWC1      F0, 18 (SP)
+  91C:  LHU       V1, A6 (S0)
+  920:  COPY      A3, S1
+  924:  SLL       V1, V1, 10
+  928:  SRA       V0, V1, 10
+  92C:  SRL       V1, V1, 1F
+  930:  ADDU      V0, V0, V1
+  934:  SRA       V0, V0, 1
+  938:  MTC1      V0, F0
+  93C:  NOP
+  940:  CVT.S.W   F0, F0
+  944:  JAL       ~Func:npc_test_move_taller_with_slipping
+  948:  SWC1      F0, 1C (SP)
+  94C:  BNE       V0, R0, .o7C0
+  950:  COPY      A0, S0
+  954:  LWC1      F0, 20 (SP)
+  958:  LWC1      F2, 18 (S0)
+  95C:  LI        A1, 1
+  960:  SWC1      F0, 38 (S0)
+  964:  LWC1      F6, 24 (SP)
+  968:  LWC1      F0, 10 (S0)
+  96C:  LWC1      F4, 28 (SP)
+  970:  ADD.S     F0, F0, F2
+  974:  SWC1      F6, 3C (S0)
+  978:  SWC1      F4, 40 (S0)
+  97C:  JAL       8003D660
+  980:  SWC1      F0, 10 (S0)
+  984:  LWC1      F0, 18 (S0)
+  988:  LIF       F3, 2.0
+  990:  MTC1      R0, F2
+  994:  CVT.D.S   F0, F0
+  998:  ADD.D     F0, F0, F2
+  99C:  LIF       F5, 2.6875
+  9A4:  MTC1      R0, F4
+  9A8:  CVT.S.D   F0, F0
+  9AC:  CVT.D.S   F2, F0
+  9B0:  C.LT.D    F4, F2
+  9B4:  NOP
+  9B8:  BC1F      .o9D0
+  9BC:  SWC1      F0, 18 (S0)
+  9C0:  LIF       F0, 14.0
+  9C8:  NOP
+  9CC:  SWC1      F0, 18 (S0)
+        .o9D0
+  9D0:  LUI       A1, 40C0
+  9D4:  JAL       800397E8
+  9D8:  COPY      A0, S0
+  9DC:  BNE       V0, R0, .oA18
+  9E0:  NOP
+  9E4:  LW        V0, 0 (S4)
+  9E8:  ANDI      V0, V0, 6
+  9EC:  BNE       V0, R0, .oA18
+  9F0:  NOP
+  9F4:  LWC1      F0, 2C (S4)
+  9F8:  LWC1      F2, 3C (S0)
+  9FC:  SUB.S     F0, F0, F2
+  A00:  LIF       F4, 10.0
+  A08:  NOP
+  A0C:  DIV.S     F0, F0, F4
+  A10:  ADD.S     F2, F2, F0
+  A14:  SWC1      F2, 3C (S0)
+        .oA18
+  A18:  JAL       ~Func:npc_do_other_npc_collision
+  A1C:  COPY      A0, S0
+  A20:  LW        V0, 0 (S0)
+  A24:  LUI       V1, 200
+  A28:  AND       V0, V0, V1
+  A2C:  BNE       V0, R0, .oB58
+  A30:  CLEAR     A0
+  A34:  JAL       $Function_802BD17C
+  A38:  COPY      A0, S0
+  A3C:  BEQ       V0, R0, .oAFC
+  A40:  LI        A0, 286
+  A44:  CLEAR     A1
+  A48:  JAL       ~Func:sfx_play_sound_at_npc
+  A4C:  LI        A2, FFFC
+  A50:  LWC1      F12, C (S0)
+  A54:  JAL       ~Func:sin_deg
+  A58:  NOP
+  A5C:  LWC1      F12, C (S0)
+  A60:  JAL       ~Func:cos_deg
+  A64:  MOV.S     F20, F0
+  A68:  LI        V0, 1
+  A6C:  LH        V1, A8 (S0)
+  A70:  LWC1      F4, 3C (S0)
+  A74:  LIF       F2, -1.0
+  A7C:  NEG.S     F0, F0
+  A80:  SWC1      F20, 10 (SP)
+  A84:  SWC1      F0, 18 (SP)
+  A88:  SW        V0, 1C (SP)
+  A8C:  MTC1      V1, F0
+  A90:  NOP
+  A94:  CVT.S.W   F0, F0
+  A98:  ADD.S     F4, F4, F0
+  A9C:  SWC1      F2, 14 (SP)
+  AA0:  LW        A1, 38 (S0)
+  AA4:  LW        A3, 40 (S0)
+  AA8:  MFC1      A2, F4
+  AAC:  JAL       ~Func:playFX_18
+  AB0:  LI        A0, 3
+  AB4:  CLEAR     A0
+  AB8:  COPY      A1, A0
+  ABC:  JAL       ~Func:sfx_play_sound_at_npc
+  AC0:  LI        A2, FFFC
+  AC4:  LI        V0, 4
+  AC8:  SW        V0, 70 (S5)
+  ACC:  LWC1      F0, 18 (S0)
+  AD0:  LIF       F3, 2.25
+  AD8:  MTC1      R0, F2
+  ADC:  LAD       F4, $ConstDouble_802BEC18
+  AE4:  CVT.D.S   F0, F0
+  AE8:  LI        V0, 8
+  AEC:  SAW       V0, $End[0]
+  AF4:  BEQ       R0, R0, .oBB4
+  AF8:  SUB.D     F0, F0, F2
+        .oAFC
+  AFC:  LAW       V1, $???_802BEB40
+  B04:  LI        V0, 2
+  B08:  BNE       V1, V0, .oB38
+  B0C:  CLEAR     A0
+  B10:  COPY      A1, A0
+  B14:  JAL       ~Func:sfx_play_sound_at_npc
+  B18:  LI        A2, FFFC
+  B1C:  LI        V0, 5
+  B20:  SW        V0, 70 (S5)
+  B24:  LI        V0, 1E
+  B28:  SAW       V0, $End[0]
+  B30:  BEQ       R0, R0, .oD68
+  B34:  SW        R0, 18 (S0)
+        .oB38
+  B38:  LWC1      F2, 10 (S0)
+  B3C:  LIF       F0, 140.0
+  B44:  NOP
+  B48:  C.LT.S    F0, F2
+  B4C:  NOP
+  B50:  BC1F      .oB78
+  B54:  NOP
+        .oB58
+  B58:  COPY      A1, A0
+  B5C:  LI        A2, FFFC
+  B60:  LI        V0, 7
+  B64:  SW        V0, 70 (S5)
+  B68:  JAL       ~Func:sfx_play_sound_at_npc
+  B6C:  SW        R0, 18 (S0)
+  B70:  BEQ       R0, R0, .oD68
+  B74:  NOP
+        .oB78
+  B78:  LIF       F0, 105.0
+  B80:  NOP
+  B84:  C.LT.S    F0, F2
+  B88:  NOP
+  B8C:  BC1F      .oD68
+  B90:  NOP
+  B94:  LWC1      F0, 18 (S0)
+  B98:  LIF       F3, 2.25
+  BA0:  MTC1      R0, F2
+  BA4:  CVT.D.S   F0, F0
+  BA8:  SUB.D     F0, F0, F2
+  BAC:  LAD       F4, $ConstDouble_802BEC20
+        .oBB4
+  BB4:  CVT.S.D   F0, F0
+  BB8:  CVT.D.S   F2, F0
+  BBC:  C.LT.D    F2, F4
+  BC0:  NOP
+  BC4:  BC1F      .oD68
+  BC8:  SWC1      F0, 18 (S0)
+  BCC:  LWC1      F0, 10 (S0)
+  BD0:  LIF       F3, 1.875
+  BD8:  MTC1      R0, F2
+  BDC:  CVT.D.S   F0, F0
+  BE0:  ADD.D     F0, F0, F2
+  BE4:  LIF       F2, 0.009938965
+  BF0:  NOP
+  BF4:  SWC1      F2, 18 (S0)
+  BF8:  CVT.S.D   F0, F0
+  BFC:  BEQ       R0, R0, .oD68
+  C00:  SWC1      F0, 10 (S0)
+	% LBL: from $JumpTable_802BEBC8 , entry 2`
+  C04:  LWC1      F0, 38 (S0)
+  C08:  LWC1      F2, 3C (S0)
+  C0C:  LWC1      F4, 40 (S0)
+  C10:  LWC1      F6, 18 (S0)
+  C14:  ORI       A0, R0, 8000
+  C18:  SWC1      F0, 20 (SP)
+  C1C:  SWC1      F2, 24 (SP)
+  C20:  SWC1      F4, 28 (SP)
+  C24:  SWC1      F6, 10 (SP)
+  C28:  LWC1      F0, C (S0)
+  C2C:  ADDIU     A1, SP, 20
+  C30:  SWC1      F0, 14 (SP)
+  C34:  LH        V0, A8 (S0)
+  C38:  ADDIU     A2, SP, 24
+  C3C:  MTC1      V0, F0
+  C40:  NOP
+  C44:  CVT.S.W   F0, F0
+  C48:  SWC1      F0, 18 (SP)
+  C4C:  LHU       V1, A6 (S0)
+  C50:  ADDIU     A3, SP, 28
+  C54:  SLL       V1, V1, 10
+  C58:  SRA       V0, V1, 10
+  C5C:  SRL       V1, V1, 1F
+  C60:  ADDU      V0, V0, V1
+  C64:  SRA       V0, V0, 1
+  C68:  MTC1      V0, F0
+  C6C:  NOP
+  C70:  CVT.S.W   F0, F0
+  C74:  JAL       ~Func:npc_test_move_taller_with_slipping
+  C78:  SWC1      F0, 1C (SP)
+  C7C:  COPY      A0, S0
+  C80:  LWC1      F0, 20 (SP)
+  C84:  LWC1      F2, 18 (S0)
+  C88:  LI        A1, 1
+  C8C:  SWC1      F0, 38 (S0)
+  C90:  LWC1      F6, 24 (SP)
+  C94:  LWC1      F0, 10 (S0)
+  C98:  LWC1      F4, 28 (SP)
+  C9C:  ADD.S     F0, F0, F2
+  CA0:  SWC1      F6, 3C (S0)
+  CA4:  SWC1      F4, 40 (S0)
+  CA8:  JAL       8003D660
+  CAC:  SWC1      F0, 10 (S0)
+  CB0:  LWC1      F0, 18 (S0)
+  CB4:  LIF       F3, 2.375
+  CBC:  MTC1      R0, F2
+  CC0:  CVT.D.S   F0, F0
+  CC4:  SUB.D     F0, F0, F2
+  CC8:  LAD       F4, $ConstDouble_802BEC28
+  CD0:  CVT.S.D   F0, F0
+  CD4:  CVT.D.S   F2, F0
+  CD8:  C.LT.D    F2, F4
+  CDC:  NOP
+  CE0:  BC1F      .oD1C
+  CE4:  SWC1      F0, 18 (S0)
+  CE8:  LWC1      F0, 10 (S0)
+  CEC:  LIF       F3, 1.875
+  CF4:  MTC1      R0, F2
+  CF8:  CVT.D.S   F0, F0
+  CFC:  ADD.D     F0, F0, F2
+  D00:  LIF       F2, 0.009938965
+  D0C:  NOP
+  D10:  SWC1      F2, 18 (S0)
+  D14:  CVT.S.D   F0, F0
+  D18:  SWC1      F0, 10 (S0)
+        .oD1C
+  D1C:  LA        V1, $End[0]
+  D24:  LW        V0, 0 (V1)
+  D28:  BNE       V0, R0, .oD58
+  D2C:  ADDIU     V0, V0, FFFF
+  D30:  LI        V0, 7
+  D34:  SW        V0, 70 (S5)
+  D38:  LW        V0, 0 (V1)
+  D3C:  BEQ       R0, R0, .oD58
+  D40:  ADDIU     V0, V0, FFFF
+	% LBL: from $JumpTable_802BEBC8 , entry 3`
+  D44:  LA        V1, $End[0]
+  D4C:  LW        V0, 0 (V1)
+  D50:  BEQ       V0, R0, .oD60
+  D54:  ADDIU     V0, V0, FFFF
+        .oD58
+  D58:  BEQ       R0, R0, .oD68
+  D5C:  SW        V0, 0 (V1)
+        .oD60
+  D60:  LI        V0, 7
+        .oD64
+  D64:  SW        V0, 70 (S5)
+	% LBL: from $JumpTable_802BEBC8 , entry 17`
+        .oD68
+  D68:  LW        V1, 70 (S5)
+  D6C:  LI        V0, 7
+  D70:  BNE       V1, V0, .o10C8
+  D74:  NOP
+  D78:  LW        V0, 0 (S0)
+  D7C:  ORI       V0, V0, 100
+  D80:  SW        V0, 0 (S0)
+  D84:  LBU       V0, B4 (S4)
+  D88:  ADDIU     V0, V0, FFEB
+  D8C:  SLTIU     V0, V0, 2
+  D90:  BNEL      V0, R0, .o10C8
+  D94:  SW        R0, 70 (S5)
+  D98:  LAF       F12, $End[20]
+  DA0:  LAF       F14, $End[28]
+  DA8:  LW        A2, 38 (S0)
+  DAC:  JAL       ~Func:atan2
+  DB0:  LW        A3, 40 (S0)
+  DB4:  MOV.S     F20, F0
+  DB8:  LWC1      F12, C (S0)
+  DBC:  JAL       ~Func:get_clamped_angle_diff
+  DC0:  MOV.S     F14, F20
+  DC4:  LIF       F2, 0.125
+  DCC:  NOP
+  DD0:  MUL.S     F0, F0, F2
+  DD4:  NOP
+  DD8:  ADD.S     F20, F20, F0
+  DDC:  LWC1      F0, 18 (S0)
+  DE0:  NEG.S     F0, F0
+  DE4:  MFC1      A1, F0
+  DE8:  MFC1      A2, F20
+  DEC:  COPY      A0, S0
+  DF0:  JAL       ~Func:npc_move_heading
+  DF4:  SW        A2, C (S0)
+  DF8:  LWC1      F2, 10 (S0)
+  DFC:  LWC1      F0, 18 (S0)
+  E00:  SUB.S     F2, F2, F0
+  E04:  COPY      A0, S0
+  E08:  LI        A1, 1
+  E0C:  JAL       8003D660
+  E10:  SWC1      F2, 10 (S0)
+  E14:  LWC1      F0, 18 (S0)
+  E18:  LAD       F2, $ConstDouble_802BEC30
+  E20:  CVT.D.S   F0, F0
+  E24:  ADD.D     F0, F0, F2
+  E28:  LIF       F5, 2.6875
+  E30:  MTC1      R0, F4
+  E34:  CVT.S.D   F0, F0
+  E38:  CVT.D.S   F2, F0
+  E3C:  C.LT.D    F4, F2
+  E40:  NOP
+  E44:  BC1F      .oE5C
+  E48:  SWC1      F0, 18 (S0)
+  E4C:  LIF       F0, 14.0
+  E54:  NOP
+  E58:  SWC1      F0, 18 (S0)
+        .oE5C
+  E5C:  LUI       A1, 40C0
+  E60:  JAL       800397E8
+  E64:  COPY      A0, S0
+  E68:  BNE       V0, R0, .oE94
+  E6C:  NOP
+  E70:  LWC1      F0, 2C (S4)
+  E74:  LWC1      F2, 3C (S0)
+  E78:  SUB.S     F0, F0, F2
+  E7C:  LIF       F4, 10.0
+  E84:  NOP
+  E88:  DIV.S     F0, F0, F4
+  E8C:  ADD.S     F2, F2, F0
+  E90:  SWC1      F2, 3C (S0)
+        .oE94
+  E94:  LWC1      F2, 38 (S0)
+  E98:  LWC1      F4, 3C (S0)
+  E9C:  LWC1      F12, C (S0)
+  EA0:  LIF       F20, 180.0
+  EA8:  LWC1      F0, 40 (S0)
+  EAC:  ADD.S     F12, F12, F20
+  EB0:  SWC1      F2, 20 (SP)
+  EB4:  SWC1      F4, 24 (SP)
+  EB8:  JAL       ~Func:clamp_angle
+  EBC:  SWC1      F0, 28 (SP)
+  EC0:  ORI       A0, R0, 8000
+  EC4:  LWC1      F2, 18 (S0)
+  EC8:  ADDIU     A1, SP, 20
+  ECC:  SWC1      F0, 14 (SP)
+  ED0:  SWC1      F2, 10 (SP)
+  ED4:  LH        V0, A8 (S0)
+  ED8:  ADDIU     A2, SP, 24
+  EDC:  MTC1      V0, F0
+  EE0:  NOP
+  EE4:  CVT.S.W   F0, F0
+  EE8:  SWC1      F0, 18 (SP)
+  EEC:  LH        V0, A6 (S0)
+  EF0:  ADDIU     A3, SP, 28
+  EF4:  MTC1      V0, F0
+  EF8:  NOP
+  EFC:  CVT.S.W   F0, F0
+  F00:  JAL       ~Func:npc_test_move_taller_with_slipping
+  F04:  SWC1      F0, 1C (SP)
+  F08:  BEQ       V0, R0, .oFA4
+  F0C:  LI        A0, 10C
+  F10:  CLEAR     A1
+  F14:  LWC1      F0, 20 (SP)
+  F18:  LWC1      F2, 24 (SP)
+  F1C:  LWC1      F4, 28 (SP)
+  F20:  LI        A2, FFFC
+  F24:  SWC1      F0, 38 (S0)
+  F28:  SWC1      F2, 3C (S0)
+  F2C:  JAL       ~Func:sfx_play_sound_at_npc
+  F30:  SWC1      F4, 40 (S0)
+  F34:  LWC1      F12, C (S0)
+  F38:  JAL       ~Func:sin_deg
+  F3C:  ADD.S     F12, F12, F20
+  F40:  LWC1      F12, C (S0)
+  F44:  ADD.S     F12, F12, F20
+  F48:  JAL       ~Func:cos_deg
+  F4C:  MOV.S     F20, F0
+  F50:  LI        V0, 1
+  F54:  LH        V1, A8 (S0)
+  F58:  LWC1      F4, 3C (S0)
+  F5C:  LIF       F2, -1.0
+  F64:  NEG.S     F0, F0
+  F68:  SWC1      F20, 10 (SP)
+  F6C:  SWC1      F0, 18 (SP)
+  F70:  SW        V0, 1C (SP)
+  F74:  MTC1      V1, F0
+  F78:  NOP
+  F7C:  CVT.S.W   F0, F0
+  F80:  ADD.S     F4, F4, F0
+  F84:  SWC1      F2, 14 (SP)
+  F88:  LW        A1, 38 (S0)
+  F8C:  LW        A3, 40 (S0)
+  F90:  MFC1      A2, F4
+  F94:  JAL       ~Func:playFX_18
+  F98:  LI        A0, 3
+  F9C:  BEQ       R0, R0, .o10C8
+  FA0:  SW        R0, 70 (S5)
+        .oFA4
+  FA4:  LAW       V0, $End[1C]
+  FAC:  BEQ       V0, R0, .o1044
+  FB0:  NOP
+  FB4:  LAW       A0, $End[18]
+  FBC:  JAL       ~Func:get_item_entity
+  FC0:  NOP
+  FC4:  COPY      S1, V0
+  FC8:  LWC1      F6, 38 (S0)
+  FCC:  LWC1      F0, 3C (S0)
+  FD0:  LIF       F2, 8.0
+  FD8:  LWC1      F4, 40 (S0)
+  FDC:  LAW       V0, $End[8]
+  FE4:  ADD.S     F0, F0, F2
+  FE8:  SWC1      F6, 20 (SP)
+  FEC:  SWC1      F4, 28 (SP)
+  FF0:  SWC1      F0, 24 (SP)
+  FF4:  LWC1      F12, 80 (S4)
+  FF8:  LIF       F0, -90.0
+ 1000:  BEQ       V0, R0, .o1010
+ 1004:  NOP
+ 1008:  LIF       F0, 90.0
+        .o1010
+ 1010:  JAL       ~Func:clamp_angle
+ 1014:  SUB.S     F12, F12, F0
+ 1018:  ADDIU     A0, SP, 20
+ 101C:  LUI       A2, 4080
+ 1020:  MFC1      A3, F0
+ 1024:  JAL       ~Func:add_vec2D_polar
+ 1028:  ADDIU     A1, SP, 28
+ 102C:  LWC1      F0, 20 (SP)
+ 1030:  LWC1      F2, 24 (SP)
+ 1034:  LWC1      F4, 28 (SP)
+ 1038:  SWC1      F0, 8 (S1)
+ 103C:  SWC1      F2, C (S1)
+ 1040:  SWC1      F4, 10 (S1)
+        .o1044
+ 1044:  LWC1      F2, 10 (S0)
+ 1048:  LIF       F0, 15.0
+ 1050:  NOP
+ 1054:  ADD.S     F2, F2, F0
+ 1058:  LWC1      F4, 18 (S0)
+ 105C:  C.LT.S    F2, F4
+ 1060:  NOP
+ 1064:  BC1TL     .o10C8
+ 1068:  SW        R0, 70 (S5)
+ 106C:  LIF       F0, 35.0
+ 1074:  NOP
+ 1078:  C.LT.S    F2, F0
+ 107C:  NOP
+ 1080:  BC1F      .o10C8
+ 1084:  NOP
+ 1088:  LIF       F1, 2.25
+ 1090:  MTC1      R0, F0
+ 1094:  CVT.D.S   F2, F4
+ 1098:  SUB.D     F2, F2, F0
+ 109C:  CVT.S.D   F2, F2
+ 10A0:  SWC1      F2, 18 (S0)
+ 10A4:  CVT.D.S   F2, F2
+ 10A8:  C.LT.D    F2, F0
+ 10AC:  NOP
+ 10B0:  BC1F      .o10C8
+ 10B4:  NOP
+ 10B8:  LIF       F0, 4.0
+ 10C0:  NOP
+ 10C4:  SWC1      F0, 18 (S0)
+        .o10C8
+ 10C8:  LW        V0, 70 (S5)
+ 10CC:  BNE       V0, R0, .o117C
+ 10D0:  CLEAR     V0
+ 10D4:  LA        S1, $End[14]
+ 10DC:  LW        V0, 0 (S1)
+ 10E0:  BEQ       V0, R0, .o10F8
+ 10E4:  LUI       A1, 2
+ 10E8:  JAL       ~Func:enable_player_input
+ 10EC:  NOP
+ 10F0:  SW        R0, 0 (S1)
+ 10F4:  LI        A1, 00020004
+ 10FC:  LI        A0, 284
+ 1100:  LW        V0, 0 (S0)
+ 1104:  LI        V1, F7BF
+ 1108:  SAW       R0, $???_802BEB40
+ 1110:  ORI       V0, V0, 100
+ 1114:  AND       V0, V0, V1
+ 1118:  SW        V0, 0 (S0)
+ 111C:  LI        V0, 18
+ 1120:  SB        R0, 3 (S6)
+ 1124:  SB        R0, 0 (S6)
+ 1128:  SW        R0, 1C (S0)
+ 112C:  SH        V0, A8 (S0)
+ 1130:  JAL       ~Func:sfx_stop_sound
+ 1134:  SW        A1, 28 (S0)
+ 1138:  JAL       ~Func:disable_npc_blur
+ 113C:  COPY      A0, S0
+ 1140:  LA        S1, $End[1C]
+ 1148:  LW        V0, 0 (S1)
+ 114C:  BEQ       V0, R0, .o1168
+ 1150:  NOP
+ 1154:  LAW       A0, $End[18]
+ 115C:  JAL       801341B0
+ 1160:  NOP
+ 1164:  SW        R0, 0 (S1)
+ 1168:  SAW       R0, $End[4]
+ 1170:  JAL       ~Func:partner_clear_player_tracking
+ 1174:  COPY      A0, S0
+ 1178:  LI        V0, 2
+ 117C:  LW        RA, 4C (SP)
+ 1180:  LW        S6, 48 (SP)
+ 1184:  LW        S5, 44 (SP)
+ 1188:  LW        S4, 40 (SP)
+ 118C:  LW        S3, 3C (SP)
+ 1190:  LW        S2, 38 (SP)
+ 1194:  LW        S1, 34 (SP)
+ 1198:  LW        S0, 30 (SP)
+ 119C:  LDC1      F20, 50 (SP)
+ 11A0:  JR        RA
+ 11A4:  ADDIU     SP, SP, 58
+}
+
+#new:Function $Function_802BE7E0
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 14 (SP)
+    8:  SW        S0, 10 (SP)
+    C:  BEQ       A1, R0, .o1C
+   10:  LW        S0, 14C (A0)
+   14:  JAL       ~Func:partner_init_put_away
+   18:  COPY      A0, S0
+        .o1C
+   1C:  JAL       ~Func:partner_put_away
+   20:  COPY      A0, S0
+   24:  LW        RA, 14 (SP)
+   28:  LW        S0, 10 (SP)
+   2C:  SLTU      V0, R0, V0
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_TestEnemyCollision
+{
+    0:  ADDIU     SP, SP, FF80
+    4:  SW        S1, 44 (SP)
+    8:  LA        S1, $???_802BEB40
+   10:  SW        RA, 48 (SP)
+   14:  SW        S0, 40 (SP)
+   18:  SDC1      F30, 78 (SP)
+   1C:  SDC1      F28, 70 (SP)
+   20:  SDC1      F26, 68 (SP)
+   24:  SDC1      F24, 60 (SP)
+   28:  SDC1      F22, 58 (SP)
+   2C:  SDC1      F20, 50 (SP)
+   30:  LW        V0, 0 (S1)
+   34:  BEQ       V0, R0, .o1DC
+   38:  COPY      S0, A0
+   3C:  LWC1      F22, 38 (S0)
+   40:  LWC1      F24, 40 (S0)
+   44:  LH        V0, A6 (A1)
+   48:  LAD       F0, $ConstDouble_802BEC38
+   50:  LWC1      F30, 38 (A1)
+   54:  LWC1      F8, 40 (A1)
+   58:  MTC1      V0, F4
+   5C:  NOP
+   60:  CVT.D.W   F4, F4
+   64:  MOV.S     F14, F8
+   68:  MUL.D     F4, F4, F0
+   6C:  NOP
+   70:  SWC1      F8, 30 (SP)
+   74:  LH        V0, A6 (S0)
+   78:  LAD       F0, $ConstDouble_802BEC40
+   80:  MFC1      A2, F22
+   84:  MTC1      V0, F2
+   88:  NOP
+   8C:  CVT.D.W   F2, F2
+   90:  LH        V0, A8 (A1)
+   94:  MFC1      A3, F24
+   98:  MTC1      V0, F10
+   9C:  NOP
+   A0:  CVT.S.W   F10, F10
+   A4:  SWC1      F10, 34 (SP)
+   A8:  LH        V0, A8 (S0)
+   AC:  MUL.D     F2, F2, F0
+   B0:  NOP
+   B4:  MTC1      V0, F8
+   B8:  NOP
+   BC:  CVT.S.W   F8, F8
+   C0:  SWC1      F8, 3C (SP)
+   C4:  LWC1      F10, 3C (A1)
+   C8:  SWC1      F10, 2C (SP)
+   CC:  LWC1      F8, 3C (S0)
+   D0:  MOV.S     F12, F30
+   D4:  SWC1      F8, 38 (SP)
+   D8:  CVT.S.D   F28, F4
+   DC:  JAL       ~Func:atan2
+   E0:  CVT.S.D   F26, F2
+   E4:  MOV.S     F12, F30
+   E8:  LWC1      F14, 30 (SP)
+   EC:  MFC1      A2, F22
+   F0:  MFC1      A3, F24
+   F4:  JAL       ~Func:dist2D
+   F8:  MOV.S     F20, F0
+   FC:  ADDIU     A2, SP, 24
+  100:  ADDIU     A3, SP, 28
+  104:  CLEAR     A0
+  108:  LWC1      F2, 38 (S0)
+  10C:  LWC1      F4, 3C (S0)
+  110:  LWC1      F6, 40 (S0)
+  114:  LWC1      F10, 3C (SP)
+  118:  ADDIU     A1, SP, 20
+  11C:  SWC1      F2, 20 (SP)
+  120:  SWC1      F4, 24 (SP)
+  124:  SWC1      F6, 28 (SP)
+  128:  SWC1      F0, 10 (SP)
+  12C:  ADD.S     F0, F26, F28
+  130:  SWC1      F20, 14 (SP)
+  134:  SWC1      F10, 18 (SP)
+  138:  JAL       ~Func:npc_test_move_taller_with_slipping
+  13C:  SWC1      F0, 1C (SP)
+  140:  BNEL      V0, R0, .o1E0
+  144:  CLEAR     V0
+  148:  LWC1      F8, 2C (SP)
+  14C:  LWC1      F10, 34 (SP)
+  150:  ADD.S     F0, F8, F10
+  154:  LWC1      F8, 38 (SP)
+  158:  C.LT.S    F0, F8
+  15C:  NOP
+  160:  BC1TL     .o1E0
+  164:  CLEAR     V0
+  168:  LWC1      F10, 38 (SP)
+  16C:  LWC1      F8, 3C (SP)
+  170:  ADD.S     F0, F10, F8
+  174:  LWC1      F10, 2C (SP)
+  178:  C.LT.S    F0, F10
+  17C:  NOP
+  180:  BC1TL     .o1E0
+  184:  CLEAR     V0
+  188:  MUL.S     F0, F26, F26
+  18C:  NOP
+  190:  MUL.S     F2, F28, F28
+  194:  NOP
+  198:  SUB.S     F22, F30, F22
+  19C:  MUL.S     F6, F22, F22
+  1A0:  NOP
+  1A4:  LWC1      F8, 30 (SP)
+  1A8:  SUB.S     F24, F8, F24
+  1AC:  MUL.S     F4, F24, F24
+  1B0:  NOP
+  1B4:  ADD.S     F0, F0, F2
+  1B8:  ADD.S     F6, F6, F4
+  1BC:  C.LE.S    F0, F6
+  1C0:  NOP
+  1C4:  BC1TL     .o1E0
+  1C8:  CLEAR     V0
+  1CC:  LI        V0, 2
+  1D0:  SW        V0, 0 (S1)
+  1D4:  BEQ       R0, R0, .o1E0
+  1D8:  LI        V0, 1
+        .o1DC
+  1DC:  CLEAR     V0
+        .o1E0
+  1E0:  LW        RA, 48 (SP)
+  1E4:  LW        S1, 44 (SP)
+  1E8:  LW        S0, 40 (SP)
+  1EC:  LDC1      F30, 78 (SP)
+  1F0:  LDC1      F28, 70 (SP)
+  1F4:  LDC1      F26, 68 (SP)
+  1F8:  LDC1      F24, 60 (SP)
+  1FC:  LDC1      F22, 58 (SP)
+  200:  LDC1      F20, 50 (SP)
+  204:  JR        RA
+  208:  ADDIU     SP, SP, 80
+}
+
+#new:Function $Function_BeforeBattle
+{
+    0:  ADDIU     SP, SP, FFD8
+    4:  SW        S1, 14 (SP)
+    8:  COPY      S1, A0
+    C:  LA        A0, $End[4]
+   14:  SW        S2, 18 (SP)
+   18:  LA        S2, 8010EFC8
+   20:  LA        V0, 8010EBB0
+   28:  SW        RA, 20 (SP)
+   2C:  SW        S3, 1C (SP)
+   30:  SW        S0, 10 (SP)
+   34:  SW        R0, 0 (A0)
+   38:  LB        V1, 0 (V0)
+   3C:  BEQ       V1, R0, .oD0
+   40:  COPY      S3, V0
+   44:  LI        V0, 2
+   48:  BNE       V1, V0, .o54
+   4C:  LI        V0, 1
+   50:  SW        V0, 0 (A0)
+        .o54
+   54:  LA        S0, $End[14]
+   5C:  LW        V0, 0 (S0)
+   60:  BEQL      V0, R0, .o78
+   64:  LI        A0, 284
+   68:  JAL       ~Func:enable_player_input
+   6C:  NOP
+   70:  SW        R0, 0 (S0)
+   74:  LI        A0, 284
+        .o78
+   78:  LW        V0, 0 (S2)
+   7C:  LI        V1, FFFD
+   80:  SAW       R0, $???_802BEB40
+   88:  AND       V0, V0, V1
+   8C:  SW        V0, 0 (S2)
+   90:  LW        V0, 0 (S1)
+   94:  LI        V1, F7FF
+   98:  SW        R0, 1C (S1)
+   9C:  AND       V0, V0, V1
+   A0:  LI        V1, FFBF
+   A4:  AND       V0, V0, V1
+   A8:  JAL       ~Func:sfx_stop_sound
+   AC:  SW        V0, 0 (S1)
+   B0:  JAL       ~Func:set_action_state
+   B4:  CLEAR     A0
+   B8:  JAL       ~Func:partner_clear_player_tracking
+   BC:  COPY      A0, S1
+   C0:  JAL       ~Func:disable_npc_blur
+   C4:  COPY      A0, S1
+   C8:  SB        R0, 3 (S3)
+   CC:  SB        R0, 0 (S3)
+        .oD0
+   D0:  LW        RA, 20 (SP)
+   D4:  LW        S3, 1C (SP)
+   D8:  LW        S2, 18 (SP)
+   DC:  LW        S1, 14 (SP)
+   E0:  LW        S0, 10 (SP)
+   E4:  JR        RA
+   E8:  ADDIU     SP, SP, 28
+}
+
+#new:Function $Function_AfterBattle
+{
+    0:  LAW       V0, $End[4]
+    8:  ADDIU     SP, SP, FFE8
+    C:  BEQ       V0, R0, .o24
+   10:  SW        RA, 10 (SP)
+   14:  JAL       ~Func:partner_clear_player_tracking
+   18:  NOP
+   1C:  JAL       ~Func:partner_use_ability
+   20:  NOP
+        .o24
+   24:  LW        RA, 10 (SP)
+   28:  JR        RA
+   2C:  ADDIU     SP, SP, 18
+}
+
+#new:Unknown $???_802BEB40
+{
+	00000000
+}
+
+#new:Script $Script_TakeOut
+{
+    0:  Call  $Function_802BD228 ( )
+    C:  Return
+   14:  End
+}
+
+#new:Unknown $???_802BEB60
+{
+	$End[30]
+}
+
+#new:Script $Script_UseAbility
+{
+    0:  Call  $Function_802BD260 ( )
+    C:  Return
+   14:  End
+}
+
+#new:Script $Script_Update
+{
+    0:  Call  $Function_802BD638 ( )
+    C:  Return
+   14:  End
+}
+
+#new:Script $Script_PutAway
+{
+    0:  Call  $Function_802BE7E0 ( )
+    C:  Return
+   14:  End
+}
+
+PADDING: 802BEBB8 to 802BEBC0 (0031CBD8 to 0031CBE0)
+00000000 00000000
+
+#new:ConstDouble $ConstDouble_802BEBC0
+{
+	0.800000d
+}
+
+#new:JumpTable $JumpTable_802BEBC8
+{
+	$Function_802BD638[470] $Function_802BD638[714] $Function_802BD638[C04] $Function_802BD638[D44]
+	$Function_802BD638[D68] $Function_802BD638[D68] $Function_802BD638[D68] $Function_802BD638[D68]
+	$Function_802BD638[D68] $Function_802BD638[D68] $Function_802BD638[D68] $Function_802BD638[D68]
+	$Function_802BD638[D68] $Function_802BD638[D68] $Function_802BD638[D68] $Function_802BD638[D68]
+	$Function_802BD638[D68] $Function_802BD638[D68] $Function_802BD638[104] $Function_802BD638[1B8]
+}
+
+#new:ConstDouble $ConstDouble_802BEC18
+{
+	0.010000d
+}
+
+#new:ConstDouble $ConstDouble_802BEC20
+{
+	0.010000d
+}
+
+#new:ConstDouble $ConstDouble_802BEC28
+{
+	0.010000d
+}
+
+#new:ConstDouble $ConstDouble_802BEC30
+{
+	1.333333d
+}
+
+#new:ConstDouble $ConstDouble_802BEC38
+{
+	0.550000d
+}
+
+#new:ConstDouble $ConstDouble_802BEC40
+{
+	0.800000d
+}
+
+PADDING: 802BEC48 to 802BEC50 (0031CC68 to 0031CC70)
+00000000 00000000
+

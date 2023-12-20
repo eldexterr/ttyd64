@@ -1,0 +1,1699 @@
+% This file adds all Badges from TTYD
+
+% List:
+%
+% Charge P
+% Super Appeal P
+% Close Call P
+% Pretty Lucky P
+% Damage Dodge P
+% Defend Plus P
+% Last Stand P
+% Power Plus P
+% Power Rush P
+% Mega Rush P
+% P-Down, D-Up P
+% P-Up, D-Down P
+% Feeling Fine P
+% Flower Saver P
+% Happy Heart P
+% HP Drain P
+% HP Plus P
+%
+% Charge
+% Super Appeal
+% FP Drain
+% Pity Flower
+% Jumpman
+% Hammerman
+% Item Hog
+% L Emblem
+% W Emblem
+% Lucky Start
+% Return Postage
+% Fire Drive / Poison Drive
+% Tornado Jump
+% Ice Smash
+% Piercing Blow
+% Soft Stomp
+% Head Rattle
+
+%===Scrapped===
+% Simplifier
+% Unsimplifier
+% Double Dip P
+
+%===================================%
+%                                   %
+%          Partners Badges          %
+%                                   %
+%===================================%
+
+% Charge P
+%
+% The code for this badge is at StratsMenu.patch
+
+% Close Call P & Pretty Lucky P
+%
+% From ~Func:calc_enemy_test_target
+@Hook 1A5BDC % 802772FC
+{
+    PUSH    RA, A0, V0, T0, S0
+    % Check if current actor is Partner
+    ADDIU	V0, R0, 0100 % .Actor:Partner
+    BNE	    A0, V0, .SkipPartnerBadges
+    CLEAR   S1
+    % Check all Partner's Lucky Badges
+    %
+    %==============
+    % Close Call P
+    %==============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 017E % .Item:CloseCallP
+    BEQ     V0, R0, .PrettyLuckyP
+    COPY    S0, V0
+    % Check HP
+    JAL     $GetPartnerHP
+    NOP
+    SLTIU   V0, V0, 6
+    BEQ     V0, R0, .PrettyLuckyP
+    NOP
+    .Loop_CloseCallP
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    % S0 = Amount of times this badge is active
+    ORI     T0, R0, 30` % 30% chance
+    SLT 	V0, V0, T0
+    BNEL	V0, R0, .CheckLucky
+    ADDIU	S1, R0, 0005 % trigger a lucky
+    % check copies left
+    ADDI    S0, S0, -1
+    BNE     S0, R0, .Loop_CloseCallP
+    NOP
+    %==============
+    .PrettyLuckyP
+    %==============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 017F % .Item:PrettyLuckyP
+    BEQ     V0, R0, .CheckLucky
+    COPY    S0, V0
+    .Loop_PrettyLuckyP
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    % S0 = Amount of times this badge is active
+    ORI     T0, R0, 10` % add 10% per Pretty Lucky badge
+    SLT 	V0, V0, T0
+    BNEL	V0, R0, .CheckLucky
+    ADDIU	S1, R0, 0005 % trigger a lucky
+    % check copies left
+    ADDI    S0, S0, -1
+    BNE     S0, R0, .Loop_PrettyLuckyP
+    NOP
+    .SkipPartnerBadges
+    POP     RA, A0, V0, T0, S0
+    J       80277308
+    NOP
+    .CheckLucky
+    POP     RA, A0, V0, T0, S0
+    J       802773D0
+    NOP
+}
+
+% Damage Dodge P
+%
+% This badge code is at PartnersHP.patch - Hook 1A62F0/80277A10
+
+
+% Defend Plus P & Last Stand P
+% It also has part of the code of P-Down, D-Up P & P-Up, D-Down P
+%
+% From ~Func:calc_enemy_damage_target
+@Hook 1A61B4 % 802778D4
+{
+    PUSH    A1
+    % S6 = targetActorID
+    ORI     V0, R0, 100 % .Actor:Partner
+    BNE 	S6, V0, .SkipPartnerBadges
+    SUBU	S0, S0, A0
+    %===============
+    % Defend Plus P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0181 % .Item:DefendPlusP
+    SUBU    S0, S0, V0 % S0 = Amount to deal
+    %===============
+    % P-Down, D-Up P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0186 % .Item:PDownDUpP
+    SUBU    S0, S0, V0
+    %===============
+    % P-Up, D-Down P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0187 % .Item:PUpDownP
+    ADDU    S0, S0, V0
+    %===============
+    % Last Stand P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0182 % .Item:LastStandP
+    BEQ     V0, R0, .SkipPartnerBadges
+    NOP
+    ADDI    V0, V0, -1 % get copies
+    ORI     A0, R0, 2 % divide by 2
+    ADD     A0, A0, V0
+    % check partner HP
+    JAL     $GetPartnerHP
+    NOP
+    SLTIU   A1, V0, 6
+    BEQ     A1, R0, .SkipPartnerBadges
+    NOP
+    % S0=damage to deal
+    DIV     S0, A0
+    MFLO    S0
+    .SkipPartnerBadges
+    BNE     S6, R0, .SkipMarioCode
+    NOP
+    POP     A1
+    J       802778DC
+    NOP
+    .SkipMarioCode
+    POP     A1
+    J       80277958
+    NOP
+}
+
+% Power Plus P, Power Rush P & Mega Rush P
+% It also has part of the code of P-Down, D-Up P & P-Up, D-Down P and HP Drain P
+%
+% Plus attack buffs/debuffs from extraData
+%
+% From ~Func:calc_partner_damage_enemy
+@Hook 1AD298 % 8027E9B8
+{
+    PUSH    S0, T0, R0, R0, R0, A1, A2, A3
+    % Bow's Smack
+    %
+    % Check DamageType:00000001 
+    %
+    % S1=battleStatus
+    LH	    S0, 017E (S4) % load attack damage
+    % Check if the IgnoreDefense was used, needed by Bow Smack & Fan Smack.
+    %
+    % Check if current partner is Bow
+    LABU    A0, 8010F2A2 % partnerID
+    ORI     A1, R0, 9 % .Partner:Bow
+    BNE     A0, A1, .CheckBadges
+    CLEAR   V1
+    % check if current mode is super bow
+    CLEAR   A0
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    CLEAR   V1
+    ORI     A1, R0, 1 % Super Bow
+    BEQ     V0, A1, .CheckBadges
+    NOP
+    LW      A0, 188 (S1) % currentAttackElement
+    LUI     A1, 0800 % IgnoreDefense
+    AND     A0, A0, A1
+    BEQ     A0, R0, .CheckBadges
+    NOP
+    % ignore all badges but check if HP Drain P is active
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018C % .Item:HPDrainP
+    BEQ     V0, R0, .End
+    NOP
+    % increment hpDrain byte (battleStatus(0x89))
+    LABU    A0, 800DC0F9
+    ADDIU   A0, A0, 1
+    % check HP Drain cap
+    SLTIU   V0, A0, 5
+    BEQL    V0, R0, .UpdateHPDrainByte_1
+    ORI     A0, R0, 5
+    .UpdateHPDrainByte_1
+    SAB     A0, 800DC0F9
+    BEQ     R0, R0, .End
+    RESERVED
+    .CheckBadges
+    %===============
+    % Power Plus P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0183 % .Item:PowerPlusP
+    ADDU    S0, S0, V0
+    %===============
+    % P-Down, D-Up P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0186 % .Item:PDownDUpP
+    SUBU    S0, S0, V0
+    %===============
+    % P-Up, D-Down P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0187 % .Item:PUpDownP
+    ADDU    S0, S0, V0
+    %===============
+    % HP Drain P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018C % .Item:HPDrainP
+    BEQ     V0, R0, .MegaRushP
+    NOP
+    ADDI    S0, S0, FFFF
+    % increment hpDrain byte (battleStatus(0x89))
+    LABU    A0, 800DC0F9
+    ADDIU   A0, A0, 1
+    % check HP Drain cap
+    SLTIU   V0, A0, 5
+    BEQL    V0, R0, .UpdateHPDrainByte_2
+    ORI     A0, R0, 5
+    .UpdateHPDrainByte_2
+    SAB     A0, 800DC0F9
+    %SUBU    S0, S0, V0 % use this line if you want to stack decreasing the attack power
+    %===============
+    .MegaRushP
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0185 % .Item:MegaRushP
+    BEQ     V0, R0, .PowerRushP
+    SW      V0, 18 (SP) % push V0
+    % check HP
+    JAL     $GetPartnerHP
+    NOP
+    SLTIU   V0, V0, 2
+    BEQ     V0, R0, .PowerRushP
+    NOP
+    % Mega Rush will take effect
+    LW      V0, 18 (SP) % pop V0
+    ORI     T0, R0, 4 % multiply amound of Mega Rush badges by 4
+    MULT    V0, T0
+    MFLO    V0
+    ADDU    S0, S0, V0
+    SW      V0, 1C (SP) % save damage boost added by Mega Rush
+    %===============
+    .PowerRushP
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0184 % .Item:PowerRushP
+    BEQ     V0, R0, .CheckBuffs
+    SW      V0, 18 (SP) % push V0
+    JAL     $GetPartnerHP
+    NOP
+    SLTIU   V0, V0, 6
+    BEQ     V0, R0, .CheckBuffs
+    NOP
+    % check if Mega Rush has been already used
+    LW      V0, 1C (SP) % load damage added by Mega Rush
+    BNE     V0, R0, .CheckBuffs
+    NOP
+    % Power Rush will take effect
+    LW      V0, 18 (SP) % pop V0
+    ORI     T0, R0, 2 % multiply amound of Power Rush badges by 2
+    MULT    V0, T0
+    MFLO    V0
+    ADDU    S0, S0, V0
+    .CheckBuffs
+    % New statuses
+    JAL     $GetActorExtraBattleData_Pointer
+    ORI     A0, R0, 0100 % .Actor:Partner
+    BEQ     V0, R0, .End
+    NOP
+    LBU     A0, F (V0) % charge byte
+    LB      V1, 6 (V0) % attack boosts
+    ADD     V1, V1, A0
+    .End
+    % pop
+    COPY    A0, S0
+    POP     S0, T0, R0, R0, R0, A1, A2, A3
+    % restore vanilla code
+    LAW     V0, 800DC070
+    J       8027E9CC
+    LW	    T0, 0018 (SP)
+}
+
+% Feeling Fine P
+%
+% From ~Func:inflict_status
+@Hook 194860 % 80265F80
+{
+    LH	    V0, 0192 (S0) % load targetActorID
+    BNE 	V0, R0, .NotMario
+    NOP
+    J       80265F8C
+    NOP
+    % Target isn't Mario, check if is Partner
+    .NotMario
+    ORI     V1, R0, 100 % .Actor:Partner
+    BNE     V0, V1, .SkipPartnerBadges
+    NOP
+    %===============
+    % Feeling Fine P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0189 % .Item:FeelingFineP
+    BEQ     V0, R0, .SkipPartnerBadges
+    NOP
+    % Feeling Fine P is active, skip entire function
+    J       8026623C
+    NOP
+    .SkipPartnerBadges
+    J       80265FC0
+    NOP
+}
+
+%====================
+% Flower Saver P
+%
+% From ~Func:btl_state_update_partner_menu
+@Hook 41D8F4 % 802A8B64
+{
+    PUSH    A0
+    % This hook also disables normal Flower Saver for Partners
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018A % .Item:FlowerSaverP
+    POP     A0
+    J       802A8B6C
+    SW	    R0, 0000 (S2)
+}
+
+% Make Flower Saver P stackeable
+@Hook 41D904 % 802A8B74
+{
+    PUSH    A0
+    % This hook also disables normal Flower Saver for Partners
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018A % .Item:FlowerSaverP
+    POP     A0
+    J       802A8B7C
+    NOP
+}
+
+% Disable Flower Fanatic for Partners
+@Function 41D924 % 802A8B94
+{
+    CLEAR   V0
+}
+
+% Substract correct amount of FP
+%
+% ~Func:deduct_current_move_fp
+@Hook:Battle 80263C14
+{
+    % check if current turn is partner
+    LAW     A1, 800DC068 % battleStatus
+    ORI     V0, R0, 13 % .BattleState:PartnerMove
+    BNE     A1, V0, .Mario
+    NOP
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018A % .Item:FlowerSaverP
+    J       80263C34
+    SUBU    S0, S0, V0
+    .Mario
+    % check if current actor is partner
+    JAL     ~Func:player_team_is_ability_active
+    ADDIU	A1, R0, 0018 % .Ability:FlowerSaver
+    J       80263C1C
+    NOP
+}
+
+% Lock move if player don't have enough FP
+%
+% ~Func:btl_init_menu_partner (func_80263914)
+@Function:Battle 80263A24
+{
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018A % .Item:FlowerSaverP
+}
+
+%====================
+% Happy Heart P
+%
+% Happy Heart P & HP Drain P checks
+%
+% From ~Func:btl_state_update_end_partner_turn
+@Hook:Battle 80247244
+{
+    SW	    V0, 0004 (S0) % restore vanilla code
+    PUSH    RA, A0, A1, A2, V0, V1, S0, S1, S2, S3
+    % Check if the wait timer is active (means $PartnerHappy was ran)
+    LAW     A0, 8029F258
+    BEQ     A0, R0, .HappyChecks
+    NOP
+    ADDI    A0, A0, FFFF % sub 1
+    SAW     A0, 8029F258
+    BLEZ    A0, .End
+    RESERVED
+    POP     RA, A0, A1, A2, V0, V1, S0, S1, S2, S3
+    J       80247294 % skip most of ~Func:btl_state_update_end_partner_turn
+    NOP
+    %
+    % S2 = partnerBattleData
+    % S0 = battleStatus
+    %
+    .HappyChecks
+    % check if this partner is HP compatible
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .End
+    NOP
+    % check if Partner doesn't have a debuff
+    CLEAR   S1
+    LBU     A0, 210 (S0) % load debuffID
+    BEQ     A0, R0, .Debuffless
+    NOP
+    % check if debuff isn't poison
+    ORI     A1, R0, 9 % .Status:Poison
+    BEQ     A0, A1, .Debuffless
+    NOP
+    % check if debuff isn't Shrink
+    ORI     A1, R0, A % .Status:Shrink
+    BEQ     A0, A1, .Debuffless
+    NOP
+    BEQ     R0, R0, .CheckHP
+    CLEAR   S0
+    .Debuffless
+    % check if Outta Sight is true
+    LBU     A1, 9A (S0) % load outta sight bool
+    BNE     A1, R0, .CheckHP
+    CLEAR   S0
+    %===============
+    % Happy Heart P
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018B % .Item:HappyHeartP
+    BEQ     V0, R0, .HPDrainP
+    COPY    S0, V0 % S0 = Amount to heal from HappyHeart
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 50`
+    BEQL    V0, R0, .HPDrainP
+    CLEAR   S0
+    %===============
+    .HPDrainP
+    %===============
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018C % .Item:HPDrainP
+    BEQ     V0, R0, .CheckHP
+    CLEAR   S1
+    LABU    S1, 800DC0F9 % hpDrain byte (battleStatus(0x89))
+    ADDI    V0, V0, -1
+    ADDU    S1, S1, V0 % add +1 per extra HPDrainP
+    SAB     R0, 800DC0F9 % clear hpDrain byte
+    .CheckHP
+    % S0 = Amount to Heal from Happy Heart
+    % S1 = Amount to Heal from HP Drain
+    %
+    % Check if all registers are empty
+    %
+    % S0 & S1
+    ANDI    A2, S0, FFFF
+    ANDI    A3, S1, FFFF
+    OR      V0, A2, A3
+    BEQ     V0, R0, .End 
+    NOP
+    % give boost
+    %
+    ORI     A0, R0, 30`
+    SAW     A0, 8029F258 % Battle wait timer (Wait until timer goes back to zero to advance to the next actor turn)    
+    LIO     A0, $PartnerHappy
+    ORI     A1, R0, 000A
+    JAL     ~Func:start_script
+    CLEAR   A2
+    % V0 = script_context*
+    %
+    % set amount to heal in script's vars A/B & 8/9
+    SW      S1, AC (V0) % set varA / Amount to heal from HP Drain
+    SW      S0, B0 (V0) % set varB / Amount to heal from Happy Heart
+    POP     RA, A0, A1, A2, V0, V1, S0, S1, S2, S3
+    J       80247294 % skip most ~Func:btl_state_update_end_partner_turn
+    NOP
+    .End
+    POP     RA, A0, A1, A2, V0, V1, S0, S1, S2, S3
+    % restore vanilla code
+    JAL     ~Func:btl_check_enemies_defeated
+    NOP
+    J       8024724C
+    NOP
+}
+
+#new:Data $PartnerHappy_ScriptBool
+{ 00000000 }
+
+% Base code tooked from PlayerHappy - 1B7644 / 80288D64
+#new:Script:Battle $PartnerHappy
+{
+    Call  $WriteAddress ( $PartnerHappy_ScriptBool 2 .True .False .False )
+    Thread
+        Loop
+            % Don't move to next turn until the script ends
+            Call  $WriteAddress ( 8029F258 2 35` .False .False ) % Battle, wait timer between turns
+            Call  $ReadAddress ( $PartnerHappy_ScriptBool 2 *Var0 .False .False )
+            If *Var0 == .False
+                BreakLoop
+            EndIf
+            Wait  1
+        EndLoop
+    EndThread
+    % *VarA = Amount to Heal (HP Drain)
+    Call  SetBattleFlagBits2 ( 00000010 .True ) % enable all partner animations
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  8024E6B4      ( 00000002 ) % SetBattleCamPreset and wait until the camera is done, something like that basically.
+    %
+    Set   *Var0 4 % hurt
+    % HP
+    Set   *Var1 *VarA
+    Add   *Var1 *VarB
+    Add   *Var1 *Var8
+    If *Var1 > 0
+        Set   *Var0 5 % happy
+    EndIf
+    Exec  $SetPartnerAnimation_Battle
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    % This function dispatches the "Happy" & "HP Drain" labels
+    %
+    % Reads VarA & VarB to know what label to show
+    Call  802619E8      ( *Var0 *Var1 *Var2 ) % xyz
+    Add   *Var0  00000000 
+    Add   *Var1  00000023 
+    % VarA = Amount to heal from HP Drain
+    % VarB = Amount to heal from Happy Heart
+    Set   *Var3  *VarA 
+    Add   *Var3  *VarB 
+    If  *Var3  !=  00000000 
+        Call  FXRecoverHP   ( *Var0 *Var1 *Var2 *Var3 )
+    EndIf
+    Set   *Var3  *VarA 
+    Add   *Var3  *VarB 
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  00000019 
+    Call  802D7520      ( *Var0 *Var1 *Var2 *Var3 )
+    %Wait  10`
+    Call  $WriteAddress ( $PartnerHappy_ScriptBool 2 .False .False .False ) % unfreeze timer
+    Call  $Heal_PlayerTeam ( .Actor:Partner *Var3 )
+    Wait  30`
+    Set   *Var0 0 % idle
+    Exec  $SetPartnerAnimation_Battle
+    Call  80261B40 % FreeLabelsIcons (reads varA-C)
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Call  SetBattleFlagBits2 ( 00000010 .False )
+    Return
+    End
+}
+
+%====================
+% HP Plus P
+%
+% From ~Func:enforce_hpfp_limits
+@Hook 80D34 % 800E7884
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, T0, T1, T2, S0, S1, S2
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018D % .Item:HPPlusP
+    COPY    S0, V0
+    % Check if the Max HP need to be modified, check if the
+    % HP byte is equal to the current active HP Plus P badges
+    LIO     A1, *HPPlusPByte
+    JAL     ~Func:get_variable
+    RESERVED
+    COPY    S1, V0
+    BEQ     S1, S0, .End % Byte and activated badges are the same, just end the function
+    NOP
+    % S0 = HP Plus P active
+    % S1 = HPPlusP Byte
+    BEQ     S1, R0, .SetMaxHP
+    CLEAR   S2
+    .GetAmountToDecrease
+    % get amount added by the HP Plus badges
+    ORI     T0, R0, 5
+    MULT    T0, S1
+    MFLO    S2
+    % S0 = HP Plus P active
+    % S1 = HPPlusP Byte
+    % S2 = Amount to substract to get vanilla HP
+    .SetMaxHP
+    % Set every partner new max HP
+    LIO     A0, 8010F2B2 % Goombario's Max HP, first partner
+    CLEAR   A3
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    COPY    T1, V0
+    .Loop
+    LBU     A1, 0 (A0) % load partner max HP
+    ORI     A2, R0, 5
+    MULT    S0, A2
+    MFLO    A2
+    SUBU    A1, A1, S2 % get original max HP
+    ADDU    A1, A1, A2 % get new max HP
+    % check max hp cap
+    SLTIU   V0, A1, 100`
+    BEQL    V0, R0, .SetNewPartnerHP
+    ORI     A1, R0, 99`
+    .SetNewPartnerHP
+    SB      A1, 0 (A0) % set partner max HP
+    .GetNextPartner
+    ADDIU   A0, A0, 8 % go to next partner
+    % check if this partner data is empty
+    %
+    % check if this is the last partner
+    ADDI    T2, T1, FFFF
+    BEQ     A3, T2, .MoveCounter % skip checking if next data is empty
+    NOP
+    LBU     A1, 0 (A0)
+    BEQ     A1, R0, .GetNextPartner
+    NOP
+    .MoveCounter
+    ADDIU   A3, A3, 1
+    SLTU    T0, A3, T1
+    BNE     T0, R0, .Loop
+    NOP
+    LIO     A1, *HPPlusPByte
+    JAL     ~Func:set_variable
+    COPY    A2, S0 % S0 = HP Plus P active
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, T0, T1, T2, S0, S1, S2
+    % restore vanilla code
+    LIO     S0, 8010F290 % load playerData
+    J       800E788C
+    RESERVED
+}
+
+%===================================%
+%                                   %
+%           Mario Badges            %
+%                                   %
+%===================================%
+
+% Charge
+%
+% The code for this badge is at StratsMenu.patch
+
+%=====================
+% FP Drain
+
+#export:Data $FPDrainByte
+{ 00b }
+
+% Reduce attack power by 1 and increment $FPDrainByte
+%
+% From ~Func:calc_player_damage_enemy
+@Hook 1A096C % 8027208C
+{
+    PUSH    RA, A0, A1, A2, V0
+    % Read attack boost from $extraData
+    LIO     V0, $ExtraActorData_Everyone
+    LB      A0, 6 (V0) % attack boosts
+    LBU     A1, F (V0) % charge byte
+    ADD     A0, A0, A1
+    ADD     S0, S0, A0
+    %==FP Drain===
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 016E % .Item:FPDrain
+    BEQ     V0, R0, .End
+    NOP
+    ADDI    S0, S0, -1 % decrease attack power
+    LIO     A0, $FPDrainByte
+    LBU     A1, 0 (A0)
+    ADDIU   A1, A1, 1
+    /% skip if player is doing a first strike
+    LAW     A2, 800DC068 % battleStatus
+    ORI     V0, R0, 2 % .BattleStatus:BeginFirstStrike
+    BEQ     A2, V0, .End
+    NOP%/
+    .CheckFPDrainCap
+    % Check FP Drain cap
+    SLTIU   A2, A1, 6
+    BNEL    A2, R0, .End
+    SB      A1, 0 (A0)
+    .End
+    POP     RA, A0, A1, A2, V0
+    % restore vanila code
+    J       80272094
+    ADDIU	A1, R0, 0009
+}
+
+% Check if player have an FP Drain to don't trying to skip
+% the happy phase
+%
+% From ~Func:calc_player_damage_enemy
+@Hook 174DEC % 8024650C
+{
+    PUSH    RA, A0, A1, A2, A3, V0
+    % V0=amount of Happy Flower equipped
+    %
+    % Happy Flower check
+    BNE     V0, R0, .TriggerHappy
+    NOP
+    % FP Drain check
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 016E % .Item:FPDrain
+    BNE     V0, R0, .TriggerHappy
+    NOP
+    % restore vanilla code
+    BEQ 	R0, R0, .SkipHappy
+    NOP
+    % Trigger happy phase
+    .TriggerHappy
+    POP     RA, A0, A1, A2, A3, V0
+    J       80246514
+    ADDIU	V0, R0, 0005
+    .SkipHappy
+    POP     RA, A0, A1, A2, A3, V0
+    J       802465D4
+    ADDIU	V0, R0, 0005
+}
+
+
+
+% FP Drain code
+%
+% From ~Func:btl_state_update_end_player_turn
+@Hook 174EA8 % 802465C8
+{
+    PUSH    RA, A0, A1, A2, A3, V0
+    CLEAR   GP
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 016E % .Item:FPDrain
+    BEQ     V0, R0, .End
+    NOP
+    % check if player attacked any enemy
+    %
+    % S3 = battleStatus
+    LABU    A0, $FPDrainByte
+    SAB     R0, $FPDrainByte % clear
+    BEQ     A0, R0, .End
+    RESERVED
+    ADDI    V0, V0, -1
+    % GP = FP to Heal from FP Drain
+    ADDU    GP, A0, V0 % add +1 per extra FPDrain
+    LW      V0, 24 (SP) % restore V0
+    ADDU    V0, V0, GP % V0 = total amount to heal (hp+fp)
+    SW      V0, 24 (SP) % save V0
+    .End
+    LW      V0, 24 (SP) % restore V0
+    BNE	    V0, R0, .TriggerHappy
+    NOP
+    % Don't trigger happy
+    POP     RA, A0, A1, A2, A3, V0
+    J       802465D0
+    ADDIU	V0, R0, 001E
+    .TriggerHappy
+    POP     RA, A0, A1, A2, A3, V0
+    J       802465E4
+    ADDIU	V0, R0, 001E
+}
+
+% save amount of fp added by FP Drain in varD, needed by the script below
+%
+% Patch ~func:btl_state_update_begin_partner_turn
+@Hook 174EE0 % 80246600
+{
+    PUSH    RA, A0, A1, V0, V1
+    COPY    V1, V0
+    .FPDrain
+    SW	    GP, 00B8 (V1) % write in varD
+    CLEAR   GP
+    POP     RA, A0, A1, V0, V1
+    % restore vanilla code
+    SW	    A0, 01D4 (S0)
+    J       80246608
+    LW	    V0, 0144 (A0)
+}
+
+% Happy Label - Make possible for the 3 labels to appear together, instead of only 2.
+%
+% From func_802619E8 % ~Func:create_happylabels
+@Hook 1903FC % 80261B1C
+{
+    JAL	    ~Func:set_hud_element_render_pos
+    NOP
+    LW	    V0, 0024 (SP)
+    ADDIU	V0, V0, 0009
+    J       80261B24
+    SW	    V0, 0024 (SP) % add to y pos
+}
+
+% Added the "FP Drain" label when varD isn't zero
+%
+% From func_802619E8 % ~Func:create_happylabels
+@Hook 190404 % 80261B24
+{
+    LW	    V0, 00B8 (S2) % read varD
+    BLEZ	V0, .End
+    NOP
+    LIO     A0, $IconScript_FPDrain
+    JAL	    ~Func:create_hud_element
+    RESERVED
+    LW	    A1, 0020 (SP) % load actor's x pos
+    LW	    A2, 0024 (SP) % load actor's y pos
+    COPY    A0, V0 % icon index
+    SAW     A0, 8029FBA4
+    JAL	    ~Func:set_hud_element_render_pos
+    RESERVED
+    .End
+    % restore vanilla code
+    LW	    RA, 003C (SP)
+    J       80261B2C
+    LW	    S2, 0038 (SP)
+}
+
+% Added the "FP Drain" label when varD isn't zero
+%
+% From func_80261B40 % FreeLabelsIcons (API)
+@Hook 190474 % 80261B94
+{
+    LW	    V0, 00B8 (S0) % load varD
+    BLEZ	V0, .End
+    NOP
+    LAW     A0, 8029FBA4 % load FP Drain label icon index
+    JAL     ~Func:free_hud_element
+    RESERVED
+    .End
+    % restore vanilla code
+    LW	    RA, 0014 (SP)
+    J       80261B9C
+    LW	    S0, 0010 (SP)
+}
+
+% Add varD for the amount of FP added by FP Drain
+@Script:Battle 1B7644 % 80288D64 - PlayerHappy
+{
+    ExecWait $PlayerHappy
+    Return
+    End
+}
+
+#new:Script:Battle $PlayerHappy
+{
+    Call  UseIdleAnimation  ( .Actor:Player .False )
+    Call  8024E6B4      ( 00000002 )
+    Set   *Var0 .PlayerAnim:Panting
+    % HP
+    Set   *Var1 *VarA
+    Add   *Var1 *VarB
+    Add   *Var1 *Var8
+    If *Var1 > 0
+        Set   *Var0 .PlayerAnim:ThumbsUp
+    EndIf
+    % FP
+    Set   *Var1 *VarC
+    Add   *Var1 *VarD
+    Add   *Var1 *Var9
+    If *Var1 > 0
+        Set   *Var0 .PlayerAnim:ThumbsUp
+    EndIf
+    Call  SetAnimation  ( .Actor:Player 00000000 *Var0 )
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    % This function dispatches the "Happy" & "HP Drain" labels
+    %
+    % Reads VarA,B,C,D to know what labels to show
+    Call  802619E8      ( *Var0 *Var1 *Var2 )
+    Add   *Var0  00000000 
+    Add   *Var1  00000023 
+    % VarA = Amount to heal from HP Drain
+    % VarB = Amount to heal from Happy Heart
+    Set   *Var3  *VarA 
+    Add   *Var3  *VarB 
+    If  *Var3  !=  00000000 
+        Call  FXRecoverHP   ( *Var0 *Var1 *Var2 *Var3 )
+    EndIf
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var0  00000014 
+    Add   *Var1  00000019 
+    % VarC = Amount to heal from Happy Flower
+    % VarD = Amount to heal from FP Drain
+    Set *Var3 *VarC
+    Add *Var3 *VarD
+    If  *Var3  !=  00000000 
+        Call  FXRecoverFP   ( *Var0 *Var1 *Var2 *Var3 )
+    EndIf
+    Set   *Var3  *VarA 
+    Add   *Var3  *VarB 
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var1  00000019 
+    Call  802D7520      ( *Var0 *Var1 *Var2 *Var3 )
+    Wait  10`
+    % Heal - HP
+    Set   *Var0 *VarA % HP Drain
+    Add   *Var0 *VarB % Happy Heart
+    Call  $Heal_PlayerTeam ( .Actor:Player *Var0 )
+    % Heal - FP
+    Set   *Var0 *VarC % Happy Flower
+    Add   *Var0 *VarD % FP Drain
+    Call  $RecoverFP ( *Var0 )
+    Wait  30`
+    Call  SetAnimation      ( .Actor:Self 00000000 00010002 )
+    Call  80261B40 % FreeLabelsIcons (reads varA-C)
+    Call  UseIdleAnimation  ( .Actor:Player .True )
+    Return
+    End
+}
+
+% Icon Data
+
+#new:Data $Icon_FPDrain
+{ ~RasterFile:CI-4:misc/fp_drain.png }
+
+#new:Data $Palette_FPDrain
+{ ~PaletteFile:CI-4:misc/fp_drain.png }
+
+% Icon Script
+
+#new:Data $IconScript_FPDrain
+{
+00000008 00000005 00000016 00000004
+00000002 0000003C $Icon_FPDrain $Palette_FPDrain
+00000003 00000000
+}
+
+%=====================
+
+% Pity Flower
+%
+% From ~Func:calc_enemy_damage_target
+@Hook:Battle 1A6A94 % 802781B4
+{
+PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+% Check if target is Player
+ADDI    S1, S1, -C
+% S1 = attacker's actor data
+LHU     A0, 428 (S1) % load targetID
+BNE     A0, R0, .End
+NOP
+JAL     $IsBadgeActivated_Stack
+ORI     A0, R0, 016F % .Item:PityFlower
+BEQ     V0, R0, .End
+NOP
+% Player has Pity Flower equipped
+% "roll the dice" by the amount of pity
+% badges equipped.
+COPY    S0, V0
+CLEAR   S2
+CLEAR   S3
+.Loop
+% S0 = Amount of pity badges equipped
+% S1 = $actor
+% S2 = Loop counter
+% S3 = amount of fp to give
+JAL     ~Func:rand_int
+ORI     A0, R0, 100`
+SLTIU   A0, V0, 33` % 33% to give 1fp per pity badge
+ADDU    S3, S3, A0
+ADDIU   S2, S2, 1
+SLTU    A0, S2, S0
+BNE     A0, R0, .Loop
+NOP
+% check if mario will get at least 1fp
+BEQ     S3, R0, .End
+NOP
+% show flying flower
+COPY    T0, S3
+LAW     S1, 800DC148 % load player data pointer
+JAL     $ShowFlyingStat
+ORI     A0, R0, 1 % Flower
+% play sfx
+JAL     ~Func:sfx_play_sound
+ORI     A0, R0, 2055 % heal
+% give FP
+JAL     ~Func:recover_fp
+COPY    A0, S3
+.End
+POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+% Use ~Func:show_damage_popup instead to enable multiple
+% pop ups to appear, needed for attacks that hurt mario & partner at the same time
+JAL	    ~Func:show_damage_popup
+LW	    A2, 0014 (S1)
+J       802781BC
+NOP
+}
+
+
+%=======================
+% Jumpman & Hammerman
+%=======================
+
+% Jumpman & Hammerman - Disable Commands
+%
+% From ~Func:btl_state_update_normal_start
+@Hook 16FD08 % 80241428
+{
+    PUSH    RA, A0, V0
+    %===========
+    % Jumpman
+    %===========
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0170 % .Item:Jumpman
+    BEQ     V0, R0, .Hammerman
+    NOP
+    % Disable Boots command
+    LABU    A0, 800DC0E1 % commands flags
+    ANDI    A0, A0, FFFD % disable bit1 (Hammer command)
+    SAB     A0, 800DC0E1
+    %===========
+    .Hammerman
+    %===========
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0171 % .Item:Hammerman
+    BEQ     V0, R0, .End
+    NOP
+    % Disable Hammer command
+    LABU    A0, 800DC0E1 % commands flags
+    ANDI    A0, A0, FFFE % disable bit0 (Boots command)
+    SAB     A0, 800DC0E1
+    .End
+    POP     RA, A0, V0
+    % restore vanilla code
+    SW	    V0, 0074 (S4)
+    J       80241430
+    SB	    R0, 0088 (S4)
+}
+
+% Jumpman & Hammerman - Boost attack power
+%
+% From ~Func:calc_player_damage_enemy
+@Hook:Battle 1A0924 % 80272044
+{
+    PUSH    RA, A0, V0
+    % S0 = Damage to deal
+    %===========
+    % Jumpman
+    %===========
+    % Check if player is doing a Hammer first strike
+    LHU     A0, 17C (S4) % selectedMoveID
+    ORI     V0, R0, 6 % Hammer First Strike
+    BEQ     A0, V0, .Hammerman
+    NOP
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0170 % .Item:Jumpman
+    ADDU    S0, S0, V0
+    %===========
+    % Hammerman
+    %===========
+    .Hammerman
+    % Check if player is doing a jump first strike
+    LHU     A0, 17C (S4) % selectedMoveID
+    ORI     V0, R0, 1D % Boots First Strike
+    BEQ     A0, V0, .End
+    NOP
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0171 % .Item:Hammerman
+    ADDU    S0, S0, V0
+    .End
+    POP     RA, A0, V0
+    % restore vanilla code
+    JAL     ~Func:player_team_is_ability_active
+    ADDIU	A1, R0, 0015 % .Ability:Berserk
+    J       8027204C
+    NOP
+}
+
+%===============
+% L & W Emblem
+%===============
+
+% Overwrite Mario palette each frame.
+%
+% From ~Func:spr_component_update_finish
+@Hook 1007B4 % 802DD6C4
+{
+    /% 802DF588 - Mario Sprite Data - Pointer
+    [Pointer + 28](4 Bytes) Component_00 Palette
+    [Pointer + 2C](4 Bytes) Component_00 Palette (Battle)
+    [Pointer + 63](1 Byte)  Component_01 Byte Flag?
+    [Pointer + 68](4 Bytes) Component_01 Palette
+    [Pointer + 7C](4 Bytes) Component_01 Palette (Battle)
+
+    80074094 - Current Mode
+    0x00 = Overworld
+    0x01 = Battle
+    0x02 = Pause
+    %/
+
+    % This SW writes stuff for all NPCs/Actors in the map
+    % Check if the one trying to be overwrited right now is Mario's palette
+    PUSH    RA, T0, T1, T2, T3, T4, A0, S0, S1, V0
+    LAW     T0, 802DF588 % Mario Sprite Data (Pointer)
+    % If the pointer isn't even loaded skip everything
+    BEQ     T0, R0, .End
+    NOP
+    % Check if mario is inside a battle
+    LABU    T1, 80074094 % Current Mode
+    BNEL    T1, R0, .InBattle0
+    ORI     T1, R0, 14
+    .InOverworld0
+    ORI     T1, R0, 10
+    .InBattle0
+    % The current actor/npc about to be overwriten isn't Mario comp_00?
+    % A0 = Mario Sprite Data Pointer
+    ADDU    T0, T0, T1
+    BEQ     T0, A0, .LoadPaletteID
+    NOP
+    % Check if the current actor/npc to be overwriten is maybe Mario comp_01 instead?
+    ORI     T1, R0, 50 % Comp_01
+    ADDU    T0, T0, T1
+    BNE     T0, A0, .End
+    NOP
+    .LoadPaletteID
+    % Don't overwrite the palette if mario have the following animation
+    LAW     T0, 802DF58C % Mario Universal Animation ID
+    LIO     T1, 0001002F % burned
+    BEQ     T0, T1, .End
+    NOP
+    % Get palette to use
+    JAL     $IsBadgeEquipped
+    ORI     A0, R0, 0173 % .Item:LEmblem
+    COPY    T1, V0
+    JAL     $IsBadgeEquipped
+    ORI     A0, R0, 0174 % .Item:WEmblem
+    ADDU    A0, V0, T1
+    % T1 = L Emblem byteflag
+    % V0 = W Emblem byteflag
+    % A0 = L+B Emblem byteflags summed
+    %
+    % use normal palette
+    BEQL    A0, R0, .SkinSet
+    CLEAR   T1 % Normal
+    % waluigi
+    SLTIU   A0, A0, 2
+    BEQL    A0, R0, .SkinSet
+    ORI     T1, R0, 3 % Waluigi
+    % wario
+    BEQL    T1, R0, .SkinSet
+    ORI     T1, R0, 2 % Wario
+    ORI     T1, R0, 1 % Luigi
+    .SkinSet
+    LW      V0, 34 (SP) % restore V0
+    COPY    S0, T1 % copy skin index in S0
+    LW      A0, 28 (SP) % load mario sprite data back to A0
+    % check if current sprite is 8bitMario
+    LIO     T1, 8010EFCC % playerFlags2
+    LBU     T1, 2 (T1)
+    ANDI    T1, T1, 40 % bit6 - playerFlags2(0x02(bit6)) = 8bitMario bitflag
+    BNE     T1, R0, .8bitMario
+    NOP
+    % GET PALETTE ID %
+    % The skin index is now set, now load the actual palette ID
+    BEQ     S0, R0, .LoadPalette % Normal
+    ORI     T1, R0, 1
+    BEQL    S0, T1, .LoadPalette
+    ORI     S0, R0, 21 % Luigi
+    ORI     T1, R0, 2
+    BEQL    S0, T1, .LoadPalette
+    ORI     S0, R0, 22 % Wario
+    ORI     T1, R0, 3
+    BEQL    S0, T1, .LoadPalette
+    ORI     S0, R0, 23 % Waluigi
+    BEQ     R0, R0, .LoadPalette
+    NOP
+    .8bitMario
+    % The skin index is now set, now load the actual palette ID
+    ORI     T1, R0, 1
+    BEQL    S0, R0, .LoadPalette % Normal
+    ORI     S0, R0, 18
+    BEQL    S0, T1, .LoadPalette
+    ORI     S0, R0, 19 % Luigi
+    ORI     T1, R0, 2
+    BEQL    S0, T1, .LoadPalette
+    ORI     S0, R0, 1A % Wario
+    ORI     T1, R0, 3
+    BEQL    S0, T1, .LoadPalette
+    ORI     S0, R0, 1B % Waluigi
+    % S0 = Skin ID
+    .LoadPalette
+    #DEF    S0, *SkinID
+    % Check if mario is inside a battle
+    LAW     T0, 802DF588 % Mario Sprite Data (Pointer)
+    LABU    T1, 80074094 % Current Mode
+    BNEL    T1, R0, .InBattle
+    ORI     T1, R0, 14
+    .InOverworld
+    ORI     T1, R0, 10
+    /% Hammer Animations
+    Hammer's animations works a little different to all other animations
+    because it uses 2 components instead of 1, on all other animations
+    Mario's body is always component 00 but on the hammer ones he is component 01
+    and the hammer is component 00 %/
+    % Check if the current animation is a hammer one to overwrite component 01 palette instead
+    LBU     T2, 63 (T0) % Component 01 byte flag
+    BEQ     T2, R0, .Overwrite_Component % If component 01 is false
+    NOP
+    .OverwriteHammer
+    % Some animations use 2 components too but Mario body is component 00 instead of 01
+    % like the hammer ones, If the current animation is one of those, overwrite comp_00 not 01
+    LAW     T3, 8010F080 % Mario's Animation ID (Overworld)
+    /%
+    Check the following animations:
+    0006000C
+    0006000E
+    0006000F
+    0008001E
+    %/
+    LIO     T2, 0006000C
+    BEQ     T3, T2 .Overwrite_Component
+    LUI     T2, 0006
+    ORI     T2, T2, 000E
+    BEQ     T3, T2 .Overwrite_Component
+    LUI     T2, 0006
+    ORI     T2, T2, 000F
+    BEQ     T3, T2 .Overwrite_Component
+    LUI     T2, 0008
+    ORI     T2, T2, 001E
+    BEQ     T3, T2 .Overwrite_Component
+    NOP
+    % Overwrite Component 01 Palette - Overworld
+    % Check if the current actor/npc to be overwriten is Mario comp_01?
+    ADDU    T0, T0, T1
+    ORI     T1, R0, 50 % Comp_01
+    ADDU    T0, T0, T1
+    BNE     T0, A0, .End
+    NOP
+    BEQ     R0, R0, .Overwrite_Component
+    NOP
+    .InBattle
+    % Check if Mario is a stone or poisoned to not overwrite the ID
+    LIO     T3, 800DC148 % Mario's Actor Data Pointer
+    LW      T2, 0 (T3)
+    LBU     T3, 210 (T2) % Mario's Status
+    ORI     T4, R0, 9 % Poison
+    BEQ     T3, T4, .End
+    ORI     T4, R0, C % Stone
+    LBU     T3, 214 (T2) % Mario's Status 2
+    BEQ     T3, T4, .End
+    NOP
+    /% Some battle animations Mario's body is in comp_01 instead of comp_00 too
+    check if the current animation is one of those, to write comp_01 instead of 00.
+
+    Check the following animations:
+    00030013
+    00030019
+    0003001A
+    00030020
+    00030021
+    0004001B
+    00040021
+    00040026
+    00040027
+    %/
+    LAW     T3, 802DF58C % Mario's Animation ID (Battle)
+    LIO     T2, 00030013
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .00030019
+    LIO     T2, 00030019
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .0003001A
+    LIO     T2, 0003001A
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .00030020
+    LIO     T2, 00030020
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .00030021
+    LIO     T2, 00030021
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .0004001B
+    LIO     T2, 0004001B
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .00040021
+    LIO     T2, 00040021
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .00040026
+    LIO     T2, 00040026
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    .00040027
+    LIO     T2, 00040027
+    BEQ     T3, T2, .Overwrite_Comp01
+    NOP
+    % The current animation isn't one of those?
+    % Check if the current pointer in A0 is for comp_01 to skip overwriting the palette then
+    ADDU    T0, T0, T1
+    ORI     T1, R0, 50 % Comp_01
+    ADDU    T0, T0, T1
+    BEQ     T0, A0, .End
+    NOP
+    BEQ     R0, R0, .Overwrite_Component
+    NOP
+    .Overwrite_Comp01 % Battle
+    % skip if the pointer in A0 is for comp_00
+    ADDU    T0, T0, T1 % Comp_00
+    BEQ     T0, A0, .End
+    NOP
+    .Overwrite_Component
+    % Mario's palette is about to be overwrited
+    COPY    V0, *SkinID % overwrite palette
+    .End
+    #UNDEF  S0
+    POP     RA, T0, T1, T2, T3, T4, A0, S0, S1, R0
+    % Vanilla code %
+    BNE 	A3, R0 .Falso
+    SW	    V0, 0018 (A0) % Write Palette
+    J       802DD6D4
+    NOP
+    .Falso
+    J       802DD6CC
+    NOP
+}
+
+% Lucky Start
+%
+% From ~Func:load_player_actor
+@Hook 193440 % 80264B60
+{
+    PUSH    RA, A0, V0, S1
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0175 % .Item:luckyStart
+    BEQ     V0, R0, .End
+    NOP
+    %============
+    % Lucky Start
+    %============
+    COPY    S1, S0 % $playerActorData
+    % get random status
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   A0, V0, 50`
+    BNE     A0, R0, .LuckyStart_HPFP % 50%
+    SLTIU   A0, V0, 70`
+    BNE     A0, R0, .LuckyStart_Inv % 20%
+    SLTIU   A0, V0, 101`
+    BNE     A0, R0, .LuckyStart_Elec % 30%
+    NOP
+    .LuckyStart_HPFP
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 1 % 50%
+    BNE     V0, R0, .LuckyStart_FP
+    NOP
+    .LuckyStart_HP
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    ORI     A0, R0, 2 % amount to heal
+    SB      A0, 8 (V0)
+    ORI     A0, R0, 4 % buff's turns
+    BEQ     R0, R0, .End
+    SB      A0, 9 (V0)
+    .LuckyStart_FP
+    JAL     $GetActorExtraBattleData_Pointer
+    CLEAR   A0 % .Actor:Player
+    ORI     A0, R0, 2 % amount to heal
+    SB      A0, A (V0)
+    ORI     A0, R0, 4 % buff's turns
+    BEQ     R0, R0, .End
+    SB      A0, B (V0)
+    .LuckyStart_Inv
+    % Make enemy invicible
+    ORI     A0, R0, E % .Status:Transparent
+    SB      A0, 218 (S1) % transStatus
+    ORI     A0, R0, 2 % turns
+    BEQ     R0, R0, .End
+    SB      A0, 219 (S1) % transparent duration
+    .LuckyStart_Elec
+    % Make enemy static
+    ORI     A0, R0, B % .Status:Static
+    SB      A0, 212 (S1) % staticStatus
+    ORI     A0, R0, 3 % turns
+    BEQ     R0, R0, .End
+    SB      A0, 213 (S1) % static duration
+    .End
+    POP     RA, A0, V0, S1
+    % restore vanilla code
+    LW	    RA, 0020 (SP)
+    J       80264B68
+    LW	    S1, 001C (SP)
+}
+
+%===============
+% Return Postage
+%===============
+
+% Return Postage main code
+%
+% ~Func:calc_enemy_damage_target
+@Hook 1A6444 % 80277B64
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S1
+    ADDI    S1, S1, -C
+    % S1 = attacker's actor data
+    LHU     A0, 428 (S1) % load targetID
+    BNE     A0, R0, .End
+    NOP
+    % check if actor deal any damage
+    LHU     A0, 17E (S4) % battleStatus(0x180) = currentAttackDamage
+    BEQ     A0, R0, .End
+    NOP
+    % check if badge is active
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0176 % .Item:ReturnPostage
+    BEQ     V0, R0, .End
+    NOP
+    %==============
+    % ReturnPostage
+    %==============
+    COPY    A0, S1
+    JAL     $dispatch_event_actor_dontKillScripts
+    ORI     A1, R0, A % .Event:Hit
+    .End
+    JAL     $Function_GlitzPit_DamageChallenge
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1, S1
+    % restore vanilla code
+    SH      V0, 0180 (S4) % Amount Received
+    J       80277B6C
+    SH	    V0, 01F8 (S3)
+}
+
+% A0 = $actor
+%
+% A1 = event
+#new:Function $dispatch_event_actor_dontKillScripts % Don't kill the HandleEvent and Take turn scripts
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  SW        RA, 1C (SP)
+   10:  SW        S2, 18 (SP)
+   14:  SW        S1, 14 (SP)
+   18:  LW        S2, 1D8 (S0) % load HandleEventScript scriptID
+   1C:  LW        V0, 1C8 (S0) % load HandleEventScript
+   20:  LW        S1, 1E8 (S0) % load HandleEventID scriptID
+        % If actor doesn't have a HandleScript just end the function
+   24:  BEQ       V0, R0, .End % .o50
+   28:  COPY      A0, V0
+   2C:  SB        A1, 1F0 (S0) % set lastEvent
+        LIO       A0, $Script_DispatchActorHandleEvent
+   30:  ADDIU     A1, R0, A
+   34:  JAL       ~Func:start_script
+   38:  ADDIU     A2, R0, 20
+        LW        V1, 1C8 (S0) % load HandleEventScript
+        SW        V1, 84  (V0) % save HandleEventScript in Script's var0
+   3C:  SW        V0, 1D8 (S0) % save HandleEvent Evt*
+   40:  LW        V1, 144 (V0) % load scriptID
+   44:  LH        A0, 192 (S0) % load actorID
+   48:  SW        V1, 1E8 (S0) % save HandleEventScriptID
+   4C:  SW        A0, 148 (V0) % save actorID in Evt(0x148)
+        /%.o50
+   50:  LW        V0, 1D4 (S0) % load takeTurn script's Evt*
+   54:  BEQ       V0, R0, .o70
+   58:  NOP
+   5C:  JAL       ~Func:get_script_by_index
+   60:  LW        A0, 1E4 (S0) % load takeTurnScript
+   64:  JAL       ~Func:kill_script_by_ID
+   68:  LW        A0, 1E4 (S0) % load takeTurnScript
+   6C:  SW        R0, 1D4 (S0) % nuke takeTurn script Evt*
+        .o70
+   70:  BEQ       S2, R0, .o80
+   74:  NOP
+   78:  JAL       ~Func:kill_script_by_ID
+   7C:  COPY      A0, S1 % copy onHandleEventID
+        .o80%/
+        .End
+   80:  LW        RA, 1C (SP)
+   84:  LW        S2, 18 (SP)
+   88:  LW        S1, 14 (SP)
+   8C:  LW        S0, 10 (SP)
+   90:  JR        RA
+   94:  ADDIU     SP, SP, 20
+}
+
+% Pause everything while HandleEvent is running.
+#new:Script:Battle $Script_DispatchActorHandleEvent
+{
+    Wait 3
+    SetGroup 0
+    SuspendAll 2
+    Exec    *Var0 *Var1
+    % get actorID
+    Call 	$ReadAddress ( 800DC070 1 *Var5 1A8 .False ) % battleStatus(0x1A8)=attackerActorID
+    % check if event was Hit to show the damage counter
+    Call    GetLastEvent ( *Var5 *Var4 )
+    Switch *Var4
+        Case == .Event:Hit
+            Exec    $Script_ReturnPostage_HurtEnemy
+    EndSwitch    
+    Loop % wait until the script ends
+        DoesScriptExist *Var1 *Var2
+        Wait 1
+        If *Var2 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    % Check if actor now has zero HP
+    Call GetActorHP ( *Var5 *Var4 )
+    If *Var4 == .False % Actor has zero HP
+        Call DispatchEvent ( *Var5 .Event:Death )
+    EndIf
+    ResumeAll 2
+    Return
+    End
+}
+
+#new:Script:Battle $Script_ReturnPostage_HurtEnemy
+{
+    Call 	$ReadAddress ( 800DC070 1 *Var5 1A8 .False ) % battleStatus(0x1A8)=attackerActorID
+    Call    $GetActorPointer ( *Var5 *Var6 )
+    Call    GetActorPos  ( *Var5 *Var0 *Var1 *Var2 )
+    Call 	$ReadAddress ( 800DC1F1 0 *Var3 .False .False ) % get damage to dealt
+    If *Var3 <= 0
+        Return
+    EndIf
+    Call    PlayEffect   ( ~FX:ShowDamageAmount *Var0 *Var1 *Var2 10` -50` *Var3 0 0 0 0 0 0 )
+    Call    $ReadAddress ( $Data_LastFX 2 *VarE .False .False ) % load FX pointer
+    % Hurt Enemy
+    Set     *Var4 *Var3
+    Mul     *Var4 -1
+    Call    GetActorHP ( *Var5 *Var0 )
+    Add     *Var0 *Var4
+    If *Var0 < 0
+        Set *Var0 0
+    EndIf
+    Call    SetEnemyHP ( *Var5 *Var0 )
+    Thread
+        Wait    20`
+        Call    RemoveEffect ( *VarE )
+    EndThread
+    Return
+    End
+}
+
+/% Call $GetAnimationFromEvent ( actorID event *out )
+%
+% I never bother to use this or even test it, just by
+% looking at it I know will be really unstable.
+#new:Function:Battle $GetAnimationFromEvent % unused
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    COPY    S0, A0
+    LW      S1, C (S0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S1) % get arg0
+    % get actor data
+    % .Actor:Self was used?
+    LIO     V1, FFFFFF81
+    BNE	    V0, V1, .GetPointer
+    COPY    A0, V0
+    LW	    A0, 0148 (S0) % load self id
+    .GetPointer
+    JAL		~Func:get_actor
+    NOP
+    COPY    S1, V0 % copy $actor
+    % get event
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S1) % get arg1
+    % S1 = $actor
+    % V0 = event
+    LW	    A0, 01C8 (S1) % load HandleEventScript
+    % now search for the animation ID by looking at the script code
+    % A0 = Actor's HandleEventScript
+    %
+    % Look for GetLastEvent (8027C4E0) when is called
+    LIO     A1, 8027C4E0 % GetLastEvent
+    .LookFor_GetLastEvent_ReadNextWord
+    LW      A2, 0 (A0)
+    BNE     A2, A1, .LookFor_GetLastEvent_ReadNextWord
+    ADDU    A0, A0, 4 % read next word
+    COPY    A3, A0
+    % Now look for:
+    % "Case == event" in Hex = 00000014 00000001 0000000X
+    % or
+    % "CaseOR == event" in Hex = 0000001D 00000001 0000000X
+    LIO     A1, 00000014 % Look for "00000014"
+    %==========
+    % Case ==
+    %==========
+    .LookFor_Event_Case
+    LW      A2, 0 (A0)
+    BNE     A2, A1, .LookFor_Event_Case
+    ADDU    A0, A0, 4 % read next word
+    % Looks like "Case ==" was found, look if 1 is the next word
+    ORI     V0, R0, 1
+    LW      A2, 0 (A0)
+    BNE     A2, V0, .LookFor_Event_Case
+    ADDU    A0, A0, 4 % read next word
+    % Now check if this case holds the event
+    LW      A2, 0 (A0)
+    BNE     A2, V0, .LookFor_Event_Case
+    ADDU    A0, A0, 4 % read next word
+    BEQ     R0, R0, .AnimationID
+    NOP
+    %==========
+    % CaseOR ==
+    %==========
+    .CaseOR
+    LIO     A1, 0000001D % Look for "0000001D"
+    .LookFor_Event_CaseOR
+    LW      A2, 0 (A0)
+    BNE     A2, A1, .LookFor_Event_CaseOR
+    ADDU    A0, A0, 4 % read next word
+    % Looks like "CaseOR ==" was found, look if 1 is the next word
+    ORI     V0, R0, 1
+    LW      A2, 0 (A0)
+    BNE     A2, V0, .LookFor_Event_CaseOR
+    ADDU    A0, A0, 4 % read next word
+    % Now check if this CaseOR holds the event
+    LW      A2, 0 (A0)
+    BNE     A2, V0, .LookFor_Event_CaseOR
+    ADDU    A0, A0, 4 % read next word
+    .AnimationID
+    % Looks like the event we was looking for was found
+    % Now search for the next animationID
+    %
+    % Search for "SetConst *Var1" in hex "00000025 00000002 FE363C81"
+    % usually that's where the animation is placed.
+    .LookFor_AnimationID
+    LIO     A1, 00000025 % Look for "00000025"
+    .LookFor_AnimationID_SetConst
+    LW      A2, 0 (A0)
+    BNE     A2, A1, .LookFor_AnimationID_SetConst
+    ADDU    A0, A0, 4 % read next word
+    % Looks like "SetConst" was found, look if 2 is the next word
+    ORI     V0, R0, 2
+    LW      A2, 0 (A0)
+    BNE     A2, V0, .LookFor_AnimationID_SetConst
+    ADDU    A0, A0, 4 % read next word
+    % Now check if the next word is var1
+    LIO     V0, FE363C81 % var1
+    LW      A2, 0 (A0)
+    BNE     A2, V0, .LookFor_AnimationID_SetConst
+    ADDU    A0, A0, 4 % read next word
+    % the animation should be in the next word
+    LW      A2, 0 (A0) % get animation
+    .SetVariable
+    LW      A1, 2 (S1) % get arg2
+    JAL     ~Func:set_variable
+    COPY    A0, S0
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}%/

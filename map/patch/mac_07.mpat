@@ -1,0 +1,901 @@
+#define .Npc:Shopkeeper1 00000001
+#define .Npc:Shopkeeper2 00000002
+#define .Npc:Shopkeeper3 00000003
+
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList]  $EntryList
+	[EntryCount] 1
+	[MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:ToadTown
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Call  MakeNpcs ( .False $NpcGroupList_mac07 )
+	Exec  $Script_MakeEntities
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+    Set   *Var0 $Script_CreateExitTriggers
+    Exec  EnterWalk
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Switch  *GB_StoryProgress
+		Case  .Story:Ch3_StarSpritDeparted  to  .Story:Ch4_StarSpiritRescued % FFFFFFF3 to 5
+			Call  SetMusicTrack ( 00000000 .Song:ShyGuyInvasion 00000000 00000006 )
+		Default
+			Call  SetMusicTrack ( 00000000 .Song:ToadTown 00000000 00000006 )
+	EndSwitch
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_MakeEntities
+{
+    Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+    Set   *MapVar[A] *Var0
+    Call  AssignBlockFlag   ( *GF_MAC07_Shine )
+    Call  AssignScript 	    ( $Script_Entity_Shine1 )
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[A] % entityID
+    SetConst *Var1 *GF_MAC07_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+#new:Script $Script_EnterMap
+{
+	Exec  $Script_InitShops
+	Return
+	End
+}
+
+%
+#new:Script $Script_InitShops
+{
+	% == Red Toad =======
+	If *GF_MAC07_ShopItem1 == .False
+		Call  	MakeItemEntity ( .Item:Hammerman ~Vec3d:r_i1 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem1 )
+		Set 	*MapVar[1] *Var0
+		Bind  $Script_Shop1_Item1 .Trigger:WallPressA ~Collider:r_i1 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:r_i1 7FFFFE00 )
+	EndIf
+	If *GF_MAC07_ShopItem2 == .False
+		Call  	MakeItemEntity ( .Item:ShootingStar ~Vec3d:r_i2 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem2 )
+		Set 	*MapVar[2] *Var0
+		Bind  $Script_Shop1_Item2 .Trigger:WallPressA ~Collider:r_i2 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:r_i2 7FFFFE00 )
+	EndIf
+	If *GF_MAC07_ShopItem3 == .False
+		Call  	MakeItemEntity ( .Item:JamminJelly ~Vec3d:r_i3 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem3 )
+		Set 	*MapVar[3] *Var0
+		Bind  $Script_Shop1_Item3 .Trigger:WallPressA ~Collider:r_i3 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:r_i3 7FFFFE00 )
+	EndIf
+	% == Green Toad =======
+	If *GF_MAC07_ShopItem4 == .False
+		Call  	MakeItemEntity ( .Item:StopWatch ~Vec3d:g_i1 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem4 )
+		Set 	*MapVar[4] *Var0
+		Bind  $Script_Shop2_Item1 .Trigger:WallPressA ~Collider:g_i1 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:g_i1 7FFFFE00 )
+	EndIf
+	If *GF_MAC07_ShopItem5 == .False
+		Call  	MakeItemEntity ( .Item:TimingTutor ~Vec3d:g_i2 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem5 )
+		Set 	*MapVar[5] *Var0
+		Bind  $Script_Shop2_Item2 .Trigger:WallPressA ~Collider:g_i2 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:g_i2 7FFFFE00 )
+	EndIf
+	If *GF_MAC07_ShopItem6 == .False
+		Call  	MakeItemEntity ( .Item:UltraShroom ~Vec3d:g_i3 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem6 )
+		Set 	*MapVar[6] *Var0
+		Bind  $Script_Shop2_Item3 .Trigger:WallPressA ~Collider:g_i3 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:g_i3 7FFFFE00 )
+	EndIf
+	% == Blue Toad =======
+	If *GF_MAC07_ShopItem7 == .False
+		Call  	MakeItemEntity ( .Item:Jumpman ~Vec3d:b_i1 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem7 )
+		Set 	*MapVar[7] *Var0
+		Bind  $Script_Shop3_Item1 .Trigger:WallPressA ~Collider:b_i1 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:b_i1 7FFFFE00 )
+	EndIf
+	If *GF_MAC07_ShopItem8 == .False
+		Call  	MakeItemEntity ( .Item:DriedShroom ~Vec3d:b_i2 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem8 )
+		Set 	*MapVar[8] *Var0
+		Bind  $Script_Shop3_Item2 .Trigger:WallPressA ~Collider:b_i2 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:b_i2 7FFFFE00 )
+	EndIf
+	If *GF_MAC07_ShopItem9 == .False
+		Call  	MakeItemEntity ( .Item:StarPiece ~Vec3d:b_i3 .ItemSpawnMode:Decoration *GF_MAC07_ShopItem9 )
+		Set 	*MapVar[9] *Var0
+		Bind  $Script_Shop3_Item3 .Trigger:WallPressA ~Collider:b_i3 00000001 00000000
+	Else
+		Call	ModifyColliderFlags 	( .False ~Collider:b_i3 7FFFFE00 )
+	EndIf
+	Return
+	End
+}
+
+#new:Script $Script_Shop1_Item1
+{
+	Set *Var0 .Item:Hammerman
+	Set *Var1 180` % Price
+	Set *Var2 .Npc:Shopkeeper1
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 1
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop1_Item2
+{
+	Set *Var0 .Item:ShootingStar
+	Set *Var1 36` % Price
+	Set *Var2 .Npc:Shopkeeper1
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 2
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop1_Item3
+{
+	Set *Var0 .Item:JamminJelly
+	Set *Var1 120` % Price
+	Set *Var2 .Npc:Shopkeeper1
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 3
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop2_Item1
+{
+	Set *Var0 .Item:StopWatch
+	Set *Var1 24` % Price
+	Set *Var2 .Npc:Shopkeeper2
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 4
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop2_Item2
+{
+	Set *Var0 .Item:TimingTutor
+	Set *Var1 120` % Price
+	Set *Var2 .Npc:Shopkeeper2
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 5
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop2_Item3
+{
+	Set *Var0 .Item:UltraShroom
+	Set *Var1 120` % Price
+	Set *Var2 .Npc:Shopkeeper2
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 6
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop3_Item1
+{
+	Set *Var0 .Item:Jumpman
+	Set *Var1 180` % Price
+	Set *Var2 .Npc:Shopkeeper3
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 7
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop3_Item2
+{
+	Set *Var0 .Item:DriedShroom
+	Set *Var1 20` % Price
+	Set *Var2 .Npc:Shopkeeper3
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 8
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_Shop3_Item3
+{
+	Set *Var0 .Item:StarPiece
+	Set *Var1 20` % Price
+	Set *Var2 .Npc:Shopkeeper3
+	Set *Var3 00830004
+	Set *Var4 00830001
+	Set *Var5 9
+	ExecWait $Script_BuyItem
+	Return
+	End
+}
+
+#new:Script $Script_BuyItem
+{
+	Set		*VarA *Var0
+	Set		*VarB *Var1
+	Set		*VarC *Var2
+	Set		*VarD *Var3
+	Set		*VarE *Var4
+	Set		*Var9 *Var5
+	Call	DisablePlayerInput ( .True )
+	Call	ShowCoinCounter ( .True )
+	Call	SetMessageValue ( *VarB 00000000 )
+	Call	SpeakToPlayer ( *VarC *VarD *VarE 00000000 $String_ShopKeeper_Welcome )
+	Call  	ShowChoice    ( 001E000D ) % Yes No
+	If *Var0 != .False % No
+		Call	CloseMessage
+		Call	ShowCoinCounter ( .False )
+		Call	DisablePlayerInput ( .False )
+		Return
+	EndIf
+	Call	AddCoin ( 0 )
+	If *Var0 < *VarB
+		Call	ContinueSpeech ( *VarC *VarD *VarE 00000000 $String_ShopKeeper_NotEnoughMoney )
+		Call	ShowCoinCounter ( .False )
+		Call	DisablePlayerInput ( .False )
+		Return
+	EndIf
+	Call	CloseMessage
+	Mul		*VarB -1
+	Call	AddCoin ( *VarB )
+	Switch  *Var9
+		Case == 1
+			Set *Var0 *MapVar[1]
+			Set	*Var1 ~Collider:r_i1
+			Set *GF_MAC07_ShopItem1 .True
+		Case == 2
+			Set *Var0 *MapVar[2]
+			Set	*Var1 ~Collider:r_i2
+			Set *GF_MAC07_ShopItem2 .True
+		Case == 3
+			Set *Var0 *MapVar[3]
+			Set	*Var1 ~Collider:r_i3
+			Set *GF_MAC07_ShopItem3 .True
+		Case == 4
+			Set *Var0 *MapVar[4]
+			Set	*Var1 ~Collider:g_i1
+			Set *GF_MAC07_ShopItem4 .True
+		Case == 5
+			Set *Var0 *MapVar[5]
+			Set	*Var1 ~Collider:g_i2
+			Set *GF_MAC07_ShopItem5 .True
+		Case == 6
+			Set *Var0 *MapVar[6]
+			Set	*Var1 ~Collider:g_i3
+			Set *GF_MAC07_ShopItem6 .True
+		Case == 7
+			Set *Var0 *MapVar[7]
+			Set	*Var1 ~Collider:b_i1
+			Set *GF_MAC07_ShopItem7 .True
+		Case == 8
+			Set *Var0 *MapVar[8]
+			Set	*Var1 ~Collider:b_i2
+			Set *GF_MAC07_ShopItem8 .True
+		Case == 9
+			Set *Var0 *MapVar[9]
+			Set	*Var1 ~Collider:b_i3
+			Set *GF_MAC07_ShopItem9 .True
+	EndSwitch
+	Call	RemoveItemEntity ( *Var0 )
+	Call	ModifyColliderFlags ( .False *Var1 7FFFFE00 )
+	Call    ShowGotItem ( *VarA .True 00000000 )
+	Call	ShowCoinCounter ( .False )
+	If *VarA != .Item:StarPiece
+		Call 	$GetItemFlags ( *VarA *Var0 .False )
+		Switch *Var0
+			Case & 0040 % Badge
+				Call	AddBadge ( *VarA .False )
+			Case & 0008 % Key Item
+				Call	AddKeyItem ( *VarA )
+			Default
+				Call	AddItem ( *VarA .False )
+		EndSwitch
+	Else
+		Call	AddStarPieces ( 1 )
+	EndIf
+	Call	SpeakToPlayer ( *VarC *VarD *VarE 00000000 $String_ShopKeeper_ThankYou )
+	Unbind
+	Call	DisablePlayerInput ( .False )
+	Return
+	End
+}%/
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+    Call     UseExitHeading  	( 3C ~Entry:Entry0 )
+	Exec     ExitWalk
+    Call     GotoMap	( "mac_04" 6 )
+	Wait     100`
+	Return
+	End
+}
+
+% NPCs
+
+#new:NpcGroupList $NpcGroupList_mac07
+{
+	00000003 $NpcGroup_Shopkeepers 00000000
+	0000000B $NpcGroup_NPCs 00000000
+	00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Shopkeepers
+{
+	.Npc:Shopkeeper1 $NpcSettings_Toad ~Vec3f:NPC_Shopkeeper1
+	00112D09 $Script_Init_Shopkeeper1 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Shopkeeper1
+	~AnimationTable:NPC_Shopkeeper1
+	00000000 00000000 00000000 $Tattle_Shopkeeper
+	%
+	.Npc:Shopkeeper2 $NpcSettings_Toad ~Vec3f:NPC_Shopkeeper2
+	00112D09 $Script_Init_Shopkeeper2 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Shopkeeper2
+	~AnimationTable:NPC_Shopkeeper2
+	00000000 00000000 00000000 $Tattle_Shopkeeper
+	%
+	.Npc:Shopkeeper3 $NpcSettings_Toad ~Vec3f:NPC_Shopkeeper3
+	00112D09 $Script_Init_Shopkeeper3 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_Shopkeeper3
+	~AnimationTable:NPC_Shopkeeper3
+	00000000 00000000 00000000 $Tattle_Shopkeeper
+}
+
+#new:NpcGroup $NpcGroup_NPCs
+{
+	00000004 $NpcSettings_Toad ~Vec3f:NPC_DarkToad
+	00112D09 $Script_Init_DarkToad 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_DarkToad
+	~AnimationTable:NPC_DarkToad
+	00000000 00000000 00000000 $Tattle_DarkToad
+	%
+	00000005 $NpcSettings_Toad ~Vec3f:NPC_ToadTalking1
+	00112D09 $Script_Init_ToadTalking1 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_ToadTalking1
+	~AnimationTable:NPC_ToadTalking1
+	00000000 00000000 00000000 $Tattle_Toad
+	%
+	00000006 $NpcSettings_Toad ~Vec3f:NPC_ToadTalking2
+	00112D09 $Script_Init_ToadTalking2 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_ToadTalking2
+	~AnimationTable:NPC_ToadTalking2
+	00000000 00000000 00000000 $Tattle_Toad
+	%
+	00000007 $NpcSettings_Toad ~Vec3f:NPC_Toad1
+	00112D09 $Script_Init_Toad1 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_Toad1
+	~AnimationTable:NPC_Toad1
+	00000000 00000000 00000000 $Tattle_Toad
+	%
+	00000008 $NpcSettings_Toad ~Vec3f:NPC_Toad2
+	00112D09 $Script_Init_Toad2 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Toad2
+	~AnimationTable:NPC_Toad2
+	00000000 00000000 00000000 $Tattle_Toad
+	%
+	00000009 $NpcSettings_Toad ~Vec3f:NPC_ToadKid1
+	00112D09 $Script_Init_ToadKid1 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_ToadKid1
+	~AnimationTable:NPC_ToadKid1
+	00000000 00000000 00000000 $Tattle_ToadKid
+	%
+	0000000A $NpcSettings_Toad ~Vec3f:NPC_ToadKid2
+	00112D09 $Script_Init_ToadKid2 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_ToadKid2
+	~AnimationTable:NPC_ToadKid2
+	00000000 00000000 00000000 $Tattle_ToadKid
+	%
+	0000000B $NpcSettings_Toad ~Vec3f:NPC_ToadKid3
+	00112D09 $Script_Init_ToadKid3 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_ToadKid3
+	~AnimationTable:NPC_ToadKid3
+	00000000 00000000 00000000 $Tattle_ToadKid
+	%
+	0000000C $NpcSettings_Toad ~Vec3f:NPC_ToadKid4
+	00112D09 $Script_Init_ToadKid4 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_ToadKid4
+	~AnimationTable:NPC_ToadKid4
+	00000000 00000000 00000000 $Tattle_ToadKid
+	%
+	0000000D $NpcSettings_Toad ~Vec3f:NPC_ToadKid5
+	00112D09 $Script_Init_ToadKid5 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_ToadKid5
+	~AnimationTable:NPC_ToadKid5
+	00000000 00000000 00000000 $Tattle_ToadKid
+	%
+	0000000E $NpcSettings_Toad ~Vec3f:NPC_ToadKid6
+	00112D09 $Script_Init_ToadKid6 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_ToadKid6
+	~AnimationTable:NPC_ToadKid6
+	00000000 00000000 00000000 $Tattle_ToadKid
+}
+
+#new:NpcSettings $NpcSettings_Toad
+{
+	00000000 001E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_Init_Shopkeeper1
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_Shopkeeper1 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_Shopkeeper2
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_Shopkeeper2 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_Shopkeeper3
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_Shopkeeper3 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_Shopkeeper1
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830004 00830001 00000000 $String_Shopkeeper1_Hi )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_Shopkeeper2
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830104 00830101 00000000 $String_Shopkeeper2_Hi )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_Shopkeeper3
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830204 00830201 00000000 $String_Shopkeeper3_Hi )
+	Return
+	End
+}
+
+%
+
+#new:Script $Script_Init_DarkToad
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_DarkToad )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadTalking1
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadTalking1 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadTalking2
+{
+	Call	SetNpcFlagBits ( .Npc:Self 00040000 .True )
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadTalking2 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_Toad1
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_Toad1 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_Toad2
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_Toad2 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadKid1
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadKid1 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadKid2
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadKid2 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadKid3
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadKid3 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadKid4
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadKid4 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadKid5
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadKid5 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_ToadKid6
+{
+	Call	BindNpcInteract ( .Npc:Self $Script_Interact_ToadKid6 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_DarkToad
+{
+	Call	SpeakToPlayer ( .Npc:Self 00650004 00650001 00000000 $String_DarkToad1_Hi )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadTalking1
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830004 00830001 00000000 $String_ToadTalking1 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadTalking2
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830004 00830001 00000000 $String_ToadTalking2 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_Toad1
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830004 00830001 00000000 $String_Toad1 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_Toad2
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830304 00830301 00000000 $String_Toad2 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadKid1
+{
+	Call	SpeakToPlayer ( .Npc:Self 00830304 00830301 00000000 $String_ToadKid1 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadKid2
+{
+	Call	SpeakToPlayer ( .Npc:Self 00860304 00860301 00000000 $String_ToadKid2 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadKid3
+{
+	Call	SpeakToPlayer ( .Npc:Self 00860004 00860001 00000000 $String_ToadKid3 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadKid4
+{
+	Call	SpeakToPlayer ( .Npc:Self 00860204 00860201 00000000 $String_ToadKid4 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadKid5
+{
+	Call	SpeakToPlayer ( .Npc:Self 00860304 00860301 00000000 $String_ToadKid5 )
+	Return
+	End
+}
+
+#new:Script $Script_Interact_ToadKid6
+{
+	Call	SpeakToPlayer ( .Npc:Self 00860304 00860301 00000000 $String_ToadKid6 )
+	Return
+	End
+}
+
+%
+
+#string $String_ShopKeeper_Welcome
+{
+[Style Right]
+That item has a cost of [SaveColor][Color:19][Var 0][RestoreColor][BR]
+coins, would you be interested in[BR]
+buying it?[BR]
+[Yield][End]
+}
+
+#string $String_ShopKeeper_NotEnoughMoney
+{
+[Next]
+It seems you don't have enough[BR]
+money, come back when you have a[BR]
+little more Mario.
+[Wait][End]
+}
+
+#string $String_ShopKeeper_ThankYou
+{
+[Style Right]
+Thank you very much Mario,[BR]
+have a nice day!
+[Wait][End]
+}
+
+#string $String_Shopkeeper1_Hi
+{
+[Style Right]
+Hey Mario, I have a bit of[BR]
+everything, don't forget to[BR]
+check when you can.
+[Wait][End]
+}
+
+#string $String_Shopkeeper2_Hi
+{
+[Style Right]
+Hi Mario, me and my son are[BR]
+selling some stuff to get a[BR]
+little extra money, don't forget[BR]
+to buy something.
+[Wait][End]
+}
+
+#string $String_Shopkeeper3_Hi
+{
+[Style Right]
+Hello Mario, thanks for[BR]
+visiting us.
+[Wait][End]
+}
+
+#string $String_DarkToad1_Hi
+{
+[Style Right]
+Hey, can't you see I'm busy?!
+[Wait][End]
+}
+
+#string $String_ToadTalking1
+{
+[Style Right]
+Hey, have you already watched[BR]
+the new episode of Super Captain[BR]
+Toad?[BR]
+[Wait][Next]
+I heard it was like movie!
+[Wait][End]
+}
+
+#string $String_ToadTalking2
+{
+[Style Right]
+The last thing I watched was[BR]
+the chapter when he gets the[BR]
+pickaxe for the first time,[BR]
+it was really good.
+[Wait][End]
+}
+
+#string $String_Toad1
+{
+[Style Right]
+I love the weather of the day,[BR]
+do you too Mario?
+[Wait][End]
+}
+
+#string $String_Toad2
+{
+[Style Right]
+Sales have been quite calm this[BR]
+last week, I hope the situation[BR]
+improves.
+[Wait][End]
+}
+
+#string $String_ToadKid1
+{
+[Style Right]
+Hello Mario, hey don't forget to[BR]
+buy us something!
+[Wait][End]
+}
+
+#string $String_ToadKid2
+{
+[Style Right]
+It's been pretty quiet today,[BR]
+I hope something funny happens[BR]
+soon...
+[Wait][End]
+}
+
+#string $String_ToadKid3
+{
+[Style Right]
+I can't wait for my mom to finish[BR]
+cooking today's dinner, I'm[BR]
+starving!
+[Wait][End]
+}
+
+#string $String_ToadKid4
+{
+[Style Right]
+Hi Mario, hey, don't you need a[BR]
+new adventure partner?[BR]
+I'm dying for some fun!
+[Wait][End]
+}
+
+#string $String_ToadKid5
+{
+[Style Right]
+Hello Mario, me and my brother[BR]
+are waiting for our father to[BR]
+come home from work.[BR]
+[Wait][Next]
+He just bough us the new sequel[BR]
+of our favorite game Super Jr.[BR]
+Koopa Bros, we can't wait!
+[Wait][End]
+}
+
+#string $String_ToadKid6
+{
+[Style Right]
+Hey Mario, have you played the[BR]
+Super Jr. Koopa Bros game yet?[BR]
+[Wait][Next]
+It's very good, you should check[BR]
+it out.
+[Wait][End]
+}
+
+%
+
+#string $Tattle_DarkToad
+{
+[Style Tattle][EnableCDownNext]
+Hmm this toad looks very[BR]
+suspicious, I don't know Mario.
+[Wait][End]
+}
+
+#string $Tattle_Toad
+{
+[Style Tattle][EnableCDownNext]
+A citizen of Toad Town, very nice[BR]
+city, but I don't know, I prefer[BR]
+Goomba Village way more.
+[Wait][End]
+}
+
+#string $Tattle_ToadKid
+{
+[Style Tattle][EnableCDownNext]
+A kid from Toad Town, wow, there[BR]
+are a lot of children in this town,[BR]
+I wish it was the same in Goomba[BR]
+Village.
+[Wait][End]
+}
+
+#string $Tattle_Shopkeeper
+{
+[Style Tattle][EnableCDownNext]
+A local seller, always remember[BR]
+to help local businesses Mario.
+[Wait][End]
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+This area is full of local vendors,[BR]
+we should see what they sell,[BR]
+maybe  there are interesting[BR]
+things Mario.
+[Wait][End]      
+}

@@ -1,0 +1,137 @@
+% Script File: tst_10.mscr
+% Decoded from: 0 to 510 (tst_10)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %    0.0    0.0 -480.0  180.0
+	~Vec4f:Entry1 % -480.0    0.0    0.0   90.0
+	~Vec4f:Entry2 %    0.0    0.0  480.0    0.0
+	~Vec4f:Entry3 %  480.0    0.0    0.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000004
+	[Background]  80200000
+	[MapTattle]   00000000
+}
+
+#new:Script $Script_ExitWalk_80240080
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  UseExitHeading        ( 0000003C ~Entry:Entry0 )
+   24:  Exec  ExitWalk
+   30:  Call  GotoMap   ( $ASCII_80240500 00000002 ) % tst_10
+   44:  Wait  100`
+   50:  Return
+   58:  End
+}
+
+#new:Script $Script_ExitWalk_802400E0
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  UseExitHeading        ( 0000003C ~Entry:Entry1 )
+   24:  Exec  ExitWalk
+   30:  Call  GotoMap   ( $ASCII_80240500 00000003 ) % tst_10
+   44:  Wait  100`
+   50:  Return
+   58:  End
+}
+
+#new:Script $Script_ExitWalk_80240140
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  UseExitHeading        ( 0000003C ~Entry:Entry2 )
+   24:  Exec  ExitWalk
+   30:  Call  GotoMap   ( $ASCII_80240500 00000000 ) % tst_10
+   44:  Wait  100`
+   50:  Return
+   58:  End
+}
+
+#new:Script $Script_ExitWalk_802401A0
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  UseExitHeading        ( 0000003C ~Entry:Entry3 )
+   24:  Exec  ExitWalk
+   30:  Call  GotoMap   ( $ASCII_80240500 00000001 ) % tst_10
+   44:  Wait  100`
+   50:  Return
+   58:  End
+}
+
+#new:Script $Script_80240200
+{
+    0:  Call  SetZoneEnabled    ( ~Zone:north .False )
+   14:  Call  SetZoneEnabled    ( ~Zone:west .False )
+   28:  Call  SetZoneEnabled    ( ~Zone:south .False )
+   3C:  Call  SetZoneEnabled    ( ~Zone:east .False )
+   50:  Set   *AreaFlag[000]  .False
+   60:  Return
+   68:  End
+}
+
+#new:Script $Script_80240270
+{
+    0:  Bind  $Script_ExitWalk_80240080 .Trigger:FloorTouch ~Collider:deilin 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802400E0 .Trigger:FloorTouch ~Collider:deiliw 00000001 00000000
+   38:  Bind  $Script_ExitWalk_80240140 .Trigger:FloorTouch ~Collider:deilis 00000001 00000000
+   54:  Bind  $Script_ExitWalk_802401A0 .Trigger:FloorTouch ~Collider:deilie 00000001 00000000
+   70:  Return
+   78:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:Testing
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  ExecWait  $Script_MakeEntities
+   7C:  If  *AreaFlag[000]  ==  .True
+   8C:  	Call  SetZoneEnabled    ( ~Zone:north .False )
+   A0:  	Call  SetZoneEnabled    ( ~Zone:west .False )
+   B4:  	Call  SetZoneEnabled    ( ~Zone:south .False )
+   C8:  	Call  SetZoneEnabled    ( ~Zone:east .False )
+   DC:  	Set   *AreaFlag[000]  .False
+   EC:  Else
+   F4:  	Set   *AreaFlag[000]  .True
+  104:  	Bind  $Script_80240200 .Trigger:FloorTouch ~Collider:change 00000001 00000000
+  120:  EndIf
+  128:  Set   *Var0  $Script_80240270
+  138:  Exec  EnterWalk
+  144:  Wait  1`
+  150:  Return
+  158:  End
+}
+
+#new:Unknown $???_80240450
+{
+	FFFFFFBF 00000000 000000D9 FFFFFEFA 00000000 FFFFFFC0 00000039 00000000
+	FFFFFEE2 00000147 00000000 00000008 80000001 $???_80240450 $???_80240450 $???_80240450
+	$???_80240450 FFFFFFFF
+}
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeEntity    ( .Entity:HealingBlock ~Vec4d:Entity80240498 80000000 )
+   24:  Call  MakeEntity    ( .Entity:HiddenPanel ~Vec4d:Entity802404BC ~Model:o137 80000000 )
+   4C:  Return
+   54:  End
+}
+
+PADDING: 802404F4 to 80240500 (000004F4 to 00000500)
+00000000 00000000 00000000
+
+#new:ASCII $ASCII_80240500
+{
+	"tst_10"
+}
+
+PADDING: 80240508 to 80240510 (00000508 to 00000510)
+00000000 00000000
+

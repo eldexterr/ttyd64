@@ -1,0 +1,48 @@
+
+@ $Stage_8022FB6C
+{
+	$ASCII_8022FEA8  % omo_tex
+	$ASCII_8022FE98  % omo_bt07_shape
+	$ASCII_8022FE88  % omo_bt07_hit
+	$Script_BeforeBattle_8022FB20_11
+	$Script_AfterBattle_8022FB5C
+	00000000
+	00000000
+	00000000
+	00000000
+	00000000
+}
+
+#new:Script $Script_BeforeBattle_8022FB20_11
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Call  SetCamBGColor     ( .Cam:Battle  0`  0`  0` )
+        % Save this pointers (needed for the global patch)
+		Call  $WriteAddress ( $ModelAnimation_80220D88_Pointer 2 $ModelAnimation_80220D88 .False .False )
+		Call  $WriteAddress ( $ModelAnimation_8021E798_Pointer 2 $ModelAnimation_8021E798 .False .False )
+		% update actors pointers
+		Call  $WriteAddress ( $SpecialFormation_8021A284 2 802313A8 .False .False ) % 29_ShySquad* Actor pointer
+		Call  $WriteAddress ( $SpecialFormation_8022F554 2 802310DC .False .False ) % 2C_Shyguy* Actor pointer
+		Call  $WriteAddress ( $SpecialFormation_8022F5A8 2 802312E0 .False .False ) % 2B_ShyStack* Actor pointer
+		Call  $WriteAddress ( $SpecialFormation_8022F5C4 2 802312E0 .False .False ) % 2B_ShyStack* Actor pointer
+		Call  $WriteAddress ( $SpecialFormation_8022F570 2 80231418 .False .False ) % 2A_StiltGuy* Actor pointer
+		Call  $WriteAddress ( $SpecialFormation_8022F58C 2 80231418 .False .False ) % 2A_StiltGuy* Actor pointer
+		Call  $WriteAddress ( $SpecialFormation_8022F5E0 2 00000000 .False .False ) % 2D_ShySquad* Actor pointer, unused
+   2C:  Return
+   34:  End
+}%/
+
+%===============%
+%  General Guy  %
+%===============%
+
+@ $Script_TakeTurn_80218BA0
+{
+   [A4]  ExecWait  $Script_LightningAttack_Global
+   [D0]  ExecWait  $Script_BombAttack_Global
+}%/
+
+% This scripts are in globals/patch/BattleFormations_RanOutOfSpace.patch
+%
+%#export:Script:Battle $Script_BombAttack_Global
+%#export:Script:Battle $Script_LightningAttack_Global

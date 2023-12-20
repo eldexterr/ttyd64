@@ -1,0 +1,1221 @@
+/% When patching partners' scripts sometimes you run out of data to put all Stylish stuff
+
+This file has all those script that I couldn't place because I run out of
+space. %/
+
+%===========
+% Goombario
+%===========
+
+% Multibonk - 2nd Stylish Move
+% GoBackToHome plus Stylish stuff
+#new:Script:Battle $Script_DoStylish_Multibonk
+{
+    Wait  2
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[8.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090003 )
+    Call  SetGoalToHome ( .Actor:Self )
+    Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    Add   *Var0 10`
+    Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    /% Skip the Stylish stuff if the current move
+    isn't Multibonk %/
+    Call  GetMenuSelection  ( 0 0 *Var0 )
+    If *Var0 == 88 % Multibonk
+        Call $ReadAddress ( 800DC208 0 *Var0 .False .False )
+        % Var0 = Multibonk Counter
+        If *Var0 != 0 % the player at least landed 2 bonks
+            % Init A Tracker
+            Exec $Script_InitTracker
+            Thread
+                Loop
+                    Call GetDistanceToGoal ( .Actor:Self *VarA )
+                    If *VarA < 70`
+                        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                        If *Var0 == .True % A button pressed too soon?
+                            % Turn Off A Button Tracker
+                            Set *TrackInput .False
+                            Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+                            Goto EndThread
+                        Else % Wasn't pressed soon
+                            BreakLoop
+                        EndIf
+                    EndIf
+                    Wait 1
+                EndLoop
+                % TRACK A - RIGHT TIME TO PRESS THE BUTTON
+                Loop 2 % 2 frames
+                    % Timing Tutor Badge
+                    ExecWait $Script_TimingTutor % writes in var0,1,2
+                    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                    %Set *Var0 .True % testing
+                    If *Var0 == .True
+                        % Turn Off A Button Tracker
+                        Set *TrackInput .False
+                        % Add 1 to the stylish counter (last move only)
+                        Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                        Add *Var0 1
+                        Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                        Set *VarA .False % this move doesn't have an SP cap
+                        ExecWait $Script_DoStylishFX
+                        Wait 1
+                        Goto EndThread
+                    EndIf
+                    Wait 1
+                EndLoop
+                % Turn Off A Button Tracker
+                Set   *TrackInput .False
+                Call  $WriteAddress ( $Data_Inputs 0 0 .False .False )
+                Label EndThread
+            EndThread
+        EndIf
+    EndIf
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetGoalToHome ( .Actor:Self )
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        Call SetActorSpeed ( .Actor:Partner *Fixed[1.0] )
+        Call SetActorJumpGravity ( .Actor:Self *Fixed[1.5] )
+        % Rotate Goombario
+        Thread
+            % 1
+            Call    MakeLerp    	( 0 180` 3 .Easing:Linear )
+            Loop     
+                Call     UpdateLerp
+                Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+                Wait     1
+                If  *Var1  ==  .False
+                    BreakLoop
+                EndIf
+            EndLoop
+            % 2
+            Call    MakeLerp    	( -180` 0 3 .Easing:Linear )
+            Loop     
+                Call     UpdateLerp
+                Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+                Wait     1
+                If  *Var1  ==  .False
+                    BreakLoop
+                EndIf
+            EndLoop
+            Call  SetActorRotation  ( .Actor:Self 0 0 0 )
+        EndThread
+        Call JumpToGoal ( .Actor:Self 9 .False .True .True )
+    Else % Stylish Failed
+        Call  RunToGoal     ( .Actor:Partner 00000000 )
+    EndIf
+    % Turn Off A Button Tracker
+    Set *TrackInput .False
+    Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090001 )
+    Return
+    End
+}
+
+%===========
+% Kooper
+%===========
+
+% DizzyShell - BackToHome (it has both stylish moves in it)
+#new:Script:Battle $Script_DoStylish_DizzyShell
+{
+    % restore vanilla code
+    Exec  $Script_InitTracker
+    Wait  5
+    % Check if the A button was pressed too soon
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    % Action command was below 85%?
+    Call  802695A8  ( *Var1 )
+    If *Var1 < 85`
+        Set *Var0 .True % skip stylish
+    EndIf
+    If *Var0 == .True
+        Set *TrackInput .False
+        Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Wait 1
+        Goto EndLoop
+    EndIf
+    % TRACK A - RIGHT TIME TO PRESS THE BUTTON
+    Loop 4 % 4 frames
+        % Timing Tutor Badge
+        ExecWait $Script_TimingTutor % writes in var0,1,2
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            % Disable Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Call $WriteAddress ( 8029FC40 0 0 .False .False ) % restard current action command bool, so the game ignores you pressed A when doing the stylish
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            % Slide
+            Call  SetActorSpeed ( .Actor:Partner *Fixed[7.0] )
+            Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            % 1
+            % Start Tracker - 2nd Stylish Move
+            Exec  $Script_InitTracker
+            Thread
+                Wait 6
+                % A button was pressed too soon?
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                If *Var0 == .True
+                    Set *TrackInput .False
+                    Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                    Wait 1
+                    Goto EndThread
+                EndIf    
+                Loop 2 % 2 frames
+                    % Timing Tutor Badge
+                    ExecWait $Script_TimingTutor % writes in var0,1,2
+                    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                    If *Var0 == .True
+                        BreakLoop
+                    EndIf
+                    Wait 1
+                EndLoop
+                Label EndThread
+            EndThread
+            Call  PlaySound ( 0284 ) % Shell Sliding Sound
+            Sub   *Var0 25`
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  RunToGoal     ( .Actor:Partner 0 .True )
+            % 2
+            Add   *Var0 25`
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  RunToGoal     ( .Actor:Partner 0 .True )
+            % 3
+            Sub   *Var0 25`
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  RunToGoal     ( .Actor:Partner 0 .True )
+            % 4
+            Add   *Var0 25`
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  RunToGoal     ( .Actor:Partner 0 .True )
+            % If the A button was pressed in the correct time, do the 2nd stylish
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .True
+                % Disable Tracker
+                Set *TrackInput .False
+                Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                % Add 1 to the stylish counter (last move only)
+                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                Add *Var0 1
+                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                Call GetMenuSelection  ( .False .False *Var0 )
+                Call $WriteAddress ( 8029FC40 0 0 .False .False ) % restard current action command bool, so the game ignores you pressed A when doing the stylish
+                Set *VarA .False % this move doesn't have an SP cap
+                ExecWait $Script_DoStylishFX
+                %=====================
+                % Backflip Kooper
+                Call  SetGoalToHome ( .Actor:Self )
+                Call  PlaySoundAtActor ( .Actor:Self 200D ) % jump
+                % Rotate - Z Axis
+                Call  SetActorRotationOffset    ( .Actor:Self 0 15` 0 )
+                Thread
+                    SetTimescale *Fixed[3.0]
+                    Loop 3
+                        % 1
+                        Call    MakeLerp    	( 0 180` 5 .Easing:Linear )
+                        Loop     
+                            Call     UpdateLerp
+                            Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                            Wait     1
+                            If  *Var1  ==  .False
+                                BreakLoop
+                            EndIf
+                        EndLoop
+                        % 2
+                        Call    MakeLerp    	( -180` 0 5 .Easing:Linear )
+                        Loop     
+                            Call     UpdateLerp
+                            Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                            Wait     1
+                            If  *Var1  ==  .False
+                                BreakLoop
+                            EndIf
+                        EndLoop
+                    EndLoop
+                    SetTimescale *Fixed[1.0]
+                    Call    SetActorRotationOffset   ( .Actor:Self 0 0 0 )
+                    Call    SetActorRotation  ( .Actor:Self 0 0 0 )
+                EndThread
+                % Jump
+                Call  SetActorJumpGravity       ( .Actor:Self *Fixed[0.8] )
+                Call  SetActorDispOffset    ( .Actor:Self 0 -4 0 )
+                Call  JumpToGoal            ( .Actor:Self 19` .False .False .True )
+                Call  SetActorDispOffset    ( .Actor:Self 0 0 0 )
+                Wait 1
+                Goto  EndStylish
+            EndIf
+            BreakLoop
+        EndIf
+        Wait 1
+    EndLoop
+    Label EndLoop
+    Call  SetActorSpeed ( .Actor:Self *Fixed[1.0] )
+    Set   *TrackInput .False
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Label EndStylish
+    Call  80280818 ( )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000A000F )
+    Wait  15`
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000A0004 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[7.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000A0006 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000A0004 )
+    Return
+    End
+}
+
+#new:Script:Battle $Script_ShellToss_GoBackToHome_Succeed
+{
+    Call  ResetActorSounds  ( .Actor:Partner .ActorSound:Walk )
+    Thread
+        Call  UseBattleCamPreset  ( 00000004 )
+        Wait  30`
+        Call  UseBattleCamPreset  ( 00000002 )
+    EndThread
+    Call  80280818
+    % Back Jump 1
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Sub   *Var0  0000003C
+    Set   *Var1  00000000
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Thread % Stylish Move 1
+        Exec $Script_InitTracker
+        % if the player press A in the next frames the stylish will be locked
+        Wait 5
+        % Check if the A button was pressed too soon
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            Wait 1
+            Goto EndThread2
+        EndIf
+        % TRACK A - RIGHT TIME TO PRESS THE BUTTON
+        Loop 4 % 4 frames
+            % Timing Tutor Badge
+            ExecWait $Script_TimingTutor % writes in var0,1,2
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .True
+                % Disable Tracker
+                Set *TrackInput .False
+                Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                % Add 1 to the stylish counter (last move only)
+                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                Add *Var0 1
+                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                Call $WriteAddress ( 8029FC40 0 0 .False .False ) % restard current action command bool, so the game ignores you pressed A when doing the stylish
+                Set *VarA .False % this move doesn't have an SP cap
+                ExecWait $Script_DoStylishFX
+                % Spin Kooper
+                SetTimescale *Fixed[1.5]
+                Call  SetActorRotationOffset    ( .Actor:Self 0 15` 0 )
+                Loop 3
+                    % 1
+                    Call    MakeLerp    	( 0 -180` 3 .Easing:Linear )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Self *Var0 0 -90` )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                    % 2
+                    Call    MakeLerp    	( -180` 0 3 0 )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Self *Var0 0 -90` )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                EndLoop
+                SetTimescale *Fixed[1.0]
+                Call    SetActorRotationOffset    ( .Actor:Self 0 0 0 )
+                Call    SetActorRotation    ( .Actor:Self 0 0 0 )
+                Wait    1
+                Goto    EndThread2 % end without turning off the tracker again (to not having problems with the 2nd stylish move)
+            EndIf
+            Wait 1
+        EndLoop
+        Label EndThread
+        Set   *TrackInput .False
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Label EndThread2
+    EndThread
+    Call  JumpToGoal    ( .Actor:Partner 00000014 .False .True .False )
+    % Back Jump 2
+    Sub   *Var0  0000001E
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 00000008 .False .False .True )
+    % Back Jump 3
+    Exec $Script_InitTracker % start tracking if A was pressed too soon for the 2nd stylish move
+    Sub   *Var0  00000014
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 00000006 .False .False .True )
+    % Back Jump 4
+    Sub   *Var0  0000000A
+    Call  JumpToGoal    ( .Actor:Partner 00000004 .False .False .True )
+    Call  SetGoalToHome ( .Actor:Partner )
+    % ===== Stylish Move 2 =====
+    Wait 2
+    % Check if the A button was pressed too soon
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        Set *TrackInput .False
+        Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Wait 1
+        Goto EndStylish2
+    EndIf
+    % TRACK A - RIGHT TIME TO PRESS THE BUTTON
+    Loop 2 % 2 frames
+        % Timing Tutor Badge
+        ExecWait $Script_TimingTutor % writes in var0,1,2
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            % Disable Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Call $WriteAddress ( 8029FC40 0 0 .False .False ) % restard current action command bool, so the game ignores you pressed A when doing the stylish
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            %=====================
+            % Backflip Kooper
+            % Rotate - Z Axis
+            Call  SetActorRotationOffset    ( .Actor:Self 0 15` 0 )
+            Thread
+                SetTimescale *Fixed[3.0]
+                Loop 3
+                    % 1
+                    Call    MakeLerp    	( 0 180` 5 .Easing:Linear )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                    % 2
+                    Call    MakeLerp    	( -180` 0 5 .Easing:Linear )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                EndLoop
+                SetTimescale *Fixed[1.0]
+                Call    SetActorRotationOffset    ( .Actor:Self 0 0 0 )
+                Call    SetActorRotation    ( .Actor:Self 0 0 0 )
+            EndThread
+            % Jump
+            Call  SetActorJumpGravity       ( .Actor:Self *Fixed[0.8] )
+            Call  SetActorDispOffset    ( .Actor:Self 0 -4 0 )
+            Call  JumpToGoal            ( .Actor:Self 19` .False .False .True )
+            Call  SetActorDispOffset    ( .Actor:Self 0 0 0 )
+            Wait  5
+            BreakLoop
+        EndIf
+        Wait 1
+    EndLoop
+    Label EndStylish2
+    Set   *TrackInput .False
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000A000F )
+    Wait  4
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[7.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000A0006 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000A0004 )
+    Return
+    End
+}
+
+%===========
+% Bombette
+%===========
+
+% Normal/Power/Mega Bomb - BackToHome
+#new:Script:Battle $Script_Bomb_DoStylish
+{
+    Call  80280818
+    Call  SetGoalToHome ( .Actor:Self )
+    Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    Add   *Var0  25`
+    Add   *Var1  200`
+    Call  SetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  SetGoalToHome ( .Actor:Self )
+    Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    Call  SetActorJumpGravity   ( .Actor:Self *Fixed[0.6] )
+    Call  SetAnimation  ( .Actor:Self FFFFFFFF 000B001B )
+    Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    Add   *Var1 60`
+    Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    % Rotate Bombette
+    % The original move script rotates bombette for a limit amount of frames
+    % This one will run after the other one ends
+    Thread
+        Wait 20`
+        Call GetActorRotation ( .Actor:Self .False .False *Var0 )
+        Loop
+            Call  SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+            Add   *Var0  33`
+            Call  GetActorPos ( .Actor:Self   .False *Var1 .False )
+            Call  GetActorPos ( .Actor:Player .False *Var2 .False )
+            If *Var1 <= *Var2
+                BreakLoop
+            EndIf
+            Wait  1
+        EndLoop
+        Call  SetActorRotation  ( .Actor:Self 0 0 0 )
+    EndThread
+    % Init Tracker - Stylish Move
+    Thread
+        Exec  $Script_InitTracker
+        Wait  16`
+        % A button was pressed too soon?
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        % Action command wasn't 100%?
+        Call  802695A8  ( *Var1 )
+        If *Var1 != 100`
+            Set *Var0 .True % skip stylish
+        EndIf
+        If *Var0 == .True
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            Wait 1
+            Goto EndThread
+        EndIf 
+        Loop 2 % 2 frames
+            % Timing Tutor Badge
+            ExecWait $Script_TimingTutor % writes in var0,1,2
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .True
+                BreakLoop
+            EndIf
+            Wait 1
+        EndLoop
+        Label EndThread
+    EndThread
+    Call  JumpToGoal    ( .Actor:Self 20` .False .False .False )
+    % StylishMove
+    % Do the stylish move if the A button was pressed at the correct time
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        Label RepeatStylish
+        % Disable Tracker
+        Set *TrackInput .False
+        Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        % Add 1 to the stylish counter (last move only)
+        Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+        Add *Var0 1
+        Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+        % Set global stylish flag for current move
+        Call GetMenuSelection ( .False .False *Var0 )
+        Call $WriteAddress ( 8029FC40 0 0 .False .False ) % restard current action command bool, so the game ignores you pressed A when doing the stylish
+        Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False ) % get amount of stylish moves landed in this move
+        If *Var0 > 3 % this move have an SP cap of 4
+            Set *VarA .True % don't give SP anymore
+        Else
+            Set *VarA .False
+        EndIf
+        ExecWait $Script_DoStylishFX
+        % Explotion
+        Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call  PlaySound ( 2016 ) % Boom!
+        Set   *Var3 *Var2
+        Sub   *Var3 10`
+        Set   *Var4 *Var1
+        Sub   *Var4 13`
+        Call  $Function_ExplotionFX    ( *Var0 *Var4 *Var3 ) % Explotion FX
+        Thread
+            Call     ShakeCam    	( .Cam:Battle 0 2   *Fixed[0.5] )
+            Call     ShakeCam    	( .Cam:Battle 0 5   *Fixed[2.0] )
+            Call     ShakeCam    	( .Cam:Battle 0 10` *Fixed[3.0] )
+            Call     ShakeCam    	( .Cam:Battle 0 5   *Fixed[2.0] )
+            Call     ShakeCam    	( .Cam:Battle 0 3   *Fixed[1.5] )
+            Call     ShakeCam    	( .Cam:Battle 0 4   *Fixed[0.80078125] )
+            Call     ShakeCam    	( .Cam:Battle 0 6   *Fixed[0.30078125] )
+            Call     ShakeCam    	( .Cam:Battle 0 8   *Fixed[0.10058594] )
+        EndThread
+        % Do Jump
+        Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+        Thread % Init A Tracker % 2nd Stylish Move
+            Exec $Script_InitTracker
+            Wait 4
+            % A button was pressed too soon?
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .True
+                Set *TrackInput .False
+                Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                Wait 1
+                Goto EndThread2
+            EndIf    
+            Loop 2 % 2 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                If *Var0 == .True
+                    BreakLoop
+                EndIf
+                Wait 1
+            EndLoop
+            Label EndThread2
+        EndThread
+        Call  JumpToGoal    ( .Actor:Partner 20` .False .False .False )
+        % Repeat Jump?
+        % Do the stylish move if the A button was pressed at the correct time
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            Wait 1
+            Goto RepeatStylish
+        EndIf
+    EndIf
+    %
+    Call  SetActorJumpGravity   ( .Actor:Self *Fixed[0.0] )
+    Call  SetGoalToHome ( .Actor:Self )
+    Call  JumpToGoal    ( .Actor:Self 6 .False .True .False )
+    %Wait  20`
+    Call  SetAnimation  ( .Actor:Self FFFFFFFF 000B0004 )
+    Return
+    End
+}
+
+#new:Script:Battle $Script_Slam_DoStylish
+{
+    Call  UseBattleCamPreset  ( 00000004 )
+    Call  MoveBattleCamOver     ( 0000000A )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B0011 )
+    % Jump 1
+    Call  GetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Sub   *Var0  40`
+    Add   *Var1  60`
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[0.8] )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Thread % Init A Tracker
+        Exec  $Script_InitTracker
+        Wait 15`
+        % A button was pressed too soon?
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            Wait 1
+            Goto EndThread
+        EndIf    
+        Loop 4 % 4 frames
+            % Timing Tutor Badge
+            ExecWait $Script_TimingTutor % writes in var0,1,2
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .True
+                BreakLoop
+            EndIf
+            Wait 1
+        EndLoop
+        Label EndThread
+    EndThread
+    Call  JumpToGoal    ( .Actor:Partner 00000019 .False .False .False )
+    %Wait  20`
+    % Jump 2
+    % StylishMove
+    % Do the stylish move if the A button was pressed at the correct time
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        % Disable Tracker
+        Set *TrackInput .False
+        Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        % Add 1 to the stylish counter (last move only)
+        Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+        Add *Var0 1
+        Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+        Call $WriteAddress ( 8029FC40 0 0 .False .False ) % restard current action command bool, so the game ignores you pressed A when doing the stylish
+        Set *VarA .False % this move doesn't have an SP cap
+        ExecWait $Script_DoStylishFX
+        % Explotion
+        Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call  PlaySound ( 2016 ) % Boom!
+        Set   *Var3 *Var2
+        Sub   *Var3 2
+        Call  $Function_ExplotionFX    ( *Var0 *Var1 *Var3 ) % Explotion FX
+        Thread
+            Call     ShakeCam    	( .Cam:Battle 0 2   *Fixed[0.5] )
+            Call     ShakeCam    	( .Cam:Battle 0 5   *Fixed[2.0] )
+            Call     ShakeCam    	( .Cam:Battle 0 10` *Fixed[3.0] )
+            Call     ShakeCam    	( .Cam:Battle 0 5   *Fixed[2.0] )
+            Call     ShakeCam    	( .Cam:Battle 0 3   *Fixed[1.5] )
+            Call     ShakeCam    	( .Cam:Battle 0 4   *Fixed[0.80078125] )
+            Call     ShakeCam    	( .Cam:Battle 0 6   *Fixed[0.30078125] )
+            Call     ShakeCam    	( .Cam:Battle 0 8   *Fixed[0.10058594] )
+        EndThread
+        % Do Jump
+        Sub   *Var0 60`
+        Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B000A )
+        % Rotate Bombette
+        Thread
+            SetTimescale *Fixed[3.0]
+            Loop 8
+                % 1
+                Call    MakeLerp    	( 0 -180` 3 .Easing:Linear )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+                % 2
+                Call    MakeLerp    	( -180` 0 3 0 )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+            EndLoop
+            SetTimescale *Fixed[1.0]
+            Call    SetActorRotation  ( .Actor:Self 0 0 0 )
+        EndThread
+        Thread % Init A Tracker % 2nd Stylish Move
+            Exec $Script_InitTracker
+            Wait 4
+            % A button was pressed too soon?
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .True
+                Set *TrackInput .False
+                Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                Wait 1
+                Goto EndThread2
+            EndIf    
+            Loop 2 % 2 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                If *Var0 == .True
+                    BreakLoop
+                EndIf
+                Wait 1
+            EndLoop
+            Label EndThread2
+        EndThread
+        Call  JumpToGoal    ( .Actor:Partner 15` .False .False .False )
+        % 2nd StylishMove
+        % Do the stylish move if the A button was pressed at the correct time
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            % Disable Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Call $WriteAddress ( 8029FC40 0 0 .False .False ) % restard current action command bool, so the game ignores you pressed A when doing the stylish
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            % Explotion
+            Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  PlaySound ( 2016 ) % Boom!
+            Set   *Var3 *Var2
+            Sub   *Var3 2
+            Call  $Function_ExplotionFX    ( *Var0 *Var1 *Var3 ) % Explotion FX
+            Thread
+                Call     ShakeCam    	( .Cam:Battle 0 2   *Fixed[0.5] )
+                Call     ShakeCam    	( .Cam:Battle 0 5   *Fixed[2.0] )
+                Call     ShakeCam    	( .Cam:Battle 0 10` *Fixed[3.0] )
+                Call     ShakeCam    	( .Cam:Battle 0 5   *Fixed[2.0] )
+                Call     ShakeCam    	( .Cam:Battle 0 3   *Fixed[1.5] )
+                Call     ShakeCam    	( .Cam:Battle 0 4   *Fixed[0.80078125] )
+                Call     ShakeCam    	( .Cam:Battle 0 6   *Fixed[0.30078125] )
+                Call     ShakeCam    	( .Cam:Battle 0 8   *Fixed[0.10058594] )
+            EndThread
+            % Do Jump
+            Call  SetGoalToHome ( .Actor:Self )
+            Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B000A )
+            % Rotate Bombette
+            Thread
+                SetTimescale *Fixed[3.0]
+                Loop 6
+                    % 1
+                    Call    MakeLerp    	( 0 -180` 3 .Easing:Linear )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                    % 2
+                    Call    MakeLerp    	( -180` 0 3 0 )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                EndLoop
+                SetTimescale *Fixed[1.0]
+                Call    SetActorRotation  ( .Actor:Self 0 0 0 )
+            EndThread
+            Call  JumpToGoal    ( .Actor:Partner 15` .False .False .False )
+        EndIf
+    EndIf
+    Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+    Sub   *Var0 8
+    Call  GetActorPos   ( .Actor:Player 0 *Var1 0 ) % get Mario Y Pos
+    Sub   *Var1 2
+    Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[0.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B000E )
+    Call  JumpToGoal    ( .Actor:Partner 8 .False .False .False )
+    % restore vanilla code
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B000E )
+    Wait  1`
+    Call  $ReadAddress ( $Data_Inputs 0 *Var3 2 .False )
+    If *Var3 < 2 % the player didn't made both stylish moves?
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B0011 )
+        Sub   *Var0  0000001E
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  JumpToGoal    ( .Actor:Partner 00000008 .False .True .False )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B000E )
+        Wait  1`
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B0011 )
+        Sub   *Var0  00000014
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  JumpToGoal    ( .Actor:Partner 00000006 .False .True .False )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B000E )
+        Wait  1`
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B0011 )
+        Sub   *Var0  0000000A
+        Call  JumpToGoal    ( .Actor:Partner 00000004 .False .True .False )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B000E )
+        Wait  1`
+    Else
+        Wait 10`
+    EndIf
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B0004 )
+    Wait  8`
+    Call  ResetActorSounds      ( .Actor:Partner .ActorSound:Walk )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[5.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B0008 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000B0004 )
+    Return
+    End
+}
+
+#new:Function $Function_ExplotionFX
+{
+	ADDIU     SP, SP, FFC8
+	SW        S1, 14 (SP)
+	COPY      S1, A0
+	SW        RA, 20 (SP)
+	SW        S3, 1C (SP)
+	SW        S2, 18 (SP)
+	SW        S0, 10 (SP)
+	SDC1      F22, 30 (SP)
+	SDC1      F20, 28 (SP)
+	LW        S0, C (S1)
+	LW        A1, 0 (S0)
+	JAL       ~Func:get_variable
+	ADDIU     S0, S0, 4
+	LW        A1, 0 (S0)
+	ADDIU     S0, S0, 4
+	COPY      A0, S1
+	JAL       ~Func:get_variable
+	COPY      S3, V0
+	COPY      A0, S1
+	LW        A1, 0 (S0)
+	JAL       ~Func:get_variable
+	COPY      S0, V0
+	MTC1      S3, F20
+	NOP
+	CVT.S.W   F20, F20
+	COPY      S2, V0
+	MTC1      S2, F22
+	NOP
+	CVT.S.W   F22, F22
+	MTC1      S0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A1, F20
+	MFC1      A3, F22
+	MFC1      A2, F0
+	JAL       80070130
+	CLEAR     A0
+	LAH       V1, 800DC1EC
+	ADDIU     V0, R0, 93
+	BEQ       V1, V0, .o120
+	SLTI      V0, V1, 94
+	BEQ       V0, R0, .oC0
+	ADDIU     V0, R0, 92
+	BEQ       V1, V0, .oD4
+	NOP
+	BEQ       R0, R0, .o1D0
+	NOP
+	.oC0
+	ADDIU     V0, R0, 94
+	BEQ       V1, V0, .o178
+	NOP
+	BEQ       R0, R0, .o1D0
+	NOP
+	.oD4
+	LW        V0, AC (S1)
+	BLEZ      V0, .o100
+	ADDIU     V0, S0, 14
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A1, F20
+	MFC1      A3, F22
+	MFC1      A2, F0
+	BEQ       R0, R0, .o208
+	ADDIU     A0, R0, 1
+	.o100
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A1, F20
+	MFC1      A3, F22
+	MFC1      A2, F0
+	BEQ       R0, R0, .o208
+	CLEAR     A0
+	.o120
+	LW        V0, AC (S1)
+	BLEZ      V0, .o14C
+	ADDIU     V0, S0, 14
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A1, F20
+	MFC1      A3, F22
+	MFC1      A2, F0
+	BEQ       R0, R0, .o168
+	ADDIU     A0, R0, 1
+	.o14C
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A1, F20
+	MFC1      A3, F22
+	MFC1      A2, F0
+	CLEAR     A0
+	.o168
+	JAL       800701F0
+	NOP
+	BEQ       R0, R0, .o214
+	ADDIU     A0, R0, 2017
+	.o178
+	LW        V0, AC (S1)
+	BLEZ      V0, .o1A4
+	ADDIU     V0, S0, 14
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A1, F20
+	MFC1      A3, F22
+	MFC1      A2, F0
+	BEQ       R0, R0, .o1C0
+	ADDIU     A0, R0, 2
+	.o1A4
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A1, F20
+	MFC1      A3, F22
+	MFC1      A2, F0
+	ADDIU     A0, R0, 1
+	.o1C0
+	JAL       800701F0
+	NOP
+	BEQ       R0, R0, .o214
+	ADDIU     A0, R0, 2017
+	.o1D0
+	MTC1      S3, F0
+	NOP
+	CVT.S.W   F0, F0
+	ADDIU     V0, S0, 14
+	MFC1      A1, F0
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A2, F0
+	MTC1      S2, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A3, F0
+	CLEAR     A0
+	.o208
+	JAL       800701F0
+	NOP
+	ADDIU     A0, R0, 2016
+	.o214
+	JAL       ~Func:sfx_play_sound
+	NOP
+	LW        RA, 20 (SP)
+	LW        S3, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	LDC1      F22, 30 (SP)
+	LDC1      F20, 28 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 38
+}
+
+%===========
+% Sushie
+%===========
+
+% Tydal Wave's GoBackToHome plus Stylish Move
+#new:Script:Battle $Script_TydalWave_GoBackToHome
+{
+    % Tidal Wave - Stylish Move
+    Thread
+        Wait 10`
+        Call $ReadAddress ( $Data_Inputs 0 *Var1 .False .False )
+        If *Var1 == .False % The A button wasn't still pressed
+            Loop 4 % 4 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var1 .False .False )
+                % Set *Var1 .True % testing
+                If *Var1 == .True
+                    Set   *TrackInput .False % turn off tracker
+                    % Add 1 to the stylish counter (last move only)
+                    Call $ReadAddress  ( $Data_Inputs 0 *Var1 2 .False )
+                    Add *Var1 1
+                    Call $WriteAddress ( $Data_Inputs 0 *Var1 2 .False )
+                    Set *VarA .False % this move doesn't have an SP cap
+                    ExecWait $Script_DoStylishFX
+                    BreakLoop
+                EndIf
+                Wait 1
+            EndLoop
+        Else % A button was pressed to soon, don't do stylish
+            Set   *TrackInput .False % turn off tracker
+            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        EndIf
+    EndIf
+    EndThread
+    Call  JumpToGoal    ( .Actor:Partner 00000014 .False .True .False )
+    Call $ReadAddress ( $Data_Inputs 0 *Var1 .False .False )
+    If *Var1 == .True
+        %=====================
+        % Sushie Jump
+        % Rotate Sushie
+        Call PlaySoundAtActor ( .Actor:Self 2034 ) % Jump
+        Thread
+            Call  SetActorRotationOffset    ( .Actor:Self 0 12` 0 )
+            SetTimescale *Fixed[3.0]
+            Call    MakeLerp    	( 0 -180` 8 .Easing:Linear )
+            Loop     
+                Call     UpdateLerp
+                Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                Wait     1
+                If  *Var1  ==  .False
+                    BreakLoop
+                EndIf
+            EndLoop
+            % 2
+            Call    MakeLerp    	( 180` 0 8 .Easing:Linear )
+            Loop     
+                Call     UpdateLerp
+                Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                Wait     1
+                If  *Var1  ==  .False
+                    BreakLoop
+                EndIf
+            EndLoop
+            SetTimescale *Fixed[1.0]
+            Call  SetActorRotation  ( .Actor:Self 0 0 0 )
+            Call  SetActorRotationOffset    ( .Actor:Self 0 9 0 )
+        EndThread
+        Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+        % Do Jump
+        Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.2] )
+        Call  JumpToGoal    ( .Actor:Self 20` .False .False .False )
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+    Return
+    End
+}
+
+#new:Script:Battle $Script_BellyFlop_GoBackToHome_Succeed
+{
+    % Belly Flop - Stylish Move
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If  *Var0 == .True
+        % Rotate Sushie
+        Thread
+            Call  SetActorRotationOffset    ( .Actor:Self 0 12` 0 )
+            SetTimescale *Fixed[3.0]
+            Loop 6
+                % 1
+                Call    MakeLerp    	( 0 -180` 3 .Easing:Linear )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+                % 2
+                Call    MakeLerp    	( -180` 0 3 0 )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+            EndLoop
+            SetTimescale *Fixed[1.0]
+            Call  SetActorRotation  ( .Actor:Self 0 0 0 )
+            Call  SetActorRotationOffset    ( .Actor:Self 0 9 0 )
+        EndThread
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Exec  $Script_InitTracker
+    Call  80280818
+    Call  UseBattleCamPreset  ( 00000004 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0006 )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Sub   *Var0  0000003C
+    Set   *Var1  00000000
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 00000014 .False .True .False )
+    Sub   *Var0  0000001E
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 00000008 .False .True .False )
+    Sub   *Var0  00000014
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Thread % Belly Flop - 2nd Stylish Move
+        Wait 2
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .False % The A button wasn't still pressed
+            Loop 4 % 4 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                % Set *Var0 .True % testing
+                If *Var0 == .True
+                    Set   *TrackInput .False % turn off tracker
+                    % Add 1 to the stylish counter (last move only)
+                    Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                    Add *Var0 1
+                    Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                    Set *VarA .False % this move doesn't have an SP cap
+                    ExecWait $Script_DoStylishFX
+                    Wait 1
+                    Goto EndThread2
+                EndIf
+                Wait 1
+            EndLoop
+            % A button wasn't pressed
+            Set   *TrackInput .False % turn off tracker
+            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Else % button A was pressed to soon
+            Set   *TrackInput .False % turn off tracker
+            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        EndIf
+        Label EndThread2
+    EndThread
+    Call  JumpToGoal    ( .Actor:Partner 00000006 .False .True .False )
+    Sub   *Var0  0000000A
+    Call  JumpToGoal    ( .Actor:Partner 00000004 .False .True .False )
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        % happy :D
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0011 )
+        Wait  25`
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Wait  15`
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Return
+    End
+}
+
+% Call $SetActorYPos ( actorID ypos )
+#new:Function $SetActorYPos
+{
+PUSH    RA, A0, A1, A2, A3, S0, S1, S2
+COPY    S2, A0
+LW      S0, C (A0)
+JAL     ~Func:get_variable
+LW      A1, 4 (S0) % load arg2
+COPY    S1, V0 % save arg2 in s1
+JAL     ~Func:get_variable
+LW      A1, 0 (S0) % load arg1
+% Get .Actor:Self was used?
+COPY    A0, V0
+ADDIU	V0, R0, FF81
+BNE 	A0, V0, .GetActorPointer
+NOP
+LW	    A0, 0148 (S2) % Load Actual ID, instead of SelfID
+.GetActorPointer
+JAL	    80269D6C % ~Func:get_actor
+NOP
+% V0 = Actor Data Address
+% S1 = Y New Pos
+% Convert Y Pos to Float
+MTC1	S1, F22
+NOP
+CVT.S.W	F22, F22 % Converted
+SWC1	F22, 0148 (V0) % Actor Y Pos
+POP     RA, A0, A1, A2, A3, S0, S1, S2
+JR      RA
+ORI     V0, R0, 2
+}
+
+#export $SetActorYPos % unused
+#export $Script_DoStylish_Multibonk
+#export $Script_DoStylish_DizzyShell
+#export $Script_ShellToss_GoBackToHome_Succeed
+#export $Script_Bomb_DoStylish
+#export $Script_Slam_DoStylish
+#export $Script_TydalWave_GoBackToHome
+#export $Script_BellyFlop_GoBackToHome_Succeed

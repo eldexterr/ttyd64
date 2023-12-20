@@ -1,0 +1,443 @@
+% Automatically dumped from section 27
+
+#new:Actor $27_SlotMachineStop {
+% stats
+[Index]        CFb 
+[Level]        99`b 
+[MaxHP]        99`b 
+[Coins]         0`b 
+[Flags]       00244005 
+[StatusTable] $StatusTable_80229030_27 
+% ai
+[PartsCount]    1`s 
+[PartsTable]  $PartsTable_802290DC_27 
+[Script]      $Script_Init_80229150_27 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]       0`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]     0`b 
+[PowerBounce]   0`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         44`b  40`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  20`b % dx dy
+[StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:Function $Function_802185E0_27 {
+    0:  LAW       V0, 8007419C
+    8:  SW        R0, 84 (A0)
+    C:  LBU       V0, AA (V0)
+   10:  ANDI      V0, V0, 1
+   14:  BEQ       V0, R0, .o20
+   18:  LI        V0, 1
+   1C:  SW        V0, 84 (A0)
+        .o20
+   20:  JR        RA
+   24:  LI        V0, 2
+}
+
+#new:Function $Function_80218608_27 {
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  JAL       ~Func:add_coins
+    C:  LI        A0, 1
+   10:  LW        RA, 10 (SP)
+   14:  LI        V0, 2
+   18:  JR        RA
+   1C:  ADDIU     SP, SP, 18
+}
+
+#new:IntTable $IntTable_80228FC4_27 {
+00000000 00000001 00000000 00000002 00000000 00000002 00000000 00000002 
+}
+
+#new:IntTable $IntTable_80228FE4_27 {
+00000000 00000001 00000000 00000002 00000001 00000002 00000000 00000002 
+}
+
+#new:IntTable $IntTable_80229004_27 {
+00000000 00000001 00000000 00000002 00000000 00000002 00000000 00000002 
+}
+
+#new:DefenseTable $DefenseTable_80229024_27 {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_80229030_27 {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep       0`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy       0`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze    0`
+.Status:Shrink      0`
+.Status:Stop        0`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_802290DC_27 {
+00800000 01000000 000000FF 00000000 $DefenseTable_80229024_27 00000000 00000000 00000000 00000000 
+}
+
+#new:Script $Script_Init_80229150_27 {
+    0:  UseArray  $End[10] 
+    C:  Call  BindTakeTurn      ( .Actor:Self $Script_TakeTurn_8022A598_27 )
+   20:  Call  BindIdle  ( .Actor:Self $Script_Idle_802292E8_27 )
+   34:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_80229E44_27 )
+   48:  Set   *Array[1]  00000000 
+   58:  Set   *Array[2]  00000000 
+   68:  Set   *Array[3]  00000000 
+   78:  Set   *Array[4]  00000000 
+   88:  Call  RandInt   ( 00000008 *Var0 )
+   9C:  Mul   *Var0  0000002D 
+   AC:  Set   *Array[5]  *Var0 
+   BC:  Call  RandInt   ( 00000008 *Var0 )
+   D0:  Mul   *Var0  0000002D 
+   E0:  Set   *Array[6]  *Var0 
+   F0:  Call  RandInt   ( 00000008 *Var0 )
+  104:  Mul   *Var0  0000002D 
+  114:  Set   *Array[7]  *Var0 
+  124:  Call  $Function_802185E0_27 ( )
+  130:  If  *Var0  ==  00000001 
+  140:  	Set   *Array[1]  00000001 
+  150:  	Set   *Array[2]  00000001 
+  160:  	Set   *Array[3]  00000001 
+  170:  	Set   *Array[4]  00000001 
+  180:  EndIf
+  188:  Return
+  190:  End
+}
+
+#new:Script $Script_Idle_802292E8_27 {
+    0:  UseArray  $End[10] 
+    C:  Call  EnableTexPanning  ( 0000002D .True )
+   20:  Set   *VarE  00000000 
+   30:  Set   *VarF  00000000 
+   40:  Label  0
+   4C:  Call  GetActorVar       ( .Actor:Self 00000000 *Var0 )
+   64:  Switch  *Var0 
+   70:  	Case  ==  00000000 
+   7C:  	Case  ==  00000001 
+   88:  		Switch  *Array[2] 
+   94:  			Case  ==  00000000 
+   A0:  			Case  ==  00000001 
+   AC:  				Add   *Array[5]  00000005 
+   BC:  			Case  ==  00000002 
+   C8:  				If  *Array[8]  >  00000000 
+   D8:  					Add   *Array[5]  00000005 
+   E8:  					Sub   *Array[8]  00000005 
+   F8:  					BreakCase
+  100:  				EndIf
+  108:  				Set   *Var0  *Array[5] 
+  118:  				Mod   *Var0  0000002D 
+  128:  				If  *Var0  !=  00000000 
+  138:  					Add   *Array[5]  00000005 
+  148:  				Else
+  150:  					Set   *Array[2]  00000003 
+  160:  				EndIf
+  168:  		EndSwitch
+  170:  		Call  RotateModel   ( 00000020 *Array[5] 00000001 00000000 00000000 )
+  190:  		Call  RotateModel   ( 00000021 *Array[5] 00000001 00000000 00000000 )
+  1B0:  		Call  RotateModel   ( 00000022 *Array[5] 00000001 00000000 00000000 )
+  1D0:  	Case  ==  00000002 
+  1DC:  		Switch  *Array[3] 
+  1E8:  			Case  ==  00000000 
+  1F4:  			Case  ==  00000001 
+  200:  				Add   *Array[6]  00000005 
+  210:  			Case  ==  00000002 
+  21C:  				If  *Array[9]  >  00000000 
+  22C:  					Add   *Array[6]  00000005 
+  23C:  					Sub   *Array[9]  00000005 
+  24C:  					BreakCase
+  254:  				EndIf
+  25C:  				Set   *Var0  *Array[6] 
+  26C:  				Mod   *Var0  0000002D 
+  27C:  				If  *Var0  !=  00000000 
+  28C:  					Add   *Array[6]  00000005 
+  29C:  				Else
+  2A4:  					Set   *Array[3]  00000003 
+  2B4:  				EndIf
+  2BC:  		EndSwitch
+  2C4:  		Call  RotateModel   ( 00000024 *Array[6] 00000001 00000000 00000000 )
+  2E4:  		Call  RotateModel   ( 00000025 *Array[6] 00000001 00000000 00000000 )
+  304:  		Call  RotateModel   ( 00000026 *Array[6] 00000001 00000000 00000000 )
+  324:  	Case  ==  00000003 
+  330:  		Switch  *Array[4] 
+  33C:  			Case  ==  00000000 
+  348:  			Case  ==  00000001 
+  354:  				Add   *Array[7]  00000005 
+  364:  			Case  ==  00000002 
+  370:  				If  *Array[A]  >  00000000 
+  380:  					Add   *Array[7]  00000005 
+  390:  					Sub   *Array[A]  00000005 
+  3A0:  					BreakCase
+  3A8:  				EndIf
+  3B0:  				Set   *Var0  *Array[7] 
+  3C0:  				Mod   *Var0  0000002D 
+  3D0:  				If  *Var0  !=  00000000 
+  3E0:  					Add   *Array[7]  00000005 
+  3F0:  				Else
+  3F8:  					Set   *Array[4]  00000003 
+  408:  				EndIf
+  410:  		EndSwitch
+  418:  		Call  RotateModel   ( 00000028 *Array[7] 00000001 00000000 00000000 )
+  438:  		Call  RotateModel   ( 00000029 *Array[7] 00000001 00000000 00000000 )
+  458:  		Call  RotateModel   ( 0000002A *Array[7] 00000001 00000000 00000000 )
+  478:  EndSwitch
+  480:  If  *Array[5]  >=  00000168 
+  490:  	Sub   *Array[5]  00000168 
+  4A0:  EndIf
+  4A8:  If  *Array[6]  >=  00000168 
+  4B8:  	Sub   *Array[6]  00000168 
+  4C8:  EndIf
+  4D0:  If  *Array[7]  >=  00000168 
+  4E0:  	Sub   *Array[7]  00000168 
+  4F0:  EndIf
+  4F8:  If  *Array[1]  ==  00000000 
+  508:  	Add   *VarF  FFFFFEEB 
+  518:  	Call  SetTexPanOffset   ( 0000000B 00000000 00000000 *VarF )
+  534:  EndIf
+  53C:  If  *Array[1]  ==  00000001 
+  54C:  	Add   *VarF  FFFFFBAA 
+  55C:  	Call  SetTexPanOffset   ( 0000000B 00000000 00000000 *VarF )
+  578:  EndIf
+  580:  If  *Array[1]  ==  00000002 
+  590:  	Add   *VarF  FFFFF2FE 
+  5A0:  	Call  SetTexPanOffset   ( 0000000B 00000000 00000000 *VarF )
+  5BC:  EndIf
+  5C4:  If  *Array[1]  ==  00000002 
+  5D4:  	Goto  1
+  5E0:  EndIf
+  5E8:  If  *Array[1]  ==  00000000 
+  5F8:  	Goto  1
+  604:  EndIf
+  60C:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+  624:  If  *Var0  !=  00000000 
+  634:  	Goto  1
+  640:  EndIf
+  648:  Set   *Var0  *Array[2] 
+  658:  Add   *Var0  *Array[3] 
+  668:  Add   *Var0  *Array[4] 
+  678:  If  *Var0  ==  00000009 
+  688:  	Set   *Var0  *Array[5] 
+  698:  	Div   *Var0  0000002D 
+  6A8:  	UseIntBuffer  $IntTable_80228FC4_27 
+  6B4:  	GetIntN  *VarA *Var0 
+  6C4:  	Set   *Var0  *Array[6] 
+  6D4:  	Div   *Var0  0000002D 
+  6E4:  	UseIntBuffer  $IntTable_80228FE4_27 
+  6F0:  	GetIntN  *VarB *Var0 
+  700:  	Set   *Var0  *Array[7] 
+  710:  	Div   *Var0  0000002D 
+  720:  	UseIntBuffer  $IntTable_80229004_27 
+  72C:  	GetIntN  *VarC *Var0 
+  73C:  	Loop
+  748:  		If  *VarA  !=  *VarB 
+  758:  			BreakLoop
+  760:  		EndIf
+  768:  		If  *VarA  !=  *VarC 
+  778:  			BreakLoop
+  780:  		EndIf
+  788:  		If  *VarB  !=  *VarC 
+  798:  			BreakLoop
+  7A0:  		EndIf
+  7A8:  		Thread
+  7B0:  			Call  8026BF48  ( 00000001 )
+  7C0:  			Call  UseBattleCamPreset    ( 00000013 )
+  7D0:  			Call  SetBattleCamTarget    ( 00000000 00000064 00000000 )
+  7E8:  			Call  SetBattleCamOffsetZ   ( 00000000 )
+  7F8:  			Call  SetBattleCamZoom      ( 00000154 )
+  808:  			Call  MoveBattleCamOver     ( 0000000A )
+  818:  			Switch  *VarA 
+  824:  				Case  ==  00000000 
+  830:  					Loop  0000000A 
+  83C:  						Call  MakeItemEntity    ( .Item:Coin FFFFFFF9 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  860:  						Call  $Function_80218608_27 ( )
+  86C:  						Wait  1`
+  878:  						Call  MakeItemEntity    ( .Item:Coin 00000011 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  89C:  						Call  $Function_80218608_27 ( )
+  8A8:  						Wait  1`
+  8B4:  						Call  MakeItemEntity    ( .Item:Coin 0000002A 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  8D8:  						Call  $Function_80218608_27 ( )
+  8E4:  						Wait  10`
+  8F0:  					EndLoop
+  8F8:  				Case  ==  00000001 
+  904:  					Loop  0000000A 
+  910:  						Call  MakeItemEntity    ( .Item:Coin FFFFFFF9 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  934:  						Call  $Function_80218608_27 ( )
+  940:  						Wait  1`
+  94C:  						Call  MakeItemEntity    ( .Item:Coin 00000011 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  970:  						Call  $Function_80218608_27 ( )
+  97C:  						Wait  1`
+  988:  						Call  MakeItemEntity    ( .Item:Coin 0000002A 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  9AC:  						Call  $Function_80218608_27 ( )
+  9B8:  						Wait  10`
+  9C4:  					EndLoop
+  9CC:  				Case  ==  00000002 
+  9D8:  					Loop  0000000A 
+  9E4:  						Call  MakeItemEntity    ( .Item:Coin FFFFFFF9 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  A08:  						Call  $Function_80218608_27 ( )
+  A14:  						Wait  1`
+  A20:  						Call  MakeItemEntity    ( .Item:Coin 00000011 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  A44:  						Call  $Function_80218608_27 ( )
+  A50:  						Wait  1`
+  A5C:  						Call  MakeItemEntity    ( .Item:Coin 0000002A 00000069 FFFFFFB6 .ItemSpawnMode:Toss_SpawnAlways_Small 00000000 )
+  A80:  						Call  $Function_80218608_27 ( )
+  A8C:  						Wait  10`
+  A98:  					EndLoop
+  AA0:  			EndSwitch
+  AA8:  			Set   *Array[1]  00000000 
+  AB8:  			Set   *Array[2]  00000000 
+  AC8:  			Set   *Array[3]  00000000 
+  AD8:  			Set   *Array[4]  00000000 
+  AE8:  			Call  8026BF48  ( 00000000 )
+  AF8:  		EndThread
+  B00:  		Set   *Array[1]  00000002 
+  B10:  		BreakLoop
+  B18:  	EndLoop
+  B20:  EndIf
+  B28:  Label  1
+  B34:  Wait  1`
+  B40:  Goto  0
+  B4C:  Return
+  B54:  End
+}
+
+#new:Script $Script_HandleEvent_80229E44_27 {
+    0:  UseArray  $End[10] 
+    C:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   20:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   34:  Switch  *Var0 
+   40:  	CaseOR  ==  .Event:HitCombo % 9
+   4C:  	CaseOR  ==  .Event:Hit % A
+   58:  	CaseOR  ==  .Event:BurnHit % E
+   64:  	CaseOR  ==  .Event:ShockHit % 2F
+   70:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   88:  		Switch  *Var0 
+   94:  			Case  ==  00000000 
+   A0:  				Call  TranslateModel    ( 0000001C 00000000 FFFFFFFE 00000000 )
+   BC:  				Wait  1`
+   C8:  				Call  TranslateModel    ( 0000001C 00000000 FFFFFFFA 00000000 )
+   E4:  				Wait  1`
+   F0:  				Call  TranslateModel    ( 0000001C 00000000 FFFFFFF9 00000000 )
+  10C:  				Wait  4`
+  118:  				Call  TranslateModel    ( 0000001C 00000000 FFFFFFFC 00000000 )
+  134:  				Wait  1`
+  140:  				Call  TranslateModel    ( 0000001C 00000000 FFFFFFFE 00000000 )
+  15C:  				Wait  1`
+  168:  				Call  TranslateModel    ( 0000001C 00000000 FFFFFFFF 00000000 )
+  184:  				Wait  1`
+  190:  				Call  TranslateModel    ( 0000001C 00000000 00000000 00000000 )
+  1AC:  				Set   *Array[1]  00000001 
+  1BC:  				Set   *Array[2]  00000001 
+  1CC:  				Set   *Array[3]  00000001 
+  1DC:  				Set   *Array[4]  00000001 
+  1EC:  			Case  ==  00000001 
+  1F8:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFE 00000000 )
+  214:  				Wait  1`
+  220:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFA 00000000 )
+  23C:  				Wait  1`
+  248:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFF9 00000000 )
+  264:  				Wait  4`
+  270:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFC 00000000 )
+  28C:  				Wait  1`
+  298:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFE 00000000 )
+  2B4:  				Wait  1`
+  2C0:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFF 00000000 )
+  2DC:  				Wait  1`
+  2E8:  				Call  TranslateModel    ( 0000001D 00000000 00000000 00000000 )
+  304:  				If  *Array[2]  ==  00000001 
+  314:  					Set   *Array[8]  00000064 
+  324:  					Set   *Array[9]  00000096 
+  334:  					Set   *Array[A]  000000C8 
+  344:  					Set   *Array[2]  00000002 
+  354:  					Set   *Array[3]  00000002 
+  364:  					Set   *Array[4]  00000002 
+  374:  				EndIf
+  37C:  			Case  ==  00000002 
+  388:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFE 00000000 )
+  3A4:  				Wait  1`
+  3B0:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFA 00000000 )
+  3CC:  				Wait  1`
+  3D8:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFF9 00000000 )
+  3F4:  				Wait  4`
+  400:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFC 00000000 )
+  41C:  				Wait  1`
+  428:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFE 00000000 )
+  444:  				Wait  1`
+  450:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFF 00000000 )
+  46C:  				Wait  1`
+  478:  				Call  TranslateModel    ( 0000001D 00000000 00000000 00000000 )
+  494:  				If  *Array[3]  ==  00000001 
+  4A4:  					Set   *Array[8]  00000096 
+  4B4:  					Set   *Array[9]  00000064 
+  4C4:  					Set   *Array[A]  000000C8 
+  4D4:  					Set   *Array[2]  00000002 
+  4E4:  					Set   *Array[3]  00000002 
+  4F4:  					Set   *Array[4]  00000002 
+  504:  				EndIf
+  50C:  			Case  ==  00000003 
+  518:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFE 00000000 )
+  534:  				Wait  1`
+  540:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFA 00000000 )
+  55C:  				Wait  1`
+  568:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFF9 00000000 )
+  584:  				Wait  4`
+  590:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFC 00000000 )
+  5AC:  				Wait  1`
+  5B8:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFE 00000000 )
+  5D4:  				Wait  1`
+  5E0:  				Call  TranslateModel    ( 0000001D 00000000 FFFFFFFF 00000000 )
+  5FC:  				Wait  1`
+  608:  				Call  TranslateModel    ( 0000001D 00000000 00000000 00000000 )
+  624:  				If  *Array[4]  ==  00000001 
+  634:  					Set   *Array[8]  000000C8 
+  644:  					Set   *Array[9]  00000096 
+  654:  					Set   *Array[A]  00000064 
+  664:  					Set   *Array[2]  00000002 
+  674:  					Set   *Array[3]  00000002 
+  684:  					Set   *Array[4]  00000002 
+  694:  				EndIf
+  69C:  		EndSwitch
+  6A4:  	EndCaseGroup
+  6AC:  	CaseOR  ==  .Event:BurnDeath % 24
+  6B8:  	CaseOR  ==  .Event:SpinSmashHit % B
+  6C4:  	CaseOR  ==  .Event:ShockDeath % 26
+  6D0:  	CaseOR  ==  .Event:Death % 20
+  6DC:  	CaseOR  ==  .Event:SpinSmashDeath % 21
+  6E8:  	CaseOR  ==  .Event:SpikeContact % 2A
+  6F4:  	CaseOR  ==  .Event:BurnContact % 2C
+  700:  	EndCaseGroup
+  708:  	CaseOR  ==  00000017 % 17
+  714:  	CaseOR  ==  .Event:Immune % 19
+  720:  	EndCaseGroup
+  728:  EndSwitch
+  730:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  744:  Return
+  74C:  End
+}
+
+#new:Script $Script_TakeTurn_8022A598_27 {
+    0:  UseArray  $End[10] 
+    C:  Return
+   14:  End
+}
+

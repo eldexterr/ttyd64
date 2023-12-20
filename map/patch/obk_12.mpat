@@ -1,0 +1,455 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 2
+}
+
+#define .NpcID:BooL1       00
+#define .NpcID:BooL2       01
+#define .NpcID:BooL3       02
+#define .NpcID:BooL4       03
+#define .NpcID:BooL5       04
+#define .NpcID:BooL6       05
+#define .NpcID:BooR1       06
+#define .NpcID:BooR2       07
+#define .NpcID:BooR3       08
+#define .NpcID:BooR4       09
+#define .NpcID:BooR5       0A
+#define .NpcID:BooR6       0B
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:BoosMansion
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Call  $WriteBitFlag ( 8010EFCC .False 2 6 .True ) % PlayerFlags2(0x02)(bit6) - Activate 8bit Mario
+	Exec  $Script_SetupMusic
+    Exec  $Script_MakeEntities
+	Exec  $Script_EnterMap
+    Call  MakeNpcs ( .False $NpcGroupList_obk12 )
+    Bind  $Script_Respawn  .Trigger:FloorAbove ~Collider:respawn 00000001 00000000
+    Call  EnableGroup ( ~Model:blue_door .False )
+    Call  ModifyColliderFlags   ( .False ~Collider:Exit1 7FFFFE00 )
+    Call  HidePlayerShadow ( .True )
+	Return
+	End
+}
+
+#new:Script $Script_Respawn {
+    Wait    5
+    Call    DisablePlayerInput ( .True )
+    SetF	*Var0 *Fixed[25.0]  % speed
+    SetF	*Var1 *Fixed[255.0] % fully dark
+    ExecWait $Script_FadeScreenOut
+    Call    GetEntryID ( *Var0 )
+    If *Var0 == ~Entry:Entry0
+        Call    SetPlayerPos ( ~Vec3d:Entry0 )
+    Else
+        Call    SetPlayerPos ( ~Vec3d:Entry1 )
+    EndIf
+    % Fade Screen Brightness
+    Call    ResetCam ( .Cam:Default *Fixed[50.0] )
+    Wait	10`
+    SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[5.0]  % fully bright
+    ExecWait $Script_FadeScreenIn
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+#new:Script $Script_SetupMusic
+{
+	If  *GB_StoryProgress  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+        Call  SetMusicTrack ( 00000000 .Song:BoosMansion 00000000 00000008 )
+    Else
+        Call  SetMusicTrack ( 00000000 .Song:CheerfulBoosMansion 00000000 00000008 )
+    EndIf
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+% Entities
+
+#new:Script $Script_MakeEntities
+{
+    Call  MakeEntity    ( .Entity:MultiTriggerBlock ~Vec4d:Entity_QuestionBlock 80000000 )
+	Call  MakeEntity    ( .Entity:SingleTriggerBlock ~Vec4d:Entity_TriggerBlock 80000000 )
+    Call  AssignScript  ( $Script_MakeBlueSwitch )
+	Return
+	End
+}
+
+#new:Script $Script_MakeBlueSwitch {
+    Call    PlaySound  ( .Sound:SmokeBurst )
+    Set     *Var0 ~PosXd:Entity_BlueSwitch % x
+    Set     *Var1 ~PosYd:Entity_BlueSwitch % y
+    Set     *Var2 ~PosZd:Entity_BlueSwitch % z
+    Add     *Var1 7 % y
+    Call    PlayEffect ( ~FX:BigSmokePuff *Var0 *Var1 *Var2 ) % xyz
+    Wait    5
+    Call    MakeEntity  	( .Entity:BlueSwitch ~Vec4d:Entity_BlueSwitch 80000000 )
+    Call    AssignScript 	( $Script_ShowHiddenDoor )
+    Return
+    End
+}
+
+#new:Script $Script_ShowHiddenDoor {
+    Call    $WriteAddress ( $Byte_8BitMario_Switch 0 .True .False .False )
+    % Don't look inputs when pressing the the switch (it happens if mario is in 8bitmode and he presses a blue switch)
+    Call    $WriteBitFlag ( 8010EFCC .False 2 6 .False ) % PlayerFlags2(0x02)(bit6) - Deactivate 8bit Mario
+    Thread % wait until mario touches the floor once again to activate the 8bit bitflag once again
+        Loop
+            Call GetPlayerActionState ( *Var0 )
+            If *Var0 == .ActionState:Land
+                Call    $WriteAddress ( $Byte_8BitMario_Switch 0 .False .False .False )
+                Call    $WriteBitFlag ( 8010EFCC .False 2 6 .True ) % Activate 8bit mode once again
+                BreakLoop
+            EndIf
+            Call SetPlayerAnimation ( 00010002 )
+            Call SetPlayerAnimation ( 00090005 )
+            Wait 1
+        EndLoop
+    EndThread
+    Call    EnableGroup ( ~Model:blue_door .True )
+    Call    ModifyColliderFlags   ( .True ~Collider:Exit1 7FFFFE00 )
+    Set     *GF_OBK12_Coin1 .False
+    Set     *GF_OBK12_Coin2 .False
+    Set     *GF_OBK12_Coin3 .False
+    Set     *GF_OBK12_Coin4 .False
+    Set     *GF_OBK12_Coin5 .False
+    Set     *GF_OBK12_Coin6 .False
+    Set     *GF_OBK12_Coin7 .False
+    Set     *GF_OBK12_Coin8 .False
+    Set     *GF_OBK12_Coin9 .False
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin1 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin1 )
+    Set     *MapVar[0] *Var0 % save itemEntity
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin2 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin2 )
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin3 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin3 )
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin4 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin4 )
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin5 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin5 )
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin6 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin6 )
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin7 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin7 )
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin8 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin8 )
+    Call    MakeItemEntity ( .Item:Coin ~Vec3d:Entity_Coin9 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK12_Coin9 )
+    Thread
+        Set     *MapFlag[00] .True
+        Call    PlaySound ( 008E )
+        Wait    350`
+        Set     *MapFlag[00] .False
+        Call    StopSound ( 008E )
+        % Hide everything once again
+        Call    EnableGroup ( ~Model:blue_door .False )
+        Call    ModifyColliderFlags   ( .False ~Collider:Exit1 7FFFFE00 )
+        If *GF_OBK12_Coin1 == .False % coin1
+            Call    RemoveItemEntity ( *MapVar[0] )
+        EndIf
+        If *GF_OBK12_Coin2 == .False % coin2
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 1
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+        If *GF_OBK12_Coin3 == .False % coin3
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 2
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+        If *GF_OBK12_Coin4 == .False % coin4
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 3
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+        If *GF_OBK12_Coin5 == .False % coin5
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 4
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+        If *GF_OBK12_Coin6 == .False % coin6
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 5
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+        If *GF_OBK12_Coin7 == .False % coin7
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 6
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+        If *GF_OBK12_Coin8 == .False % coin8
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 7
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+        If *GF_OBK12_Coin9 == .False % coin9
+            Set     *Var0 *MapVar[0]
+            Add     *Var0 8
+            Call    RemoveItemEntity ( *Var0 )
+        EndIf
+    EndThread
+    Return
+    End
+}
+
+#new:Script $Script_EnterMap
+{
+    Call    GetEntryID ( *Var0 )
+    If *Var0 == ~Entry:Entry0
+        Set	 *Var0 $Script_CreateExitTriggers
+		Exec EnterWalk
+    Else
+        Exec $Script_CreateExitTriggers
+        Call DisablePlayerInput ( .True )
+        Wait 5
+        Call DisablePlayerInput ( .False )
+    EndIf
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind     $Script_Exit0  .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+    Bind     $Script_Exit1 .Trigger:WallPressA ~Collider:Exit1 00000001 00000000 
+    Bind     $Script_Exit2 .Trigger:WallPressA ~Collider:Exit2 00000001 00000000 
+	Return
+	End
+}
+
+#new:Script $Script_Exit0 {
+    Call     StopSound ( 008E )
+	Call     UseExitHeading  	( 3C ~Entry:Entry0 )
+	Exec     ExitWalk
+    Call     GotoMap	( "obk_05" 1 )
+	Wait     100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit1 {
+    Call    StopSound ( 008E )
+    Call    DisablePlayerInput ( .True )
+    Call    PlaySound ( 01C1 ) % door sfx
+    Call    GotoMap ( "obk_13" 0 )
+    Return
+    End
+}
+
+#new:Script $Script_Exit2 {
+    Call    StopSound ( 008E )
+    Call    DisablePlayerInput ( .True )
+    Call    PlaySound ( 01C1 ) % door sfx
+    If *MapFlag[00] == .False
+        Call    GotoMap ( "obk_12" 1 )
+    Else
+        Call     $WriteAddress ( $Byte_DisableVerticalMovement 0 .False .False .False ) % clear byte
+        Call    GotoMap ( "obk_14" 0 )
+    EndIf
+    Return
+    End
+}
+
+% NPCs ==================
+
+#new:NpcGroupList $NpcGroupList_obk12
+{
+0000000C $NpcGroup_Decorations 	00000000
+00000000 00000000 00000000 
+}
+
+#new:NpcGroup $NpcGroup_Decorations
+{
+00000000 $NpcSettings_Decoration ~vec3f:NPC_Boo_L_1
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 00000000 
+~NoDrops
+~Movement:NPC_Boo_L_1
+~AnimationTable:NPC_Boo_L_1
+00000000 00000000 00000000 00000000
+%
+00000001 $NpcSettings_Decoration ~vec3f:NPC_Boo_L_2
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 00000000 
+~NoDrops
+~Movement:NPC_Boo_L_2
+~AnimationTable:NPC_Boo_L_2
+00000000 00000000 00000000 00000000
+%
+00000002 $NpcSettings_Decoration ~vec3f:NPC_Boo_L_3
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 00000000 
+~NoDrops
+~Movement:NPC_Boo_L_3
+~AnimationTable:NPC_Boo_L_3
+00000000 00000000 00000000 00000000
+%
+00000003 $NpcSettings_Decoration ~vec3f:NPC_Boo_L_4
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 00000000 
+~NoDrops
+~Movement:NPC_Boo_L_4
+~AnimationTable:NPC_Boo_L_4
+00000000 00000000 00000000 00000000
+%
+00000004 $NpcSettings_Decoration ~vec3f:NPC_Boo_L_5
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 00000000 
+~NoDrops
+~Movement:NPC_Boo_L_5
+~AnimationTable:NPC_Boo_L_5
+00000000 00000000 00000000 00000000
+%
+00000005 $NpcSettings_Decoration ~vec3f:NPC_Boo_L_6
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 00000000
+~NoDrops
+~Movement:NPC_Boo_L_6
+~AnimationTable:NPC_Boo_L_6
+00000000 00000000 00000000 00000000
+%
+00000006 $NpcSettings_Decoration ~vec3f:NPC_Boo_R_1
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 0000010E 
+~NoDrops
+~Movement:NPC_Boo_R_1
+~AnimationTable:NPC_Boo_R_1
+00000000 00000000 00000000 00000000
+%
+00000007 $NpcSettings_Decoration ~vec3f:NPC_Boo_R_2
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 0000010E 
+~NoDrops
+~Movement:NPC_Boo_R_2
+~AnimationTable:NPC_Boo_R_2
+00000000 00000000 00000000 00000000
+%
+00000008 $NpcSettings_Decoration ~vec3f:NPC_Boo_R_3
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 0000010E 
+~NoDrops
+~Movement:NPC_Boo_R_3
+~AnimationTable:NPC_Boo_R_3
+00000000 00000000 00000000 00000000
+%
+00000009 $NpcSettings_Decoration ~vec3f:NPC_Boo_R_4
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 0000010E 
+~NoDrops
+~Movement:NPC_Boo_R_4
+~AnimationTable:NPC_Boo_R_4
+00000000 00000000 00000000 00000000
+%
+0000000A $NpcSettings_Decoration ~vec3f:NPC_Boo_R_5
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 0000010E 
+~NoDrops
+~Movement:NPC_Boo_R_5
+~AnimationTable:NPC_Boo_R_5
+00000000 00000000 00000000 00000000
+%
+0000000B $NpcSettings_Decoration ~vec3f:NPC_Boo_R_6
+00A40D01 $Script_NPC_Init_Boo 00000000 00000000 0000010E
+~NoDrops
+~Movement:NPC_Boo_R_6
+~AnimationTable:NPC_Boo_R_6
+00000000 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Decoration
+{
+00000000 00200025 00000000 00000000 00000000 00000000 00000000 00000000
+00000000 00000000 00630000 
+}
+
+#new:Script $Script_NPC_Init_Boo
+{
+    Call    EnableNpcShadow ( .Npc:Self .False )
+    Call    BindNpcIdle ( .Npc:Self $Script_NPCIdle_Boo )
+    % hide toad
+    Call    802CFD30 ( .Npc:Self 7 *Fixed[0.0] .False .False .False ) % set npc opacity
+    Return
+    End
+}
+
+#new:Script $Script_NPCIdle_Boo
+{
+    % Wait to appear
+    Set  *Var9 100`
+    Call RandInt ( 200` *Var0 )
+    Add  *Var9 *Var0 % Frames to wait before starting to fly
+    Wait *Var9
+    Loop
+        Call    EnableNpcShadow ( .Npc:Self .True )
+        Call    GetSelfNpcID ( *Var0 )
+        Switch *Var0
+            CaseOR == .NpcID:BooL1
+            CaseOR == .NpcID:BooL2
+            CaseOR == .NpcID:BooL3
+            CaseOR == .NpcID:BooL4
+            CaseOR == .NpcID:BooL5
+            CaseOR == .NpcID:BooL6
+                Set *VarA 0 % left
+            EndCaseGroup
+            CaseOR == .NpcID:BooR1
+            CaseOR == .NpcID:BooR2
+            CaseOR == .NpcID:BooR3
+            CaseOR == .NpcID:BooR4
+            CaseOR == .NpcID:BooR5
+            CaseOR == .NpcID:BooR6
+                Set *VarA 1 % Right
+            EndCaseGroup
+        EndSwitch
+        % Boo appears
+        Set *Var1 0
+        Thread
+            Loop 10` % Boo unfades
+                Add     *Var1  24`
+                Call    802CFD30 ( .Npc:Self 7 *Var1 .False .False .False ) % set opacity
+                Wait    1 
+            EndLoop
+        EndThread
+        Call    SetNpcSpeed ( .Npc:Self *Fixed[2.5] )
+        Call    GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+        If *VarA == 0 % Left
+            Set *Var0 ~PosXd:NPC_Boo_R_6
+        Else % Right
+            Set *Var0 ~PosXd:NPC_Boo_L_1
+        EndIf
+        Call    NpcFlyTo ( .Npc:Self *Var0 *Var1 *Var2 0 0 .Easing:Linear )
+        % Boo dissapears once again
+        %
+        Call    802CFD30 ( .Npc:Self 7 *Fixed[0.0] .False .False .False ) % set npc opacity
+        % put Boo back to his origin position
+        Call    GetSelfNpcID ( *Var0 )
+        Switch *Var0
+            Case == .NpcID:BooL1
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_L_1 )
+            Case == .NpcID:BooL2
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_L_2 )
+            Case == .NpcID:BooL3
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_L_3 )
+            Case == .NpcID:BooL4
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_L_4 )
+            Case == .NpcID:BooL5
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_L_5 )
+            Case == .NpcID:BooL6
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_L_6 )
+            Case == .NpcID:BooR1
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_R_1 )
+            Case == .NpcID:BooR2
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_R_2 )
+            Case == .NpcID:BooR3
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_R_3 )
+            Case == .NpcID:BooR4
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_R_4 )
+            Case == .NpcID:BooR5
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_R_5 )
+            Case == .NpcID:BooR6
+                Call    SetNpcPos ( .Npc:Self ~Vec3d:NPC_Boo_R_6 )
+        EndSwitch
+        Call    EnableNpcShadow ( .Npc:Self .False )
+        % wait to appear again
+        Call RandInt ( 200` *Var9 )
+        Wait *Var9
+    EndLoop
+    Return
+    End
+}

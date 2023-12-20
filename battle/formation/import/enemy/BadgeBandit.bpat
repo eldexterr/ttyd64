@@ -1,0 +1,1188 @@
+#new:Actor $BadgeBandit {
+% stats
+[Index]        5Cb 
+[Level]         20`b 
+[MaxHP]         12`b 
+[Coins]         1`b 
+[Flags]       00000000 
+[StatusTable] $StatusTable_8021D5C0_0A 
+% ai
+[PartsCount]    2`s 
+[PartsTable]  $PartsTable_8021D66C_0A 
+[Script]      $Script_Init_8021D750_0A 
+% move effectiveness
+[Escape]       40`b 
+[Item]         70`b 
+[AirLift]      60`b 
+[Hurricane]    60`b % Bow's "Spook" as well
+[UpAndAway]    60`b 
+[PowerBounce]  80`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         26`b  32`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  25`b % dx dy
+[StatusIcon]   10`b  25`b % dx dy
+}
+
+#new:IdleAnimations $IdleAnimations_8021D510_0A {
+.Status:Normal    00320101
+.Status:Frozen    00320100
+.Status:Sleep     00320110
+.Status:Poison    00320101
+.Status:Stop      00320100
+.Status:Static    00320101
+.Status:Paralyze  00320100
+.Status:Dizzy     00320111
+.Status:Fear      00320111
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_8021D55C_0A {
+.Status:Normal    00320102
+.Status:Frozen    00320104
+.Status:Sleep     00320110
+.Status:Poison    00320102
+.Status:Stop      00320104
+.Status:Static    00320102
+.Status:Paralyze  00320104
+.Status:Dizzy     00320111
+.Status:Fear      00320111
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_8021D5A8_0A {
+.Status:Normal    00320014
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_8021D5B4_0A {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_8021D5C0_0A {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep      80`
+.Status:Poison     100`
+.Status:Frozen     50`
+.Status:Dizzy      50`
+.Status:Fear       50`
+.Status:Static     30`
+.Status:Paralyze   70`
+.Status:Shrink     90`
+.Status:Stop       70`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   1`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_8021D66C_0A {
+00800000 01000000 FE1C00FF $IdleAnimations_8021D510_0A $DefenseTable_8021D5B4_0A 00000000 00000000 00F40000 00000000 
+00020001 02001E00 000000FF $IdleAnimations_8021D5A8_0A $DefenseTable_8021D5B4_0A 00000000 00000000 00000000 00000000 
+}
+
+#new:PartsTable $PartsTable_8021D6B4_0A {
+00020000 02000000 000000FF $IdleAnimations_8021D5A8_0A $DefenseTable_8021D5B4_0A 00000000 00000000 00000000 00000000 
+}
+
+#new:Actor $BanditB_0A {
+% stats
+[Index]        13b 
+[Level]         9`b 
+[MaxHP]         5`b 
+[Coins]         1`b 
+[Flags]       00600000 
+[StatusTable] $StatusTable_8021D5C0_0A 
+% ai
+[PartsCount]    1`s 
+[PartsTable]  $PartsTable_8021D6B4_0A 
+[Script]      $Script_Init_8021D7C4_0A 
+% move effectiveness
+[Escape]       40`b 
+[Item]         90`b 
+[AirLift]      90`b 
+[Hurricane]    90`b % Bow's "Spook" as well
+[UpAndAway]    95`b 
+[PowerBounce]  80`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         26`b  32`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  25`b % dx dy
+[StatusIcon]   10`b  25`b % dx dy
+}
+
+#new:Vector3D $Vector3D_8021D728_0A {
+0` -1000` 0`
+}
+
+#new:SpecialFormation $SpecialFormation_8021D734_0A {
+$BanditB_0A $Vector3D_8021D728_0A 00000000 00000000 00000000 00000000 00000000 
+}
+
+#new:Script $Script_Init_8021D750_0A {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_8021E900_0A )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_8021D810_0A )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_8021DF88_0A )
+   3C:  Call  SetActorVar   ( .Actor:Self 00000000 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000001 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000002 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000003 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000004 FFFFFFFF )
+        Thread
+            Call  $Function_UpdateBadgePos
+        EndThread
+   54:  Return
+   5C:  End
+}
+
+#new:Script $Script_HandleEvent_8021D7B4_0A {
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_Init_8021D7C4_0A {
+    0:  Call  BindTakeTurn      ( .Actor:Self $Script_HandleEvent_8021D7B4_0A )
+   14:  Call  BindIdle  ( .Actor:Self $Script_Idle_8021D810_0A )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_8021D7B4_0A )
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_Idle_8021D810_0A {
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_Bandit_GetItemBack {
+    0:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   18:  Switch  *Var0 
+   24:  	Case  ==  00000000 
+   30:  	Case  ==  00000001 % item stolen
+                Call  GetActorVar   ( .Actor:Self 00000002 *Var9 )
+   3C:  		Call  SetActorVar   ( .Actor:Self 00000000 00000000 ) % clear stolen bool
+   54:  		Call  SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_8021D510_0A )
+   6C:  		Call  SetPartFlagBits   ( .Actor:Self 00000002 00100000 .False )
+   88:  		Call  SummonEnemy   ( $SpecialFormation_8021D734_0A 00000000 )
+   9C:  		Set   *VarA  *Var0 
+                If *Var9 == 2 % badge stolen
+                    Call    SetActorFlagBits ( *VarA 00000001 .True ) % make actor invisible                   
+                    Thread % update coin(actorPart) pos to be the same  as coin(actor)
+                        Loop
+                            Call    GetActorPos ( *VarA *Var0 *Var1 *Var2 )
+                            Sub     *Var0 85` % x
+                            Call    SetPartPos ( .Actor:Self 00000002 *Var0 *Var1 *Var2 )
+                            Wait    1
+                            Call    GetActorVar   ( .Actor:Self 00000004 *Var0 )
+                            If *Var0 == -1
+                                BreakLoop
+                            EndIf
+                        EndLoop
+                    EndThread
+                EndIf
+   AC:  		Call  GetPartOffset ( .Actor:Self 00000002 *Var1 *Var2 *Var3 )
+   CC:  		Call  SetActorPos   ( *VarA *Var1 *Var2 *Var3 )
+   E8:  		Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .True )
+  104:  		Call  GetActorVar   ( .Actor:Self 00000001 *Var0 )
+  11C:  		Call  SetActorVar   ( *VarA 00000001 *Var0 )
+  134:  		Call  SetActorJumpGravity   ( *VarA *Fixed[1.0] )
+  148:  		Call  RandInt       ( 00000168 *Var0 )
+  15C:  		Call  GetActorPos   ( .Actor:Self *Var1 *Var2 *Var3 )
+  178:  		Add   *Var2  0000001E 
+  188:  		Call  SetActorPos   ( *VarA *Var1 *Var2 *Var3 )
+  1A4:  		Call  SetActorSounds    ( *VarA .ActorSound:Jump 00000000 00000000 )
+  1C0:  		Call  AddVectorPolar    ( *Var1 *Var3 *Fixed[40.0] *Var0 )
+  1DC:  		Call  SetGoalPos    ( *VarA *Var1 00000000 *Var3 )
+  1F8:  		Call  JumpToGoal    ( *VarA 00000014 .False .True .False )
+                If *Var9 == 1 % coin stolen
+  218:  		    Call  PlaySoundAtActor  ( *VarA 00000212 )
+                EndIf
+  22C:  		Call  AddVectorPolar    ( *Var1 *Var3 *Fixed[20.0] *Var0 )
+  248:  		Call  SetGoalPos    ( *VarA *Var1 00000000 *Var3 )
+  264:  		Call  JumpToGoal    ( *VarA 0000000A .False .True .False )
+                If *Var9 == 1 % coin stolen
+  284:  		    Call  PlaySoundAtActor  ( *VarA 00000212 )
+                EndIf
+  298:  		Call  AddVectorPolar    ( *Var1 *Var3 *Fixed[10.0] *Var0 )
+  2B4:  		Call  SetGoalPos    ( *VarA *Var1 00000000 *Var3 )
+  2D0:  		Call  JumpToGoal    ( *VarA 00000005 .False .True .False )
+                If *Var9 == 1 % coin stolen
+  2F0:  		    Call  PlaySoundAtActor  ( *VarA 00000212 )
+                EndIf
+  304:  		Loop
+  310:  			Call  GetBattleFlags    ( *Var1 )
+  320:  			If  *Var1  &  00080000 
+  330:  				BreakLoop
+  338:  			EndIf
+  340:  			If  *Var1  !&  00000100 
+  350:  				BreakLoop
+  358:  			EndIf
+  360:  			Wait  1`
+  36C:  		EndLoop
+  374:  		Wait  15`
+  380:  		Call  SetActorJumpGravity   ( *VarA *Fixed[1.0] )
+  394:  		Call  SetActorSpeed ( *VarA *Fixed[6.0] )
+  3A8:  		Set   *Var0  FFFFFFBA 
+  3B8:  		Set   *Var1  00000000 
+  3C8:  		Set   *Var2  0000000A 
+  3D8:  		Label  5
+  3E4:  		Call  GetActorPos   ( *VarA *Var3 *Var4 *Var5 )
+  400:  		If  *Var3  ==  *Var0 
+  410:  			Goto  A
+  41C:  		EndIf
+  424:  		If  *Var3  <  *Var0 
+  434:  			Set   *Var4  *Var0 
+  444:  			Sub   *Var4  *Var3 
+  454:  			If  *Var4  <  0000001E 
+  464:  				Call  SetGoalPos        ( *VarA *Var0 *Var1 *Var2 )
+  480:  				Call  JumpToGoal        ( *VarA 00000005 .False .True .False )
+                        If *Var9 == 1 % coin stolen
+  4A0:  				    Call  PlaySoundAtActor  ( *VarA 00000212 )
+                        EndIf
+  4B4:  			Else
+  4BC:  				Set   *Var4  *Var3 
+  4CC:  				Add   *Var3  0000001E 
+  4DC:  				Call  SetGoalPos        ( *VarA *Var3 *Var1 *Var2 )
+  4F8:  				Call  JumpToGoal        ( *VarA 00000000 .False .True .False )
+                        If *Var9 == 1 % coin stolen
+  518:  				    Call  PlaySoundAtActor  ( *VarA 00000212 )
+                        EndIf
+  52C:  			EndIf
+  534:  		Else
+  53C:  			Set   *Var4  *Var3 
+  54C:  			Sub   *Var4  *Var0 
+  55C:  			If  *Var4  <  0000001E 
+  56C:  				Call  SetGoalPos        ( *VarA *Var0 *Var1 *Var2 )
+  588:  				Call  JumpToGoal        ( *VarA 00000005 .False .True .False )
+                        If *Var9 == 1 % coin stolen
+  5A8:  				    Call  PlaySoundAtActor  ( *VarA 00000212 )
+                        EndIf
+  5BC:  			Else
+  5C4:  				Sub   *Var3  0000001E 
+  5D4:  				Call  SetGoalPos        ( *VarA *Var3 *Var1 *Var2 )
+  5F0:  				Call  JumpToGoal        ( *VarA 00000000 .False .True .False )
+                        If *Var9 == 1 % coin stolen
+  610:  				    Call  PlaySoundAtActor  ( *VarA 00000212 )
+                        EndIf
+  624:  			EndIf
+  62C:  		EndIf
+  634:  		Goto  5
+  640:  		Label  A
+  64C:  		Call  EnableActorBlur   ( *VarA 00000001 )
+  660:  		Call  SetTargetActor    ( *VarA .Actor:Player )
+  674:  		Call  SetGoalToTarget   ( *VarA )
+  684:  		Call  JumpToGoal    ( *VarA 0000000F .False .False .False )
+  6A4:  		Call  GetGoalPos    ( *VarA *Var0 *Var1 *Var2 )
+                Switch *Var9
+                    Case == 1 % coin stolen
+  6C0:  		        Call  PlayEffect    ( ~FX:SmallGoldSparkle *Var0 *Var1 *Var2 *Fixed[1.0] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  704:  		        Call  PlaySoundAtActor  ( *VarA 00000211 )
+  718:  		        Call  GetActorVar   ( *VarA 00000001 *Var0 )
+  730:  		        Call  AddCoin       ( *Var0 )
+                    Case == 2 % badge stolen
+                        Call  PlayEffect    ( ~FX:SmallGoldSparkle *Var0 *Var1 *Var2 *Fixed[1.0] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+                        Call  GetActorVar   ( *VarA 00000001 *Var0 )
+                        Call  AddBadge ( *Var0 .False )
+                        % activate badge once again (if neccesary)
+                        Call  GetActorVar   ( .Actor:Self 00000003 *Var1 )
+                        If *Var1 == .True
+                            Call    $Function_ActivateBadge ( *Var0 )
+                        EndIf
+                        Call  GetActorVar   ( .Actor:Self 00000004 *Var0 )
+                        Call  SetActorVar   ( .Actor:Self 00000004 FFFFFFFF )
+                        Call  RemoveItemEntity ( *Var0 )
+                EndSwitch
+                Call  SetActorVar   ( .Actor:Self 00000002 .False )
+                Call  SetActorVar   ( .Actor:Self 00000003 .False )
+  740:  		Call  RemoveActor   ( *VarA )
+  750:  EndSwitch
+        Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call    GetPartOffset ( .Actor:Self 00000002 .False *Var3 .False )
+        Add     *Var1 *Var3
+        Call    SetPartPos ( .Actor:Self 00000002 .False *Var1 .False )
+  758:  Return
+  760:  End
+}
+
+#new:Script $Script_HandleEvent_8021DF88_0A {
+    0:  UseArray  $End[0] 
+    C:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   20:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   34:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   48:  Switch  *Var0 
+   54:  	Case  ==  .Event:HitCombo % 9
+   60:  		Exec  $Script_Bandit_GetItemBack *Array[0]
+   70:  		SetConst  *Var0  00000001 
+   80:  		SetConst  *Var1  00320109 
+   90:  		ExecWait  DoNormalHit 
+   9C:  		Loop
+   A8:  			DoesScriptExist  *Array[0] *Var0 
+   B8:  			If  *Var0  ==  00000000 
+   C8:  				BreakLoop
+   D0:  			EndIf
+   D8:  			Wait  1`
+   E4:  		EndLoop
+   EC:  	CaseOR  ==  .Event:Hit % A
+   F8:  	CaseOR  ==  .Event:SpinSmashLaunchHit % 11
+  104:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  114:  		SetConst  *Var0  00000001 
+  124:  		SetConst  *Var1  00320109 
+  134:  		ExecWait  DoNormalHit 
+  140:  		Loop
+  14C:  			DoesScriptExist  *Array[0] *Var0 
+  15C:  			If  *Var0  ==  00000000 
+  16C:  				BreakLoop
+  174:  			EndIf
+  17C:  			Wait  1`
+  188:  		EndLoop
+  190:  	EndCaseGroup
+  198:  	Case  ==  .Event:BurnHit % E
+  1A4:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  1B4:  		SetConst  *Var0  00000001 
+  1C4:  		SetConst  *Var1  0032010A 
+  1D4:  		SetConst  *Var2  0032010B 
+  1E4:  		ExecWait  DoBurnHit 
+  1F0:  		Loop
+  1FC:  			DoesScriptExist  *Array[0] *Var0 
+  20C:  			If  *Var0  ==  00000000 
+  21C:  				BreakLoop
+  224:  			EndIf
+  22C:  			Wait  1`
+  238:  		EndLoop
+  240:  	Case  ==  .Event:BurnDeath % 24
+  24C:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  25C:  		SetConst  *Var0  00000001 
+  26C:  		SetConst  *Var1  0032010A 
+  27C:  		SetConst  *Var2  0032010B 
+  28C:  		ExecWait  DoBurnHit 
+  2C4:  		Loop
+  2D0:  			DoesScriptExist  *Array[0] *Var0 
+  2E0:  			If  *Var0  ==  00000000 
+  2F0:  				BreakLoop
+  2F8:  			EndIf
+  300:  			Wait  1`
+  30C:  		EndLoop
+                SetConst  *Var0  00000001 
+                SetConst  *Var1  0032010B 
+                ExecWait  DoDeath 
+  314:  		Return
+  31C:  	Case  ==  .Event:SpinSmashHit % B
+  328:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  338:  		SetConst  *Var0  00000001 
+  348:  		SetConst  *Var1  00320109 
+  358:  		ExecWait  DoSpinSmashHit 
+  364:  		Loop
+  370:  			DoesScriptExist  *Array[0] *Var0 
+  380:  			If  *Var0  ==  00000000 
+  390:  				BreakLoop
+  398:  			EndIf
+  3A0:  			Wait  1`
+  3AC:  		EndLoop
+  3B4:  	Case  ==  .Event:SpinSmashDeath % 21
+  3C0:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  3D0:  		SetConst  *Var0  00000001 
+  3E0:  		SetConst  *Var1  00320109 
+  3F0:  		ExecWait  DoSpinSmashHit 
+  428:  		Loop
+  434:  			DoesScriptExist  *Array[0] *Var0 
+  444:  			If  *Var0  ==  00000000 
+  454:  				BreakLoop
+  45C:  			EndIf
+  464:  			Wait  1`
+  470:  		EndLoop
+                SetConst  *Var0  00000001 
+                SetConst  *Var1  00320109 
+                ExecWait  DoDeath 
+  478:  		Return
+  480:  	Case  ==  .Event:ShockHit % 2F
+  48C:  		SetConst  *Var0  00000001 
+  49C:  		SetConst  *Var1  00320109 
+  4AC:  		ExecWait  DoShockHit 
+  4B8:  		SetConst  *Var0  00000001 
+  4C8:  		SetConst  *Var1  00320109 
+  4D8:  		ExecWait  DoJumpBack 
+  4E4:  		SetConst  *Var0  00000001 
+  4F4:  		SetConst  *Var1  00320107 
+  504:  		ExecWait  DoReturnHome 
+  510:  		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.6] )
+  524:  		Call  JumpToGoal    ( .Actor:Self 00000005 .False .True .False )
+  544:  	Case  ==  .Event:ShockDeath % 26
+  550:  		SetConst  *Var0  00000001 
+  560:  		SetConst  *Var1  00320109 
+  570:  		ExecWait  DoShockHit 
+  57C:  		SetConst  *Var0  00000001 
+  58C:  		SetConst  *Var1  00320109 
+  59C:  		ExecWait  DoDeath 
+  5A8:  		Return
+  5B0:  	CaseOR  ==  00000017 % 17
+  5BC:  	CaseOR  ==  .Event:Immune % 19
+  5C8:  	CaseOR  ==  .Event:AirLiftFailed % 1F
+  5D4:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+  5EC:  		Switch  *Var0 
+  5F8:  			Case  ==  00000000 
+  604:  				SetConst  *Var1  00320101 
+  614:  			Case  ==  00000001 
+  620:  				SetConst  *Var1  00320102 
+  630:  		EndSwitch
+  638:  		SetConst  *Var0  00000001 
+  648:  		ExecWait  DoImmune 
+  654:  	EndCaseGroup
+  65C:  	CaseOR  ==  .Event:Death % 20
+  668:  	CaseOR  ==  00000025 % 25
+  674:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  684:  		SetConst  *Var0  00000001 
+  694:  		SetConst  *Var1  00320109 
+  6A4:  		ExecWait  DoNormalHit 
+  6B0:  		Wait  10`
+  6E8:  		Loop
+  6F4:  			DoesScriptExist  *Array[0] *Var0 
+  704:  			If  *Var0  ==  00000000 
+  714:  				BreakLoop
+  71C:  			EndIf
+  724:  			Wait  1`
+  730:  		EndLoop
+                SetConst  *Var0  00000001 
+                SetConst  *Var1  00320109 
+                ExecWait  DoDeath 
+  738:  		Return
+  740:  	EndCaseGroup
+  748:  	Case  ==  .Event:RecoverStatus % 31
+  754:  		SetConst  *Var0  00000001 
+  764:  		SetConst  *Var1  00320101 
+  774:  		ExecWait  DoRecover 
+  780:  	Case  ==  .Event:ScareAway % 39
+  78C:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  79C:  		SetConst  *Var0  00000001 
+  7AC:  		SetConst  *Var1  00320107 
+  7BC:  		SetConst  *Var2  00320109 
+  7CC:  		ExecWait  DoScareAway 
+  7D8:  		Loop
+  7E4:  			DoesScriptExist  *Array[0] *Var0 
+  7F4:  			If  *Var0  ==  00000000 
+  804:  				BreakLoop
+  80C:  			EndIf
+  814:  			Wait  1`
+  820:  		EndLoop
+  828:  		Return
+  830:  	Case  ==  .Event:BeginAirLift % 3A
+  83C:  		Exec  $Script_Bandit_GetItemBack *Array[0] 
+  84C:  		SetConst  *Var0  00000001 
+  85C:  		SetConst  *Var1  00320109 
+  86C:  		ExecWait  DoAirLift 
+  878:  		Loop
+  884:  			DoesScriptExist  *Array[0] *Var0 
+  894:  			If  *Var0  ==  00000000 
+  8A4:  				BreakLoop
+  8AC:  			EndIf
+  8B4:  			Wait  1`
+  8C0:  		EndLoop
+  8C8:  	Case  ==  .Event:BlowAway % 16
+  8D4:  		SetConst  *Var0  00000001 
+  8E4:  		SetConst  *Var1  00320109 
+  8F4:  		SetConst  *Var2  00040000 
+  904:  		ExecWait  DoBlowAway 
+  910:  		Return
+  918:  	Default
+  920:  EndSwitch
+  928:  Call  SetAnimation      ( .Actor:Self 00000001 00320101 )
+  940:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  954:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  968:  Return
+  970:  End
+}
+
+#new:Script $Script_TakeTurn_8021E900_0A {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+        Call  $SetTargetActorInFront ( .Actor:Self )
+   3C:  Call  GetActorVar       ( .Actor:Self 00000000 *Var0 )
+   54:  If  *Var0  ==  00000001 % item stolen
+            % run away
+   64:  	Call  SetActorYaw   ( .Actor:Self 000000B4 )
+   78:  	Call  SetAnimation  ( .Actor:Self 00000001 00320108 )
+   90:  	Wait  30`
+   9C:  	Call  SetActorSpeed ( .Actor:Self *Fixed[10.0] )
+   B0:  	Call  SetGoalPos    ( .Actor:Self 0000012C 00000000 00000000 )
+   CC:  	Call  RunToGoal     ( .Actor:Self 00000000 .False )
+            Call  GetActorVar   ( .Actor:Self 00000002 *Var0 )
+            If *Var0 == 2 % badge was stolen
+                Call    SetActorVar   ( .Actor:Self 00000002 .False )
+                Call    GetActorVar   ( .Actor:Self 00000004 *Var0 )
+                Call    SetActorVar   ( .Actor:Self 00000004 FFFFFFFF )
+                Call    RemoveItemEntity ( *Var0 )
+                Call    GetActorVar   ( .Actor:Self 00000001 *Var0 )
+                Call    $Function_AddBadgeToSoldInventory ( *Var0 ) % from `globals/patch/World_mac01_ExtraData.patch`
+            EndIf
+   E4:  	Call  SetBattleFlagBits ( 00040000 .True )
+   F8:  	Call  8027D32C      ( .Actor:Self ) % HideHealthBar
+  108:  	Call  RemoveActor   ( .Actor:Self )
+  118:  	Return
+  120:  EndIf
+  128:  Call  UseBattleCamPreset    ( 0000003F )
+  138:  Call  BattleCamTargetActor  ( .Actor:Self )
+  148:  Call  8024ECF8  ( FFFFFFFF 00000001 00000000 )
+  160:  Call  GetBattlePhase        ( *Var0 )
+  170:  If  *Var0  ==  00000001 
+  180:  	Call  SetGoalToTarget   ( .Actor:Self )
+  190:  	Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+  1AC:  	Add   *Var0  00000032 
+  1BC:  	Set   *Var1  00000000 
+  1CC:  	Call  SetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+  1E8:  Else
+  1F0:  	Call  SetAnimation  ( .Actor:Self 00000001 00320107 )
+  208:  	Call  SetGoalToTarget   ( .Actor:Self )
+  218:  	Call  AddGoalPos    ( .Actor:Self 00000032 00000000 00000000 )
+  234:  	Call  SetActorSpeed ( .Actor:Self *Fixed[6.0] )
+  248:  	Call  RunToGoal     ( .Actor:Self 00000000 .False )
+  260:  	Call  SetAnimation  ( .Actor:Self 00000001 00320101 )
+  278:  	Wait  6`
+  284:  EndIf
+  28C:  Call  SetActorSpeed     ( .Actor:Self *Fixed[2.0] )
+  2A0:  Call  SetAnimation      ( .Actor:Self 00000001 00320105 )
+  2B8:  Call  SetGoalToTarget   ( .Actor:Self )
+  2C8:  Call  AddGoalPos        ( .Actor:Self 00000023 00000000 00000000 )
+  2E4:  Call  RunToGoal ( .Actor:Self 00000000 .False )
+  2FC:  Call  PlaySoundAtActor  ( .Actor:Self 000020C2 )
+  310:  Call  SetActorSounds    ( .Actor:Self .ActorSound:Walk 00000000 00000000 )
+  32C:  Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:0 00000000 00000001 00000010 )
+  350:  Switch  *Var0 
+  35C:  	CaseOR  ==  .HitResult:Miss % 6
+  368:  	CaseOR  ==  .HitResult:Lucky % 5
+  374:  		Set   *VarA  *Var0 
+  384:  		Call  SetAnimation  ( .Actor:Self 00000001 0032010D )
+  39C:  		Call  SetGoalToTarget       ( .Actor:Self )
+  3AC:  		Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+  3C0:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+  3D8:  		Call  ResetAllActorSounds   ( .Actor:Self )
+  3E8:  		Call  SetActorSpeed ( .Actor:Self *Fixed[6.0] )
+  3FC:  		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[0.5] )
+  410:  		Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  42C:  		Sub   *Var0  0000001E 
+  43C:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  458:  		Call  JumpToGoal    ( .Actor:Self 00000008 .False .True .False )
+  478:  		Sub   *Var0  00000014 
+  488:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  4A4:  		Call  JumpToGoal    ( .Actor:Self 00000008 .False .True .False )
+  4C4:  		Wait  5`
+  4D0:  		If  *VarA  ==  .HitResult:Lucky % 5
+  4E0:  			Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+  504:  		EndIf
+  50C:  		Wait  5`
+  518:  		Call  UseBattleCamPreset    ( 00000002 )
+  528:  		Call  YieldTurn ( )
+  534:  		Call  SetActorYaw   ( .Actor:Self 000000B4 )
+  548:  		Call  AddActorDecoration    ( .Actor:Self 00000001 00000000 .Decoration:Sweat )
+  564:  		Call  SetAnimation  ( .Actor:Self 00000001 00320107 )
+  57C:  		Call  SetGoalToHome ( .Actor:Self )
+  58C:  		Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+  5A0:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+  5B8:  		Call  SetAnimation  ( .Actor:Self 00000001 00320101 )
+  5D0:  		Call  RemoveActorDecoration ( .Actor:Self 00000001 00000000 )
+  5E8:  		Call  SetActorYaw   ( .Actor:Self 00000000 )
+  5FC:  		Call  EnableIdleScript      ( .Actor:Self 00000001 )
+  610:  		Call  UseIdleAnimation      ( .Actor:Self .True )
+  624:  		Return
+  62C:  	EndCaseGroup
+  634:  EndSwitch
+  63C:  Call  SetAnimation      ( .Actor:Self 00000001 0032010D )
+  654:  Call  SetGoalToTarget   ( .Actor:Self )
+  664:  Call  SetActorSpeed     ( .Actor:Self *Fixed[8.0] )
+  678:  Call  RunToGoal ( .Actor:Self 00000000 .False )
+  690:  Call  ResetAllActorSounds   ( .Actor:Self )
+  6A0:  Wait  2`
+        Call  GetOwnerTarget ( *Var3 .False )
+  6AC:  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:0 00000000 00000000 00000005 00000020 )
+  6D4:  Switch  *Var0 
+  6E0:  	CaseOR  ==  .HitResult:Hit % 0
+  6EC:  	CaseOR  ==  00000002 % 2
+                Call    RandInt ( 100` *Var0 )
+                If *Var0 < 60`
+                    ExecWait $Script_Steal_Coin
+                Else
+                    Call  $Function_GetPlayerBadgesAmount ( *Var0 )
+                    If *Var0 == .False % player don't have any badges
+                        ExecWait $Script_Steal_Coin
+                    Else
+                        ExecWait $Script_Steal_Badge
+                    EndIf
+                EndIf
+  DCC:  	EndCaseGroup
+  DD4:  EndSwitch
+  DDC:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  DF0:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  E04:  Return
+  E0C:  End
+}
+
+#new:Script $Script_Steal_Coin
+{
+    Call  GetLastDamage ( *Var3 *Var0 )
+    If  *Var0  <=  00000000 
+        Set   *Var0  00000001 
+        Goto  A
+    EndIf
+    Call  GetBattleFlags    ( *Var0 )
+    If  *Var0  &  80000000 % attack blocked
+        Set   *Var0  00000001 
+        Goto  A
+    EndIf
+    Call  GetStatusFlags    ( .Actor:Self *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Shrink % 80000
+        Set   *Var0  00000000 
+        Goto  A
+    EndIf
+    Call  GetStatusFlags    ( *Var3 *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Stone % 100000
+        Set   *Var0  00000000 
+        Goto  A
+    EndIf
+    % get amount of coins to steal
+    Call  AddCoin   ( 00000000 )
+    Switch  *Var0 
+        Case  ==  00000000 
+            Set   *Var0  00000001 
+        Case  <  0000000A 
+            Call  SetActorVar   ( .Actor:Self 00000001 *Var0 )
+            Set   *Var0  00000002 
+        Case  >=  0000000A 
+            Call  SetActorVar   ( .Actor:Self 00000001 0000000A )
+            Set   *Var0  00000002 
+    EndSwitch
+    Label  A
+    Switch  *Var0 
+        Case  ==  00000000 % bandit is tiny
+            Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add   *Var0  0000001E 
+            Set   *Var1  00000000 
+            Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+            Call  SetAnimation  ( .Actor:Self 00000001 00320101 )
+            Wait  20`
+            Call  SetAnimation  ( .Actor:Self 00000001 00320107 )
+        Case  ==  00000001  % don't steal anything, attack blocked or didn't deal any damage
+            Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add   *Var0  0000001E 
+            Set   *Var1  00000000 
+            Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+            Call  SetAnimation  ( .Actor:Self 00000001 0032010E )
+            Wait  20`
+            Call  PlaySoundAtActor      ( .Actor:Self 000020C3 )
+            Call  SetAnimation  ( .Actor:Self 00000001 00320110 )
+            Wait  20`
+            Call  SetAnimation  ( .Actor:Self 00000001 00320107 )
+        Default % steal coin
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  GetGoalPos    ( .Actor:Self *VarA *VarB *VarC )
+            Add   *VarA  0000001E 
+            Set   *VarB  00000000 
+            Call  GetActorVar   ( .Actor:Self 00000001 *Var0 )
+            Mul   *Var0  FFFFFFFF 
+            Call  AddCoin       ( *Var0 )
+            Thread
+                Call  SetPartFlagBits   ( .Actor:Self 00000002 00100000 .True )
+                Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .False )
+                    Call  GetOwnerTarget    ( *Var3 .False )
+                    Call  GetActorPos       ( *Var3 *Var0 *Var1 *Var2 )
+                Call  SetPartPos        ( .Actor:Self 00000002 *Var0 *Var1 *Var2 )
+                Call  SetPartJumpGravity    ( .Actor:Self 00000002 *Fixed[1.0] )
+                Add   *VarB  0000001E 
+                Call  JumpPartTo        ( .Actor:Self 00000002 *VarA *VarB *VarC 00000016 .True )
+                Call  SetPartFlagBits   ( .Actor:Self 00000002 00100000 .False )
+            EndThread
+            Thread
+                Call  GetActorVar   ( .Actor:Self 00000001 *Var0 )
+                Loop  *Var0 
+                    Call  PlaySoundAtActor  ( .Actor:Self 00000212 )
+                    Wait  1`
+                EndLoop
+            EndThread
+            Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+            Call  SetGoalPos    ( .Actor:Self *VarA *VarB *VarC )
+            Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+            Call  SetIdleAnimations     ( .Actor:Self 00000001 $IdleAnimations_8021D55C_0A )
+            Call  SetAnimation  ( .Actor:Self 00000001 0032010E )
+            Call  SetActorVar   ( .Actor:Self 00000000 00000001 ) % item stolen (bool)
+            Call  SetActorVar   ( .Actor:Self 00000002 00000001 ) % item is a coin
+            Wait  7`
+            Call  SetAnimation  ( .Actor:Self 00000001 0032010F )
+            Wait  20`
+            Call  SetAnimation  ( .Actor:Self 00000001 00320108 )
+    EndSwitch
+    Call  UseBattleCamPreset    ( 00000002 )
+    Call  YieldTurn ( )
+    Call  SetGoalToHome ( .Actor:Self )
+    Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+    Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    Return
+    End
+}
+
+#new:Script $Script_Steal_Badge
+{
+    Call  GetLastDamage ( *Var3 *Var0 )
+    If  *Var0  <=  00000000 
+        Set   *Var0  00000001 
+        Goto  A
+    EndIf
+    Call  GetBattleFlags    ( *Var0 )
+    If  *Var0  &  80000000 % attack blocked
+        Set   *Var0  00000001 
+        Goto  A
+    EndIf
+    Call  GetStatusFlags    ( .Actor:Self *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Shrink % 80000
+        Set   *Var0  00000000 
+        Goto  A
+    EndIf
+    Call  GetStatusFlags    ( *Var3 *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Stone % 100000
+        Set   *Var0  00000000 
+        Goto  A
+    EndIf
+    % get badge to steal
+    Call    $Function_GetPlayerBadgesAmount ( *Var1 )
+    Sub     *Var1 1
+    Call    RandInt ( *Var1 *Var1 )
+    % get badgeID
+    Set     *Var3 8010F344 % playerBadges
+    Set     *Var2 2 % each badgeID uses 2 bytes
+    Mul     *Var2 *Var1
+    Add     *Var3 *Var2
+    Call    $ReadAddress ( *Var3 1 *Var1 .False .False )
+    Call    SetActorVar ( .Actor:Self 00000001 *Var1 )
+    Set     *Var0 2 % steal badge
+    Label  A
+    Switch  *Var0 
+        Case  ==  00000000 % bandit is tiny
+            Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add   *Var0  0000001E 
+            Set   *Var1  00000000 
+            Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+            Call  SetAnimation  ( .Actor:Self 00000001 00320101 )
+            Wait  20`
+            Call  SetAnimation  ( .Actor:Self 00000001 00320107 )
+        Case  ==  00000001  % don't steal anything, attack blocked or didn't deal any damage
+            Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add   *Var0  0000001E 
+            Set   *Var1  00000000 
+            Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+            Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+            Call  SetAnimation  ( .Actor:Self 00000001 0032010E )
+            Wait  20`
+            Call  PlaySoundAtActor      ( .Actor:Self 000020C3 )
+            Call  SetAnimation  ( .Actor:Self 00000001 00320110 )
+            Wait  20`
+            Call  SetAnimation  ( .Actor:Self 00000001 00320107 )
+        Default % steal badge
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  GetGoalPos    ( .Actor:Self *VarA *VarB *VarC )
+            Add   *VarA  0000001E 
+            Set   *VarB  00000000 
+            Call  GetActorVar   ( .Actor:Self 00000001 *Var0 )
+            Call  $Function_RemoveAndUnequipBadge ( *Var0 *Var1 )
+            If *Var1 == .True % badge was unequiped
+                Call    SetActorVar ( .Actor:Self 00000003 .True )
+            EndIf
+            Call  GetActorVar ( .Actor:Self 00000001 *Var0 )
+            Call  MakeItemEntity ( *Var0 0 -1000` 0 .ItemSpawnMode:Decoration .False )
+            Call  SetActorVar ( .Actor:Self 00000004 *Var0 )
+            Thread
+                Call  SetPartFlagBits   ( .Actor:Self 00000002 00100000 .True )
+                Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .True )
+                    Call  GetOwnerTarget    ( *Var3 .False )
+                    Call  GetActorPos       ( *Var3 *Var0 *Var1 *Var2 )
+                Call  SetPartPos        ( .Actor:Self 00000002 *Var0 *Var1 *Var2 )
+                Call  SetPartJumpGravity    ( .Actor:Self 00000002 *Fixed[1.0] )
+                Add   *VarB  0000001E 
+                Call  JumpPartTo        ( .Actor:Self 00000002 *VarA *VarB *VarC 00000016 .True )
+                Call  SetPartFlagBits   ( .Actor:Self 00000002 00100000 .False )
+            EndThread
+            Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+            Call  SetGoalPos    ( .Actor:Self *VarA *VarB *VarC )
+            Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+            Call  SetIdleAnimations     ( .Actor:Self 00000001 $IdleAnimations_8021D55C_0A )
+            Call  SetAnimation  ( .Actor:Self 00000001 0032010E )
+            Call  SetActorVar   ( .Actor:Self 00000000 00000001 ) % item stolen (bool)
+            Call  SetActorVar   ( .Actor:Self 00000002 00000002 ) % item is a badge
+            Wait  7`
+            Call  SetAnimation  ( .Actor:Self 00000001 0032010F )
+            Wait  20`
+            Call  SetAnimation  ( .Actor:Self 00000001 00320108 )
+    EndSwitch
+    Call  UseBattleCamPreset    ( 00000002 )
+    Call  YieldTurn ( )
+    Call  SetGoalToHome ( .Actor:Self )
+    Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+    Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    Return
+    End
+}
+
+% Call  $Function_ActivateBadge ( `badgeID` )
+#new:Function $Function_ActivateBadge
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    COPY    S0, V0
+    % activate badge, find next available slot
+    LIO     A0, 8010F498 % Activated Badge #1
+    LIO     A1, 8010F516 % Activated Badge #64 (last slot)
+    .Loop
+    LHU     A2, 0 (A0)
+    BEQ     A2, R0, .SlotFound
+    NOP
+    ADDIU   A0, A0, 2 % read next badge
+    SLTU    A3, A1, A0
+    BEQ     A3, R0, .Loop
+    NOP
+    % free slot wasn't found
+    BEQ     R0, R0, .End
+    NOP
+    .SlotFound
+    SH      S0, 0 (A0) % activate badge
+    .End
+    POP     RA, A0, A1, A2, A3, V1, S0
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call  $Function_RemoveAndUnequipBadge ( `badgeID` *out_unequiped_bool )
+%
+% Unequip badge if neccesary.
+#new:Function $Function_RemoveAndUnequipBadge
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    COPY    S1, V0
+    JAL     $IsBadgeActivated_Stack
+    COPY    A0, V0
+    BNE     V0, R0, .UnequipBadge
+    NOP
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 4 (A1)
+    JAL     ~Func:set_variable
+    CLEAR   A2
+    BEQ     R0, R0, .RemoveBadge
+    NOP
+    .UnequipBadge
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 4 (A1)
+    JAL     ~Func:set_variable
+    ORI     A2, R0, 1
+    JAL     $Function_GetBadgeAddress_Equipped
+    COPY    A0, S1
+    SH      R0, 0 (V0) % clear badge
+    .RemoveBadge
+    JAL     $Function_GetBadgeAddress_Inventory
+    COPY    A0, S1
+    SH      R0, 0 (V0) % clear badge
+    POP     RA, A0, A1, A2, A3, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Get in which part of the equipped badges inventory a badge is by reading the itemID.
+%
+% `A0` = `BadgeID`
+%
+% Returns address in `V0`.
+#new:Function $Function_GetBadgeAddress_Equipped
+{
+    PUSH    T0, T1, T2, T3
+    % Check if A0 = 0
+    BEQ     A0, R0, .End
+    CLEAR   V0
+    LIO     T0, 8010F498 % Activated Badge #1
+    LIO     T1, 8010F516 % Activated Badge #64 (last slot)
+    .Loop
+    LHU     T2, 0 (T0)
+    BEQL    T2, A0, .End
+    COPY    V0, T0
+    ADDIU   T0, T0, 2 % read next badge
+    SLTU    T3, T1, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    CLEAR   V0
+    .End
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Get in which part of the badges' inventory a badge is by reading the itemID.
+%
+% `A0` = `BadgeID`
+%
+% Returns address in `V0`.
+#new:Function $Function_GetBadgeAddress_Inventory
+{
+    PUSH    T0, T1, T2, T3
+    % Check if A0 = 0
+    BEQ     A0, R0, .End
+    CLEAR   V0
+    LIO     T0, 8010F344 % Badge #1
+    LIO     T1, 8010F442 % Badge #128 (last slot)
+    .Loop
+    LHU     T2, 0 (T0)
+    BEQL    T2, A0, .End
+    COPY    V0, T0
+    ADDIU   T0, T0, 2 % read next badge
+    SLTU    T3, T1, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    CLEAR   V0
+    .End
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+#new:Function $Function_SortPlayerBadges
+{
+    PUSH    RA, A0, A1, A2, A3, V1
+    % sort player badges
+    LIO       A0, 8010F344 % playerBadges
+    ORI       A1, R0, 128` % badge cap
+    LIO       A2, $pause_badges_comparator
+    JAL       $pause_sort_item_list
+    RESERVED
+    POP     RA, A0, A1, A2, A3, V1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Fuction ported to this `.bpat`, because is only loaded when the game is paused.
+%
+% `A0=itemList`
+%
+% `A1=listLength`
+%
+% `A2=code* comparator`
+#new:Function $pause_sort_item_list % `80244A4C`
+{
+      0:  ADDIU     SP, SP, FFC8
+      4:  SW        S6, 28 (SP)
+      8:  COPY      S6, A0
+      C:  SW        S7, 2C (SP)
+     10:  COPY      S7, A2
+     14:  SLTI      V0, A1, 2
+     18:  SW        RA, 30 (SP)
+     1C:  SW        S5, 24 (SP)
+     20:  SW        S4, 20 (SP)
+     24:  SW        S3, 1C (SP)
+     28:  SW        S2, 18 (SP)
+     2C:  SW        S1, 14 (SP)
+     30:  BNE       V0, R0, .o114
+     34:  SW        S0, 10 (SP)
+     38:  ADDIU     V0, R0, 2
+     3C:  BNE       A1, V0, .o68 %%
+     40:  ADDIU     S4, R0, 1
+     44:  JALR      S7, RA
+     48:  ADDU      A1, S6, V0
+     4C:  BLEZ      V0, .o114
+     50:  NOP
+     54:  LHU       V0, 2 (S6)
+     58:  LHU       V1, 0 (S6)
+     5C:  SH        V0, 0 (S6)
+     60:  BEQ       R0, R0, .o114
+     64:  SH        V1, 2 (S6)
+          .o68
+     68:  SLTU      V0, S4, A1
+     6C:  BEQL      V0, R0, .o8C
+     70:  SRL       S4, S4, 1
+     74:  SLL       V0, S4, 1
+          .o78
+     78:  ADDIU     S4, V0, 1
+     7C:  SLTU      V0, S4, A1
+     80:  BNE       V0, R0, .o78
+     84:  SLL       V0, S4, 1
+     88:  SRL       S4, S4, 1
+          .o8C
+     8C:  SLL       V0, A1, 1
+     90:  BEQ       S4, R0, .o114
+     94:  ADDU      S5, S6, V0
+          .o98
+     98:  SLL       V1, S4, 1
+     9C:  ADDU      S2, S6, V1
+     A0:  SLTU      V0, S2, S5
+     A4:  BEQ       V0, R0, .o10C
+     A8:  SRL       V0, S4, 1
+     AC:  COPY      S3, V1
+     B0:  SUBU      S0, S2, S3
+          .oB4
+     B4:  BEQ       R0, R0, .oE8
+     B8:  SLTU      V0, S0, S6
+          .oBC
+     BC:  ADDU      S1, S0, S3
+     C0:  JALR      S7, RA
+     C4:  COPY      A1, S1
+     C8:  BLEZL     V0, .oFC
+     CC:  ADDIU     S2, S2, 2
+     D0:  LHU       V0, 0 (S1)
+     D4:  LHU       V1, 0 (S0)
+     D8:  SH        V0, 0 (S0)
+     DC:  SUBU      S0, S0, S3
+     E0:  SLTU      V0, S0, S6
+     E4:  SH        V1, 0 (S1)
+          .oE8
+     E8:  BNE       V0, R0, .oF8
+     EC:  SLTU      V0, S0, S5
+     F0:  BNE       V0, R0, .oBC
+     F4:  COPY      A0, S0
+          .oF8
+     F8:  ADDIU     S2, S2, 2
+          .oFC
+     FC:  SLTU      V0, S2, S5
+    100:  BNEL      V0, R0, .oB4
+    104:  SUBU      S0, S2, S3
+    108:  SRL       V0, S4, 1
+          .o10C
+    10C:  BNE       V0, R0, .o98
+    110:  COPY      S4, V0
+          .o114
+    114:  LW        RA, 30 (SP)
+    118:  LW        S7, 2C (SP)
+    11C:  LW        S6, 28 (SP)
+    120:  LW        S5, 24 (SP)
+    124:  LW        S4, 20 (SP)
+    128:  LW        S3, 1C (SP)
+    12C:  LW        S2, 18 (SP)
+    130:  LW        S1, 14 (SP)
+    134:  LW        S0, 10 (SP)
+    138:  JR        RA
+    13C:  ADDIU     SP, SP, 38
+}
+
+#new:Function $pause_badges_comparator % `80246FE0`
+{
+     0:  LH        V0, 0 (A0)
+     4:  BNE       V0, R0, .o14
+     8:  SLL       V0, V0, 5
+     C:  BEQ       R0, R0, .o20
+    10:  ADDIU     V1, R0, 7FFF
+         .o14
+    14:  LTHU      V1, V0 (800878E6)
+         .o20
+    20:  LH        V0, 0 (A1)
+    24:  BNE       V0, R0, .o34
+    28:  SLL       V0, V0, 5
+    2C:  BEQ       R0, R0, .o40
+    30:  ADDIU     A0, R0, 7FFF
+         .o34
+    34:  LTHU      A0, V0 (800878E6)
+         .o40
+    40:  SLL       V0, V1, 10
+    44:  SRA       V1, V0, 10
+    48:  SLL       V0, A0, 10
+    4C:  SRA       A0, V0, 10
+    50:  BEQ       V1, A0, .o68
+    54:  SLT       V1, V1, A0
+    58:  BNE       V1, R0, .o6C
+    5C:  ADDIU     V0, R0, FFFF
+    60:  JR        RA
+    64:  ADDIU     V0, R0, 1
+         .o68
+    68:  CLEAR     V0
+         .o6C
+    6C:  JR        RA
+    70:  NOP
+}
+
+% Call  $Function_GetPlayerBadgesAmount ( *out )
+#new:Function $Function_GetPlayerBadgesAmount
+{
+    PUSH      RA, A0, A1, A2, A3, V0, V1, S0
+    COPY      S0, A0
+    JAL       $get_player_badges_amount
+    NOP
+    COPY      A0, S0
+    LW        A1, C (A0)
+    LW        A1, 0 (A1)
+    JAL       ~Func:set_variable
+    COPY      A2, V0
+    POP       RA, A0, A1, A2, A3, V0, V1, S0
+    JR        RA
+    ORI       V0, R0, 2
+}
+
+#new:Function $get_player_badges_amount
+{
+    PUSH      RA, A0, A1, A2, A3, V1
+    LIO       A0, 8010F344 % playerBadges
+    CLEAR     V0
+    CLEAR     A2
+    .Loop
+    LHU       A1, 0 (A0) % get badge
+    ADDIU     A2, A2, 1
+    ADDIU     A0, A0, 2
+    BNEL      A1, R0, .CheckCap
+    ADDIU     V0, V0, 1
+    .CheckCap
+    SLTIU     A3, A2, 128` % player can hold 128 badges
+    BNE       A3, R0, .Loop
+    NOP
+    .End
+    POP       RA, A0, A1, A2, A3, V1
+    JR        RA
+    NOP
+}
+
+#new:Function $Function_UpdateBadgePos
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1, S2
+    COPY    S0, A0
+    JAL     ~Func:get_actor
+    LW      A0, 148 (A0) % get self actorID
+    COPY    S1, V0
+    BEQ     V0, R0, .End
+    ORI     V0, R0, 2
+    LW      A0, 98 (S1) % get actorVar 0x04
+    ADDI    A1, R0, -1
+    BEQ     A0, A1, .End
+    CLEAR   V0
+    COPY    A0, S1
+    JAL     ~Func:get_actor_part
+    ORI     A1, R0, 2 % coin
+    COPY    S2, V0
+    JAL     ~Func:get_item_entity
+    LW      A0, 98 (S1) % get actorVar 0x04
+    % get coin pos
+    LW      A0, 58 (S2) % X
+    LW      A1, 5C (S2) % Y
+    LW      A2, 60 (S2) % Z
+    % update item pos
+    ADDIU   A0, A0, 0
+    ADDIU   A1, A1, 0
+    ADDIU   A2, A2, 0
+    SW      A0, 8 (V0) % X
+    SW      A1, C (V0) % Y
+    SW      A2, 10 (V0) % Z
+    CLEAR   V0
+    .End
+    POP     RA, A0, A1, A2, A3, V1, S0, S1, S2
+    JR      RA
+    NOP
+}

@@ -1,0 +1,348 @@
+% Script File: 04 Goompa.wscr
+% Decoded from: 324A10 to 324F10 (04 Goompa)
+
+#new:Function $Function_Init
+{
+    0:  LI        V0, 18
+    4:  SH        V0, A8 (A0)
+    8:  LI        V0, 14
+    C:  JR        RA
+   10:  SH        V0, A6 (A0)
+}
+
+#new:Function $Function_802BD114
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 14 (SP)
+    8:  SW        S0, 10 (SP)
+    C:  BEQ       A1, R0, .o1C
+   10:  LW        S0, 14C (A0)
+   14:  JAL       ~Func:partner_init_get_out
+   18:  COPY      A0, S0
+        .o1C
+   1C:  JAL       ~Func:partner_get_out
+   20:  COPY      A0, S0
+   24:  LW        RA, 14 (SP)
+   28:  LW        S0, 10 (SP)
+   2C:  SLTU      V0, R0, V0
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802BD14C
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S0, 18 (SP)
+    8:  LA        S0, 8010F290
+   10:  SW        RA, 28 (SP)
+   14:  SW        S3, 24 (SP)
+   18:  SW        S2, 20 (SP)
+   1C:  SW        S1, 1C (SP)
+   20:  SDC1      F20, 30 (SP)
+   24:  LW        S1, 14C (A0)
+   28:  BEQ       A1, R0, .o50
+   2C:  COPY      A0, S1
+   30:  JAL       ~Func:partner_walking_enable
+   34:  LI        A1, 1
+   38:  LAW       A0, $???_802BD58C
+   40:  JAL       ~Func:mem_clear
+   44:  LI        A1, 1C
+   48:  SAW       R0, 8010C954
+        .o50
+   50:  LA        S3, 8010C954
+   58:  LW        V0, 308 (S0)
+   5C:  LW        S2, 0 (S3)
+   60:  ADDIU     V0, V0, 1
+   64:  BNE       S2, R0, .o84
+   68:  SW        V0, 308 (S0)
+   6C:  JAL       ~Func:partner_walking_update_player_tracking
+   70:  COPY      A0, S1
+   74:  JAL       ~Func:partner_walking_update_motion
+   78:  COPY      A0, S1
+   7C:  BEQ       R0, R0, .o374
+   80:  CLEAR     V0
+        .o84
+   84:  LA        S0, $???_802BD58C
+   8C:  LW        A0, 0 (S0)
+   90:  LW        V1, 4 (A0)
+   94:  LI        A1, 1
+   98:  BEQ       V1, A1, .o15C
+   9C:  SLTI      V0, V1, 2
+   A0:  BEQ       V0, R0, .oB8
+   A4:  LI        V0, 2
+   A8:  BEQ       V1, R0, .oD0
+   AC:  CLEAR     V0
+   B0:  BEQ       R0, R0, .o374
+   B4:  NOP
+        .oB8
+   B8:  BEQ       V1, V0, .o324
+   BC:  LI        V0, 3
+   C0:  BEQ       V1, V0, .o344
+   C4:  CLEAR     V0
+   C8:  BEQ       R0, R0, .o374
+   CC:  NOP
+        .oD0
+   D0:  SW        A1, 4 (A0)
+   D4:  LW        V0, 0 (S1)
+   D8:  SW        V0, 8 (A0)
+   DC:  LWC1      F12, 38 (S1)
+   E0:  LWC1      F14, 40 (S1)
+   E4:  LW        A2, 48 (S2)
+   E8:  JAL       ~Func:dist2D
+   EC:  LW        A3, 50 (S2)
+   F0:  LW        V0, 0 (S0)
+   F4:  ABS.S     F0, F0
+   F8:  SWC1      F0, C (V0)
+   FC:  LWC1      F12, 48 (S2)
+  100:  LWC1      F14, 50 (S2)
+  104:  LW        A2, 38 (S1)
+  108:  JAL       ~Func:atan2
+  10C:  LW        A3, 40 (S1)
+  110:  LUI       A0, 4
+  114:  ADDIU     V0, R0, 78
+  118:  LW        V1, 0 (S0)
+  11C:  LIF       F2, 6.0
+  124:  LIF       F4, 50.0
+  12C:  ORI       A0, A0, 148
+  130:  SWC1      F0, 10 (V1)
+  134:  SWC1      F2, 14 (V1)
+  138:  SWC1      F4, 18 (V1)
+  13C:  SW        V0, 0 (V1)
+  140:  LW        V0, 0 (S1)
+  144:  LI        V1, FDFF
+  148:  OR        V0, V0, A0
+  14C:  AND       V0, V0, V1
+  150:  SW        V0, 0 (S1)
+  154:  LA        S0, $???_802BD58C
+        .o15C
+  15C:  LW        V0, 0 (S0)
+  160:  LIF       F0, 6.28318
+  16C:  LWC1      F12, 10 (V0)
+  170:  MUL.S     F12, F12, F0
+  174:  NOP
+  178:  ADDIU     A1, SP, 10
+  17C:  LIF       F0, 360.0
+  184:  ADDIU     A2, SP, 14
+  188:  JAL       ~Func:sin_cos_rad
+  18C:  DIV.S     F12, F12, F0
+  190:  LW        V0, 0 (S0)
+  194:  LWC1      F2, 10 (SP)
+  198:  LWC1      F0, C (V0)
+  19C:  MUL.S     F2, F2, F0
+  1A0:  NOP
+  1A4:  LWC1      F0, 48 (S2)
+  1A8:  ADD.S     F0, F0, F2
+  1AC:  SWC1      F0, 38 (S1)
+  1B0:  LWC1      F2, 14 (SP)
+  1B4:  LWC1      F0, C (V0)
+  1B8:  MUL.S     F2, F2, F0
+  1BC:  NOP
+  1C0:  LWC1      F0, 50 (S2)
+  1C4:  SUB.S     F0, F0, F2
+  1C8:  SWC1      F0, 40 (S1)
+  1CC:  LWC1      F0, 10 (V0)
+  1D0:  LWC1      F12, 14 (V0)
+  1D4:  JAL       ~Func:clamp_angle
+  1D8:  SUB.S     F12, F0, F12
+  1DC:  LW        S0, 0 (S0)
+  1E0:  LIF       F2, 20.0
+  1E8:  LWC1      F4, C (S0)
+  1EC:  C.LT.S    F2, F4
+  1F0:  NOP
+  1F4:  BC1F      .o20C
+  1F8:  SWC1      F0, 10 (S0)
+  1FC:  LIF       F0, 1.0
+  204:  BEQ       R0, R0, .o238
+  208:  SUB.S     F0, F4, F0
+        .o20C
+  20C:  LIF       F0, 19.0
+  214:  NOP
+  218:  C.LT.S    F4, F0
+  21C:  NOP
+  220:  BC1F      .o23C
+  224:  NOP
+  228:  LIF       F0, 1.0
+  230:  NOP
+  234:  ADD.S     F0, F4, F0
+        .o238
+  238:  SWC1      F0, C (S0)
+        .o23C
+  23C:  LA        S0, $???_802BD58C
+  244:  LW        V0, 0 (S0)
+  248:  LIF       F0, 6.28318
+  254:  LWC1      F12, 18 (V0)
+  258:  MUL.S     F12, F12, F0
+  25C:  NOP
+  260:  LIF       F20, 360.0
+  268:  JAL       ~Func:sin_rad
+  26C:  DIV.S     F12, F12, F20
+  270:  LW        V0, 0 (S0)
+  274:  LIF       F4, 3.0
+  27C:  LWC1      F2, 18 (V0)
+  280:  ADD.S     F2, F2, F4
+  284:  LIF       F6, 150.0
+  28C:  NOP
+  290:  C.LT.S    F6, F2
+  294:  SWC1      F2, 18 (V0)
+  298:  MUL.S     F2, F0, F4
+  29C:  NOP
+  2A0:  BC1TL     .o2A8
+  2A4:  SWC1      F6, 18 (V0)
+        .o2A8
+  2A8:  LWC1      F0, 3C (S1)
+  2AC:  ADD.S     F0, F0, F2
+  2B0:  LW        V0, 0 (S0)
+  2B4:  SWC1      F0, 3C (S1)
+  2B8:  LWC1      F12, 10 (V0)
+  2BC:  JAL       ~Func:clamp_angle
+  2C0:  SUB.S     F12, F20, F12
+  2C4:  LW        V0, 0 (S0)
+  2C8:  SWC1      F0, 34 (S1)
+  2CC:  LWC1      F0, 14 (V0)
+  2D0:  LAD       F2, $ConstDouble_802BD5F0
+  2D8:  CVT.D.S   F0, F0
+  2DC:  ADD.D     F0, F0, F2
+  2E0:  LIF       F2, 40.0
+  2E8:  CVT.S.D   F0, F0
+  2EC:  C.LT.S    F2, F0
+  2F0:  NOP
+  2F4:  BC1F      .o300
+  2F8:  SWC1      F0, 14 (V0)
+  2FC:  SWC1      F2, 14 (V0)
+        .o300
+  300:  LW        V1, 0 (S0)
+  304:  LW        V0, 0 (V1)
+  308:  ADDIU     V0, V0, FFFF
+  30C:  BNE       V0, R0, .o370
+  310:  SW        V0, 0 (V1)
+  314:  LW        V0, 4 (V1)
+  318:  ADDIU     V0, V0, 1
+  31C:  BEQ       R0, R0, .o370
+  320:  SW        V0, 4 (V1)
+        .o324
+  324:  LW        V0, 8 (A0)
+  328:  SW        V0, 0 (S1)
+  32C:  LW        V0, 4 (A0)
+  330:  LI        V1, 1E
+  334:  SW        V1, 0 (A0)
+  338:  ADDIU     V0, V0, 1
+  33C:  BEQ       R0, R0, .o370
+  340:  SW        V0, 4 (A0)
+        .o344
+  344:  JAL       ~Func:partner_walking_update_player_tracking
+  348:  COPY      A0, S1
+  34C:  JAL       ~Func:partner_walking_update_motion
+  350:  COPY      A0, S1
+  354:  LW        V1, 0 (S0)
+  358:  LW        V0, 0 (V1)
+  35C:  ADDIU     V0, V0, FFFF
+  360:  BNE       V0, R0, .o370
+  364:  SW        V0, 0 (V1)
+  368:  SW        R0, 4 (V1)
+  36C:  SW        R0, 0 (S3)
+        .o370
+  370:  CLEAR     V0
+        .o374
+  374:  LW        RA, 28 (SP)
+  378:  LW        S3, 24 (SP)
+  37C:  LW        S2, 20 (SP)
+  380:  LW        S1, 1C (SP)
+  384:  LW        S0, 18 (SP)
+  388:  LDC1      F20, 30 (SP)
+  38C:  JR        RA
+  390:  ADDIU     SP, SP, 38
+}
+
+% Origin: HEURISTIC
+#new:Function $Function_802BD4E0
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LA        A1, 8010C954
+    C:  SW        RA, 10 (SP)
+   10:  LW        V0, 0 (A1)
+   14:  BEQ       V0, R0, .o38
+   18:  NOP
+   1C:  LAW       V1, $???_802BD58C
+   24:  LW        V0, 8 (V1)
+   28:  SW        R0, 0 (A1)
+   2C:  SW        V0, 0 (A0)
+   30:  JAL       ~Func:partner_clear_player_tracking
+   34:  SW        R0, 4 (V1)
+        .o38
+   38:  LW        RA, 10 (SP)
+   3C:  JR        RA
+   40:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802BD524
+{
+    0:  JR        RA
+    4:  LI        V0, 2
+}
+
+#new:Function $Function_802BD52C
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 14 (SP)
+    8:  SW        S0, 10 (SP)
+    C:  BEQ       A1, R0, .o1C
+   10:  LW        S0, 14C (A0)
+   14:  JAL       ~Func:partner_init_put_away
+   18:  COPY      A0, S0
+        .o1C
+   1C:  JAL       ~Func:partner_put_away
+   20:  COPY      A0, S0
+   24:  LW        RA, 14 (SP)
+   28:  LW        S0, 10 (SP)
+   2C:  SLTU      V0, R0, V0
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 18
+}
+
+PADDING: 802BD564 to 802BD570 (00324E74 to 00324E80)
+00000000 00000000 00000000
+
+#new:Script $Script_TakeOut
+{
+    0:  Call  $Function_802BD114 ( )
+    C:  Return
+   14:  End
+}
+
+#new:Unknown $???_802BD58C
+{
+	$End[0]
+}
+
+#new:Script $Script_UseAbility
+{
+    0:  Call  $Function_802BD14C ( )
+    C:  Return
+   14:  End
+}
+
+#new:Script $Script_Update
+{
+    0:  Call  $Function_802BD524 ( )
+    C:  Return
+   14:  End
+}
+
+#new:Script $Script_PutAway
+{
+    0:  Call  $Function_802BD52C ( )
+    C:  Return
+   14:  End
+}
+
+PADDING: 802BD5E4 to 802BD5F0 (00324EF4 to 00324F00)
+00000000 00000000 00000000
+
+#new:ConstDouble $ConstDouble_802BD5F0
+{
+	0.800000d
+}
+
+PADDING: 802BD5F8 to 802BD600 (00324F08 to 00324F10)
+00000000 00000000
+

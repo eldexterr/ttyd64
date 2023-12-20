@@ -1,0 +1,76 @@
+% Add new Entry
+
+@ $EntryList {
+    ~Vec4f:Entry0 % -220.0    0.0    0.0   90.0
+    ~Vec4f:Entry1
+}
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000002
+    [Background]  80200000
+    [MapTattle]   001900F7
+}
+
+@ $Script_Main_EnterWalk {
+    [B4]  Set   *Var0  $Script_MakeExits
+    [D0]  Exec  $Script_InitExit1
+}
+
+#new:Script $Script_MakeExits
+{
+    Bind  $Script_ExitWalk_802412B0 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_InitExit1
+{
+    If *GF_JAN07_Wall == .False
+        Bind     $Script_BlastWall .Trigger:PointBomb $TriggerCoord_Wall 00000001 00000000
+    Else
+        Exec  $Script_HideWall
+    EndIf
+    % restore vanilla code
+    Exec  $Script_80241270
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "jan_25" 00000000 )
+    Wait  100`
+    Return
+    End
+}
+
+%
+
+#new:TriggerCoord $TriggerCoord_Wall
+{
+	~BombPos:trigger_crack
+}
+
+#new:Script $Script_BlastWall
+{
+    Call    PlayEffect  	( 66` 0 ~Model:crack_wall ~Model:crack_wall 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Exec    $Script_HideWall
+    Set     *GF_JAN07_Wall .True
+    Unbind
+    Return
+    End
+}
+
+#new:Script $Script_HideWall
+{
+    Call    EnableGroup ( ~Model:crack .False )
+    Call    ModifyColliderFlags 	( .False ~Collider:crack 7FFFFE00 )    
+    Return
+    End
+}

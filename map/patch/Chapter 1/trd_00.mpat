@@ -1,0 +1,140 @@
+% Add Exit5 & Entry 6
+
+@ $Header {
+    [MainScript] $Script_Main
+    [Background] 80200000
+    [EntryList] $EntryList
+    [EntryCount] 7
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0
+    ~Vec4f:Entry1
+    ~Vec4f:Entry2
+    ~Vec4f:Entry3
+    ~Vec4f:Entry4
+    ~Vec4f:Entry5
+    ~Vec4f:Entry6
+}
+
+@ $Script_80240A98 {
+    Bind  $Script_ExitWalk_8024083C .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Bind  $Script_ExitDoubleDoor_80240898 .Trigger:WallPressA ~Collider:tt2 00000001 00000000
+    Bind  $Script_ExitDoubleDoor_8024093C .Trigger:WallPressA ~Collider:tt3 00000001 00000000
+    Bind  $Script_ExitWalk_802409E0 .Trigger:FloorAbove ~Collider:deili5 00000001 00000000
+    Bind  $Script_ExitWalk_80240A3C .Trigger:FloorAbove ~Collider:deilit 00000001 00000000
+    Bind  $Script_ExitWalk_Exit5 .Trigger:FloorAbove ~Collider:Exit5 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_ExitWalk_Exit5
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry6 )
+	Exec     ExitWalk
+	Call  GotoMap   ( "trd_11" 00000000 )
+	Wait  100`
+	Return
+	End
+}
+
+@ $Script_EnterWalk_80240D8C {
+    SetGroup  00000000
+    SuspendAll  00000001
+    Call  GetLoadType   ( *Var1 )
+    If  *Var1  ==  00000001
+        Exec  EnterSavePoint
+        Exec  $Script_80240A98
+        Return
+    EndIf
+    Call  GetEntryID    ( *Var0 )
+    Switch  *Var0
+        Case  ==  ~Entry:Entry0
+            If  *GB_StoryProgress  <  .Story:Ch1_ArrivedAtKoopaFortress % FFFFFFA6
+                Set   *GB_StoryProgress  .Story:Ch1_ArrivedAtKoopaFortress
+                ExecWait  $Script_80240B34
+                Exec  $Script_80240A98
+            Else
+                Set   *Var0  $Script_80240A98
+                Exec  EnterWalk
+            EndIf
+        Case  ==  ~Entry:Entry1
+            Set   *Var2  ~Model:o62
+            Set   *Var3  ~Model:doa
+            ExecWait  EnterDoubleDoor
+            Exec  $Script_80240A98
+        Case  ==  ~Entry:Entry2
+            Set   *Var2  ~Model:o70
+            Set   *Var3  ~Model:o69
+            ExecWait  EnterDoubleDoor
+            Exec  $Script_80240A98
+        Case  ==  ~Entry:Entry3
+            Set   *Var0  $Script_80240A98
+            Exec  EnterWalk
+        CaseOR  ==  ~Entry:Entry4
+        CaseOR  ==  ~Entry:Entry6 % new line
+            Set   *Var0  $Script_80240A98
+            Exec  EnterWalk
+        EndCaseGroup
+        Case  ==  ~Entry:Entry5
+            Exec  $Script_80240A98
+    EndSwitch
+    ResumeAll  00000001
+    Return
+    End
+}
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:KoopaBrosFortress
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Set   *GF_Map_KoopaBrosFortress  .True
+    Call  MakeNpcs  ( .True $NpcGroupList_80242CD4 )
+    Call  GetEntryID        ( *Var0 )
+    Switch  *Var0
+        Case  ==  ~Entry:Entry0
+        CaseOR  ==  ~Entry:Entry1
+        CaseOR  ==  ~Entry:Entry4
+        CaseOR  ==  ~Entry:Entry6 % new line
+    EndSwitch
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_80240F8C
+    Exec  $Script_802406D0
+    Wait  1`
+    If  *GF_TRD05_BombedWall  ==  .False
+        Call  SetGroupEnabled   ( ~Model:g21 00000000 )
+    Else
+        Call  ModifyColliderFlags   ( 00000000 ~Collider:tt5 7FFFFE00 )
+        Call  SetGroupEnabled       ( ~Model:ana 00000000 )
+    EndIf
+    Exec  $Script_EnterWalk_80240D8C
+    Call  GetEntryID    ( *Var0 )
+    If  *Var0  ==  ~Entry:Entry5
+        Wait  65`
+    Else
+        Wait  1`
+    EndIf
+    Call  EnableTexPanning  ( ~Model:o125 .True )
+    Thread
+        Set   *Var0  00000002
+        Set   *Var1  00000000
+        Set   *Var2  0000005A
+        Set   *Var3  FFFFFFC4
+        Set   *Var4  FFFFFFBA
+        Set   *Var5  00000001
+        Set   *Var6  00000001
+        Set   *Var7  00000001
+        Set   *Var8  00000001
+        Set   *Var9  00000000
+        Set   *VarA  00000000
+        Set   *VarB  00000000
+        Set   *VarC  00000000
+        Exec  $Script_UpdateTexturePan_802407A0
+    EndThread
+    Return
+    End
+}

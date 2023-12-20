@@ -1,0 +1,962 @@
+%=================
+% Ice Smash's Battle File
+%
+% This move works along with Move_IceSmash_HeadRattle.patch
+%=================
+
+% delete original data
+#delete $Function_802A1000
+#delete $Function_802A1050
+#delete $Function_802A10A4
+#delete $Function_802A10C8
+#delete $Function_802A11E8
+#delete $Function_802A12FC
+#delete $Script_802A1320
+#delete $Script_802A13FC
+#delete $Script_802A1474
+#delete $Script_802A15F8
+#delete $Script_802A177C
+#delete $Script_802A1900
+#delete $Script_802A1B1C
+#delete $Script_802A1C08
+#delete $Script_802A1CD4
+#delete $Script_802A1DB0
+#delete $Script_802A2270
+#delete $Script_802A2658
+#delete $Script_802A2A40
+#delete $Script_802A2D6C
+#delete $Script_802A3010
+#delete $Script_802A33C8
+#delete $Script_802A39C8
+#delete $Script_802A3CF4
+#delete $Script_802A4020
+
+@ $Script_UseMove0
+{
+    ExecWait $Script_IceSmash
+    Return
+    End
+}
+
+@ $Script_UseMove1
+{
+    ExecWait $Script_IceSmash
+    Return
+    End
+}
+
+#new:Function $Function_IsBerserkNotActive
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  LI        V0, F
+   10:  LAB       V1, 800DC0F3
+   18:  LI        A0, 15 % Ability:Berserk
+   1C:  SW        RA, 14 (SP)
+   20:  SW        V0, 88 (S0)
+   24:  JAL       ~Func:is_ability_active
+   28:  SW        V1, 84 (S0)
+   2C:  BEQ       V0, R0, .o3C
+   30:  LI        V0, 28
+   34:  SW        R0, 84 (S0)
+   38:  SW        V0, 88 (S0)
+        .o3C
+   3C:  LW        RA, 14 (SP)
+   40:  LW        S0, 10 (SP)
+   44:  LI        V0, 2
+   48:  JR        RA
+   4C:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_IsRightOnActive
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  LI        A0, 16 % Ability:RightOn
+   10:  SW        RA, 14 (SP)
+   14:  JAL       ~Func:is_ability_active
+   18:  SW        R0, 84 (S0)
+   1C:  BEQ       V0, R0, .o28
+   20:  LI        V0, 1
+   24:  SW        V0, 84 (S0)
+        .o28
+   28:  LAW       V0, 800DC070
+   30:  ANDI      V0, V0, 1000
+   34:  BEQ       V0, R0, .o40
+   38:  LI        V0, 1
+   3C:  SW        V0, 84 (S0)
+        .o40
+   40:  LW        RA, 14 (SP)
+   44:  LW        S0, 10 (SP)
+   48:  LI        V0, 2
+   4C:  JR        RA
+   50:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_802A10A4_IceSmash
+{
+    0:  ADDIU     SP, SP, FFD8
+    4:  SW        S1, 1C (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 24 (SP)
+   10:  SW        S2, 20 (SP)
+   14:  SW        S0, 18 (SP)
+   18:  LW        S0, C (S1)
+   1C:  LW        A1, 0 (S0)
+   20:  JAL       ~Func:get_variable
+   24:  ADDIU     S0, S0, 4
+   28:  LW        A1, 0 (S0)
+   2C:  ADDIU     S0, S0, 4
+   30:  COPY      A0, S1
+   34:  JAL       ~Func:get_variable
+   38:  COPY      S2, V0
+   3C:  COPY      A0, S1
+   40:  LW        A1, 0 (S0)
+   44:  JAL       ~Func:get_variable
+   48:  COPY      S0, V0
+   4C:  LW        V1, AC (S1)
+   50:  BNE       V1, R0, .oA0
+   54:  COPY      A3, V0
+   58:  ADDIU     V0, S2, 1E
+   5C:  MTC1      V0, F2
+   60:  NOP
+   64:  CVT.S.W   F2, F2
+   68:  ADDIU     V0, S0, 19
+   6C:  MFC1      A1, F2
+   70:  MTC1      V0, F2
+   74:  NOP
+   78:  CVT.S.W   F2, F2
+   7C:  MFC1      A2, F2
+   80:  MTC1      A3, F2
+   84:  NOP
+   88:  CVT.S.W   F2, F2
+   8C:  LIF       F0, 45.0
+   94:  MFC1      A3, F2
+   98:  BEQ       R0, R0, .oE4
+   9C:  LI        A0, 1
+        .oA0
+   A0:  ADDIU     V0, S2, 1E
+   A4:  MTC1      V0, F2
+   A8:  NOP
+   AC:  CVT.S.W   F2, F2
+   B0:  ADDIU     V0, S0, 19
+   B4:  MFC1      A1, F2
+   B8:  MTC1      V0, F2
+   BC:  NOP
+   C0:  CVT.S.W   F2, F2
+   C4:  MFC1      A2, F2
+   C8:  MTC1      A3, F2
+   CC:  NOP
+   D0:  CVT.S.W   F2, F2
+   D4:  LIF       F0, 45.0
+   DC:  MFC1      A3, F2
+   E0:  CLEAR     A0
+        .oE4
+   E4:  JAL       80070B50
+   E8:  SWC1      F0, 10 (SP)
+   EC:  LW        RA, 24 (SP)
+   F0:  LW        S2, 20 (SP)
+   F4:  LW        S1, 1C (SP)
+   F8:  LW        S0, 18 (SP)
+   FC:  LI        V0, 2
+  100:  JR        RA
+  104:  ADDIU     SP, SP, 28
+}
+
+#new:Script $Script_802A11B0_IceSmash
+{
+    0:  Call  InitTargetIterator
+    C:  Call  SetGoalToTarget       ( .Actor:Player )
+   1C:  Call  AddGoalPos    ( .Actor:Player 00000000 00000000 00000000 )
+   38:  Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+   54:  Sub   *Var0  00000020
+   64:  Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+   80:  Call  UseBattleCamPreset    ( 0000001A )
+   90:  Call  SetActorSpeed ( .Actor:Player *Fixed[5.0] )
+   A4:  Call  SetAnimation  ( .Actor:Player 00000000 00010005 )
+   BC:  Call  PlayerRunToGoal       ( 00000000 )
+   CC:  Return
+   D4:  End
+}
+
+#new:Script $Script_802A1304_IceSmash
+{
+    0:  Call  SetGoalToTarget   ( .Actor:Player )
+   10:  Call  AddGoalPos        ( .Actor:Player 00000000 00000000 00000000 )
+   2C:  Set   *Var1  00000000
+   3C:  Loop  0000000A
+   48:  	Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+   5C:  	If  *Var0  ==  .True
+   6C:  		Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+   84:  		BreakLoop
+   8C:  	EndIf
+   94:  	Wait  1`
+   A0:  	Add   *Var1  00000001
+   B0:  	Call  SetAnimation  ( .Actor:Player 00000000 0003000D )
+   C8:  EndLoop
+   D0:  Call  SetAnimation  ( .Actor:Player 00000000 0003000D )
+   E8:  Switch  *Var1
+   F4:  	Case  <  00000003
+  100:  		Wait  4`
+  10C:  	Case  <  00000005
+  118:  		Wait  3`
+  124:  	Case  <  00000007
+  130:  		Wait  2`
+  13C:  	Case  <  00000009
+  148:  		Wait  1`
+  154:  	Case  <  0000000B
+  160:  		Wait  00000000
+  16C:  EndSwitch
+  174:  Return
+  17C:  End
+}
+
+#new:Script $Script_802A1488_IceSmash
+{
+    0:  Call  SetGoalToTarget   ( .Actor:Player )
+   10:  Call  AddGoalPos        ( .Actor:Player 00000000 00000000 00000000 )
+   2C:  Set   *Var1  00000000
+   3C:  Loop  0000000A
+   48:  	Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+   5C:  	If  *Var0  ==  .True
+   6C:  		Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+   84:  		BreakLoop
+   8C:  	EndIf
+   94:  	Wait  1`
+   A0:  	Add   *Var1  00000001
+   B0:  	Call  SetAnimation  ( .Actor:Player 00000000 00030014 )
+   C8:  EndLoop
+   D0:  Call  SetAnimation  ( .Actor:Player 00000000 00030014 )
+   E8:  Switch  *Var1
+   F4:  	Case  <  00000003
+  100:  		Wait  4`
+  10C:  	Case  <  00000005
+  118:  		Wait  3`
+  124:  	Case  <  00000007
+  130:  		Wait  2`
+  13C:  	Case  <  00000009
+  148:  		Wait  1`
+  154:  	Case  <  0000000B
+  160:  		Wait  00000000
+  16C:  EndSwitch
+  174:  Return
+  17C:  End
+}
+
+#new:Script $Script_802A160C_IceSmash
+{
+    0:  Call  SetGoalToTarget   ( .Actor:Player )
+   10:  Call  AddGoalPos        ( .Actor:Player 00000000 00000000 00000000 )
+   2C:  Set   *Var1  00000000
+   3C:  Loop  0000000A
+   48:  	Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+   5C:  	If  *Var0  ==  .True
+   6C:  		Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+   84:  		BreakLoop
+   8C:  	EndIf
+   94:  	Wait  1`
+   A0:  	Add   *Var1  00000001
+   B0:  	Call  SetAnimation  ( .Actor:Player 00000000 0003001B )
+   C8:  EndLoop
+   D0:  Call  SetAnimation  ( .Actor:Player 00000000 0003001B )
+   E8:  Switch  *Var1
+   F4:  	Case  <  00000003
+  100:  		Wait  4`
+  10C:  	Case  <  00000005
+  118:  		Wait  3`
+  124:  	Case  <  00000007
+  130:  		Wait  2`
+  13C:  	Case  <  00000009
+  148:  		Wait  1`
+  154:  	Case  <  0000000B
+  160:  		Wait  00000000
+  16C:  EndSwitch
+  174:  Return
+  17C:  End
+}
+
+#new:Script $Script_GoBackToHome_ActionFailed
+{
+    0:  Call  80276EFC
+    C:  Call  UseBattleCamPreset    ( 00000004 )
+   1C:  Call  MoveBattleCamOver ( 00000005 )
+   2C:  Call  802693F0
+   38:  Wait  20`
+   44:  Call  EnablePlayerBlur  ( FFFFFFFF )
+   54:  Call  SetAnimation      ( .Actor:Player 00000000 00010002 )
+   6C:  Wait  5`
+   78:  Call  SetGoalToHome     ( .Actor:Player )
+   88:  Call  SetActorSpeed     ( .Actor:Player *Fixed[8.0] )
+   9C:  Call  SetAnimation      ( .Actor:Player 00000000 00010005 )
+   B4:  Call  PlayerRunToGoal   ( 00000000 )
+   C4:  Call  SetAnimation      ( .Actor:Player 00000000 00010002 )
+   DC:  Return
+   E4:  End
+}
+
+#new:Script $Script_GoBackToHome_Miss
+{
+    0:  Call  80276EFC
+    C:  Call  UseBattleCamPreset    ( 0000001D )
+   1C:  Call  802693F0
+   28:  Wait  20`
+   34:  Call  EnablePlayerBlur      ( FFFFFFFF )
+   44:  Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+   5C:  Wait  5`
+   68:  Call  SetGoalToHome ( .Actor:Player )
+   78:  Call  SetActorSpeed ( .Actor:Player *Fixed[8.0] )
+   8C:  Call  SetAnimation  ( .Actor:Player 00000000 00010005 )
+   A4:  Call  PlayerRunToGoal       ( 00000000 )
+   B4:  Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+   CC:  Return
+   D4:  End
+}
+
+#new:Script $Script_GoBackToHome_ActionSucceed
+{
+    0:  Call  80276EFC
+    C:  Call  UseBattleCamPreset    ( 0000001D )
+   1C:  Call  802693F0
+        ExecWait $Script_DoStylish_IceSmash
+   28:  Wait  20`
+   34:  Call  EnablePlayerBlur      ( FFFFFFFF )
+   44:  Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+   5C:  Wait  5`
+   68:  Call  SetGoalToHome ( .Actor:Player )
+   78:  Call  SetActorSpeed ( .Actor:Player *Fixed[8.0] )
+   8C:  Call  SetAnimation  ( .Actor:Player 00000000 00010005 )
+   A4:  Call  PlayerRunToGoal       ( 00000000 )
+   B4:  Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+   CC:  Return
+   D4:  End
+}
+
+#new:Script $Script_ActionCommand_IceSmash_Hammer
+{
+    0:  Call  LoadActionCommand ( .ActionCommand:Smash )
+   10:  Call  802A9000
+   1C:  ExecWait  $Script_802A11B0_IceSmash
+   28:  Call  SetGoalToTarget   ( .Actor:Player )
+   38:  Call  AddGoalPos        ( .Actor:Player 00000000 00000000 00000000 )
+   54:  ExecWait  $Script_802A1304_IceSmash
+   60:  Call  PlayerTestEnemy   ( *Var0 ~Flags:DamageType:Smash 00000000 00000000 00000000 00000010 )
+   84:  Call  UseBattleCamPreset    ( 0000002B )
+   94:  Call  SetBattleCamOffsetZ   ( 00000008 )
+   A4:  Call  InitTargetIterator
+   B0:  Call  PlaySoundAtActor  ( .Actor:Player 0000010B )
+   C4:  Call  SetAnimation      ( .Actor:Player 00000000 0003000E )
+   DC:  Wait  4`
+   E8:  Call  $Function_IsBerserkNotActive
+   F4:  If  *Var0  !=  .HitResult:Hit % 0
+  104:  	Call  SetAnimation  ( .Actor:Player 00000000 0003000F )
+  11C:  	Call  GetActionCommandMode  ( *Var0 )
+  12C:  	If  *Var0  <  00000002
+  13C:  		Call  $Function_IsRightOnActive
+  148:  		If  *Var0  ==  00000000
+  158:  			Loop  0000002D
+  164:  				Wait  1`
+  170:  				Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  184:  				If  *Var0  !=  .False
+  194:  					BreakLoop
+  19C:  				EndIf
+  1A4:  			EndLoop
+  1AC:  		EndIf
+  1B4:  	EndIf
+  1BC:  	Add   *VarD  00000006
+            Thread % Init Stylish's A Button Tracker
+                Wait 30` % start tracking around when the last circle is about to turn up when the player is holding the stick
+                Call $WriteAddress ( $Data_Inputs 0 0 2 .False ) % restart amount of stylish moves done on last move
+                Exec $Script_InitTracker
+            EndThread
+  1CC:  	Call  802A9258  ( 00000000 *VarD 00000003 )
+  1E4:  	Call  SetActionResult   ( 00000000 )
+  1F4:  	Set   *Var1  00000000
+  204:  	Loop  0000001E
+  210:  		Wait  1`
+  21C:  		Call  GetActionResult   ( *Var0 )
+  22C:  		If  *Var0  !=  00000000
+  23C:  			If  *Var1  !=  00000001
+  24C:  				Call  SetAnimation  ( .Actor:Player 00000000 00030010 )
+  264:  				Set   *Var1  00000001
+  274:  			EndIf
+  27C:  		EndIf
+  284:  		Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  298:  		If  *Var0  ==  .False
+  2A8:  			BreakLoop
+  2B0:  		EndIf
+  2B8:  	EndLoop
+  2C0:  	Label  0
+  2CC:  	Call  GetActionCommandMode  ( *Var0 )
+  2DC:  	If  *Var0  <  00000002
+  2EC:  		Wait  1`
+  2F8:  		Call  GetActionSuccess  ( *Var0 )
+  308:  		If  *Var0  ==  00000000
+  318:  			Goto  0
+  324:  		EndIf
+  32C:  	EndIf
+  334:  Else
+  33C:  	Call  802A9258      ( 00000000 *Var1 00000003 )
+  354:  	Call  SetActionResult   ( 00000000 )
+  364:  	Call  SetAnimation  ( .Actor:Player 00000000 0003000F )
+  37C:  	Sub   *Var1  0000000A
+  38C:  	Wait  *Var1
+  398:  	Call  SetAnimation  ( .Actor:Player 00000000 00030010 )
+  3B0:  	Wait  5`
+  3BC:  EndIf
+  3C4:  Call  GetActionCommandMode  ( *Var0 )
+  3D4:  If  *Var0  ==  00000002
+  3E4:  	Call  SetActionCommandMode  ( 00000003 )
+  3F4:  	Loop
+  400:  		Call  GetActionCommandMode  ( *Var0 )
+  410:  		If  *Var0  <  00000002
+  420:  			BreakLoop
+  428:  		EndIf
+  430:  		Wait  1`
+  43C:  	EndLoop
+  444:  EndIf
+  44C:  Call  SetAnimation      ( .Actor:Player 00000000 00030011 )
+  464:  Call  PlaySoundAtActor  ( .Actor:Player 00002115 )
+  478:  Wait  3`
+  484:  Call  SetAnimation      ( .Actor:Player 00000000 00030012 )
+  49C:  Call  PlaySoundAtActor  ( .Actor:Player 00002118 )
+  4B0:  Return
+  4B8:  End
+}
+
+#new:Script $Script_ActionCommand_IceSmash_SuperHammer
+{
+    0:  Call  LoadActionCommand ( .ActionCommand:Smash )
+   10:  Call  802A9000
+   1C:  ExecWait  $Script_802A11B0_IceSmash
+   28:  Call  SetGoalToTarget   ( .Actor:Player )
+   38:  Call  AddGoalPos        ( .Actor:Player 00000000 00000000 00000000 )
+   54:  ExecWait  $Script_802A1488_IceSmash
+   60:  Call  PlayerTestEnemy   ( *Var0 ~Flags:DamageType:Smash 00000000 00000000 00000000 00000010 )
+   84:  Call  UseBattleCamPreset    ( 0000002B )
+   94:  Call  SetBattleCamOffsetZ   ( 00000008 )
+   A4:  Call  InitTargetIterator
+   B0:  Call  PlaySoundAtActor  ( .Actor:Player 0000010B )
+   C4:  Call  SetAnimation      ( .Actor:Player 00000000 00030015 )
+   DC:  Wait  4`
+   E8:  Call  $Function_IsBerserkNotActive
+   F4:  If  *Var0  ==  00000001 % 1
+  104:  	Call  SetAnimation  ( .Actor:Player 00000000 00030016 )
+  11C:  	Call  $Function_IsRightOnActive
+  128:  	If  *Var0  ==  .HitResult:Hit % 0
+  138:  		Loop  0000002D
+  144:  			Wait  1`
+  150:  			Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  164:  			If  *Var0  !=  .False
+  174:  				BreakLoop
+  17C:  			EndIf
+  184:  		EndLoop
+  18C:  	EndIf
+  194:  	Add   *VarD  00000006
+            Thread % Init Stylish's A Button Tracker
+                Wait 30` % start tracking around when the last circle is about to turn up when the player is holding the stick
+                Call $WriteAddress ( $Data_Inputs 0 0 2 .False ) % restart amount of stylish moves done on last move
+                Exec $Script_InitTracker
+            EndThread
+  1A4:  	Call  802A9258  ( 00000000 *VarD 00000003 )
+  1BC:  	Call  SetActionResult   ( 00000000 )
+  1CC:  	Set   *Var1  00000000
+  1DC:  	Loop  0000001E
+  1E8:  		Wait  1`
+  1F4:  		Call  GetActionResult   ( *Var0 )
+  204:  		If  *Var0  !=  00000000
+  214:  			If  *Var1  !=  00000001
+  224:  				Call  SetAnimation  ( .Actor:Player 00000000 00030017 )
+  23C:  				Set   *Var1  00000001
+  24C:  			EndIf
+  254:  		EndIf
+  25C:  		Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  270:  		If  *Var0  ==  .False
+  280:  			BreakLoop
+  288:  		EndIf
+  290:  	EndLoop
+  298:  	Label  0
+  2A4:  	Wait  1`
+  2B0:  	Call  GetActionSuccess  ( *Var0 )
+  2C0:  	If  *Var0  ==  00000000
+  2D0:  		Goto  0
+  2DC:  	EndIf
+  2E4:  Else
+  2EC:  	Call  802A9258      ( 00000000 *Var1 00000003 )
+  304:  	Call  SetActionResult   ( 00000000 )
+  314:  	Call  SetAnimation  ( .Actor:Player 00000000 00030016 )
+  32C:  	Sub   *Var1  0000000A
+  33C:  	Wait  *Var1
+  348:  	Call  SetAnimation  ( .Actor:Player 00000000 00030017 )
+  360:  	Wait  5`
+  36C:  EndIf
+  374:  Call  SetAnimation      ( .Actor:Player 00000000 00030018 )
+  38C:  Call  PlaySoundAtActor  ( .Actor:Player 00002116 )
+  3A0:  Wait  3`
+  3AC:  Call  SetAnimation      ( .Actor:Player 00000000 00030019 )
+  3C4:  Call  PlaySoundAtActor  ( .Actor:Player 00002119 )
+  3D8:  Return
+  3E0:  End
+}
+
+#new:Script $Script_ActionCommand_IceSmash_UltraHammer
+{
+    0:  Call  LoadActionCommand ( .ActionCommand:Smash )
+   10:  Call  802A9000
+   1C:  ExecWait  $Script_802A11B0_IceSmash
+   28:  Call  SetGoalToTarget   ( .Actor:Player )
+   38:  Call  AddGoalPos        ( .Actor:Player 00000000 00000000 00000000 )
+   54:  ExecWait  $Script_802A160C_IceSmash
+   60:  Call  PlayerTestEnemy   ( *Var0 ~Flags:DamageType:Smash 00000000 00000000 00000000 00000010 )
+   84:  Call  UseBattleCamPreset    ( 0000002B )
+   94:  Call  SetBattleCamOffsetZ   ( 00000008 )
+   A4:  Call  InitTargetIterator
+   B0:  Call  PlaySoundAtActor  ( .Actor:Player 0000010B )
+   C4:  Call  SetAnimation      ( .Actor:Player 00000000 0003001C )
+   DC:  Wait  4`
+   E8:  Call  $Function_IsBerserkNotActive
+   F4:  If  *Var0  ==  00000001 % 1
+  104:  	Call  SetAnimation  ( .Actor:Player 00000000 0003001D )
+  11C:  	Call  $Function_IsRightOnActive
+  128:  	If  *Var0  ==  .HitResult:Hit % 0
+  138:  		Loop  0000002D
+  144:  			Wait  1`
+  150:  			Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  164:  			If  *Var0  !=  .False
+  174:  				BreakLoop
+  17C:  			EndIf
+  184:  		EndLoop
+  18C:  	EndIf
+  194:  	Add   *VarD  00000006
+            Thread % Init Stylish's A Button Tracker
+                Wait 30` % start tracking around when the last circle is about to turn up when the player is holding the stick
+                Call $WriteAddress ( $Data_Inputs 0 0 2 .False ) % restart amount of stylish moves done on last move
+                Exec $Script_InitTracker
+            EndThread
+  1A4:  	Call  802A9258  ( 00000000 *VarD 00000003 )
+  1BC:  	Call  SetActionResult   ( 00000000 )
+  1CC:  	Set   *Var1  00000000
+  1DC:  	Loop  0000001E
+  1E8:  		Wait  1`
+  1F4:  		Call  GetActionResult   ( *Var0 )
+  204:  		If  *Var0  !=  00000000
+  214:  			If  *Var1  !=  00000001
+  224:  				Call  SetAnimation  ( .Actor:Player 00000000 0003001E )
+  23C:  				Set   *Var1  00000001
+  24C:  			EndIf
+  254:  		EndIf
+  25C:  		Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  270:  		If  *Var0  ==  .False
+  280:  			BreakLoop
+  288:  		EndIf
+  290:  	EndLoop
+  298:  	Label  0
+  2A4:  	Wait  1`
+  2B0:  	Call  GetActionSuccess  ( *Var0 )
+  2C0:  	If  *Var0  ==  00000000
+  2D0:  		Goto  0
+  2DC:  	EndIf
+  2E4:  Else
+  2EC:  	Call  802A9258      ( 00000000 *Var1 00000003 )
+  304:  	Call  SetActionResult   ( 00000000 )
+  314:  	Call  SetAnimation  ( .Actor:Player 00000000 0003001D )
+  32C:  	Sub   *Var1  0000000A
+  33C:  	Wait  *Var1
+  348:  	Call  SetAnimation  ( .Actor:Player 00000000 0003001E )
+  360:  	Wait  5`
+  36C:  EndIf
+  374:  Call  SetAnimation      ( .Actor:Player 00000000 0003001F )
+  38C:  Call  PlaySoundAtActor  ( .Actor:Player 00002117 )
+  3A0:  Wait  3`
+  3AC:  Call  SetAnimation      ( .Actor:Player 00000000 00030020 )
+  3C4:  Call  PlaySoundAtActor  ( .Actor:Player 0000211A )
+  3D8:  Return
+  3E0:  End
+}
+
+#new:Script $Script_IceSmash
+{
+    Call  802694A4  ( 00000001 )
+    Call  80269EAC  ( 00000003 )
+    Call  $GetStackBoostDebuff ( .Item:IceSmash 80004364 2 *VarC )
+    Call  $ReadAddress ( 8010F291 0 *Var1 .False .False ) % get hammer
+    Switch *Var1
+        Case == 0 % Hammer
+            Set   *VarD  00000032 % action command time
+    		Set   *VarE  00000001 % damage to deal - action command failed
+    		Set   *VarF  00000002 % damage to deal - action command succed
+        Case == 1 % Super Hammer
+            Set   *VarD  00000032
+    		Set   *VarE  00000002
+    		Set   *VarF  00000004
+        Case >= 2 % Ultra Hammer
+            Set   *VarD  00000032
+    		Set   *VarE  00000003
+    		Set   *VarF  00000006
+    EndSwitch
+    Exec  $Script_NukeTracker % restart stylish commands input's tracker data
+   18:  Switch  *Var1
+   24:  	Case  ==  00000000 % 0
+   30:  		ExecWait  $Script_ActionCommand_IceSmash_Hammer
+   3C:  	Case  ==  .Item:Jump % 1
+   48:  		ExecWait  $Script_ActionCommand_IceSmash_SuperHammer
+   54:  	Case  ==  .Item:SpinJump % 2
+   60:  		ExecWait  $Script_ActionCommand_IceSmash_UltraHammer
+   6C:  EndSwitch
+   74:  Call  PlayerTestEnemy   ( *Var0 ~Flags:DamageType:Smash 00000019 00000000 *Var9 00000010 )
+   98:  Call  DidActionSucceed  ( *Var0 )
+   A8:  Switch  *Var0
+   B4:  	Case  >  .False
+                Call  $ReadAddress ( 8010F291 0 *Var1 .False .False ) % get hammer
+   D8:  		Switch  *Var1
+   E4:  			Case  ==  00000000 % 0
+   F0:  				Call  StartRumble   ( 00000008 )
+  100:  				Thread
+  108:  					Call  ShakeCam  ( .Cam:Battle 00000000 0000000A *Fixed[1.3] )
+  124:  				EndThread
+  12C:  			Case  ==  .Item:Jump % 1
+  138:  				Call  StartRumble   ( 00000009 )
+  148:  				Thread
+  150:  					Call  ShakeCam  ( .Cam:Battle 00000000 0000000A *Fixed[1.6] )
+  16C:  				EndThread
+  174:  			Case  ==  .Item:SpinJump % 2
+  180:  				Call  StartRumble   ( 0000000A )
+  190:  				Thread
+  198:  					Call  ShakeCam  ( .Cam:Battle 00000000 0000000A *Fixed[1.9] )
+  1B4:  				EndThread
+  1BC:  		EndSwitch
+  1C4:  	Default
+                Call  $ReadAddress ( 8010F291 0 *Var1 .False .False ) % get hammer
+  1E4:  		Switch  *Var1
+  1F0:  			Case  ==  00000000 % 0
+  1FC:  				Call  StartRumble   ( 00000008 )
+  20C:  				Thread
+  214:  					Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.3] )
+  230:  				EndThread
+  238:  			Case  ==  .Item:Jump % 1
+  244:  				Call  StartRumble   ( 00000009 )
+  254:  				Thread
+  25C:  					Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.6] )
+  278:  				EndThread
+  280:  			Case  ==  .Item:SpinJump % 2
+  28C:  				Call  StartRumble   ( 0000000A )
+  29C:  				Thread
+  2A4:  					Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.9] )
+  2C0:  				EndThread
+  2C8:  		EndSwitch
+  2D0:  EndSwitch
+  2D8:  Call  DidActionSucceed  ( *Var0 )
+  2E8:  If  *Var0  >  .False
+  2F8:  	Call  UseBattleCamPreset    ( 0000002C )
+  308:  	Call  MoveBattleCamOver     ( 00000005 )
+  318:  Else
+  320:  	Call  UseBattleCamPreset    ( 0000002C )
+  330:  	Call  MoveBattleCamOver     ( 00000032 )
+  340:  EndIf
+        Call  $ReadAddress ( 8010F291 0 *Var1 .False .False ) % get hammer
+  360:  Switch  *Var1
+  36C:  	Case  ==  00000000 % 0
+  378:  		Call  PlaySoundAtActor  ( .Actor:Player 0000210A )
+  38C:  	Case  ==  .Item:Jump % 1
+  398:  		Call  PlaySoundAtActor  ( .Actor:Player 0000210B )
+  3AC:  	Case  ==  .Item:SpinJump % 2
+  3B8:  		Call  PlaySoundAtActor  ( .Actor:Player 0000210C )
+  3CC:  EndSwitch
+  3D4:  Call  PlayerTestEnemy   ( *Var0 ~Flags:DamageType:Smash 00000019 00000000 00000000 00000010 )
+  3F8:  If  *Var0  ==  .HitResult:Miss % 6
+  408:  	ExecWait  $Script_GoBackToHome_Miss
+  414:  	Return
+  41C:  EndIf
+  424:  Call  DidActionSucceed  ( *VarA )
+  434:  Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+  %450:  Call  $Function_802A10A4_IceSmash    ( *Var0 *Var1 *Var2 )
+  468:  Call  DidActionSucceed  ( *Var0 )
+  478:  Switch  *Var0
+  484:  	Case  >  .False % Action command succesfull
+  490:  		Call  PlayerDamageEnemy ( *Var0 ~Flags:DamageType:Smash|Ice 00000019 *VarC *VarF 00000070 )
+  4B4:  	Default
+  4BC:  		Call  PlayerDamageEnemy ( *Var0 ~Flags:DamageType:Smash|Ice 00000019 *VarC *VarE 00000030 )
+  4E0:  EndSwitch
+  4E8:  Switch  *Var0
+  4F4:  	CaseOR  ==  00000001 % 1
+  500:  	CaseOR  ==  00000003 % 3
+  50C:  		ExecWait  $Script_GoBackToHome_ActionSucceed
+  518:  	EndCaseGroup
+  520:  	CaseOR  ==  .HitResult:Hit % 0
+  52C:  	CaseOR  ==  00000002 % 2
+  538:  		ExecWait  $Script_GoBackToHome_ActionFailed
+  544:  	EndCaseGroup
+  54C:  EndSwitch
+  554:  Return
+  55C:  End
+}
+
+#new:Script $Script_DoStylish_IceSmash
+{
+    % Check if the A button was pressed too soon
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        Set *TrackInput .False
+        Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Wait 1
+        Goto End
+    EndIf
+    % TRACK A - RIGHT TIME TO PRESS THE BUTTON
+    Loop 3 % 3 frames
+        % Timing Tutor Badge
+        ExecWait $Script_TimingTutor % writes in var0,1,2
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        %Set *Var0 .True % testing
+        If *Var0 == .True
+            % Turn Off A Button Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            %=====================
+            % Backflip Mario - 1st Jump
+            Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+            Sub   *Var0 25`
+            Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+            % Rotate - Z Axis
+            Call  SetActorRotationOffset    ( .Actor:Player 0 22` 0 )
+            Thread
+                % 1
+                Call    MakeLerp    	( 0 180` 7 .Easing:Linear )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Player 0 0 *Var0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+                % 2
+                Call    MakeLerp    	( -180` 0 7 .Easing:Linear )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Player 0 0 *Var0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+                Call    SetActorRotation  ( .Actor:Player 0 0 0 )
+            EndThread
+            % Jump
+            Call  SetActorJumpGravity       ( .Actor:Player *Fixed[1.0] )
+            Call  SetAnimation  ( .Actor:Player 00000000 00010002 ) % idle
+            % Init A Tracker
+            Thread
+                Exec $Script_InitTracker % Start tracking the A button
+                % Check if the player pressed A too soon
+                Loop 8 % 8 frames
+                    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                    If *Var0 == .True % If was pressed to soon end the tread, set the A button bool as false and turn off the tracker
+                        Set *TrackInput .False
+                        Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+                        Goto EndThread1
+                    EndIf
+                    Wait 1
+                EndLoop
+                % Right time to press A to do the next stylish move
+                Loop 3 % 3 frames
+                     % Timing Tutor Badge
+                    ExecWait $Script_TimingTutor % writes in var0,1,2
+                    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                    Wait 1
+                EndLoop
+                Label EndThread1
+            EndThread
+            Call  SetJumpAnimations ( .Actor:Self 0 00010002 00010002 00010002 )
+            Call  80273444      ( 15` 0 2 ) % JumpRadious StayAtJumpPeek_Frames(0-2 only?) ???
+            Call  SetActorRotationOffset    ( .Actor:Player 0 0 0 )
+            %=====================
+            Label DoStylish2 % 2nd Stylish Move
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .False % A pressed too soon
+                Wait 1
+                Goto End
+            EndIf
+            %Set *Var0 .True % testing
+            If *Var0 == .True
+                % Turn Off A Button Tracker
+                Set *TrackInput .False
+                Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+                % Add 1 to the stylish counter (last move only)
+                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                Add *Var0 1
+                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                Set *VarA .False % this move doesn't have an SP cap
+                ExecWait $Script_DoStylishFX
+                % Backflip Mario - 2nd Jump
+                Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+                Sub   *Var0 30`
+                Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+                % Rotate - Z Axis
+                Call  SetActorRotationOffset    ( .Actor:Player 0 22` 0 )
+                SetTimescale *Fixed[1.1]
+                Thread
+                    % 1
+                    Call    MakeLerp    	( 0 180` 7 .Easing:Linear )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Player 0 0 *Var0 )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                    % 2
+                    Call    MakeLerp    	( -180` 0 7 .Easing:Linear )
+                    Loop     
+                        Call     UpdateLerp
+                        Call     SetActorRotation  ( .Actor:Player 0 0 *Var0 )
+                        Wait     1
+                        If  *Var1  ==  .False
+                            BreakLoop
+                        EndIf
+                    EndLoop
+                    Call    SetActorRotation  ( .Actor:Player 0 0 0 )
+                EndThread
+                % Jump
+                Call  SetActorJumpGravity       ( .Actor:Player *Fixed[1.0] )
+                Call  SetAnimation  ( .Actor:Player 00000000 00010002 ) % idle
+                % Init A Tracker
+                Thread
+                    Wait 6
+                    Exec $Script_InitTracker % Start tracking the A button
+                    % Check if the player pressed A too soon
+                    Loop 9 % 9 frames
+                        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                        If *Var0 == .True % If was pressed to soon end the tread, set the A button bool as false and turn off the tracker
+                            Set *TrackInput .False
+                            Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+                            Goto EndThread2
+                        EndIf
+                        Wait 1
+                    EndLoop
+                    % Right time to press A to do the next stylish move
+                    Loop 2 % 2 frames
+                        % Timing Tutor Badge
+                        ExecWait $Script_TimingTutor % writes in var0,1,2
+                        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                        Wait 1
+                    EndLoop
+                    Label EndThread2
+                EndThread
+                Call  80273444      ( 20` 0 2 ) % JumpRadious StayAtJumpPeek_Frames(0-2 only?) ???
+                Call  SetActorRotationOffset    ( .Actor:Player 0 0 0 )
+                SetTimescale *Fixed[1.0]
+                %=====================
+                Label DoStylish3 % 3rd Stylish Move
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                If *Var0 == .False % A pressed too soon
+                    Wait 1
+                    Goto End
+                EndIf
+                %Set *Var0 .True % testing
+                If *Var0 == .True
+                    % Turn Off A Button Tracker
+                    Set *TrackInput .False
+                    Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+                    % Add 1 to the stylish counter (last move only)
+                    Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                    Add *Var0 1
+                    Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                    Set *VarA .False % this move doesn't have an SP cap
+                    ExecWait $Script_DoStylishFX
+                    % Backflip Mario - 3rd Jump
+                    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+                    Sub   *Var0 35`
+                    Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+                    % Rotate - Z Axis
+                    Call  SetActorRotationOffset    ( .Actor:Player 0 22` 0 )
+                    SetTimescale *Fixed[1.3]
+                    Thread
+                        % 1
+                         Call    MakeLerp    	( 0 180` 10` .Easing:Linear )
+                        Loop     
+                            Call     UpdateLerp
+                            Call     SetActorRotation  ( .Actor:Player *Var0 0 *Var0 )
+                            Wait     1
+                            If  *Var1  ==  .False
+                                BreakLoop
+                            EndIf
+                        EndLoop
+                        % 2
+                        Call    MakeLerp    	( -180` 0 10` .Easing:Linear )
+                        Loop     
+                            Call     UpdateLerp
+                            Call     SetActorRotation  ( .Actor:Player *Var0 0 *Var0 )
+                            Wait     1
+                            If  *Var1  ==  .False
+                                BreakLoop
+                            EndIf
+                        EndLoop
+                        Call    SetActorRotation  ( .Actor:Player 0 0 0 )
+                    EndThread
+                    % Jump
+                    Call  SetActorJumpGravity       ( .Actor:Player *Fixed[0.8] )
+                    Call  SetAnimation  ( .Actor:Player 00000000 0001002D ) % cough cough
+                    % Init A Tracker
+                    Thread
+                        Wait 13`
+                        Exec $Script_InitTracker % Start tracking the A button
+                        % Check if the player pressed A too soon
+                        Loop 9 % 9 frames
+                            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                            If *Var0 == .True % If was pressed to soon end the tread, set the A button bool as false and turn off the tracker
+                                Set *TrackInput .False
+                                Call $WriteAddress ( $Data_Inputs 0 0 .False .False )
+                                Goto EndThread3
+                            EndIf
+                            Wait 1
+                        EndLoop
+                        % Right time to press A to do the next stylish move
+                        Loop 2 % 2 frames
+                            % Timing Tutor Badge
+                            ExecWait $Script_TimingTutor % writes in var0,1,2
+                            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                            Wait 1
+                        EndLoop
+                        Label EndThread3
+                    EndThread
+                    Call  80273444      ( 30` 0 2 ) % JumpRadious StayAtJumpPeek_Frames(0-2 only?) ???
+                    Call  SetActorRotationOffset    ( .Actor:Player 0 0 0 )
+                    SetTimescale *Fixed[1.0]
+                    %=====================
+                    Label DoStylish4 % 4th Stylish Move
+                    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                    If *Var0 == .False % A pressed too soon
+                        Wait 1
+                        Goto End
+                    EndIf
+                    %Set *Var0 .True % testing
+                    If *Var0 == .True
+                        % Add 1 to the stylish counter (last move only)
+                        Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                        Add *Var0 1
+                        Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                        Set *VarA .False % this move doesn't have an SP cap
+                        ExecWait $Script_DoStylishFX
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                        BreakLoop
+                        Wait  15`
+                    EndIf
+                EndIf
+            EndIf
+        EndIf
+        Wait 1
+    EndLoop
+    Label End
+    Set *TrackInput .False
+    Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Return
+    End
+}

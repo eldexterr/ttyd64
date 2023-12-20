@@ -1,0 +1,245 @@
+% Remove the sprite cap in the game
+
+% Patch func_8013AF70
+@Function D1708 % 8013B008
+{
+    ORI     V0, R0, 1
+}
+
+% Patch func_8013AF70
+@Function D1710 % 8013B010
+{
+    ORI     V0, R0, 1
+}
+
+% Increase graphics cap on screen
+%
+% From ~Func:gfx_draw_frame
+@Function 212C % 80026D2C
+{
+    SLTI	V0, V0, 4100 % Double the cap, was 2080
+}
+
+%=================================================
+% -Battle-
+%
+% Don't render any sprites when a menu pop-up is open
+% if 9 or more enemies are in battle.
+%=================================================
+
+#export:Data $PopupMenu_Byte
+{ 00000000 }
+
+%============
+% Set Byte
+%============
+
+% Set $PopupMenu_Byte as true
+%
+% ~Func:popup_menu_draw_title_contents
+@Hook 08DAF8 % 800F4648
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Check if player is inside battle
+    % and if 9 or more enemies are in the battle
+    LABU    A0, 80074094 % current mode
+    ORI     A1, R0, 1 % battle
+    BNE     A0, A1, .End
+    NOP
+    % check amount of enemies in battle
+    JAL     $GetAmountOfEnemiesInBattle
+    NOP
+    SLTIU   A1, V0, 9
+    BNE     A1, R0, .End
+    NOP
+    ORI     A1, R0, 1
+    SAW     A1, $PopupMenu_Byte
+    % restore vanilla code
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    % restore vanilla code
+    LUI	    V0, 8011
+    J       800F4650
+    LW	    V0, D69C (V0)
+}
+
+% Set $PopupMenu_Byte as true
+%
+% func_802A2C84 / ~Func:battle_popup_menu_draw_contents(?)
+@Hook 417A14 % 802A2C84
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Check if player is inside battle
+    % and 9 or more enemies are in battle
+    LABU    A0, 80074094 % current mode
+    ORI     A1, R0, 1 % battle
+    BNE     A0, A1, .End
+    NOP
+    % check amount of enemies in battle
+    JAL     $GetAmountOfEnemiesInBattle
+    NOP
+    SLTIU   A1, V0, 9
+    BNE     A1, R0, .End
+    NOP
+    ORI     A1, R0, 1
+    SAW     A1, $PopupMenu_Byte
+    % restore vanilla code
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    % restore vanilla code
+    LUI	    V0, 802B
+    J       802A2C8C
+    LBU	    V0, D108 (V0)
+}
+
+% Set $PopupMenu_Byte as true
+%
+% func_802A4A54 / ~Func:battle_strategies_menu_draw_contents(?)
+@Hook 4197E4 % 802A4A54
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Check if player is inside battle
+    % and 9 or more enemies are in battle
+    LABU    A0, 80074094 % current mode
+    ORI     A1, R0, 1 % battle
+    BNE     A0, A1, .End
+    NOP
+    % check amount of enemies in battle
+    JAL     $GetAmountOfEnemiesInBattle
+    NOP
+    SLTIU   A1, V0, 9
+    BNE     A1, R0, .End
+    NOP
+    ORI     A1, R0, 1
+    SAW     A1, $PopupMenu_Byte
+    % restore vanilla code
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    % restore vanilla code
+    LUI	    V0, 802B
+    J       802A4A5C
+    LBU	    V0, D604 (V0)
+}
+
+%============
+% Clear Byte
+%============
+
+% Clear $PopupMenu_Byte
+%
+% ~Func:hide_popup_menu
+@Hook 08A860 % 800F13B0
+{
+    SAW     R0, $PopupMenu_Byte
+    % restore vanilla code
+    LUI	    V0, 8011
+    J       800F13B8
+    LB	    V0, D68E (V0)
+}
+
+/% Done in PartnersHP.patch
+
+% Clear $PopupMenu_Byte
+%
+% ~Func:destroy_popup_menu
+@Hook 08A9E8 % 800F1538
+{
+    SAW     R0, $PopupMenu_Byte
+    % restore vanilla code
+    LUI	    A0, 8011
+    J       800F1540
+    LW	    A0, D65C (A0)
+}%/
+
+
+% Close popup menu
+%
+% func_802A2C84 / ~Func:battle_popup_menu_draw_contents(?)
+@Hook 41863C % 802A38AC
+{
+    SAW     R0, $PopupMenu_Byte
+    % restore vanilla code
+    LUI	    V0, 802B
+    J       802A38B4
+    LW	    V0, D4A0 (V0)
+}
+
+% Hide popup menu
+%
+% func_802A2C84 / ~Func:battle_popup_menu_draw_contents(?)
+@Hook 418678 % 802A38E8
+{
+    SAW     R0, $PopupMenu_Byte
+    % restore vanilla code
+    LUI     V0, 802B
+    J       802A38F0
+    LW	    V0, D4A0 (V0)
+}
+
+% Close popup menu
+%
+% func_802A4A54 / ~Func:battle_strategies_menu_draw_contents(?)
+@Hook 419DE4 % 802A5054
+{
+    SAW     R0, $PopupMenu_Byte
+    % restore vanilla code
+    J	    802A5274
+    ADDIU	V0, R0, 00FF
+}
+
+% Hide popup menu
+%
+% func_802A4A54 / ~Func:battle_strategies_menu_draw_contents(?)
+@Hook 419E18 % 802A5088
+{
+    SAW     R0, $PopupMenu_Byte
+    % restore vanilla code
+    J	    802A50D0
+    ADDIU	V1, R0, 000B
+}
+
+%%%%
+
+% Don't render any actor when a menu is opened
+%
+% ~Func:spr_draw_component
+@Hook 0FFFCC % 802DCEDC
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Check if $PopupMenu_Byte is true
+    LAW     A0, $PopupMenu_Byte
+    BEQ     A0, R0, .End
+    NOP
+    % Skip FX
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA % skip this function
+    NOP
+    % restore vanilla code
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    ADDIU	SP, SP, -78
+    J       802DCEE4
+    SW	    S3, 0054 (SP)
+}
+
+#new:Function $GetAmountOfEnemiesInBattle
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0
+    COPY    S0, A0
+    CLEAR   V0
+    LIO     A0, 800DC150 % ActorTable(0x0C)=Enemies Data - Start
+    ORI     A3, R0, 24` % because last enemy is Enemy23
+    SLL     A3, A3, 2
+    ADDU    A3, A0, A3
+    .Loop
+    LW      A1, 0 (A0)
+    BNEL    A1, R0, .Add1ToCounter
+    ADDI    V0, V0, 1
+    .Add1ToCounter
+    ADDI    A0, A0, 4
+    BNE     A0, A3, .Loop
+    NOP
+    POP     RA, A0, A1, A2, A3, V1, S0
+    JR      RA
+    NOP
+}

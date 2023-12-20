@@ -1,0 +1,198 @@
+% Add item entity, and update windows collisions
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:BoosMansion
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  MakeNpcs  ( .False $NpcGroupList_802458E0 )
+    ExecWait  $Script_MakeEntities
+    Set   *AreaFlag[008]  .False
+    Exec  $Script_80242B3C
+    Exec  $Script_ShakeWindows % $Script_80243298
+    Exec  $Script_80241970
+    Bind  $Script_802418BC .Trigger:WallPressA ~Collider:tt1 00000001 00000000
+    Exec  $Script_80241860
+    Exec  $Script_802417F0
+    Call  MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemEntity .ItemSpawnMode:Fixed_NeverVanish *GF_OBK08_NewItem )
+    Call  MakeItemEntity ( .Item:Coin ~Vec3d:Coin .ItemSpawnMode:Fixed_NeverVanish *GF_OBK08_Coin1 )
+    Return
+    End
+}
+
+#new:Script $Script_ShakeWindows
+{
+        % Parent colliders
+        Call  ParentColliderToModel ( ~Collider:m11 ~Model:m11 )
+        Call  ParentColliderToModel ( ~Collider:m12 ~Model:m12 )
+        Call  ParentColliderToModel ( ~Collider:m21 ~Model:m21 )
+        Call  ParentColliderToModel ( ~Collider:m22 ~Model:m22 )
+        Call  ParentColliderToModel ( ~Collider:m31 ~Model:m31 )
+        Call  ParentColliderToModel ( ~Collider:m32 ~Model:m32 )
+        Call  ParentColliderToModel ( ~Collider:m41 ~Model:m41 )
+        Call  ParentColliderToModel ( ~Collider:m42 ~Model:m42 )
+    0:  Label  A
+    C:  Call  AwaitPlayerApproach   ( 00000000 FFFFFE7A 00000096 )
+   24:  Set   *MapVar[B]  00000000
+   34:  Set   *Var5  00000000
+   44:  Set   *Var2  ~Model:m21
+        Set   *VarA  ~Collider:m21
+   54:  Exec  $Script_ShakeWindows_Left
+   60:  Wait  3`
+   6C:  Set   *Var2  ~Model:m22
+        Set   *VarA  ~Collider:m22
+   7C:  Exec  $Script_ShakeWindows_Right
+   88:  Wait  2`
+   94:  Set   *Var5  00000001
+   A4:  Set   *Var2  ~Model:m41
+        Set   *VarA  ~Collider:m41
+   B4:  Exec  $Script_ShakeWindows_Left
+   C0:  Wait  3`
+   CC:  Set   *Var2  ~Model:m42
+        Set   *VarA  ~Collider:m42
+   DC:  Exec  $Script_ShakeWindows_Right
+   E8:  Wait  2`
+   F4:  Set   *Var5  00000000
+  104:  Set   *Var2  ~Model:m31
+        Set   *VarA  ~Collider:m31
+  114:  Exec  $Script_ShakeWindows_Left
+  120:  Wait  2`
+  12C:  Set   *Var2  ~Model:m32
+        Set   *VarA  ~Collider:m32
+  13C:  Exec  $Script_ShakeWindows_Right
+  148:  Wait  2`
+  154:  Set   *Var5  00000001
+  164:  Set   *Var2  ~Model:m11
+        Set   *VarA  ~Collider:m11
+  174:  Exec  $Script_ShakeWindows_Left
+  180:  Wait  3`
+  18C:  Set   *Var2  ~Model:m12
+        Set   *VarA  ~Collider:m12
+  19C:  Exec  $Script_ShakeWindows_Right
+  1A8:  Wait  2`
+  1B4:  Call  AwaitPlayerLeave      ( 00000000 FFFFFE7A 000000AA )
+  1CC:  Set   *MapVar[B]  00000001
+  1DC:  Goto  A
+  1E8:  Return
+  1F0:  End
+}
+
+#new:Script $Script_ShakeWindows_Left
+{
+    0:  Call  PlaySoundWithVolume   ( B0000011 00000000 )
+   14:  Call  PlaySoundAtModel      ( *Var2 B0000011 00000000 )
+   2C:  Call  $Function_80240840    ( 00000005 )
+   3C:  Set   *Var3  0000005A
+   4C:  Call  MakeLerp  ( 00000000 *Var3 0000000F .Easing:CosFastOvershoot )
+   68:  Label  A
+   74:  Call  UpdateLerp ( )
+   80:  Call  RotateModel   ( *Var2 *Var0 00000000 00000001 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+   A0:  Wait  1`
+   AC:  If  *Var1  ==  00000001
+   BC:  	Goto  A
+   C8:  EndIf
+   D0:  Call  $Function_80240840    ( 00000005 )
+   E0:  Set   *Var4  00000000
+   F0:  Label  F
+   FC:  Call  MakeLerp  ( *Var3 00000014 00000014 .Easing:CosFastOvershoot )
+  118:  Label  14
+  124:  Call  UpdateLerp ( )
+  130:  Call  RotateModel   ( *Var2 *Var0 00000000 00000001 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+  150:  Wait  1`
+  15C:  If  *Var1  ==  00000001
+  16C:  	Goto  14
+  178:  EndIf
+  180:  Call  $Function_80240840    ( 00000005 )
+  190:  Call  MakeLerp  ( 00000014 *Var3 00000005 .Easing:CosFastOvershoot )
+  1AC:  Label  1E
+  1B8:  Call  UpdateLerp ( )
+  1C4:  Call  RotateModel   ( *Var2 *Var0 00000000 00000001 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+  1E4:  Wait  1`
+  1F0:  If  *Var1  ==  00000001
+  200:  	Goto  1E
+  20C:  EndIf
+  214:  Call  $Function_80240840    ( 00000005 )
+  224:  If  *MapVar[B]  !=  00000000
+  234:  	Goto  23
+  240:  EndIf
+  248:  Add   *Var4  00000001
+  258:  If  *Var4  !=  00000002
+  268:  	Goto  F
+  274:  EndIf
+  27C:  Label  23
+  288:  Call  MakeLerp      ( *Var3 00000000 0000000F .Easing:QuadraticIn )
+  2A4:  Label  28
+  2B0:  Call  UpdateLerp ( )
+  2BC:  Call  RotateModel   ( *Var2 *Var0 00000000 00000001 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+  2DC:  Wait  1`
+  2E8:  If  *Var1  ==  00000001
+  2F8:  	Goto  28
+  304:  EndIf
+  30C:  Call  PlaySoundWithVolume   ( B0000012 00000000 )
+  320:  Call  PlaySoundAtModel      ( *Var2 B0000012 00000000 )
+  338:  Return
+  340:  End
+}
+
+#new:Script $Script_ShakeWindows_Right
+{
+    0:  Call  $Function_80240840    ( 00000005 )
+   10:  Set   *Var3  0000005A
+   20:  Call  MakeLerp  ( 00000000 *Var3 0000000F .Easing:CosFastOvershoot )
+   3C:  Label  A
+   48:  Call  UpdateLerp ( )
+   54:  Call  RotateModel   ( *Var2 *Var0 00000000 FFFFFFFF 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+   74:  Wait  1`
+   80:  If  *Var1  ==  00000001
+   90:  	Goto  A
+   9C:  EndIf
+   A4:  Call  $Function_80240840    ( 00000005 )
+   B4:  Set   *Var4  00000000
+   C4:  Label  F
+   D0:  Call  MakeLerp  ( *Var3 00000014 00000011 .Easing:CosFastOvershoot )
+   EC:  Label  14
+   F8:  Call  UpdateLerp ( )
+  104:  Call  RotateModel   ( *Var2 *Var0 00000000 FFFFFFFF 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+  124:  Wait  1`
+  130:  If  *Var1  ==  00000001
+  140:  	Goto  14
+  14C:  EndIf
+  154:  Call  $Function_80240840    ( 00000005 )
+  164:  Call  MakeLerp  ( 00000014 *Var3 00000008 .Easing:CosFastOvershoot )
+  180:  Label  1E
+  18C:  Call  UpdateLerp ( )
+  198:  Call  RotateModel   ( *Var2 *Var0 00000000 FFFFFFFF 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+  1B8:  Wait  1`
+  1C4:  If  *Var1  ==  00000001
+  1D4:  	Goto  1E
+  1E0:  EndIf
+  1E8:  Call  $Function_80240840    ( 00000005 )
+  1F8:  If  *MapVar[B]  !=  00000000
+  208:  	Goto  23
+  214:  EndIf
+  21C:  Add   *Var4  00000001
+  22C:  If  *Var4  !=  00000002
+  23C:  	Goto  F
+  248:  EndIf
+  250:  Label  23
+  25C:  Call  MakeLerp      ( *Var3 00000000 0000000F .Easing:QuadraticIn )
+  278:  Label  28
+  284:  Call  UpdateLerp ( )
+  290:  Call  RotateModel   ( *Var2 *Var0 00000000 FFFFFFFF 00000000 )
+        Call  UpdateColliderTransform ( *VarA )
+  2B0:  Wait  1`
+  2BC:  If  *Var1  ==  00000001
+  2CC:  	Goto  28
+  2D8:  EndIf
+  2E0:  Return
+  2E8:  End
+}

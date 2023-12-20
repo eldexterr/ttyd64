@@ -1,0 +1,242 @@
+@ $Function_80241CD8
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_80241CD8[1E4]
+}
+
+%==========================
+
+% spawn a mango instead of a coconut
+
+@ $TreeDropList_Tree1
+{
+	00000001
+	.Item:KeelMango ~Vec3d:Tree1_Drop1 .ItemSpawnMode:Fall_SpawnOnce 00000000 *AreaFlag[017]
+}
+
+%==========================
+
+% Modify Shop inventory
+
+@ $ShopInventory_802449BC {
+	.Item:PointSwap      00000005 00230143
+	.Item:ThunderRage    0000000F 00240002 % Lightning that strikes all enemies. Attack Power:  ...
+	.Item:FireFlower     00000005 00240000 % A flower that burns all enemies with fireballs. At ...
+	.Item:TastyTonic     00000002 0024000E % A very tasty tonic. Cures poisoning and shrinking.
+	.Item:HoneySyrup     00000006 00240016 % Sweet honey syrup. Restores 5 FP.
+	.Item:SuperShroom    0000000F 0024000A % A truly super Mushroom. Restores 10 HP.
+	00000000 00000000 00000000
+}
+
+/% Settings NPC only the demo builds
+
+#define .NpcID:NPC_Settings 12
+
+%========
+% NPC
+%========
+
+@ $NpcGroupList_8024E924
+{
+	00000001 $NpcGroup_8024C610 00000000
+	00000001 $NpcGroup_8024C810 00000000
+	00000005 $NpcGroup_8024DD84 00000000
+	00000009 $NpcGroup_8024CC04 00000000
+    00000001 $NpcGroup_Settings 00000000
+	00000000 00000000 00000000
+}
+
+@ $NpcGroupList_8024E960
+{
+	00000001 $NpcGroup_8024C610 00000000
+	00000001 $NpcGroup_8024CA14 00000000
+	00000005 $NpcGroup_8024DD84 00000000
+	00000009 $NpcGroup_8024CC04 00000000
+    00000001 $NpcGroup_Settings 00000000
+	00000000 00000000 00000000
+}
+
+@ $NpcGroupList_8024E99C
+{
+	00000001 $NpcGroup_8024C610 00000000
+	00000005 $NpcGroup_8024DD84 00000000
+	00000009 $NpcGroup_8024CC04 00000000
+    00000001 $NpcGroup_Settings 00000000
+	00000000 00000000 00000000
+}
+
+@ $NpcGroupList_8024E9CC
+{
+	00000001 $NpcGroup_8024E734 00000000
+	00000005 $NpcGroup_8024DD84 00000000
+	00000009 $NpcGroup_8024CC04 00000000
+    00000001 $NpcGroup_Settings 00000000
+	00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Settings
+{
+	.NpcID:NPC_Settings $NpcSettings_8024C5BC ~Vec3f:NPC_Settings
+	00402D09 $Script_Init_NPC_Settings 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_Settings
+	~AnimationTable:NPC_Settings
+	00000000 00000000 00000000 $Tattle_SettingsNPC
+}
+
+#new:Script $Script_Init_NPC_Settings
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_NPC_Settings )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_NPC_Settings
+{
+    Call    SpeakToPlayer ( .Npc:Self 00980105 00980101 00000000 $String_Settings_Start )
+    Call    ShowChoice ( $String_Choice_Settings_Start )
+    Set     *Var1 *Var0
+    Call    CloseMessage
+    Switch *Var1
+        Case == 0 % Difficulty
+            Switch *Byte_Settings_Difficulty
+                Case == 0
+                    Set *Var0 $String_Easy
+                Case == 1
+                    Set *Var0 $String_Normal
+                Case == 2
+                    Set *Var0 $String_Hard
+                Case == 3
+                    Set *Var0 $String_VeryHard
+            EndSwitch
+            Call    SetMessageString ( *Var0 0 )
+            Call    SpeakToPlayer ( .Npc:Self 00980105 00980101 00000000 $String_Settings_Difficulty )
+            Call    ShowChoice ( $String_Choice_Settings_Difficulty )
+            If *Var0 != 4 % Cancel
+                Set     *Byte_Settings_Difficulty *Var0
+            EndIf
+            Call    CloseMessage
+            Jump    $Script_Interact_NPC_Settings
+            Return
+        Case == 1 % Music
+            Switch *Byte_Settings_BGM
+                Case == 0
+                    Set *Var0 $String_TTYD64
+                Case == 1
+                    Set *Var0 $String_Original
+            EndSwitch
+            Call    SetMessageString ( *Var0 0 )
+            Call    SpeakToPlayer ( .Npc:Self 00980105 00980101 00000000 $String_Settings_Music )
+            Call    ShowChoice    ( $String_Choice_Settings_YesNo )
+            If *Var0 != 2 % Cancel
+                If *Var0 == 1
+                    Set *Var0 .False
+                Else
+                    Set *Var0 .True
+                EndIf
+                Set     *Byte_Settings_BGM *Var0
+            EndIf
+            Call    CloseMessage
+            Jump    $Script_Interact_NPC_Settings
+            Return
+    EndSwitch
+    Return
+    End
+}
+
+#string $String_Settings_Start
+{
+[Style Right]
+Which setting do you want to[BR]
+change?
+[Yield][End]
+}
+
+#string $String_Settings_Difficulty
+{
+[Style Right]
+The higher, the more HP and[BR]
+damage enemies will deal.[BR]
+[BR]
+Current Difficulty: [SaveColor][Color:07][Var 0][RestoreColor]
+[Yield][End]
+}
+
+#string $String_Settings_Music
+{
+[Style Right]
+Do you want the battle music[BR]
+from the original game?[BR]
+[BR]
+Current Music: [SaveColor][Color:07][Var 0][RestoreColor]
+[Yield][End]
+}
+
+#string $String_Choice_Settings_Start
+{
+[Style Choice pos=101,90 size=102,46]
+[StartChoice]
+[Option 0]Difficulty[BR]
+[Option 1]Music[BR]
+[EndChoice cancel=2][End]
+}
+
+#string $String_Choice_Settings_Difficulty
+{
+[Style Choice pos=101,90 size=110,77]
+[StartChoice]
+[Option 0]Easy[BR]
+[Option 1]Normal[BR]
+[Option 2]Hard[BR]
+[Option 3][SaveColor][Color:07]Very Hard[RestoreColor][BR]
+[EndChoice cancel=4][End]
+}
+
+#string $String_Choice_Settings_YesNo
+{
+[Style Choice pos=120,90 size=75,46]
+[StartChoice]
+[Option 0]Yes[BR]
+[Option 1]No[BR]
+[EndChoice cancel=2][End]
+
+}
+
+#string $String_TTYD64
+{
+TTYD64[End]
+}
+
+#string $String_Original
+{
+Original[End]
+}
+
+#string $String_Easy
+{
+Easy[End]
+}
+
+#string $String_Normal
+{
+Normal[End]
+}
+
+#string $String_Hard
+{
+Hard[End]
+}
+
+#string $String_VeryHard
+{
+Very Hard[End]
+}
+
+#string $Tattle_SettingsNPC
+{
+[Style Tattle][EnableCDownNext]
+Talk to him to change the game[BR]
+difficulty or the game music.
+[Wait][End]
+}
+%/

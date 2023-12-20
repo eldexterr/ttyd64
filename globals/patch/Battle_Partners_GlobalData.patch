@@ -1,0 +1,334 @@
+% All this data got moved here because the file for that partner can't
+% no longer have any more data.
+
+%==========
+% Goombario
+%==========
+
+#export:Script:Battle $Script_Goombario_HandleEvent_Immune
+{
+    Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+    % Check if Partner used the defend command
+    Call $GetPartnerExtraBattleData_API ( E *Var0 )
+    If *Var0 == .False
+        SetConst  *Var0  00000001
+        SetConst  *Var1  00090000
+    Else % Defend
+        SetConst  *Var0  00000001
+        SetConst  *Var1  0009000E
+    EndIf
+    ExecWait  80297814
+    Return
+    End
+}
+
+#export:Data $End_Goombario
+{ 00000000 00000000 00000000 }
+
+% Ponder
+
+#export:Script:Battle $Script_Goombario_Init_Ponder
+{
+    Exec  $Script_NukeTracker
+    Call  UseBattleCamPreset    ( 0000000E )
+    Call  BattleCamTargetActor  ( .Actor:Player )
+    Call  MoveBattleCamOver ( 0000000F )
+    Call  LoadActionCommand ( .ActionCommand:Squirt )
+    Call  802A9000
+    Call  SetupMashMeter  ( 00000002 00000050 00000064 00000000 00000000 00000000 )
+    Call  GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  PlayEffect    ( ~FX:EmoteIcon:Ellipsis 00000000 *Var0 *Var1 *Var2 00000018 00000000 00000019 00000000 00000000 00000000 00000000 00000000 )
+    Wait  10`
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090013 )
+    Call  802A911C      ( 00000000 00000040 00000003 )
+    Loop  0000003D
+        Wait  1`
+    EndLoop
+    Call  GetActionResult ( *Var0 )
+    Switch  *Var0
+        Case  >  50
+            Call  PlaySoundAtActor ( .Actor:Self 0262 ) % !
+            Call  GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  PlayEffect    ( ~FX:EmoteIcon:Exclaim 00000000 *Var0 *Var1 *Var2 00000018 00000000 00000019 00000000 00000000 00000000 00000000 00000000 )
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090004 )
+            Wait  25`
+        Default
+            Call  GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call  PlayEffect    ( ~FX:EmoteIcon:Frustration 00000000 *Var0 *Var1 *Var2 00000018 00000000 00000019 00000000 00000000 00000000 00000000 00000000 )
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090016 )
+            Wait  25`
+            ExecWait $Script_Ponder_GoBackToHome
+            Return
+    EndSwitch
+    % Make Mario to stop using his idle or turn used animations.
+    Call    GetStatusFlags ( .Actor:Player *Var5 )
+    If  *Var5  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        % check if player already used his turn
+        Call    $ReadBitFlag ( 800DC074 .False 3 1 *Var0 ) % battleFlags2(0x03(bit1))
+        If *Var0 == .True
+            Set *VarC .True
+            Call    $WriteBitFlag ( 800DC074 .False 3 3 .True ) % don't use Mario's "turn used animations"
+        Else
+            Set *VarC .False
+        EndIf
+        Call    UseIdleAnimation ( .Actor:Player .False )
+    EndIf
+    % walk towards Mario
+    Call    SetAnimation  ( .Actor:Partner FFFFFFFF 00090002 )
+    Call    GetActorPos ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add     *Var0 35` % x
+    Add     *Var2 2 % z
+    Call    SetGoalPos ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call    SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    Call    RunToGoal ( .Actor:Self 0 .True )
+    % rotate towards Mario
+    Call    MakeLerp    	( 0 -180` 3 .Easing:Linear )
+    Loop     
+        Call     UpdateLerp
+        Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+        Wait     1
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    % start talking to Mario
+    Call    SetAnimation  ( .Actor:Partner FFFFFFFF 0009000F )
+    Wait    10`
+    Exec    $Script_InitTracker % start stylish's input tracker
+    If  *Var5  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Call    UseIdleAnimation ( .Actor:Player .False )
+        Call    RandInt ( 4 *Var0 )
+        Switch *Var0
+            Case == 0
+                Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:Thinking )
+            Case == 1
+                Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+            Case == 2
+                Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ShockStill )
+            Case == 3
+                Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:GotItem )
+            Case == 4
+                Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:BeforeJump )
+        EndSwitch
+    EndIf
+    Wait    20`
+    If  *Var5  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Call    SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:Question )
+    EndIf
+    Call    PlaySoundAtActor ( .Actor:Self 0262 ) % !
+    Call    GetActorPos ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add     *Var1 15` % y
+    Call    PlayEffect    ( ~FX:EmoteIcon:Exclaim 00000000 *Var0 *Var1 *Var2 00000018 00000000 00000019 00000000 00000000 00000000 00000000 00000000 )
+    Wait    30`
+    Call    SetAnimation  ( .Actor:Partner FFFFFFFF 00090001 )
+    Exec    $Script_Ponder_Stylish
+    If  *Var5  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Call    SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:NodYes )
+    EndIf
+    Wait    25`
+    If  *Var5  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Call    SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+    EndIf
+    % If Mario's turn was already used, just set his "used turn" bit flag as false once again.
+    Call    $ReadBitFlag ( 800DC074 .False 3 1 *Var0 ) % battleFlags2(0x03(bit1))
+    If *Var0 == .True
+        % Turn already used
+        Call    $WriteBitFlag ( 800DC074 .False 3 1 .False ) % enable mario's turn once again
+    Else
+        % Turn still haven't been used, increment hustleByte
+        Call    $WriteAddress ( 800DC070 0 1 8B .False ) % battleStatus(0x8B)=hustleTurns byte
+    EndIf
+    % stop looking towards Mario
+    Call    MakeLerp    	( -180` 0 3 .Easing:Linear )
+    Loop     
+        Call     UpdateLerp
+        Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+        Wait     1
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    ExecWait $Script_Ponder_GoBackToHome
+    Call    ShowMessageBox        ( 00000106 0000003C )
+    Call    WaitForMessageBoxDone
+    Call    UseIdleAnimation ( .Actor:Player .True )
+    If *VarC == .True % restore battleFlags2 bitflag
+        Call    $WriteBitFlag ( 800DC074 .False 3 3 .False ) % use Mario's "turn used animations"
+    EndIf
+    Return
+    End
+}
+
+#new:Script:Battle $Script_Ponder_GoBackToHome
+{
+    Call  UseBattleCamPreset    ( 00000002 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[4.0] )
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.8] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090003 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090001 )
+    Return
+    End
+}
+
+#new:Script:Battle $Script_Ponder_Stylish
+{
+    %======================
+    % Stylish code
+    %
+    % Check if the A button was pressed too soon
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        Set *TrackInput .False
+        Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Wait 1
+        Goto End
+    EndIf
+    % TRACK A - RIGHT TIME TO PRESS THE BUTTON
+    Loop 5 % 5 Frames
+        % Timing Tutor Badge
+        ExecWait $Script_TimingTutor % writes in var0,1,2
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        %Set *Var0 .True % testing
+        If *Var0 == .True
+            % Turn Off A Button Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090010 ) % happy
+            Wait  15`
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090001 ) % idle
+            % Turn Off A Button Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            Return
+        EndIf
+        Wait 1
+    EndLoop
+    % End
+    Label   End
+    Set   *TrackInput .False
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Return
+    End
+}
+
+% Call $Function_Multibonk_GetAmountToDeal ( *out )
+#export:Function $Function_Multibonk_GetAmountToDeal
+{
+    PUSH    RA
+    LABU    V0, 8010F2AD % goombario's rank
+    ORI     V1, R0, 2
+    BEQL    V0, V1, .SetVariable
+    ORI     A2, R0, 3 % Ultra Rank
+    ORI     A2, R0, 2 % Super Rank
+    .SetVariable
+    LW      A1, C (A0)
+    JAL     ~Func:set_variable
+    LW      A1, 0 (A1) % arg0
+    POP     RA
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+#export:Script:Battle $Script_Tattle_DoStylish
+{
+% This stylish can always be done if the player just spam the A button
+% This is due on how the code is placed -_-
+Thread
+    ExecWait $Script_NukeTracker
+    Exec $Script_InitTracker
+    Loop 2 % 2 Frames
+        % Timing Tutor Badge
+        ExecWait $Script_TimingTutor % writes in var0,1,2
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        %Set *Var0 .True % testing
+        If *Var0 == .True
+            % Turn Off A Button Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090010 ) % happy
+            Wait  15`
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00090001 ) % idle
+            % Turn Off A Button Tracker
+            Set *TrackInput .False
+            Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            Return
+        EndIf
+        Wait 1
+    EndLoop
+    % Turn Off A Button Tracker
+    Set *TrackInput .False
+    Call $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+EndThread
+Return
+End
+}
+
+#export:Script $Script_Goombario_Multibonk_GetAmountToDeal
+{
+    Call $ReadAddress ( 8010F2AC 0 *Var0 1 .False ) % Goombario's Rank
+    If *Var0 == 2 % Ultra Rank
+        Set   *Var0  3
+    Else
+        Set   *Var0  2
+    EndIf
+    Return
+    End
+}
+
+%===========
+% Kooper
+%===========
+
+#export:Script:Battle $Script_Kooper_FirstStrike_GetMoveData
+{
+    Call  GetActorLevel ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        Case  ==  00000000
+            Call $WriteAddress ( 800DC1EC 1 0089 .False .False ) % selectMove
+            Call  80269EAC  ( 00000006 )
+            Set   *VarF  00000002
+            Set   *VarE  00000001
+        Case  ==  00000001
+            Call $WriteAddress ( 800DC1EC 1 008A .False .False ) % selectMove
+            Call  80269EAC  ( 00000006 )
+            Set   *VarF  00000003
+            Set   *VarE  00000002
+        Case  ==  00000002
+            Call $WriteAddress ( 800DC1EC 1 008B .False .False ) % selectMove
+            Call  80269EAC  ( 00000006 )
+            Set   *VarF  00000005
+            Set   *VarE  00000003
+    EndSwitch
+    Return
+    End
+}
+
+%===========
+% Lakilester
+%===========
+#export:Data $End2
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 00000000
+}

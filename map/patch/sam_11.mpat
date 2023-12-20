@@ -1,0 +1,30 @@
+% Add new hidden item
+
+@ $Script_Main_EnterWalk
+{
+    [1B0]  ExecWait  $Script_SetMusicTrack % Script_802421E0
+}
+
+#delete $Script_802421E0
+
+#new:Script $Script_SetMusicTrack % Script_802421E0
+{
+    Switch  *GB_StoryProgress
+        Case  <  .Story:Ch7_MayorMurderMystery % 3F
+            Call  SetMusicTrack ( 00000000 .Song:ShiverCity 00000000 00000008 )
+        Case  <  .Story:Ch7_MayorMurderSolved % 43
+            Call  SetMusicTrack ( 00000000 .Song:PenguinMystery 00000000 00000008 )
+        Case  >=  .Story:Ch7_MayorMurderSolved % 43
+            Call  SetMusicTrack ( 00000000 .Song:ShiverCity 00000000 00000008 )
+    EndSwitch
+    % new item
+    Call  MakeItemEntity ( .Item:SnowBunny ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_SAM11_Reward )
+    Return
+    End
+}
+
+@ $Function_8024090C
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_8024090C[1E4]
+}

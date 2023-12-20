@@ -1,0 +1,312 @@
+% Automatically dumped from section 09
+
+#new:Actor $09_WhackaC {
+% stats
+[Index]        D0b 
+[Level]         0`b 
+[MaxHP]        99`b 
+[Coins]         0`b 
+[Flags]       00040004 
+[StatusTable] $StatusTable_80221674_09 
+% ai
+[PartsCount]    1`s 
+[PartsTable]  $PartsTable_80221720_09 
+[Script]      $Script_Init_8022176C_09 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]       0`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]     0`b 
+[PowerBounce]  50`b 
+[SpinSmash]     4`b % weight (0-4)
+% ui positions
+[Size]         47`b  32`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -20`b  40`b % dx dy
+[StatusIcon]   10`b  30`b % dx dy
+}
+
+#new:Function $Function_802181C0_09 {
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  LI        A1, *GB_IWA00_Whacka_HitCount
+   14:  CLEAR     A0
+   18:  SW        RA, 14 (SP)
+   1C:  JAL       ~Func:get_variable
+   20:  SW        R0, 84 (S0)
+   24:  SLTI      V0, V0, 8
+   28:  BNE       V0, R0, .o34
+   2C:  LI        V0, 1
+   30:  SW        V0, 84 (S0)
+        .o34
+   34:  LW        RA, 14 (SP)
+   38:  LW        S0, 10 (SP)
+   3C:  LI        V0, 2
+   40:  JR        RA
+   44:  ADDIU     SP, SP, 18
+}
+
+#new:IdleAnimations $IdleAnimations_8022161C_09 {
+.Status:Normal    00920001
+.Status:Frozen    00920000
+.Status:Sleep     00920001
+.Status:Poison    00920001
+.Status:Stop      00920000
+.Status:Static    00920001
+.Status:Paralyze  00920000
+.Status:Dizzy     00920001
+.Status:Fear      00920001
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_80221668_09 {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_80221674_09 {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep       0`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy       0`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze    0`
+.Status:Shrink      0`
+.Status:Stop        0`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_80221720_09 {
+00800000 01000000 001E00FF $IdleAnimations_8022161C_09 $DefenseTable_80221668_09 00000000 00000000 00FB0000 00000000 
+}
+
+#new:Script $Script_Init_8022176C_09 {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_80222000_09 )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_80221828_09 )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_8022185C_09 )
+   3C:  Call  SetActorVar   ( .Actor:Self 00000000 00000000 )
+   54:  Call  $Function_802181C0_09 ( )
+   60:  If  *Var0  ==  00000000 
+   70:  	Call  SetActorFlagBits  ( .Actor:Self 00600001 .True )
+   88:  	Call  SetPartFlagBits   ( .Actor:Self 00000001 00020000 .True )
+   A4:  EndIf
+   AC:  Return
+   B4:  End
+}
+
+#new:Script $Script_Idle_80221828_09 {
+    0:  Label  0
+    C:  Wait  1`
+   18:  Goto  0
+   24:  Return
+   2C:  End
+}
+
+#new:Script $Script_HandleEvent_8022185C_09 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   3C:  Switch  *Var0 
+   48:  	Case  ==  .Event:HitCombo % 9
+   54:  		Call  PlaySoundAtActor  ( .Actor:Self 00002073 )
+   68:  		SetConst  *Var0  00000001 
+   78:  		SetConst  *Var1  00920001 
+   88:  		ExecWait  DoNormalHit 
+   94:  	Case  ==  .Event:Hit % A
+   A0:  		SetConst  *Var0  00000001 
+   B0:  		SetConst  *Var1  00920004 
+   C0:  		ExecWait  $Script_80222050_09 
+   CC:  		ExecWait  DoNormalHit 
+   D8:  		Call  RandInt   ( 00000064 *Var0 )
+   EC:  		If  *Var0  <=  00000064 
+   FC:  			ExecWait  $Script_80222130_09 
+  108:  			Return
+  110:  		EndIf
+  118:  	Case  ==  .Event:BurnHit % E
+  124:  		SetConst  *Var0  00000001 
+  134:  		SetConst  *Var1  00920001 
+  144:  		SetConst  *Var2  00920001 
+  154:  		ExecWait  $Script_80222050_09 
+  160:  		ExecWait  DoNormalHit 
+  16C:  		Call  RandInt   ( 00000064 *Var0 )
+  180:  		If  *Var0  <=  00000064 
+  190:  			ExecWait  $Script_80222130_09 
+  19C:  			Return
+  1A4:  		EndIf
+  1AC:  	Case  ==  .Event:BurnDeath % 24
+  1B8:  		SetConst  *Var0  00000001 
+  1C8:  		SetConst  *Var1  00920001 
+  1D8:  		SetConst  *Var2  00920001 
+  1E8:  		ExecWait  $Script_80222050_09 
+  1F4:  		ExecWait  DoNormalHit 
+  200:  		If  00000064  >=  00000064 
+  210:  			ExecWait  $Script_80222130_09 
+  21C:  			Return
+  224:  		Else
+  22C:  			SetConst  *Var0  00000001 
+  23C:  			SetConst  *Var1  00920001 
+  24C:  			ExecWait  DoDeath 
+  258:  			Return
+  260:  		EndIf
+  268:  	Case  ==  .Event:SpinSmashHit % B
+  274:  		SetConst  *Var0  00000001 
+  284:  		SetConst  *Var1  00920001 
+  294:  		ExecWait  DoSpinSmashHit 
+  2A0:  		Call  RandInt   ( 00000064 *Var0 )
+  2B4:  		If  *Var0  <=  00000064 
+  2C4:  			ExecWait  $Script_80222130_09 
+  2D0:  			Return
+  2D8:  		EndIf
+  2E0:  	Case  ==  .Event:SpinSmashDeath % 21
+  2EC:  		SetConst  *Var0  00000001 
+  2FC:  		SetConst  *Var1  00920001 
+  30C:  		ExecWait  DoSpinSmashHit 
+  318:  		If  00000064  >=  00000064 
+  328:  			ExecWait  $Script_80222130_09 
+  334:  			Return
+  33C:  		Else
+  344:  			SetConst  *Var0  00000001 
+  354:  			SetConst  *Var1  00920001 
+  364:  			ExecWait  DoDeath 
+  370:  			Return
+  378:  		EndIf
+  380:  	Case  ==  .Event:ShockHit % 2F
+  38C:  		SetConst  *Var0  00000001 
+  39C:  		SetConst  *Var1  00920001 
+  3AC:  		ExecWait  DoShockHit 
+  3B8:  		SetConst  *Var0  00000001 
+  3C8:  		SetConst  *Var1  00920001 
+  3D8:  		ExecWait  DoJumpBack 
+  3E4:  		SetConst  *Var0  00000001 
+  3F4:  		SetConst  *Var1  00920001 
+  404:  		ExecWait  DoReturnHome 
+  410:  	Case  ==  .Event:ShockDeath % 26
+  41C:  		SetConst  *Var0  00000001 
+  42C:  		SetConst  *Var1  00920001 
+  43C:  		ExecWait  DoShockHit 
+  448:  		SetConst  *Var0  00000001 
+  458:  		SetConst  *Var1  00920001 
+  468:  		ExecWait  DoDeath 
+  474:  		Return
+  47C:  	Case  ==  00000017 % 17
+  488:  		SetConst  *Var0  00000001 
+  498:  		SetConst  *Var1  00920001 
+  4A8:  		ExecWait  DoImmune 
+  4B4:  	Case  ==  .Event:Immune % 19
+  4C0:  		SetConst  *Var0  00000001 
+  4D0:  		SetConst  *Var1  00920001 
+  4E0:  		ExecWait  DoImmune 
+  4EC:  		Call  RandInt   ( 00000064 *Var0 )
+  500:  		If  *Var0  <=  00000064 
+  510:  			ExecWait  $Script_80222130_09 
+  51C:  			Return
+  524:  		EndIf
+  52C:  	Case  ==  .Event:AirLiftFailed % 1F
+  538:  		SetConst  *Var0  00000001 
+  548:  		SetConst  *Var1  00920001 
+  558:  		ExecWait  DoImmune 
+  564:  		Call  RandInt   ( 00000064 *Var0 )
+  578:  		If  *Var0  <=  00000064 
+  588:  			ExecWait  $Script_80222130_09 
+  594:  			Return
+  59C:  		EndIf
+  5A4:  	Case  ==  .Event:Death % 20
+  5B0:  		SetConst  *Var0  00000001 
+  5C0:  		SetConst  *Var1  00920004 
+  5D0:  		ExecWait  $Script_80222050_09 
+  5DC:  		ExecWait  DoNormalHit 
+  5E8:  		Wait  10`
+  5F4:  		If  00000064  >=  00000064 
+  604:  			ExecWait  $Script_80222130_09 
+  610:  			Return
+  618:  		Else
+  620:  			SetConst  *Var0  00000001 
+  630:  			SetConst  *Var1  00920001 
+  640:  			ExecWait  DoDeath 
+  64C:  			Return
+  654:  		EndIf
+  65C:  	Case  ==  .Event:RecoverStatus % 31
+  668:  		SetConst  *Var0  00000001 
+  678:  		SetConst  *Var1  00920001 
+  688:  		ExecWait  DoRecover 
+  694:  	Case  ==  .Event:ScareAway % 39
+  6A0:  		SetConst  *Var0  00000001 
+  6B0:  		SetConst  *Var1  00920001 
+  6C0:  		SetConst  *Var2  00920001 
+  6D0:  		ExecWait  DoScareAway 
+  6DC:  		Return
+  6E4:  	Case  ==  .Event:BeginAirLift % 3A
+  6F0:  		SetConst  *Var0  00000001 
+  700:  		SetConst  *Var1  00920001 
+  710:  		ExecWait  DoAirLift 
+  71C:  	Case  ==  .Event:BlowAway % 16
+  728:  		SetConst  *Var0  00000001 
+  738:  		SetConst  *Var1  00920001 
+  748:  		ExecWait  DoBlowAway 
+  754:  		Return
+  75C:  	Default
+  764:  EndSwitch
+  76C:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  780:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  794:  Return
+  79C:  End
+}
+
+#new:Script $Script_TakeTurn_80222000_09 {
+    0:  Call  RandInt   ( 00000064 *Var0 )
+   14:  If  *Var0  <=  00000064 
+   24:  	ExecWait  $Script_80222130_09 
+   30:  	Return
+   38:  EndIf
+   40:  Return
+   48:  End
+}
+
+#new:Script $Script_80222050_09 {
+    0:  Call  SetActorVar       ( .Actor:Self 00000000 00000001 )
+   18:  Call  PlaySoundAtActor  ( .Actor:Self 00002073 )
+   2C:  Thread
+   34:  	Wait  15`
+   40:  	Call  SetAnimation      ( .Actor:Self 00000001 00920001 )
+   58:  	Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+   74:  	Add   *Var0  00000005 
+   84:  	Add   *Var1  00000014 
+   94:  	Add   *Var2  0000000A 
+   A4:  	Call  MakeItemEntity    ( .Item:WhackasBump *Var0 *Var1 *Var2 .ItemSpawnMode:Fall_SpawnAlways 00000000 )
+   C8:  EndThread
+   D0:  Return
+   D8:  End
+}
+
+#new:Script $Script_80222130_09 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  PlaySoundAtActor  ( .Actor:Self .Sound:MoleDig )
+   3C:  Call  SetAnimation      ( .Actor:Self 00000001 00920003 )
+   54:  Wait  40`
+   60:  Call  GetActorVar       ( .Actor:Self 00000000 *Var0 )
+   78:  If  *Var0  !=  00000000 
+   88:  	Call  SetBattleFlagBits2    ( 10000000 .True )
+   9C:  EndIf
+   A4:  Call  SetPartFlagBits   ( .Actor:Self 00000001 00020000 .True )
+   C0:  Call  SetActorFlagBits  ( .Actor:Self 00600001 .True )
+   D8:  Call  RemoveActor       ( .Actor:Self )
+   E8:  Return
+   F0:  End
+}
+

@@ -1,0 +1,1021 @@
+/% This patch add button shortcuts for each command of the battle wheel
+
+----Documention----
+
+802AD000 = Battle Wheel State?
+02=Normal
+00=Start Wheel
+FF=Open Command
+
+802AD002 = Wheel Cursor Pos
+
+802AD0B3 = Last cursor pos (used when you switch between Mario and Partner)
+
+802AD008 = Wheel Opacity
+FF = Normal
+64 = List currently open
+
+802ACC60 = Opening lists cooldown timer
+Used to not allow the player to open a list
+the next 8 frames after the battle wheel has appeared
+
+800DC4DC (4 Bytes) = Wheel StateID
+C8 = Open Stats Menu
+28 = Open Items Menu
+02 = Open Jump/Boots Menu
+3C = Open Star Spirits
+0A = Open Partner Abilities
+
+800DC0E0 (2 Bytes) = Battle Wheel Commands Enabled Bitflags
+[1st Byte]
+bit0= Star Spirits
+
+[2nd Byte]
+bit0= Jump
+bit1= Hammer
+bit2= Items
+bit6= Partner Attack
+bit7= Strategies
+
+800DC068 - Wheel State2
+0D = Player Command Wheel
+0E = Partner/Items Command Wheel
+
+802AD0AC - Amount of commands available, the next bytes are word flags for each command (I think?)
+
+%=====================
+% Loading Command's lists of attacks (used only by Boots, Hammer, Partner and Star Spirits commands)
+%=====================
+
+802A2684 - ~Func:BattleWheel_InitOptionsList
+802A2C84 - ~Func:BattleWheel_OpenOptionsList
+
+802AD4A4 - Type of list to load (needed to load a command's list data)
+02=Boots & Hammer commands
+04=Partner's Abilities
+08=Star Spirits
+
+802AD10C - List Data
+
+80074037 = Inputs (1 Frame)
+bit0/01=C-Right
+bit1/02=C-Left
+bit2/04=C-Down
+bit3/08=C-Up
+bit4/10=R button
+
+%/
+
+%==============
+% Shortcuts Main Hook
+%==============
+
+% Track Inputs
+@Hook 416B4C % 802A1DBC
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Check if the shortcuts are turned off
+    LIO     A1, *Flag_DisableShortcuts
+    JAL     ~Func:get_variable
+    RESERVED
+    BNE     V0, R0, .End
+    NOP
+    LABU    T0, 800740A2 % Peach's Byte
+    BNE     T0, R0, .End
+    NOP
+    % A shorcut has just been used?
+    LIO     T0, $ShortcutData
+    LBU     T1, 0 (T0)
+    BEQ     T1, R0, .Start
+    NOP
+    % ================
+    % Restore Cursor Pos from previous menu
+    %=================
+    % Restore previous cursor position
+    % check if the old menu need to be restored
+    .RestoreCursorPos
+    LIO     T0, $ShortcutData
+    LBU     T1, 0 (T0)
+    ORI     T2, R0, 2
+    BNE     T1, T2, .OpenNewMenu
+    NOP
+    LB      T1, 1 (T0) % previous pos
+    SAB     T1, 802AD002 % current pos
+    SAW     R0, $ShortcutData % nuke
+    BEQ     R0, R0, .End
+    RESERVED
+    % ================
+    % Open New Menu
+    %=================
+    .OpenNewMenu
+    % Wait if a list cooldown is active
+    LAW     T1, 802ACC60 % Opening lists cooldown timer
+    BNE     T1, R0, .End
+    NOP
+    % Open the new menu
+    LIO     T0, $ShortcutData
+    LB      T1, 2 (T0) % new pos
+    SAB     T1, 802AD002 % new cursor pos
+    ADDI    T1, R0, FF
+    SAB     T1, 802AD000 % force list to open
+    % play sound
+    JAL 	~Func:sfx_play_sound
+    ADDIU	A0, R0, 00C9 % open list sfx
+    % Set Shorcut state as = restore old menu
+    LIO     T0, $ShortcutData
+    ORI     T1, R0, 2
+    BEQ     R0, R0, .End
+    SB      T1, 0 (T0) % save shorcut state as restore old menu
+    .Start
+    % Don't track anything if the wheel opacity isn't FF
+    LAH     T0, 802AD008 % Load wheel opacity
+    ORI     T1, R0, FF
+    BNE     T0, T1, .End
+    NOP
+    % Save if the current wheel is Mario or Partner
+    LAW     T0, 800DC068 % Wheel State2
+    ORI     T2, R0, 0D % Player's wheel
+    BEQL    T0, T2, .MarioWheel
+    ORI     T4, R0, 1 % Mario wheel = .True
+    ORI     T4, R0, 0 % Mario wheel = .False
+    .MarioWheel
+    LABU    T0, 80074037 % 1 Frame Inputs
+    LABU    T2, 802AD0B3 % last cursor pos (used when you swap between Mario & Partner)
+    % C Down % Hammer
+    ANDI    T1, T0, 4 % bit2
+    BEQ     T1, R0, .CheckCUp
+    NOP
+    BEQ     T4, R0, .CheckCDown_Partner
+    NOP
+    % Mario
+    % Check if this command is available
+    LABU    T5, 802AD0DF % Hammer Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 3 % new cursor Pos
+    .CheckCDown_Partner
+    % Partner
+    % Check if this command is available
+    LABU    T5, 802AD0D7 % Partner/Items Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 1 % new cursor Pos
+    .CheckCUp
+    % C Up % Boots
+    ANDI    T1, T0, 8 % bit3
+    BEQ     T1, R0, .CheckCRight
+    NOP
+    BEQ     T4, R0, .CheckCUp_Partner
+    NOP
+    % Mario
+    % Check if this command is available
+    LABU    T5, 802AD0DB % Boots Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 2 % new cursor Pos
+    .CheckCUp_Partner
+    % Partner
+    % Check if this command is available
+    LABU    T5, 802AD0D7 % Partner/Items Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 1 % new cursor Pos
+    .CheckCRight
+    % C Right % Star Spirits
+    ANDI    T1, T0, 1 % bit0
+    BEQ     T1, R0, .CheckCLeft
+    NOP
+    BEQ     T4, R0, .CheckCRight_Partner
+    NOP
+    % Mario
+    % Check if the player have at least one Star Spirit
+    LABU    T5 8010F51E % Star Spirits Saved
+    BEQ     T5, R0, .Error
+    NOP
+    % Player has at least one star spirit, let's see if the command is available to be used
+    LABU    T5, 802AD0E3 % Star Spirits Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 4 % new cursor Pos
+    .CheckCRight_Partner
+    % Partner
+    % Check if this command is available
+    LABU    T5, 802AD0D7 % Partner/Items Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 1 % new cursor Pos
+    .CheckCLeft
+    % C Left % Items
+    ANDI    T1, T0, 2 % bit1
+    BEQ     T1, R0, .CheckR
+    NOP
+    BEQ     T4, R0, .CheckCLeft_Partner
+    NOP
+    % Mario
+    % Check if this command is available
+    LABU    T5, 802AD0D7 % Partner/Items Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 1 % new cursor Pos
+    .CheckCLeft_Partner
+    % Partner
+    % Check if this command is available
+    LABU    T5, 802AD0DB % Partner/Items Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 2 % new cursor Pos
+    .CheckR
+    % R Button % Strategies
+    ANDI    T1, T0, 10 % bit4
+    BEQ     T1, R0, .End
+    NOP
+    % Check if this command is available
+    LABU    T5, 802AD0D3 % Strats Command Byteflag
+    BEQ     T5, R0, .Error
+    NOP
+    % Mario & Partner
+    BEQ     R0, R0, .FormatCursorPos
+    ADDI    T0, R0, 0 % new cursor Pos
+    .Error
+    JAL 	~Func:sfx_play_sound
+    ADDIU	A0, R0, 021D % error sfx
+    BEQ     R0, R0, .End
+    NOP     
+    .FormatCursorPos
+    % Format new cursor pos
+    SLTI    T3, T2, 0
+    BEQL    T3, R0, .SetNewMenuData % positive
+    SUB     T0, T0, T2
+    ADD     T0, T0, T2 % negative
+    .SetNewMenuData
+    % T0=New Menu ID
+    % Save previous menu
+    LAB     T1, 802AD002 % cursor pos
+    LIO     T2, $ShortcutData
+    SB      T1, 1 (T2) % old pos saved
+    SB      T0, 2 (T2) % new pos saved
+    ORI     T1, R0, 1
+    SB      T1, 0 (T2) % save shorcut state as set new menu
+    % open data is ready, open the list at the start of the hook
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    % Restore vanilla code
+    LAH     V0, 802AD008 % Load wheel opacity
+    J       802A1DC4
+    RESERVED
+}
+
+% Used to know if a shortcut was used to wait for 1 frame to restore the wheel's cursor pos
+#new:Data $ShortcutData
+{ 00000000 }
+% XXYYZZ00
+% XX=Shortcut Use State / 01=Set New Menu / 02= Restore Old Menu
+% YY=Previous Cursor Pos
+% ZZ=New Cursor Pos
+
+%======================
+% Draw shortcuts new icons
+%======================
+
+#new:Data $Data_Shorcut_FirstIconIndex
+{ 00 }
+
+#new:Data $Data_ShorcutsIndexes
+{ 00000000 }
+% AABBCCDD
+% AA = C-Up's Command Icon Index
+% BB = C-Right's Command Icon Index
+% CC = C-Down's Command Icon Index
+% DD = C-Left's Command Icon Index
+
+% Create new icons
+@Hook 41648C % 802A16FC
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    % Background
+    LIO     A0, 80292C00
+    JAL     $CreateIcon
+    RESERVED
+    % *out = s0 = icon index
+    SAB     S0, $Data_Shorcut_FirstIconIndex
+    %=====================
+    % C % 1
+    LIO     A0, $IconScript_C
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % R Button % 2
+    LIO     A0, $IconScript_RButton
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Equal % 3
+    LIO     A0, $IconScript_Equal
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    %=====================
+    % Boots 1 % 4
+    LIO     A0, $IconScript_Boots1
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Boots 2 % 5
+    LIO     A0, $IconScript_Boots2
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Boots 3 % 6
+    LIO     A0, $IconScript_Boots3
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Hammer 1 % 7
+    LIO     A0, $IconScript_Hammer1
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Hammer 2 % 8
+    LIO     A0, $IconScript_Hammer2
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Hammer 3 % 9
+    LIO     A0, $IconScript_Hammer3
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Star Spirits % A
+    LIO     A0, $IconScript_StarSpirits
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Items % B
+    LIO     A0, $IconScript_Items
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Strategies % C
+    LIO     A0, $IconScript_Strategies
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Goombario % D
+    LIO     A0, $IconScript_Goombario
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Kooper % E
+    LIO     A0, $IconScript_Kooper
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Bombette % F
+    LIO     A0, $IconScript_Bombette
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Parakarry % 10
+    LIO     A0, $IconScript_Parakarry
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Bow % 11
+    LIO     A0, $IconScript_Bow
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Watt % 12
+    LIO     A0, $IconScript_Watt
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Sushie % 13
+    LIO     A0, $IconScript_Sushie
+    JAL     $CreateIcon
+    RESERVED
+    %=====================
+    % Lakilester % 14
+    LIO     A0, $IconScript_Lakilester
+    JAL     $CreateIcon
+    RESERVED
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    % restore vanilla code
+    DADDU	S1, V0, R0
+    J       802A1704
+    DADDU	A0, S1, R0
+}
+
+% Clear new icons
+@Hook 415F28 % 802A1198
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    LABU    S0, $Data_Shorcut_FirstIconIndex
+    CLEAR   S1
+    .Loop
+    JAL     ~Func:free_hud_element
+    COPY    A0, S0
+    ADDIU   S0, S0, 1
+    ADDIU   S1, S1, 1 % loop counter
+    SLTI    T0, S1, 21` % free 20 icons
+    BNE     T0, R0, .Loop
+    NOP
+    SAB     R0, $Data_Shorcut_FirstIconIndex
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    % restore vanilla code
+    LW	    RA, 001C (SP)
+    J       802A11A0
+    LW	    S2, 0018 (SP)
+}
+
+% Used to calculate the offset for all C buttons and their commands
+#new:Data $Data_IconGroup1_MainOffset
+{ 00A700DC }
+% XXXXYYYY
+
+% Used to calculate the offset for the R button and his command
+#new:Data $Data_IconGroup2_MainOffset
+{ 00C100DC }
+% XXXXYYYY
+
+% Draw new icons
+@Hook 41723C % 802A24AC
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    % Check if the shortcuts are turned off
+    LIO     A1, *Flag_DisableShortcuts
+    JAL     ~Func:get_variable
+    RESERVED
+    BNE     V0, R0, .End
+    NOP
+    LABU    A0, 800740A2 % Peach's Byte
+    BNE     A0, R0, .End
+    NOP
+    LAH     A0, 802AD008 % Wheel Opacity
+    ORI     A1, R0, 64
+    BEQ     A0, A1, .End % bypass if the battle wheel is transparent
+    NOP
+    /%==================
+    % Background Icon
+    LABU    A0, $Data_Shorcut_FirstIconIndex
+    COPY    S0, A0 % save it in s0 too
+    ADDIU	A1, R0, 00A5 % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDIU	A2, R0, 00D0 % y
+    % Change Size
+    LIO     A1, 41700000 % 15.0 % Width
+    LIO     A2, 41700000 % 15.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0%/
+    %==================
+    % Draw Buttons
+    %==================
+    % C
+    LABU    A0, $Data_Shorcut_FirstIconIndex
+    ADDIU   A0, A0, 1
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup1_MainOffset
+    LHU     A1, 0 (V0) % x
+    JAL     ~Func:set_hud_element_render_pos
+    LHU     A2, 2 (V0) % y
+    % Change Size
+    LIO     A1, 41500000 % 13.0 % Width
+    LIO     A2, 41500000 % 13.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %==================
+    % R Button
+    LABU    A0, $Data_Shorcut_FirstIconIndex
+    ADDIU   A0, A0, 2
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup2_MainOffset
+    LHU     A1, 0 (V0) % x
+    JAL     ~Func:set_hud_element_render_pos
+    LHU     A2, 2 (V0) % y
+    % Change Size
+    LIO     A1, 41700000 % 15.0 % Width
+    LIO     A2, 41700000 % 15.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %==================
+    % Equal
+    LABU    A0, $Data_Shorcut_FirstIconIndex
+    ADDIU   A0, A0, 3
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup2_MainOffset
+    LHU     A1, 0 (V0) % x
+    LHU     A2, 2 (V0) % y
+    ADDI    A1, A1, 9 % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDI    A2, A2, 0 % y
+    % Change Size
+    LIO     A1, 41700000 % 15.0 % Width
+    LIO     A2, 41400000 % 12.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %=====================
+    % Strategies
+    LABU    A0, $Data_Shorcut_FirstIconIndex
+    ADDIU   A0, A0, C
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup2_MainOffset
+    LHU     A1, 0 (V0) % x
+    LHU     A2, 2 (V0) % y
+    ADDI    A1, A1, 12 % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDI    A2, A2, 0 % y
+    % Change Size
+    LIO     A1, 41300000 % 11.0 % Width
+    LIO     A2, 41300000 % 11.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %=====================
+    % Commands
+    %=====================
+    % Current wheel is Mario or Partner?
+    LAW     A0, 800DC068 % Wheel State 2
+    ORI     A1, R0, 0D % Player's Wheel
+    BNE     A0, A1, .PartnerWheel
+    NOP
+    LABU    A0, 8010F290 % load current boots
+    LABU    A2, $Data_Shorcut_FirstIconIndex
+    BEQL    A0, R0, .SaveBootsIndex
+    ADDIU   A2, A2, 4
+    ORI     A1, R0, 1
+    BEQL    A0, A1, .SaveBootsIndex
+    ADDIU   A2, A2, 5
+    BEQ     R0, R0, .SaveBootsIndex
+    ADDIU   A2, A2, 6
+    .SaveBootsIndex
+    LIO     A1, $Data_ShorcutsIndexes
+    SB      A2, 0 (A1) % save command icon index for c-up
+    %=====================
+    % Star Spirits
+    LABU    A0, $Data_Shorcut_FirstIconIndex
+    ADDIU   A0, A0, A
+    LIO     A1, $Data_ShorcutsIndexes
+    SB      A0, 1 (A1) % save command icon index for c-right
+    %==Hammer============
+    LABU    A0, 8010F291 % load current Hammer
+    LABU    A2, $Data_Shorcut_FirstIconIndex
+    BEQL    A0, R0, .SaveHammerIndex
+    ADDIU   A2, A2, 7
+    ORI     A1, R0, 1
+    BEQL    A0, A1, .SaveHammerIndex
+    ADDIU   A2, A2, 8
+    BEQ     R0, R0, .SaveHammerIndex
+    ADDIU   A2, A2, 9
+    .SaveHammerIndex
+    LIO     A1, $Data_ShorcutsIndexes
+    SB      A2, 2 (A1) % save command icon index for c-down
+    %=====================
+    % Items
+    LABU    A0, $Data_Shorcut_FirstIconIndex
+    ADDIU   A0, A0, B
+    LIO     A1, $Data_ShorcutsIndexes
+    BEQ     R0, R0, .DrawCommandsIcons
+    SB      A0, 3 (A1) % save command icon index for c-left
+    %=====================
+    % Partners
+    %=====================
+    .PartnerWheel
+    LABU    A0, 8010F2A2 % current partner
+    LABU    A2, $Data_Shorcut_FirstIconIndex
+    ORI     A1, R0, 1 % Goombario
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, D
+    ORI     A1, R0, 2 % Kooper
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, E
+    ORI     A1, R0, 3 % Bombette
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, F
+    ORI     A1, R0, 4 % Parakarry
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, 10
+    ORI     A1, R0, 9 % Bow
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, 11
+    ORI     A1, R0, 6 % Watt
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, 12
+    ORI     A1, R0, 7 % Sushie
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, 13
+    ORI     A1, R0, 8 % Lakilester
+    BEQL    A0, A1, .SavePartnerIndex
+    ADDIU   A2, A2, 14
+    .SavePartnerIndex
+    % For partners all C buttons do the same thing
+    LIO     A1, $Data_ShorcutsIndexes
+    SB      A2, 0 (A1)
+    SB      A2, 1 (A1)
+    SB      A2, 2 (A1)
+    LABU    A2, $Data_Shorcut_FirstIconIndex
+    ADDIU   A2, A2, B % Items
+    SB      A2, 3 (A1)
+    %=================
+    .DrawCommandsIcons
+    % C Up
+    LIO     A0, $Data_ShorcutsIndexes
+    LBU     A0, 0 (A0) % index loaded
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup1_MainOffset
+    LHU     A1, 0 (V0) % x
+    LHU     A2, 2 (V0) % y
+    ADDI    A1, A1, 0 % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDI    A2, A2, -11` % y
+    % Change Size
+    LIO     A1, 41300000 % 11.0 % Width
+    LIO     A2, 41300000 % 11.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %=================
+    % C Right
+    LIO     A0, $Data_ShorcutsIndexes
+    LBU     A0, 1 (A0) % index loaded
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup1_MainOffset
+    LHU     A1, 0 (V0) % x
+    LHU     A2, 2 (V0) % y
+    ADDI    A1, A1, A % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDI    A2, A2, 0 % y
+    % Change Size
+    LIO     A1, 41300000 % 11.0 % Width
+    LIO     A2, 41300000 % 11.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %=================
+    % C Down
+    LIO     A0, $Data_ShorcutsIndexes
+    LBU     A0, 2 (A0) % index loaded
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup1_MainOffset
+    LHU     A1, 0 (V0) % x
+    LHU     A2, 2 (V0) % y
+    ADDI    A1, A1, 0 % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDI    A2, A2, 9 % y
+    % Change Size
+    LIO     A1, 41300000 % 11.0 % Width
+    LIO     A2, 41300000 % 11.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %=================
+    % C Left
+    LIO     A0, $Data_ShorcutsIndexes
+    LBU     A0, 3 (A0) % index loaded
+    COPY    S0, A0 % save it in s0 too
+    LIO     V0, $Data_IconGroup1_MainOffset
+    LHU     A1, 0 (V0) % x
+    LHU     A2, 2 (V0) % y
+    ADDI    A1, A1, -11` % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDI    A2, A2, 0 % y
+    % Change Size
+    LIO     A1, 41300000 % 11.0 % Width
+    LIO     A2, 41300000 % 11.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, S0
+    /%JAL	    $Function_HudElementIgnoreViewport
+    COPY    A0, S0%/
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    % restore vanilla code
+    ADDIU	S2, S2, 0004
+    J       802A24B4
+    ADDIU	S4, S4, 0001
+}
+
+% A0 = iconIndex
+%
+% A1 = Width (Float)
+%
+% A2 = Length (Float)
+%
+% It doesn't converts any sprite index if mario is inside battle
+%
+% plus uses a different offset for the battle icons table
+#new:Function $SetIconSize2
+{
+    % Check if the player is in the overworld or inside a battle
+    LABU    V1, 80074094 % 0 = Overworld / 1=Battle
+    LUI     V0, 8015
+    % Load overworld Icon Table
+    BEQL    V1, R0, .IconTableLoaded
+    ADDIU   V0, V0, 6F60
+    % Load battle Icon Table
+    ADDIU   V0, V0, 7460
+    .IconTableLoaded
+    ORI     V1, R0, 4
+    MULTU   A0, V1 % throw result in LO
+    MFLO    A0
+    ADDU    V0, V0, A0 % get icon pointer
+    LW      V0, 0 (V0) % follow pointer
+    % save the new icon size
+    SW      A1, 28 (V0) % save new width
+    JR      RA
+    SW      A2, 2C (V0) % save new lenght
+}
+
+#export $SetIconSize2
+
+%==============
+% Image files
+%==============
+
+% battle shorcuts
+#new:Data $Icon_RButton
+{ ~RasterFile:CI-4:battle_shorcuts/r_button.png }
+
+#new:Data $Palette_RButton
+{ ~PaletteFile:CI-4:battle_shorcuts/r_button.png }
+
+#new:Data $Icon_Equal
+{ ~RasterFile:CI-4:battle_shorcuts/equal.png }
+
+#new:Data $Palette_Equal
+{ ~PaletteFile:CI-4:battle_shorcuts/equal.png }
+
+#new:Data $Icon_C
+{ ~RasterFile:CI-4:battle_shorcuts/c_middle.png }
+
+#new:Data $Palette_C
+{ ~PaletteFile:CI-4:battle_shorcuts/c_middle.png }
+
+%============
+% Icons Scripts
+%============
+
+% original script at 8040C1A8
+#new:Data $IconScript_Mushroom
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+0000000D 0000003C 000237C0 000239C0
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_C
+{
+00000008
+00000007 % "SetIconSize"
+00000001 00000004
+00000002 0000003C $Icon_C $Palette_C
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_RButton
+{
+00000008
+00000007 % "SetIconSize"
+00000001 00000004
+00000002 0000003C $Icon_RButton $Palette_RButton
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_Equal
+{
+00000008
+00000007 % "SetIconSize"
+00000001 00000004
+00000002 0000003C $Icon_Equal $Palette_Equal
+00000000 00000000 00000003 00000000
+}
+
+% original script at 8040E1A8
+#new:Data $IconScript_Boots1
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 0002E000 0002E200
+00000000 00000000 00000003 00000000
+}
+
+% original script at 8040E208
+#new:Data $IconScript_Boots2
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 0002E240 0002E440
+00000000 00000000 00000003 00000000
+}
+
+% original script at 8040E268
+#new:Data $IconScript_Boots3
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 0002E480 0002E680
+00000000 00000000 00000003 00000000
+}
+
+% original script at 8040E088
+#new:Data $IconScript_Hammer1
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 0002D940 0002DB40
+00000000 00000000 00000003 00000000
+}
+
+% original script at 8040E0E8
+#new:Data $IconScript_Hammer2
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 0002DB80 0002DD80
+00000000 00000000 00000003 00000000
+}
+
+% original script at 8040E148
+#new:Data $IconScript_Hammer3
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 0002DDC0 0002DFC0
+00000000 00000000 00000003 00000000
+}
+
+% original script at 8010C9C8
+#new:Data $IconScript_StarSpirits
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C 800FB7E0 800FB9E0
+00000003 00000000
+}
+
+% original script at 8040E2C8
+#new:Data $IconScript_Items
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 0002E6C0 0002E8C0
+00000000 00000000 00000003 00000000
+}
+
+% original script at 80292200
+#new:Data $IconScript_Strategies
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 80289AC0 80289CC0
+00000003 00000000
+}
+
+% original script at 80107CF8
+#new:Data $IconScript_Goombario
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FE620 800FE820
+00000003 00000000
+}
+
+% original script at 80107D48
+#new:Data $IconScript_Kooper
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FE860 800FEA60
+00000003 00000000
+}
+
+% original script at 80107D98
+#new:Data $IconScript_Bombette
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FEAA0 800FECA0
+00000003 00000000
+}
+
+% original script at 80107DE8
+#new:Data $IconScript_Parakarry
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FECE0 800FEEE0
+00000003 00000000
+}
+
+% original script at 80107E38
+#new:Data $IconScript_Bow
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FEF20 800FF120
+00000003 00000000
+}
+
+% original script at 80107E88
+#new:Data $IconScript_Watt
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FF160 800FF360
+00000003 00000000
+}
+
+% original script at 80107ED8
+#new:Data $IconScript_Sushie
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FF3A0 800FF5A0
+00000003 00000000
+}
+
+% original script at 80107F28
+#new:Data $IconScript_Lakilester
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C 800FF5E0 800FF7E0
+00000003 00000000
+}
+
+% original script at 80292C00
+#new:Data $IconScript_Dot % unused
+{
+00000012 00000013 00000020 00000020
+00000004 00000001 0000003C 8028F868
+00000003 00000000 00000012 00000013
+00000040 00000040 00000004 00000001
+0000003C 8028FC70 00000003 00000000
+00000008 00000013 00000010 00000010
+00000004 00000002 0000003C 8028A180
+8028A200 00000003 00000000
+}

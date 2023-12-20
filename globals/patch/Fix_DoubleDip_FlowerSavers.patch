@@ -1,0 +1,21 @@
+% Fix some problems when using Double/Trip Dip with the Flower Saver badges
+
+% ~Func:btl_state_update_player_menu
+@Hook:Battle 802A6428
+{
+    PUSH    A0, S0
+    LB	    V1, 0011 (S2)
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0105 % .Item:FlowerSaverA
+    COPY    S0, V0
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0138 % .Item:FlowerSaverB
+    ADDU    S0, S0, V0
+    SUB     V1, V1, S0
+    BLEZL   V1, .End
+    ORI     V1, R0, 1
+    .End
+    POP     A0, S0
+    J       802A6430
+    LB	    V0, 0005 (S5)
+}

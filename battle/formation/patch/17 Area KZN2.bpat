@@ -1,0 +1,187 @@
+%========================%
+% Lava Piranha - Phase 1 %
+%========================%
+
+@ $Script_8021FF3C
+{
+   [14]  Call  $SetTargetActorInFront ( .Actor:Self .False )
+}
+
+%========================%
+% Lava Piranha - Phase 2 %
+%========================%
+
+% Petit Piranha - Don't force HP to be 1 after the actor spawns. (Needed by the multiple difficulties)
+@ $Script_Init_80224048
+{
+   [3C]  Call  GetActorHP    ( .Actor:Self *Var0 )
+}
+
+% This attack now target Mario & Partner
+@ $Script_802204B0
+{
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+        Call  $SetTargetActorInFront ( .Actor:Self )
+   28:  Thread
+   30:  	Wait  8`
+   3C:  	Call  UseBattleCamPreset    ( 00000013 )
+   4C:  	Call  SetBattleCamTarget    (  80`  70`  0` )
+   64:  	Call  SetBattleCamZoom      (  300` )
+   74:  	Call  SetBattleCamOffsetZ   (  30` )
+   84:  	Call  MoveBattleCamOver     (  45` )
+   94:  	Wait  54`
+   A0:  	Call  UseBattleCamPreset    ( 00000002 )
+   B0:  	Call  MoveBattleCamOver     (  15` )
+   C0:  EndThread
+   C8:  Call  OverrideBattleDmaDest ( $End[9230] )
+   D8:  Call  LoadBattleDmaData ( 00000002 )
+   E8:  Call  PlayModelAnimation    ( 00000000 $End[9230] )
+   FC:  Wait  14`
+  108:  Call  SetAnimation      ( .Actor:Self 00000001 0079000E )
+  120:  Wait  10`
+  12C:  Call  PlaySoundAtActor  ( .Actor:Self 000003C1 )
+  140:  Wait  45`
+  14C:  Call  SetAnimation      ( .Actor:Self 00000001 00790008 )
+  164:  Call  GetPartOffset     ( .Actor:Self 00000001 *Var0 *Var1 *Var2 )
+  184:  Sub   *Var0  00000028
+  194:  Set   *Var1  FFFFFFF6
+  1A4:  Call  SetGoalToTarget   ( .Actor:Self )
+  1B4:  Call  GetGoalPos        ( .Actor:Self *Var3 *Var4 *Var5 )
+        % If partner is alive shoot a little bit more to the left
+        Call  $GetPartnerHP_API ( *Var6 )
+        If *Var6 > 0
+            Add *Var3 -64`
+        EndIf
+  1D0:  Call  PlayEffect        ( 00000063 00000000 *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *Fixed[1.0] 00000010 00000028 00000000 00000000 00000000 )
+  214:  Call  PlaySoundAtActor  ( .Actor:Self 000003C4 )
+  228:  Wait  15`
+  234:  Thread
+  23C:  	Wait  24`
+  248:  	Call  PlayEffect    ( ~FX:EmitterVolume:Embers *Var3 00000000 *Var5 00000032 00000032 *Fixed[1.0] 00000028 00000037 *Fixed[1.0] *Fixed[1.0] 00000000 00000000 )
+  28C:  EndThread
+  294:  Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:Fire 00000000 00000001 00000010 )
+  2B8:  Switch  *VarA
+  2C4:  	CaseOR  ==  .HitResult:Miss % 6
+  2D0:  	CaseOR  ==  .HitResult:Lucky % 5
+                % Attack actor in the back
+                Call  $SetTargetActorInTheBack ( .Actor:Self )
+                Call  SetGoalToTarget   ( .Actor:Self )
+                Call  EnemyTestTarget   ( .Actor:Self *VarB ~Flags:DamageType:Fire 00000000 00000001 00000010 )
+                Switch  *VarB
+                    CaseOR  ==  .HitResult:Miss % 6
+                    CaseOR  ==  .HitResult:Lucky % 5
+  2DC:  		        Wait  20`
+  2E8:  		        Call  OverrideBattleDmaDest ( $End[9230] )
+  2F8:  		        Call  LoadBattleDmaData     ( 00000003 )
+  308:  		        Call  PlayModelAnimation    ( 00000000 $End[9230] )
+  31C:  		        Call  SetAnimation  ( .Actor:Self 00000001 00790007 )
+  334:  		        Wait  19`
+  340:  		        Call  SetAnimation  ( .Actor:Self 00000001 00790004 )
+  358:  		        Call  OverrideBattleDmaDest ( $End[9230] )
+  368:  		        Call  LoadBattleDmaData     ( 00000000 )
+  378:  		        Call  PlayModelAnimation    ( 00000000 $End[9230] )
+                        If  *VarA  ==  .HitResult:Lucky % 5
+                            Call  $SetTargetActorInFront ( .Actor:Self )
+                            Call  SetGoalToTarget   ( .Actor:Self )
+                            Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                        EndIf
+                        If  *VarB  ==  .HitResult:Lucky % 5
+                            Call  $SetTargetActorInTheBack ( .Actor:Self )
+                            Call  SetGoalToTarget   ( .Actor:Self )
+                            Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                        EndIf
+  3C8:  		        Wait  15`
+  3D4:  		        Call  UseBattleCamPreset    ( 00000002 )
+  3E4:  		        Call  EnableIdleScript      ( .Actor:Self 00000001 )
+  3F8:  		        Call  UseIdleAnimation      ( .Actor:Self .True )
+  40C:  		        Return
+                    EndCaseGroup
+                    Default
+                        Wait  2`
+                        Thread
+                            % Do player Lucky (If neccesary)
+                            If  *VarA  ==  .HitResult:Lucky % 5
+                                Call  $SetTargetActorInFront ( .Actor:Self )
+                                Call  SetGoalToTarget   ( .Actor:Self )
+                                Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                            EndIf
+                        EndThread
+                        Call  $SetTargetActorInTheBack ( .Actor:Self )
+                        Call  SetGoalToTarget   ( .Actor:Self )
+                        Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:Fire 0000FFFF 00000000 00000007 00000020 )
+                        Wait  20`
+                        Call  OverrideBattleDmaDest ( $End[9230] )
+                        Call  LoadBattleDmaData ( 00000003 )
+                        Call  PlayModelAnimation    ( 00000000 $End[9230] )
+                        Call  SetAnimation      ( .Actor:Self 00000001 00790007 )
+                        Wait  19`
+                        Call  SetAnimation      ( .Actor:Self 00000001 00790004 )
+                        Call  OverrideBattleDmaDest ( $End[9230] )
+                        Call  LoadBattleDmaData ( 00000000 )
+                        Call  PlayModelAnimation    ( 00000000 $End[9230] )
+                        If  *VarF  ==  0000000A
+                            Return
+                        EndIf
+                        Call  UseBattleCamPreset    ( 00000002 )
+                        Call  EnableIdleScript      ( .Actor:Self 00000001 )
+                        Call  UseIdleAnimation      ( .Actor:Self .True )
+                        Return
+                EndSwitch
+  414:  	EndCaseGroup
+  41C:  EndSwitch
+  424:  Wait  2`
+        Thread % Attack actor in the back
+            Call  $SetTargetActorInTheBack ( .Actor:Self )
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  EnemyTestTarget   ( .Actor:Self *VarB ~Flags:DamageType:Fire 00000000 00000001 00000010 )
+            Switch  *VarB
+                CaseOR  ==  .HitResult:Miss % 6
+                CaseOR  ==  .HitResult:Lucky % 5
+                    If *VarB == .HitResult:Lucky % 5
+                        Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                    EndIf
+                EndCaseGroup
+                Default
+                    Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:Fire 0000FFFF 00000000 00000007 00000020 )
+            EndSwitch
+        EndThread
+        Call  $SetTargetActorInFront ( .Actor:Self )
+  430:  Call  SetGoalToTarget   ( .Actor:Self )
+  440:  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:Fire 0000FFFF 00000000 00000007 00000020 )
+  468:  Wait  20`
+  474:  Call  OverrideBattleDmaDest ( $End[9230] )
+  484:  Call  LoadBattleDmaData ( 00000003 )
+  494:  Call  PlayModelAnimation    ( 00000000 $End[9230] )
+  4A8:  Call  SetAnimation      ( .Actor:Self 00000001 00790007 )
+  4C0:  Wait  19`
+  4CC:  Call  SetAnimation      ( .Actor:Self 00000001 00790004 )
+  4E4:  Call  OverrideBattleDmaDest ( $End[9230] )
+  4F4:  Call  LoadBattleDmaData ( 00000000 )
+  504:  Call  PlayModelAnimation    ( 00000000 $End[9230] )
+  518:  If  *VarF  ==  0000000A
+  528:  	Return
+  530:  EndIf
+  538:  Call  UseBattleCamPreset    ( 00000002 )
+  548:  Call  EnableIdleScript      ( .Actor:Self 00000001 )
+  55C:  Call  UseIdleAnimation      ( .Actor:Self .True )
+  570:  Return
+  578:  End
+}
+
+%===============%
+% Petit Piranha %
+%===============%
+
+@ $Script_TakeTurn_802246F4 {
+    [2E0]  Call  $SetTargetActorInFront ( .Actor:Self .False )
+}
+
+%==========%
+% Lava Bud %
+%==========%
+
+@ $Script_ShootBombs {
+    [348]  Call  $SetTargetActorInFront ( *Var5 .False )
+    [4C4]  Call  $SetTargetActorInFront ( *Var5 .False )
+    [548]  Call  $SetTargetActorInFront ( .Actor:Self .False )
+}

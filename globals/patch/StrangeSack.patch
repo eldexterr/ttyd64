@@ -1,0 +1,592 @@
+% This file adds support for 20 items in the game, but decreases the items you can check in stores from 32 to 22.
+%
+% I used Black Pit's strange sack code as base, but I remade it, was one of the
+% first big patches I made so it hasn't aged that well tbh compared to how I write code now
+%
+% Thanks to Rain for the locations of some hooks!
+
+% ~From:get_item_empty_count
+@Hook 800E7630
+{
+    PUSH    RA, A0, A1, V0
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    ORI     V1, R0, 10`
+    BGEZL   V0, .End
+    ORI     V1, R0, 20`
+    .End
+    POP     RA, A0, A1, V0
+    J       800E7638
+    LW	    RA, 0010 (SP)
+}
+
+% ~Func:add_item
+@Hook 800E7598
+{
+    PUSH    RA, A0, A1, S2
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    CLEAR   V1
+    COPY    S2, V0
+    COPY    A0, S0
+    .Loop
+    LH	    V0, 01B4 (A0) % item slot
+    BEQ	    V0, R0, .GetCap
+    NOP
+    ADDIU	V1, V1, 1 % loop counter
+    SLTI	V0, V1, 10`
+    BGEZL   S2, .TryToBreakLoop
+    SLTI	V0, V1, 20`
+    .TryToBreakLoop
+    BNE	    V0, R0, .Loop
+    ADDIU	A0, A0, 2 % read next item
+    .GetCap
+    ADDIU	V0, R0, 10`
+    BGEZL   S2, .SaveNewItem
+    ADDIU	V0, R0, 20`
+    .SaveNewItem
+    BEQ	    V1, V0, .SkipItem % free slot not available
+    SLL	    V0, V1, 1
+    ADDU	V0, S0, V0
+    SH	    S1, 01B4 (V0) % item slot
+    BEQ     R0, R0, .End
+    COPY    V0, V1
+    .SkipItem
+    ADDIU	V0, R0, FFFF
+    .End
+    POP     RA, A0, A1, S2
+    J       800E75D8
+    NOP
+}
+
+% ~Func:sort_items
+@Hook 800E76CC
+{
+    PUSH        RA, A0, S0
+    JAL         ~Func:find_item
+    ORI         A0, R0, 1C7 % .Item:StrangeSack
+    COPY        S0, V0
+    LW          A0, 14 (SP) % pop A0
+    LIA         T0, 8010F290
+    ADDIU       A2, R0, 8
+    ADDIU       A3, T0, 10 % item #9 data offset
+    BLTZ        S0, .o10
+    NOP
+    ADDIU       A2, R0, 18`
+    ADDIU       A3, T0, 24 % item #19 data offset
+    .o10    
+    LH          V0, 1B4 (A3) % read item
+    BEQL        V0, R0, .o60
+    ADDIU       A2, A2, FFFF
+    ADDIU       A0, R0, 9
+    BGEZL       S0, .CheckCap
+    ADDIU       A0, R0, 19`
+    .CheckCap
+    SLT         V0, A2, A0
+    BEQL        V0, R0, .o60
+    ADDIU       A2, A2, FFFF
+    COPY        A1, A3
+    ADDIU       V1, T0, 12 % item #10 data offset
+    BGEZL       S0, .o34
+    ADDIU       V1, T0, 26 % item #20 data offset
+    .o34    
+    LH          V0, 1B4 (V1)
+    BNEL        V0, R0, .o50
+    ADDIU       A0, A0, FFFF
+    LHU         V0, 1B4 (A1)
+    SH          V0, 1B4 (V1)
+    BEQ         R0, R0, .o5C
+    SH          R0, 1B4 (A1)
+    .o50    
+    SLT         V0, A2, A0
+    BNE         V0, R0, .o34
+    ADDIU       V1, V1, FFFE
+    .o5C    
+    ADDIU       A2, A2, FFFF
+    .o60    
+    BGEZL       A2, .o10
+    ADDIU       A3, A3, FFFE
+    POP         RA, R0, S0
+    JR          RA
+    NOP
+}
+
+% FindItem(API)
+@Hook 802D6B50
+{
+    PUSH        S0, A0, A1, A2
+    JAL         ~Func:find_item
+    ORI         A0, R0, 1C7 % .Item:StrangeSack
+    COPY        S0, V0
+    LW          A0, 14 (SP) % pop A0
+    LW          A2, 1C (SP) % pop A2
+    CLEAR       V1
+    .Loop
+    LH	        V0, 01B4 (A0) % get item
+    BEQ	        V0, A2, .TryToBreakLoop2
+    NOP
+    ADDIU	    V1, V1, 0001
+    SLTI	    V0, V1, 10`
+    BGEZL       S0, .TryToBreakLoop1
+    SLTI	    V0, V1, 20`
+    .TryToBreakLoop1
+    BNE 	    V0, R0, .Loop
+    ADDIU	    A0, A0, 0002
+    .TryToBreakLoop2
+    ADDIU	    V0, R0, 10`
+    BGEZL       S0, .TryToBreakLoop3
+    ADDIU	    V0, R0, 20`
+    .TryToBreakLoop3
+    BEQ	        V1, V0, .End
+    ADDIU	    A2, R0, FFFF
+    COPY	    A2, V1
+    .End
+    POP         S0, R0, A1, R0
+    J           802D6B7C
+    NOP
+}
+
+% RemoveItem(API)
+@Hook 802D6BDC
+{
+    PUSH    RA, A0, A1, S0
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    LW      A0, 14 (SP) % pop A0
+    LW      A1, 18 (SP) % pop A1
+    CLEAR   V1
+    COPY    S0, V0
+    .Loop
+    LH	    V0, 01B4 (A0) % get item
+    BGEZ    S0, .IsThisTheItem_20
+    NOP
+    .IsThisTheItem_10
+    BEQ	    V0, A1, .CheckCap
+    ADDIU	V0, R0, 10`
+    BEQ     R0, R0, .AddToCounter
+    NOP
+    .IsThisTheItem_20
+    BEQ	    V0, A1, .CheckCap
+    ADDIU	V0, R0, 20`
+    .AddToCounter
+    ADDIU	V1, V1, 0001
+    BGEZ    S0, .TryToLoop
+    SLTI	V0, V1, 20`
+    SLTI	V0, V1, 10`
+    .TryToLoop
+    BNE	    V0, R0, .Loop
+    ADDIU	A0, A0, 0002
+    BGEZ    S0, .CheckCap
+    ADDIU	V0, R0, 20`
+    ADDIU	V0, R0, 10`
+    .CheckCap
+    POP     RA, R0, A1, S0
+    J       802D6BFC
+    NOP
+}
+
+% ShowConsumableChoicePopup(API)
+@Hook 802D676C
+{
+    PUSH    RA, A0, V0, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    COPY    A0, V0
+    SLTI	V0, T0, 10`
+    BGEZL   A0, .Something
+    SLTI	V0, T0, 20`
+    .Something
+    BNE	    V0, R0, .802D66E8
+    ADDIU	A3, A3, 0002
+    POP     RA, A0, V0, V1
+    J       802D6778
+    NOP
+    .802D66E8
+    POP     RA, A0, V0, V1
+    J       802D66E8
+    NOP
+}
+
+% ~Func:find_item
+@Hook 800E7698
+{
+    PUSH        RA, S0, A0
+    JAL         ~Func:find_item
+    ORI         A0, R0, 1C7 % .Item:StrangeSack
+    COPY        S0, V0
+    LW          A0, 18 (SP) % pop A0
+    CLEAR       A1
+    LIO         V1, 8010F290 % playerStatus
+    .Loop
+    LH      	V0, 01B4 (V1)
+    BEQ   		V0, A0, .CheckCap
+    NOP
+    ADDIU   	A1, A1, 1
+    SLTI    	V0, A1, 10`
+    BGEZL       S0, .TryToBreakLoop
+    SLTI    	V0, A1, 20`
+    .TryToBreakLoop
+    BNE	    	V0, R0, .Loop
+    ADDIU   	V1, V1, 2
+    .CheckCap
+    ADDIU   	V1, R0, 10`
+    BGEZL       S0, .CheckCap2
+    ADDIU   	V1, R0, 20`
+    .CheckCap2
+    BEQ     	A1, V1, .End
+    ADDIU   	V0, R0, FFFF
+    COPY        V0, A1
+    .End
+    POP			RA, S0, A0
+    J			800E76C4
+    NOP
+}
+
+% ~Func:shop_open_item_select_popup
+@Hook:World 802809B4
+{
+    PUSH    RA, A0, A1, V0, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    ADDIU	S4, R0, 10`
+    BGEZL   V0, .End
+    ADDIU	S4, R0, 20`
+    .End
+    POP     RA, A0, A1, V0, V1
+    J	    802809C4
+    NOP
+}
+
+% ~Func:shop_open_item_select_popup
+@Hook:World 802809BC
+{
+    PUSH    RA, A0, A1, V0, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    ADDIU	S4, R0, 10`
+    BGEZL   V0, .End
+    ADDIU	S4, R0, 20`
+    .End
+    POP     RA, A0, A1, V0, V1
+    J	    802809C4
+    ADDIU	S5, R0, 0006
+}
+
+%=========
+% Battle
+%=========
+
+% ~Func:btl_state_update_player_menu
+@Hook:Battle 802A714C
+{
+    PUSH        RA, A0, A1, V1
+    JAL         ~Func:find_item
+    ORI         A0, R0, 1C7 % .Item:StrangeSack
+    COPY        A0, V0
+    SLTI	    V0, S3, 10`
+    BGEZL       A0, .CapGot
+    SLTI	    V0, S3, 20`
+    .CapGot
+    POP         RA, A0, A1, V1
+    BNE	        V0, R0, .ReadNextItemSlot
+    ADDIU	    S2, S2, 0002
+    J           802A7158
+    NOP
+    .ReadNextItemSlot
+    J           802A70A8
+    NOP
+}
+
+% ~Func:btl_state_update_partner_menu
+@Hook:Battle 802A8E0C
+{
+    PUSH        RA, A0, A1, A2, V1
+    JAL         ~Func:find_item
+    ORI         A0, R0, 1C7 % .Item:StrangeSack
+    COPY        A0, V0
+    SLTI	    V0, S1, 10`
+    BGEZL       A0, .CapGot
+    SLTI	    V0, S1, 20`
+    .CapGot
+    POP         RA, A0, A1, A2, V1
+    BNE	        V0, R0, .ReadNextItemSlot
+    ADDIU	    A2, A2, 0002
+    J           802A8E18
+    NOP
+    .ReadNextItemSlot
+    J           802A8DB0
+    NOP
+}
+
+% func_802A3C98
+@Hook:Battle 802A4040
+{
+    PUSH    RA, A0, A1, V0, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    ADDIU	T0, R0, 10`
+    BGEZL   V0, .End
+    ADDIU	T0, R0, 20`
+    .End
+    POP     RA, A0, A1, V0, V1
+    J	    802A404C
+    NOP
+}
+
+% func_80263300
+@Hook:Battle 802633AC
+{
+    PUSH    RA, A0, A1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    COPY    V1, V0
+    POP     RA, A0, A1
+    SLTI	V0, S2, 10`
+    BGEZL   V1, .CapGot
+    SLTI	V0, S2, 20`
+    .CapGot
+    BNE	    V0, R0 .ReadNextItemSlot
+    ADDIU	S0, S0, 0002
+    J       802633B8
+    NOP
+    .ReadNextItemSlot
+    J       80263350
+    NOP
+}
+
+% Patch Double & Triple Dip - 1
+%
+% ~Func:btl_state_update_player_menu
+@Hook:Battle 802A6E7C
+{
+    PUSH    RA, A0, A1, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    POP     RA, A0, A1, V1
+    SLTI	V0, S3, 10`
+    BGEZL   V0, .CheckIfAllItemsAreLoaded
+    SLTI	V0, S3, 20`
+    .CheckIfAllItemsAreLoaded
+    BNE     V0, R0, .LoopAgain
+    ADDIU	S2, S2, 2 % read next item
+    .BreakLoop
+    J       802A6E88
+    NOP
+    .LoopAgain
+    J       802A6DD8
+    NOP
+}
+
+% Patch Double & Triple Dip - 2
+%
+% ~Func:btl_state_update_player_menu
+@Hook:Battle 802A772C
+{
+    PUSH    RA, A0, A1, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    POP     RA, A0, A1, V1
+    SLTI	V0, S3, 10`
+    BGEZL   V0, .CheckIfAllItemsAreLoaded
+    SLTI	V0, S3, 20`
+    .CheckIfAllItemsAreLoaded
+    BNE     V0, R0, .LoopAgain
+    ADDIU	S2, S2, 2 % read next item
+    .BreakLoop
+    J       802A7738
+    NOP
+    .LoopAgain
+    J       802A7688
+    NOP
+}
+
+% ================
+% Storing & Checking Items
+%
+% Change store slots from 32 to 22
+% ================
+
+% ~Func:get_stored_count
+@Function 800E7824
+{
+    LH	    V0, 01DC (V1)
+}
+
+% ~Func:get_stored_count
+@Function 800E7834
+{
+    SLTI	V0, A0, 22`
+}
+
+% ~Func:get_stored_empty_count
+@Function 800E7858
+{
+    ADDIU	V1, R0, 22`
+}
+
+% ~Func:shop_open_item_select_popup
+@Function:World 802809AC
+{
+    ADDIU	S4, R0, 22`
+}
+
+% ~Func:shop_open_item_select_popup
+@Function:World 80280A00
+{
+    LH	    A0, 01DC (S1)
+}
+
+% ~Func:store_item
+@Function 800E77D4
+{
+    LH	    V0, 01DC (A1)
+}
+
+% ~Func:store_item
+@Function 800E77DC
+{
+    ADDIU	V0, R0, 22`
+}
+
+% ~Func:store_item
+@Function 800E77E4
+{
+    SLTI	V0, V1, 22`
+}
+
+% ~Func:store_item
+@Function 800E77F0
+{
+    ADDIU	V0, R0, 22`
+}
+
+% ~Func:store_item
+@Function 800E7800
+{
+    SH	    A0, 01DC (V0)
+}
+
+% ~Func:ShowShopOwnerDialog
+@Function:World 802812BC
+{
+    LH	    A0, 01DC (V0)
+}
+
+% ~Func:ShowShopOwnerDialog
+@Function:World 802812D4
+{
+    SH	    R0, 01DC (V0)
+}
+
+% ================
+% Rain's hooks
+% ================
+
+% ~Func:update_item_entity_temp
+@Hook 80135940
+{
+    PUSH    RA, A0, A1, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    LW      A0, 14 (SP) % pop A0
+    LW      V1, 1C (SP) % pop V1
+    ORI     A1, R0, 10`
+    BGEZL   V0, .Loop
+    ORI     A1, R0, 20`
+    .Loop
+    LH      V0, 01B4 (V1)
+    BEQ     V0, R0, .End
+    SLT     V0, A0, A1
+    ADDIU   A0, A0, 1
+    SLT     V0, A0, A1
+    BNE     V0, R0, .Loop
+    ADDIU   V1, V1, 2
+    SLT     V0, A0, A1
+    .End
+    POP     RA, R0, A1, R0
+    J	    80135960
+    NOP
+}
+
+% ~Func:setup_item_popup
+@Hook 800E6CD0
+{
+    PUSH    RA, A0, A1, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    COPY    A1, V0
+    SLTI	V0, A2, 10`
+    BGEZL   A1, .Pop
+    SLTI	V0, A2, 20`
+    .Pop
+    POP     RA, A0, A1, V1
+    BNE	    V0, R0, .800E6C68
+    ADDIU	A3, A3, 2
+    J       800E6CDC
+    NOP
+    .800E6C68
+    J       800E6C68
+    NOP
+}
+
+% ~Func:update_item_entity_temp
+@Hook 801360B4
+{
+    PUSH    RA, A0, A1, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    LW      A0, 14 (SP) % restore A0
+    COPY    A1, V0
+    SLTI	V0, A0, 10`
+    BGEZL   A1, .Pop
+    SLTI	V0, A0, 20`
+    .Pop
+    POP     RA, R0, A1, V1
+    BNE	    V0, R0, .80136068
+    ADDIU	A2, A2, 2 % read next item
+    J       801360C0
+    NOP
+    .80136068
+    J       80136068
+    NOP
+}
+
+% ~Func:get_item_count
+@Hook 800E7608
+{
+    PUSH    RA, A0, A1, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    COPY    A1, V0
+    LW      A0, 14 (SP) % pop A0
+    ADDIU	A0, A0, 0001
+    SLTI	V0, A0, 10`
+    BGEZL   A1, .Pop
+    SLTI	V0, A0, 20`
+    .Pop
+    POP     RA, R0, A1, V1
+    J       800E7610
+    NOP
+}
+
+% ~Func:pause_items_load_items
+@Hook:Pause 8024A530
+{
+    PUSH    RA, A0, A1, V1
+    JAL     ~Func:find_item
+    ORI     A0, R0, 1C7 % .Item:StrangeSack
+    COPY    A1, V0
+    LW      A0, 14 (SP) % pop A0
+    SLTI	V0, A0, 10`
+    BGEZL   A1, .Pop
+    SLTI	V0, A0, 20`
+    .Pop
+    POP     RA, R0, A1, V1
+    BNE	    V0, R0, .8024A514
+    ADDIU	A2, A2, 2 % read next item
+    J       8024A53C
+    NOP
+    .8024A514
+    J       8024A514
+    NOP
+}

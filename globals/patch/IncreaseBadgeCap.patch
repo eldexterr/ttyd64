@@ -1,0 +1,71 @@
+% Patch item shops, to use badges with IDs above 0x155, also skip if there's no more space for more badges in player's inventory
+
+% Now just check if the item is a badge or not instead of relaying on the itemID
+% and skip everything if the player have too many badges
+%
+% from ShowShopPurchaseDialog(API)
+@Hook:World 8028071C
+{
+    JAL         $get_item_global_data
+    COPY        A0, V0
+    LHU         V0, 18 (V0) % get typeFlags
+    ANDI        V0, V0, 40 % badge
+    BNEL        V0, R0, .CheckItemFlags
+    ORI         V0, R0, 1
+    CLEAR       V0
+    .CheckItemFlags
+    BEQ         V0, R0, .AddItem
+    NOP
+    J           80280758
+    NOP
+    .AddItem
+    J           8028072C
+    NOP
+}
+
+% from ShowShopPurchaseDialog(API)
+@Hook:World 8028076C
+{
+    JAL         $get_item_global_data
+    NOP
+    LHU         V0, 18 (V0) % get typeFlags
+    ANDI        V0, V0, 40 % badge
+    BNEL        V0, R0, .CheckItemFlags
+    ORI         V0, R0, 1
+    CLEAR       V0
+    .CheckItemFlags
+    BEQ         V0, R0, .AddItem
+    NOP
+    JAL         ~Func:add_badge
+    NOP
+    ADDI        V1, R0, -1
+    BNE         V0, V1, .BadgeAdded
+    NOP
+    % there's no more space for badges
+    JAL         ~Func:shop_owner_continue_speech
+    ADDIU       A0, R0, 17 % no more badge slots available
+    SW          V0, 74 (S3)
+    ADDIU       V0, R0, 4
+    J           80280928
+    SW          V0, 70 (S3)
+    .BadgeAdded
+    CLEAR       A0
+    LIO         A1, *GF_MAC01_BoughtBadgeFromRowf
+    JAL         ~Func:set_variable
+    ADDIU       A2, R0, 1
+    J           802807A8
+    NOP
+    .AddItem
+    J           802807A0
+    NOP
+}
+
+#export:message $String_TooMuchBadges
+{
+[Next]
+You can't carry any more badges[BR]
+right now.[BR]
+[Wait][Next]
+Please come back after selling,[BR]
+some badges.[Wait][End]
+}

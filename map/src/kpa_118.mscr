@@ -1,0 +1,92 @@
+% Script File: kpa_118.mscr
+% Decoded from: 0 to 2A0 (kpa_118)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  144.0    0.0  100.0    0.0
+	~Vec4f:Entry1 % -471.0    0.0  100.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  00000000
+	[MapTattle]   00190186
+}
+
+#new:Script $Script_80240060
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000006 )
+   50:  EndThread
+   58:  Return
+   60:  End
+}
+
+PADDING: 802400C8 to 802400D0 (000000C8 to 000000D0)
+00000000 00000000
+
+#new:Script $Script_ExitWalk_802400D0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240290 00000002 ) % kpa_115
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_8024012C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240298 00000000 ) % kpa_119
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240188
+{
+    0:  Bind  $Script_ExitWalk_802400D0 .Trigger:FloorAbove ~Collider:deilis 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024012C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Set   *Var0  $Script_80240188
+   80:  Exec  EnterWalk
+   8C:  Wait  1`
+   98:  Exec  $Script_80240060
+   A4:  Return
+   AC:  End
+}
+
+PADDING: 80240284 to 80240290 (00000284 to 00000290)
+00000000 00000000 00000000
+
+#new:ASCII $ASCII_80240290
+{
+	"kpa_115"
+}
+
+#new:ASCII $ASCII_80240298
+{
+	"kpa_119"
+}
+

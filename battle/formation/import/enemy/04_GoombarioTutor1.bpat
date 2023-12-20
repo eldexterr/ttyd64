@@ -1,0 +1,518 @@
+% Automatically dumped from section 04
+
+#new:Actor $04_GoombarioTutor1 {
+% stats
+[Index]        94b 
+[Level]        99`b 
+[MaxHP]        99`b 
+[Coins]         0`b 
+[Flags]       00040000 
+[StatusTable] $StatusTable_80219068_04 
+% ai
+[PartsCount]    1`s 
+[PartsTable]  $PartsTable_80219114_04 
+[Script]      $Script_Init_80219160_04 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]       0`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]     0`b 
+[PowerBounce] 100`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         24`b  32`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  20`b % dx dy
+[StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:Function $Function_80218000_04 {
+    0:  LI        V0, 1
+    4:  SAB       V0, 8010F2A2
+    C:  JR        RA
+   10:  LI        V0, 2
+}
+
+#new:IdleAnimations $IdleAnimations_80219010_04 {
+.Status:Normal    00090001
+.Status:Frozen    00090000
+.Status:Sleep     00090000
+.Status:Poison    00090001
+.Status:Stop      00090000
+.Status:Static    00090000
+.Status:Paralyze  00090000
+.Status:Dizzy     00090000
+.Status:Dizzy     00090000
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_8021905C_04 {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_80219068_04 {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep       0`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy       0`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze    0`
+.Status:Shrink      0`
+.Status:Stop        0`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_80219114_04 {
+00800000 01000000 FC1800FF $IdleAnimations_80219010_04 $DefenseTable_8021905C_04 00000000 00000000 00000000 00000000 
+}
+
+#new:Script $Script_Init_80219160_04 {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_80219444_04 )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_802191D0_04 )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_802191E0_04 )
+   3C:  Call  SetActorVar   ( .Actor:Self 00000000 00000001 )
+   54:  Exec  $Script_80219C74_04 
+   60:  Return
+   68:  End
+}
+
+#new:Script $Script_Idle_802191D0_04 {
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_HandleEvent_802191E0_04 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Thread
+   1C:  	Call  8026BF48      ( 00000001 )
+   2C:  	Call  GetLastEvent  ( .Actor:Self *Var0 )
+   40:  	Switch  *Var0 
+   4C:  		Case  ==  .Event:Hit % A
+   58:  			Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   70:  			If  *Var0  ==  00000000 
+   80:  				Call  RandInt   ( 00000002 *Var0 )
+   94:  				Switch  *Var0 
+   A0:  					Case  ==  00000000 
+   AC:  						Call  ActorSpeak    ( 000A002D .Actor:Self 00000001 0009000A 00090002 ) % Ouch!
+   CC:  					Case  ==  00000001 
+   D8:  						Call  ActorSpeak    ( 000A002E .Actor:Self 00000001 0009000A 00090002 ) % Ow!
+   F8:  					Case  ==  00000002 
+  104:  				EndSwitch
+  10C:  			EndIf
+  114:  	EndSwitch
+  11C:  	Call  8026BF48  ( 00000000 )
+  12C:  EndThread
+  134:  Call  GetLastEvent  ( .Actor:Self *Var0 )
+  148:  Switch  *Var0 
+  154:  	CaseOR  ==  .Event:HitCombo % 9
+  160:  	CaseOR  ==  .Event:Hit % A
+  16C:  		SetConst  *Var0  00000001 
+  17C:  		SetConst  *Var1  0009000A 
+  18C:  		ExecWait  DoNormalHit 
+  198:  	EndCaseGroup
+  1A0:  	CaseOR  ==  00000017 % 17
+  1AC:  	CaseOR  ==  .Event:Immune % 19
+  1B8:  		SetConst  *Var0  00000001 
+  1C8:  		SetConst  *Var1  00090001 
+  1D8:  		ExecWait  DoImmune 
+  1E4:  	EndCaseGroup
+  1EC:  	Case  ==  00000030 % 30
+  1F8:  		SetConst  *Var0  00000001 
+  208:  		SetConst  *Var1  0009000A 
+  218:  		ExecWait  DoNormalHit 
+  224:  		Wait  1000`
+  230:  	Default
+  238:  EndSwitch
+  240:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  254:  Return
+  25C:  End
+}
+
+#new:Script $Script_TakeTurn_80219444_04 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+   3C:  Call  UseBattleCamPreset    ( 0000003F )
+   4C:  Call  SetBattleCamZoom  ( 00000190 )
+   5C:  Call  SetBattleCamOffsetZ   ( 00000028 )
+   6C:  Call  BattleCamTargetActor  ( .Actor:Self )
+   7C:  Call  SetAnimation      ( .Actor:Self 00000001 00090003 )
+   94:  Call  SetGoalToTarget   ( .Actor:Self )
+   A4:  Call  AddGoalPos        ( .Actor:Self 00000032 00000000 00000000 )
+   C0:  Call  SetActorSpeed     ( .Actor:Self *Fixed[6.0] )
+   D4:  Call  RunToGoal ( .Actor:Self 00000000 .False )
+   EC:  Call  SetAnimation      ( .Actor:Self 00000001 00090001 )
+  104:  Call  SetActorDispOffset    ( .Actor:Self 00000000 FFFFFFFF 00000000 )
+  120:  Wait  1`
+  12C:  Call  SetActorDispOffset    ( .Actor:Self 00000000 FFFFFFFE 00000000 )
+  148:  Wait  5`
+  154:  Call  SetActorDispOffset    ( .Actor:Self 00000000 0000000A 00000000 )
+  170:  Call  SetAnimation      ( .Actor:Self 00000001 00090006 )
+  188:  Call  UseBattleCamPreset    ( 00000042 )
+  198:  Call  SetBattleCamZoom  ( 00000190 )
+  1A8:  Call  SetBattleCamOffsetZ   ( 00000028 )
+  1B8:  Call  8024ECF8  ( FFFFFFFF 00000001 00000000 )
+  1D0:  Call  BattleCamTargetActor  ( .Actor:Self )
+  1E0:  Call  SetGoalToTarget   ( .Actor:Self )
+  1F0:  Call  AddGoalPos        ( .Actor:Self FFFFFFF6 00000000 00000000 )
+  20C:  Call  GetBattleFlags2   ( *Var0 )
+  21C:  If  *Var0  &  00000200 
+  22C:  	Call  AddGoalPos    ( .Actor:Self 00000005 0000000A 00000000 )
+  248:  EndIf
+  250:  Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.1] )
+  264:  Thread
+  26C:  	Wait  4`
+  278:  	Set   *Var0  00000000 
+  288:  	Loop  00000004 
+  294:  		Add   *Var0  0000002D 
+  2A4:  		Call  SetActorRotation  ( .Actor:Self 00000000 00000000 *Var0 )
+  2C0:  		Wait  1`
+  2CC:  	EndLoop
+  2D4:  	Call  SetAnimation  ( .Actor:Self 00000001 00090006 )
+  2EC:  EndThread
+  2F4:  Thread
+  2FC:  	Call  LoadActionCommand ( .ActionCommand:Jump )
+  30C:  	Call  802A9000 ( )
+  318:  	Call  802694A4  ( 00000001 )
+  328:  	Wait  10`
+  334:  	Call  802A9120  ( 0000000C 00000003 )
+  348:  EndThread
+  350:  Call  PlaySound     ( 000003E2 )
+  360:  Call  JumpToGoal    ( .Actor:Self 00000016 .False .True .False )
+  380:  Call  SetAnimation  ( .Actor:Self 00000001 00090006 )
+  398:  Call  SetActorScale ( .Actor:Self *Fixed[1.1] *Fixed[0.8] *Fixed[1.0] )
+  3B4:  Wait  1`
+  3C0:  Call  SetActorScale ( .Actor:Self *Fixed[1.3] *Fixed[0.5] *Fixed[1.0] )
+  3DC:  Wait  1`
+  3E8:  Call  GetActionCommandMode  ( *Var0 )
+  3F8:  If  *Var0  ==  00000002 
+  408:  	Call  SetActionCommandMode  ( 00000003 )
+  418:  	Loop
+  424:  		Call  GetActionCommandMode  ( *Var0 )
+  434:  		If  *Var0  <  00000002 
+  444:  			BreakLoop
+  44C:  		EndIf
+  454:  		Wait  1`
+  460:  	EndLoop
+  468:  EndIf
+  470:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+  488:  If  *Var0  ==  00000001 
+  498:  	Call  80269EAC  ( 00000005 )
+  4A8:  EndIf
+  4B0:  Wait  2`
+  4BC:  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:00080000 00000000 00000000 00000001 00000020 ) % can't be superguarded
+  4E4:  Call  CloseActionCommandInfo ( )
+  4F0:  Set   *VarF  *Var0 
+  500:  Switch  *VarF 
+  50C:  	CaseOR  ==  .HitResult:Hit % 0
+  518:  	CaseOR  ==  00000002 % 2
+  524:  	CaseOR  ==  0000000A % A
+  530:  		Call  SetActorScale ( .Actor:Self *Fixed[1.1] *Fixed[0.8] *Fixed[1.0] )
+  54C:  		Wait  1`
+  558:  		Call  SetActorScale ( .Actor:Self *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+  574:  		Wait  1`
+  580:  		Call  SetActorRotation      ( .Actor:Self 00000000 00000000 00000000 )
+  59C:  		Call  SetActorDispOffset    ( .Actor:Self 00000000 00000000 00000000 )
+  5B8:  		Call  SetAnimation  ( .Actor:Self 00000001 00090001 )
+  5D0:  		Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  5EC:  		Add   *Var0  00000028 
+  5FC:  		Set   *Var1  00000000 
+  60C:  		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.8] )
+  620:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  63C:  		Call  JumpToGoal    ( .Actor:Self 0000000A .False .True .False )
+  65C:  		Add   *Var0  0000001E 
+  66C:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  688:  		Call  JumpToGoal    ( .Actor:Self 00000008 .False .True .False )
+  6A8:  		Add   *Var0  00000014 
+  6B8:  		Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  6D4:  		Call  JumpToGoal    ( .Actor:Self 00000006 .False .True .False )
+  6F4:  		Sub   *Var0  0000000A 
+  704:  		Call  JumpToGoal    ( .Actor:Self 00000004 .False .True .False )
+  724:  		Call  SetAnimation  ( .Actor:Self 00000001 00090001 )
+  73C:  		Wait  8`
+  748:  		Call  UseBattleCamPreset    ( 00000002 )
+  758:  		Call  YieldTurn ( )
+  764:  		Call  SetAnimation  ( .Actor:Self 00000001 00090001 )
+  77C:  		Call  SetGoalToHome ( .Actor:Self )
+  78C:  		Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+  7A0:  		Call  SetAnimation  ( .Actor:Self 00000001 00090003 )
+  7B8:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+  7D0:  		Call  SetAnimation  ( .Actor:Self 00000001 00090001 )
+  7E8:  	EndCaseGroup
+  7F0:  EndSwitch
+  7F8:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  80C:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  820:  Return
+  828:  End
+}
+
+#new:Script $Script_80219C74_04 {
+    0:  Call  SetBattleFlagBits ( 02000000 .True )
+   14:  Call  802535B4  ( 00000000 )
+   24:  Call  WaitForState      ( .BattleState:PlayerMenu )
+   34:  Wait  15`
+   40:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+   54:  Call  EnableIdleScript  ( .Actor:Partner 00000000 )
+   68:  Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.0] )
+   7C:  Call  GetActorPos       ( .Actor:Partner *Var0 *Var1 *Var2 )
+   98:  Call  SetGoalPos        ( .Actor:Partner *Var0 *Var1 *Var2 )
+   B4:  Call  JumpToGoal        ( .Actor:Partner 0000000A .False .False .False )
+   D4:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+   E8:  Call  ActorSpeak        ( 000A0019 .Actor:Partner 00000001 00200009 00200005 ) % First, Mario, choose the Jump command and then dec ...
+  108:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  11C:  Call  8026E020  ( 00000001 )
+  12C:  Call  SetActionCommandMode  ( 00000002 )
+  13C:  Call  WaitForState      ( .BattleState:PlayerMove )
+  14C:  Call  UseBattleCamPreset    ( 00000002 )
+  15C:  Wait  15`
+  168:  Call  SetGoalPos        ( .Actor:Partner FFFFFFB7 00000028 000000CA )
+  184:  Call  FlyToGoal ( .Actor:Partner 00000014 00000014 .Easing:CosInOut )
+  1A0:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  1B4:  Call  ActorSpeak        ( 000A001A .Actor:Partner 00000001 00200009 00200005 ) % Once you decide on the enemy, the explanation of t ...
+  1D4:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  1E8:  Call  SetActionCommandMode  ( 00000001 )
+  1F8:  Call  SetBattleFlagBits ( 00004000 .False )
+  20C:  Call  SetMessageBoxDuration ( FFFFFFFF )
+  21C:  Thread
+  224:  	Loop  0000000F 
+  230:  		Call  SetMessageBoxDuration ( 00000023 )
+  240:  		Wait  1`
+  24C:  	EndLoop
+  254:  EndThread
+  25C:  Wait  15`
+  268:  Call  SetGoalToHome ( .Actor:Partner )
+  278:  Call  FlyToGoal ( .Actor:Partner 00000014 00000014 .Easing:CosInOut )
+  294:  Call  SetActionCommandMode  ( 00000002 )
+  2A4:  Call  WaitForState  ( .BattleState:None )
+  2B4:  Call  SetBattleFlagBits2    ( 00000200 .True )
+  2C8:  Loop
+  2D4:  	Call  GetActionCommandMode  ( *Var0 )
+  2E4:  	If  *Var0  !=  00000002 
+  2F4:  		BreakLoop
+  2FC:  	EndIf
+  304:  	Wait  1`
+  310:  EndLoop
+  318:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  32C:  Call  ActorSpeak        ( 000A001B .Actor:Partner 00000001 00200009 00200005 ) % Right now! Just before stomping the enemy. Press a ...
+  34C:  Loop
+  358:  	Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+  36C:  	If  *Var0  ==  .False 
+  37C:  		BreakLoop
+  384:  	EndIf
+  38C:  	Wait  1`
+  398:  EndLoop
+  3A0:  Loop
+  3AC:  	Call  CheckButtonPress  ( ~Flags:Buttons:A *Var0 )
+  3C0:  	If  *Var0  ==  .True 
+  3D0:  		BreakLoop
+  3D8:  	EndIf
+  3E0:  	Wait  1`
+  3EC:  EndLoop
+  3F4:  Call  EndActorSpeech    ( .Actor:Partner 00000001 00200009 00200005 )
+  410:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  424:  Call  SetActionSuccess  ( 00000001 )
+  434:  Call  SetActionCommandMode  ( 00000001 )
+  444:  Call  WaitForState      ( .BattleState:BeginPartnerTurn )
+  454:  Call  UseBattleCamPreset    ( 00000002 )
+  464:  Wait  15`
+  470:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  484:  Call  ActorSpeak        ( 000A001D .Actor:Partner 00000001 00200009 00200005 ) % When you see "Nice" appear, it means you've succes ...
+  4A4:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  4B8:  Call  WaitForState      ( .BattleState:NextPlayer )
+  4C8:  Call  UseBattleCamPreset    ( 00000002 )
+  4D8:  Wait  15`
+  4E4:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  4F8:  Call  ActorSpeak        ( 000A001E .Actor:Enemy0 00000001 0009000F 00090001 ) % OK! Here it comes, Mario!
+  518:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  52C:  Call  SetActionCommandMode  ( 00000002 )
+  53C:  Call  WaitForState      ( .BattleState:None )
+  54C:  Loop
+  558:  	Call  GetActionCommandMode  ( *Var0 )
+  568:  	If  *Var0  !=  00000002 
+  578:  		BreakLoop
+  580:  	EndIf
+  588:  	Wait  1`
+  594:  EndLoop
+  59C:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  5B0:  Call  ActorSpeak        ( 000A001F .Actor:Partner 00000001 00200009 00200005 ) % Right now! Press just before the attack strikes yo ...
+  5D0:  Loop
+  5DC:  	Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+  5F0:  	If  *Var0  ==  .False 
+  600:  		BreakLoop
+  608:  	EndIf
+  610:  	Wait  1`
+  61C:  EndLoop
+  624:  Loop
+  630:  	Call  CheckButtonPress  ( ~Flags:Buttons:A *Var0 )
+  644:  	If  *Var0  ==  .True 
+  654:  		BreakLoop
+  65C:  	EndIf
+  664:  	Wait  1`
+  670:  EndLoop
+  678:  Call  EndActorSpeech    ( .Actor:Partner 00000001 00200009 00200005 )
+  694:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  6A8:  Call  SetActionSuccess  ( 00000001 )
+  6B8:  Call  SetActionCommandMode  ( FFFFFFFF )
+  6C8:  Call  WaitForState      ( .BattleState:EndTurn )
+  6D8:  Call  UseBattleCamPreset    ( 00000002 )
+  6E8:  Wait  15`
+  6F4:  Call  SetActionCommandMode  ( 00000001 )
+  704:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  718:  Call  ActorSpeak        ( 000A0020 .Actor:Partner 00000001 00200009 00200005 ) % Yes! You successfully used the action command. Thi ...
+  738:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  74C:  Call  WaitForState      ( .BattleState:PlayerMenu )
+  75C:  Call  8026E020  ( 00000002 )
+  76C:  Call  SetActionCommandMode  ( 00000002 )
+  77C:  Call  WaitForState      ( .BattleState:PlayerMove )
+  78C:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  7A0:  Call  ActorSpeak        ( 000A0022 .Actor:Partner 00000001 00200009 00200005 ) % Once you choose an enemy to attack, move the Contr ...
+  7C0:  Loop
+  7CC:  	Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  7E0:  	If  *Var0  ==  .False 
+  7F0:  		BreakLoop
+  7F8:  	EndIf
+  800:  	Wait  1`
+  80C:  EndLoop
+  814:  Loop
+  820:  	Call  CheckButtonPress  ( ~Flags:Buttons:40000 *Var0 )
+  834:  	If  *Var0  ==  .True 
+  844:  		BreakLoop
+  84C:  	EndIf
+  854:  	Wait  1`
+  860:  EndLoop
+  868:  Call  EndActorSpeech        ( .Actor:Partner 00000001 00200009 00200005 )
+  884:  Call  UseIdleAnimation      ( .Actor:Partner .True )
+  898:  Call  SetActionCommandMode  ( 00000001 )
+  8A8:  Call  WaitForState  ( .BattleState:None )
+  8B8:  Wait  5`
+  8C4:  Call  SetActionCommandMode  ( 00000002 )
+  8D4:  Loop
+  8E0:  	Call  GetActionCommandMode  ( *Var0 )
+  8F0:  	If  *Var0  !=  00000002 
+  900:  		BreakLoop
+  908:  	EndIf
+  910:  	Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  924:  	If  *Var0  ==  .False 
+  934:  		Call  SetActionCommandMode  ( FFFFFFFF )
+  944:  		Call  PauseTakeTurn     ( .Actor:Player )
+  954:  		Call  UseIdleAnimation  ( .Actor:Partner .False )
+  968:  		Call  ActorSpeak        ( 000A0023 .Actor:Partner 00000001 00200009 00200005 ) % Move the Control Stick to the left and keep it the ...
+  988:  		Loop
+  994:  			Call  CheckButtonPress  ( ~Flags:Buttons:40000 *Var0 )
+  9A8:  			If  *Var0  ==  .True 
+  9B8:  				BreakLoop
+  9C0:  			EndIf
+  9C8:  			Wait  1`
+  9D4:  		EndLoop
+  9DC:  		Call  EndActorSpeech    ( .Actor:Partner 00000001 00200009 00200005 )
+  9F8:  		Call  UseIdleAnimation  ( .Actor:Partner .True )
+  A0C:  		Call  SetActionCommandMode  ( 00000002 )
+  A1C:  		Call  ResumeTakeTurn    ( .Actor:Player )
+  A2C:  	EndIf
+  A34:  	Wait  1`
+  A40:  EndLoop
+  A48:  Loop
+  A54:  	Call  GetActionResult   ( *Var0 )
+  A64:  	If  *Var0  ==  00000003 
+  A74:  		BreakLoop
+  A7C:  	EndIf
+  A84:  	Wait  1`
+  A90:  EndLoop
+  A98:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  AAC:  Call  ActorSpeak        ( 000A0024 .Actor:Partner 00000001 00200009 00200005 ) % flashes as soon as your power reaches its maximum. ...
+  ACC:  Loop
+  AD8:  	Call  CheckButtonDown   ( ~Flags:Buttons:40000 *Var0 )
+  AEC:  	If  *Var0  ==  .False 
+  AFC:  		BreakLoop
+  B04:  	EndIf
+  B0C:  	Wait  1`
+  B18:  EndLoop
+  B20:  Call  EndActorSpeech    ( .Actor:Partner 00000001 00200009 00200005 )
+  B3C:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  B50:  Call  SetActionSuccess  ( 00000001 )
+  B60:  Call  SetActionCommandMode  ( 00000001 )
+  B70:  Call  WaitForState      ( .BattleState:BeginPartnerTurn )
+  B80:  Call  UseBattleCamPreset    ( 00000002 )
+  B90:  Wait  15`
+  B9C:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  BB0:  Call  ActorSpeak        ( 000A0025 .Actor:Partner 00000001 00200009 00200005 ) % All right! You successfully used the action comman ...
+  BD0:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  BE4:  Call  SetActorFlagBits  ( .Actor:Enemy0 00200000 .True )
+  BFC:  Call  WaitForState      ( .BattleState:None )
+  C0C:  Call  WaitForState      ( .BattleState:PlayerMenu )
+  C1C:  Call  ShowBattleChoice  ( 001E001D ) % Yes No
+  C2C:  Call  EndActorSpeech    ( .Actor:Partner 00000001 00200009 00200005 )
+  C48:  If  *Var0  ==  00000001 
+  C58:  	Call  ActorSpeak    ( 000A0027 .Actor:Partner 00000001 00200009 00200005 ) % You don't need to practice anymore...? That's our  ...
+  C78:  	Goto  64
+  C84:  EndIf
+  C8C:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  CA0:  Call  ActorSpeak        ( 000A0028 .Actor:Partner 00000001 00200009 00200005 ) % The action command will serve you well, so practic ...
+  CC0:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  CD4:  Call  SetActorVar       ( .Actor:Self 00000000 00000000 )
+  CEC:  Call  SetBattleFlagBits2    ( 00000200 .False )
+  D00:  Label  A
+  D0C:  Call  8026E020  ( 00000083 )
+  D1C:  Call  SetActionCommandMode  ( 00000002 )
+  D2C:  Call  WaitForState      ( .BattleState:PlayerMove )
+  D3C:  Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+  D54:  If  *Var0  ==  00000007 
+  D64:  	Goto  63
+  D70:  EndIf
+  D78:  Call  SetActionCommandMode  ( 00000001 )
+  D88:  Call  WaitForState      ( .BattleState:BeginPartnerTurn )
+  D98:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  DAC:  Call  80269524  ( *Var0 )
+  DBC:  Switch  *Var0 
+  DC8:  	Case  ==  FFFFFFFF 
+  DD4:  		Call  ActorSpeak    ( 000A002A .Actor:Partner 00000001 00200009 00200005 ) % Almost!! That was a little bit too early.
+  DF4:  	Case  ==  00000000 
+  E00:  		Call  ActorSpeak    ( 000A002B .Actor:Partner 00000001 00200009 00200005 ) % Almost!! That was a little bit too late.
+  E20:  	Case  ==  00000001 
+  E2C:  		Call  ActorSpeak    ( 000A0029 .Actor:Partner 00000001 00200009 00200005 ) % Well done, Mario!! You successfully used the actio ...
+  E4C:  EndSwitch
+  E54:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  E68:  Call  SetEnemyHP        ( .Actor:Enemy0 00000063 )
+  E7C:  Call  SetActorFlagBits  ( .Actor:Enemy0 00200000 .False )
+  E94:  Call  SetActionCommandMode  ( 00000001 )
+  EA4:  Call  WaitForState      ( .BattleState:EndTurn )
+  EB4:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  EC8:  Call  GetBlockResult    ( *Var0 )
+  ED8:  Switch  *Var0 
+  EE4:  	Case  ==  FFFFFFFF 
+  EF0:  		Call  ActorSpeak    ( 000A002A .Actor:Partner 00000001 00200009 00200005 ) % Almost!! That was a little bit too early.
+  F10:  	Case  ==  00000000 
+  F1C:  		Call  ActorSpeak    ( 000A002B .Actor:Partner 00000001 00200009 00200005 ) % Almost!! That was a little bit too late.
+  F3C:  	Case  ==  00000001 
+  F48:  		Call  ActorSpeak    ( 000A0029 .Actor:Partner 00000001 00200009 00200005 ) % Well done, Mario!! You successfully used the actio ...
+  F68:  EndSwitch
+  F70:  Call  UseIdleAnimation  ( .Actor:Partner .True )
+  F84:  Call  WaitForState      ( .BattleState:PlayerMenu )
+  F94:  Goto  A
+  FA0:  Label  63
+  FAC:  Call  UseIdleAnimation  ( .Actor:Partner .False )
+  FC0:  Call  ActorSpeak        ( 000A002C .Actor:Partner 00000001 00200009 00200005 ) % Well, I guess that's about all I can teach you.
+  FE0:  Label  64
+  FEC:  Call  WaitForState      ( .BattleState:None )
+  FFC:  Call  SetBattleState    ( .BattleState:EndTrainingBattle )
+ 100C:  Call  $Function_80218000_04 ( )
+ 1018:  Wait  00002710 
+ 1024:  Return
+ 102C:  End
+}
+

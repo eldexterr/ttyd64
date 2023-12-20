@@ -1,0 +1,471 @@
+% • Add entrances to mac_07 & tyd_00
+% • Increase Chet Rippo's stats caps
+% • Remove the Stone Cap from the shop
+% • Remove Chuck Quizmo
+
+@ $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000008
+	[Background]  80200000
+	[MapTattle]   00190004
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 %  610.0    0.0    0.0  280.0
+	~Vec4f:Entry1 % -420.0    0.0  430.0   35.0
+	~Vec4f:Entry2 % -490.0   20.0 -150.0  180.0
+	~Vec4f:Entry3 % -420.0   20.0  -95.0    0.0
+	~Vec4f:Entry4 %    0.0 -100.0    0.0    0.0
+	~Vec4f:Entry5 % -420.0   20.0  235.0  270.0
+    ~Vec4f:Entry6
+    ~Vec4f:Entry7
+}
+
+@ $Script_EnterWalk_80242280
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry2
+   28:  		Exec  $Script_80242238
+   34:  		Exec  $Script_8024ECDC
+   40:  		Thread
+   48:  			Wait  20`
+   54:  			Set   *MapFlag[0A]  .True
+   64:  		EndThread
+   6C:  	Case  ==  ~Entry:Entry3
+   78:  		Exec  $Script_80242238
+   84:  		Call  SetPlayerPos  (  -420`  20`  -95` )
+   9C:  		Call  SetNpcPos     ( .Npc:Partner  -420`  20`  -65` )
+   B8:  		Thread
+   C0:  			Wait  20`
+   CC:  			Set   *MapFlag[0A]  .True
+   DC:  		EndThread
+   E4:  	Case  ==  ~Entry:Entry4
+   F0:  		Call  $Function_80240194 ( )
+   FC:  		Call  $Function_80240050    ( 00000000 00000000 00000000 00000000 00000000 00000000 00000000 000003B6 000003E8 )
+  12C:  		Exec  $Script_8024DED0
+  138:  	Case  ==  ~Entry:Entry5
+  144:  		Exec  $Script_80242238
+            Case  ==  ~Entry:Entry7
+                Set   *VarA $Script_80242238
+			    Exec  $Script_EnterVerticalPipe
+  150:  	Default
+  158:  		Set   *Var0  $Script_80242238
+  168:  		Exec  EnterWalk
+  174:  EndSwitch
+  17C:  Return
+  184:  End
+}
+
+@ $Script_80242238
+{
+    0:  Bind  $Script_ExitWalk_80242180 .Trigger:FloorAbove ~Collider:deilisw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802421DC .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+        Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+        Bind  $Script_Exit3 .Trigger:FloorAbove ~Collider:Exit3 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_Exit2
+{
+    Call     UseExitHeading  	( 3C ~Entry:Entry6 )
+	Exec     ExitWalk
+    Call     GotoMap	( "mac_07" 0 )
+	Wait     100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit3
+{
+	SetGroup 0000001B
+	Set   *VarA ~Entry:Entry7
+	Set   *VarB ~Collider:Exit3
+	Set   *VarC $Script_GotoMap_Exit3
+	ExecWait  $Script_ExitVerticalPipe
+	Return
+	End
+}
+
+#new:Script $Script_GotoMap_Exit3
+{
+	Call  GotoMap   ( "tyd_00" 00000000 )
+	Wait  100`
+	Return
+	End
+}
+
+%===========
+% Chet Rippo
+%===========
+
+@ $Script_Interact_80249184
+{
+[274]  		If  *Var3  >  85` % was 40` % HP
+[2B8]  		If  *Var4  >  85` % was 40` % FP
+[2FC]  		If  *Var5  >  93` % was 24` % BP
+}
+
+@ $Function_80241A64
+{
+	% HP
+   [8C]  SLTI      V0, V0, 100`
+   [98]  LI        V0, 99`
+	% FP
+   [D4]  SLTI      V0, V0, 100`
+   [E0]  LI        V0, 99`
+	% BP
+  [114]  SLTI      V0, V0, 100`
+  [11C]  LI        V0, 99`
+}
+
+%===========
+% Stone Cap
+%===========
+
+@ $ShopInventory_80243C6C
+{
+	.Item:CourageShell   00000005 00230133
+	.Item:IceStorm       0000000F 0023013E
+	.Item:ThunderRage    00000014 00240002 % Lightning that strikes all enemies. Attack Power:  ...
+	.Item:MiniMrMini     00000008 00230140
+	.Item:VoltShroom     0000000A 00240008 % Electrifies Mario briefly and damages enemies who  ...
+	.Item:SuperShroom    00000014 0024000A % A truly super Mushroom. Restores 10 HP.
+	00000000 00000000 00000000
+}
+
+%======================
+% Chuck Quizmo
+%======================
+
+@ $Function_8024059C
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_8024059C[1E4]
+}
+
+%============
+
+#new:Script $Script_EnterVerticalPipe
+{
+	Call  DisablePlayerInput    ( .True )
+	Call  DisablePlayerPhysics  ( .True )
+	Call  DisablePartnerAI      ( 00000000 )
+	Call  HidePlayerShadow      ( .True )
+	Call  SetPlayerAnimation    ( .PlayerAnim:StandStill )
+	Call  GetCurrentPartnerID   ( *Var0 )
+	If  *Var0  !=  .Partner:None % 0
+		Call  EnableNpcShadow   ( .Npc:Partner .False )
+		Call  SetNpcPos ( .Npc:Partner 00000000 -1000` 00000000 )
+	EndIf
+	Call  GetEntryID    ( *Var0 )
+	Call  $Function_Pipe_GetEntryCoords
+	Sub   *Var2  40`
+	Call  SetPlayerPos  ( *Var1 *Var2 *Var3 )
+	Call  InterpPlayerYaw   ( *Var4 00000000 )
+	Call  PlaySound     ( 00000163 )
+	Call  802D286C      ( 00000100 )
+	Call  802D2520      ( 00010000 00000005 00000002 00000001 00000001 00000000 )
+	Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+	Loop  40`
+		Add   *Var1  00000001
+		Call  SetPlayerPos  ( *Var0 *Var1 *Var2 )
+		Wait  1`
+	EndLoop
+	Wait  3`
+	Call  GetCurrentPartnerID   ( *Var0 )
+	If  *Var0  !=  .Partner:None % 0
+		Thread
+			Call  DisablePartnerAI  ( 00000000 )
+			Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+			Sub   *Var2  00000003
+			Call  SetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+			Call  SetNpcFlagBits    ( .Npc:Partner 00000002 .False )
+			Call  EnablePartnerAI
+			Call  EnableNpcShadow   ( .Npc:Partner .True )
+		EndThread
+	EndIf
+	Wait  2`
+	Call  802D2520  ( 00010000 00000000 00000000 00000000 00000000 00000000 )
+	Wait  1`
+	Call  SetPlayerAnimation    ( 00010002 )
+	Call  DisablePlayerPhysics  ( .False )
+	Call  DisablePlayerInput    ( .False )
+	Call  HidePlayerShadow      ( .False )
+	Label  0
+	Call  $Function_Pipe_GetCurrentFloor
+	Wait  1`
+	If  *Var0  !=  FFFFFFFF % FFFFFFFF
+		Goto  0
+	EndIf
+	Exec  *VarA
+	Return
+	End
+}
+
+/%
+	ARGS:
+	*VarA  entryID
+	*VarB  colliderID
+	*VarC  $Script_GotoMap
+%/
+#new:Script $Script_ExitVerticalPipe
+{
+	Call  $Function_Pipe_CheckDownInput
+	If  *Var0  ==  00000000
+		Return
+	EndIf
+	Call  GetCurrentPartner ( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Call  GetCurrentPartnerID   ( *Var1 )
+		If  *Var1  !=  .Partner:Watt % 6
+			Return
+		Else
+			Call  802D2B6C
+			Call  DisablePlayerInput    ( .True )
+		EndIf
+	Else
+		Call  DisablePlayerInput    ( .True )
+	EndIf
+	SetGroup  0000001B
+	Call  $Function_Pipe_SetAnimFlag
+	Call  DisablePlayerPhysics  ( .True )
+	Call  HidePlayerShadow  ( .True )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  PlayerMoveTo      ( *Var1 *Var3 00000003 )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  SetPlayerPos      ( *Var1 *Var2 *Var3 )
+	Call  SetPlayerFlagBits ( 00200000 .True )
+	Call  $Function_Pipe_GetCameraYaw
+	Call  InterpPlayerYaw   ( *Var0 00000000 )
+	Wait  2`
+	Call  SetPlayerFlagBits ( 00200000 .False )
+	Call  PlaySound ( 00000163 )
+	Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+	Thread
+		Wait  4`
+		Loop  40`
+			Sub   *Var1  00000001
+			Call  SetPlayerPos  ( *Var0 *Var1 *Var2 )
+			Wait  1`
+		EndLoop
+	EndThread
+	Call  802D286C  ( 00000800 )
+	Call  802D2520  ( 00010002 00000005 00000002 00000001 00000001 00000000 )
+	Wait  25`
+	ExecWait  *VarC
+	Return
+	End
+}
+
+% Pipe functions
+
+% Pipe Code
+
+#new:Function $Function_Pipe_SetAnimFlag
+{
+	LAW       V0, 800F7B30
+	LW        V1, 4 (V0)
+	LUI       A0, 10
+	OR        V1, V1, A0
+	SW        V1, 4 (V0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_GetCurrentFloor
+{
+	LAH       V0, 8015A552
+	SW        V0, 84 (A0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_CheckDownInput
+{
+	LAH       V1, 8015A552
+	ADDIU     SP, SP, FFE8
+	SW        S0, 10 (SP)
+	COPY      S0, A0
+	SW        RA, 14 (SP)
+	LW        V0, B0 (S0)
+	BEQ       V1, V0, .o2C
+	ADDIU     V0, R0, 2
+	BEQ       R0, R0, .oAC
+	SW        R0, 84 (S0)
+	.o2C
+	LAW       V1, 8007419C
+	LB        V0, 40 (V1)
+	LB        A3, 44 (V1)
+	BLTZL     V0, .o44
+	SUBU      V0, R0, V0
+	.o44
+	BNE       V0, R0, .o54
+	NOP
+	BEQL      A3, R0, .oAC
+	CLEAR     V0
+	.o54
+	MTC1      V0, F4
+	NOP
+	CVT.S.W   F4, F4
+	MFC1      A2, F4
+	MTC1      A3, F4
+	NOP
+	CVT.S.W   F4, F4
+	MTC1      R0, F12
+	MFC1      A3, F4
+	JAL       ~Func:atan2
+	MOV.S     F14, F12
+	LIF       F2, 60.0
+	NOP
+	C.LT.S    F0, F2
+	NOP
+	BC1F      .oA8
+	ADDIU     V0, R0, 1
+	SW        V0, 84 (S0)
+	BEQ       R0, R0, .oAC
+	ADDIU     V0, R0, 2
+	.oA8
+	CLEAR     V0
+	.oAC
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetEntryCoords
+{
+	ADDIU     SP, SP, FFE0
+	SW        S1, 14 (SP)
+	COPY      S1, A0
+	SW        RA, 1C (SP)
+	SW        S2, 18 (SP)
+	JAL       ~Func:get_current_map_header
+	SW        S0, 10 (SP)
+	COPY      A0, S1
+	LIO       A1, *Var0
+	JAL       ~Func:get_variable
+	COPY      S2, V0
+	COPY      A0, S1
+	LUI       A1, FE36
+	LW        V1, 14 (S2)
+	SLL       S0, V0, 4
+	ADDU      V1, S0, V1
+	LWC1      F0, 0 (V1)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 4 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C82 % Var2
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 8 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C83 % Var3
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      S0, S0, V0
+	LWC1      F0, C (S0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C84 % Var4
+	LW        RA, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_Pipe_GetCameraYaw
+{
+	LAW       V1, 80077410
+	LIF       F12, 180.0
+	ADDIU     SP, SP, FFE8
+	SW        RA, 14 (SP)
+	SW        S0, 10 (SP)
+	SLL       V0, V1, 2
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 2
+	SUBU      V0, V0, V1
+	SLL       V1, V0, 3
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 3
+	LTF       F0, V0 (800B1DEC)
+	ADD.S     F12, F0, F12
+	JAL       ~Func:clamp_angle
+	COPY      S0, A0
+	TRUNC.W.S F2, F0
+	SWC1      F2, 84 (S0)
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetPointInFrontOfPlayer
+{
+	ADDIU     SP, SP, FFD8
+	SW        S0, 18 (SP)
+	COPY      S0, A0
+	SW        RA, 1C (SP)
+	SDC1      F20, 20 (SP)
+	LW        V0, C (S0)
+	JAL       ~Func:get_float_variable
+	LW        A1, 0 (V0)
+	ADDIU     A0, SP, 10
+	LIA       V0, 8010EFC8
+	MFC1      A2, F0
+	LWC1      F0, 28 (V0) % player X
+	LWC1      F2, 30 (V0) % player Z
+	SWC1      F0, 10 (SP) % arg0 for add_vec2D_polar
+	SWC1      F2, 14 (SP) % arg1 for add_vec2D_polar
+	LW        A3, 80 (V0)
+	LWC1      F20, 2C (V0)
+	JAL       ~Func:add_vec2D_polar
+	ADDIU     A1, SP, 14
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 10 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C80 % Var0
+	COPY      A0, S0
+	LUI       A1, FE36
+	MFC1      A2, F20
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 14 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C82 % Var2
+	LW        RA, 1C (SP)
+	LW        S0, 18 (SP)
+	LDC1      F20, 20 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 28
+}

@@ -1,0 +1,93 @@
+@ $Script_TakeTurn_802357B4
+{
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+        Call  $SetTargetActorInFront ( .Actor:Self )
+   3C:  Call  UseBattleCamPreset    ( 0000003F )
+   4C:  Call  BattleCamTargetActor  ( .Actor:Self )
+   5C:  Call  MoveBattleCamOver (  20` )
+   6C:  Call  8024ECF8  ( FFFFFFFF 00000001 00000000 )
+   84:  Call  GetActorVar       ( .Actor:Self 00000006 *Var0 )
+   9C:  Call  SetAnimation      ( .Actor:Self 00000001 *Var0 )
+   B4:  Wait  20`
+   C0:  Add   *Var0  00000004
+   D0:  Call  SetAnimation      ( .Actor:Self 00000001 *Var0 )
+   E8:  Call  PlaySoundAtActor  ( .Actor:Self 000002E7 )
+   FC:  Wait  5`
+  108:  Call  PlaySoundAtActor  ( .Actor:Self 000002E8 )
+  11C:  Call  EnemyTestTarget   ( .Actor:Self *VarF ~Flags:DamageType:0 00000000 00000001 00000010 )
+  140:  Switch  *VarF
+  14C:  	CaseOR  ==  .HitResult:Miss % 6
+  158:  	CaseOR  ==  .HitResult:Lucky % 5
+  164:  		Set   *Var5  00000001
+  174:  		Call  SetActorVar   ( .Actor:Self 00000007 00000000 )
+  18C:  	EndCaseGroup
+  194:  	Default
+  19C:  		Set   *Var5  00000000
+  1AC:  		Call  GetActorVar   ( .Actor:Self 00000008 *Var0 )
+  1C4:  		Switch  *Var0
+  1D0:  			Case  ==  00000000
+  1DC:  				Call  SetActorVar   ( .Actor:Self 00000007 00000004 )
+  1F4:  			Case  ==  00000001
+  200:  				Call  SetActorVar   ( .Actor:Self 00000007 00000003 )
+  218:  			Case  ==  00000002
+  224:  				Call  SetActorVar   ( .Actor:Self 00000007 00000002 )
+  23C:  			Case  ==  00000003
+  248:  				Call  SetActorVar   ( .Actor:Self 00000007 00000001 )
+  260:  			Default
+  268:  				Call  SetActorVar   ( .Actor:Self 00000007 00000001 )
+  280:  		EndSwitch
+  288:  EndSwitch
+  290:  Set   *Var1  *Var5
+  2A0:  Call  GetActorVar   ( .Actor:Self 00000008 *Var0 )
+  2B8:  If  *Var0  <=  00000000
+  2C8:  	Set   *Var0  00000000
+  2D8:  	Exec  $Script_80235D60
+  2E4:  EndIf
+  2EC:  If  *Var0  <=  00000001
+  2FC:  	Set   *Var0  00000001
+  30C:  	Exec  $Script_80235D60
+  318:  EndIf
+  320:  If  *Var0  <=  00000002
+  330:  	Set   *Var0  00000002
+  340:  	Exec  $Script_80235D60
+  34C:  EndIf
+  354:  Set   *Var0  00000003
+  364:  Exec  $Script_80235D60
+  370:  Wait  10`
+  37C:  Call  GetActorVar   ( .Actor:Self 00000007 *Var0 )
+  394:  Switch  *Var0
+  3A0:  	Case  ==  00000001
+  3AC:  		Wait  2`
+  3B8:  		Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact 00000000 00000000 00000001 00000020 )
+  3E0:  	Case  ==  00000002
+  3EC:  		Wait  2`
+  3F8:  		Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact 00000000 00000000 00000002 00000020 )
+  420:  	Case  ==  00000003
+  42C:  		Wait  2`
+  438:  		Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact 00000000 00000000 00000003 00000020 )
+  460:  	Case  ==  00000004
+  46C:  		Wait  2`
+  478:  		Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact 00000000 00000000 00000004 00000020 )
+  4A0:  	Default
+  4A8:  		Switch  *VarF
+  4B4:  			Case  ==  00000005
+  4C0:  				Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+  4E4:  			Default
+  4EC:  		EndSwitch
+  4F4:  EndSwitch
+  4FC:  Set   *VarF  *Var0
+  50C:  Switch  *VarF
+  518:  	CaseOR  ==  .HitResult:Hit % 0
+  524:  	CaseOR  ==  .HitResult:QuakeImmune % 2
+  530:  	CaseOR  ==  0000000A % A
+  53C:  		Call  UseBattleCamPreset    ( 00000002 )
+  54C:  		Wait  15`
+  558:  		Wait  15`
+  564:  	EndCaseGroup
+  56C:  EndSwitch
+  574:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  588:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  59C:  Return
+  5A4:  End
+}

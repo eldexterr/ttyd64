@@ -1,0 +1,73 @@
+% Add new entrance to kpa_138
+
+@ $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000005
+	[Background]  00000000
+	[MapTattle]   0019016E
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 % -387.0    0.0  115.0   90.0
+	~Vec4f:Entry1 %  370.0    0.0  120.0  270.0
+	~Vec4f:Entry2 %  370.0  100.0  120.0  270.0
+	~Vec4f:Entry3 %  365.0  240.0  -20.0  270.0
+    ~Vec4f:Entry4
+}
+
+@ $Script_Main
+{
+    [368]  Exec  $Script_EnterMap
+}
+
+#delete $Script_EnterWalk_80240834
+
+#new:Script $Script_EnterMap % $Script_EnterWalk_80240834
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Set   *Var0  00000000
+   38:  		Set   *Var2  ~Model:o486
+   48:  		Set   *Var3  ~Model:o485
+   58:  		Exec  EnterDoubleDoor
+   64:  		Exec  $Script_802407B4
+   70:  	Case  ==  ~Entry:Entry1
+   7C:  		Set   *Var0  $Script_802407B4
+   8C:  		Exec  EnterWalk
+   98:  	Case  ==  ~Entry:Entry2
+   A4:  		Set   *Var0  $Script_802407B4
+   B4:  		Exec  EnterWalk
+   C0:  	Case  ==  ~Entry:Entry3
+   CC:  		Set   *Var0  $Script_802407B4
+   DC:  		Exec  EnterWalk
+            Case  ==  ~Entry:Entry4
+                Set   *Var0  $Script_802407B4
+                Exec  EnterWalk
+   E8:  EndSwitch
+   F0:  Return
+   F8:  End
+}
+
+@ $Script_802407B4
+{
+    0:  Bind  $Script_ExitDoubleDoor_802405FC .Trigger:WallPressA ~Collider:ttw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802406A0 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   38:  Bind  $Script_ExitWalk_802406FC .Trigger:FloorAbove ~Collider:deilie2 00000001 00000000
+   54:  Bind  $Script_ExitWalk_80240758 .Trigger:FloorAbove ~Collider:deiliae 00000001 00000000
+        Bind  $Script_Exit4 .Trigger:FloorAbove ~Collider:Exit4 00000001 00000000
+   70:  Return
+   78:  End
+}
+
+#new:Script $Script_Exit4
+{
+    Call     $WriteAddress ( 800740A1 0 .True .False .False ) % force Mario to enter the next map using his partner
+    Call     GotoMap	( "kpa_138" 0 )
+	Wait     100`
+	Return
+	End
+}

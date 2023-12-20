@@ -1,0 +1,123 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:BowsersCastle
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_SetupMusic
+    Exec  $Script_MakeEntities
+    Exec  $Script_CreateExitTriggers
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_MakeEntities
+{
+    Call  MakeEntity    ( .Entity:Chest ~Vec4d:Entity_Chest 00000000 80000000 )
+    Call  AssignFlag    ( *GF_KPA135_Chest )
+    Call  AssignScript  ( $Script_OpenChest )
+    Return
+    End
+}
+
+#new:Script $Script_ShowGotItem
+{
+    0:  SetGroup  00000000
+    C:  Call  SetTimeFreezeMode ( 00000002 )
+   1C:  Wait  40`
+   28:  Call  ShowGotItem       ( *Var0 .False 00000000 )
+   40:  Call  SetTimeFreezeMode ( 00000000 )
+   50:  Return
+   58:  Return
+   60:  End
+}
+
+#new:Script $Script_GiveItem
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Set   *Var0  *VarA
+   20:  If  *VarA  !=  00000000
+   30:  	ExecWait  $Script_ShowGotItem
+   3C:  EndIf
+   44:  Switch  *VarB
+   50:  	Case  ==  00000000
+   5C:  		Call  AddItem   ( *VarA *Var0 )
+   70:  	Case  ==  00000001
+   7C:  		Call  AddKeyItem    ( *VarA )
+   8C:  	Case  ==  00000002
+   98:  		Call  AddBadge  ( *VarA *Var0 )
+   AC:  EndSwitch
+   B4:  Wait  15`
+   C0:  Call  DisablePlayerInput    ( .False )
+   D0:  Return
+   D8:  End
+}
+
+#new:Script $Script_OpenChest
+{
+    0:  Set   *VarA  .Item:PoisonDrive
+   10:  Set   *VarB  00000002 % Badge
+   20:  Set   *GF_KPA135_Chest  .True
+   30:  ExecWait  $Script_GiveItem
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_Exit0
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "kpa_17" 00000002 )
+    Wait  100`
+    Return
+    End
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Mario, I just wonder whose idea it[BR]
+was to put a secret room next to a[BR]
+cell?[BR]
+[Wait][Next]
+I duuno, they should fire that[BR]
+architect, just my opinion.
+[Wait][End]      
+}

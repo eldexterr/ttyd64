@@ -1,0 +1,74 @@
+% Script File: kkj_21.mscr
+% Decoded from: 0 to 250 (kkj_21)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  325.0    0.0  -30.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000001
+	[Background]  00000000
+	[MapTattle]   00190016
+}
+
+#new:Script $Script_ExitSingleDoor_80240050
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  ~Entry:Entry0
+   2C:  Set   *Var1  ~Collider:tte
+   3C:  Set   *Var2  ~Model:o57
+   4C:  Set   *Var3  .DoorSwing:Out % FFFFFFFF
+   5C:  Exec  ExitSingleDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_80240240 00000002 ) % kkj_10
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_EnterSingleDoor_802400F4
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Set   *Var2  ~Model:o57
+   38:  		Set   *Var3  .DoorSwing:Out % FFFFFFFF
+   48:  		ExecWait  EnterSingleDoor
+   54:  EndSwitch
+   5C:  Return
+   64:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:PeachsCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   84:  Call  UseDoorSounds     ( .DoorSounds:Basic )
+   94:  Bind  $Script_ExitSingleDoor_80240050 .Trigger:WallPressA ~Collider:tte 00000001 00000000
+   B0:  Exec  $Script_EnterSingleDoor_802400F4
+   BC:  Wait  1`
+   C8:  Return
+   D0:  End
+}
+
+PADDING: 80240238 to 80240240 (00000238 to 00000240)
+00000000 00000000
+
+#new:ASCII $ASCII_80240240
+{
+	"kkj_10"
+}
+
+PADDING: 80240248 to 80240250 (00000248 to 00000250)
+00000000 00000000
+

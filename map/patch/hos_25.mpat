@@ -1,0 +1,775 @@
+#define .Npc:Coin A
+
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:StarHaven
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_SetupMusic
+	Exec  $Script_SetupTexturePan
+    Exec  $Script_EnterMap
+    Call  MakeNpcs ( .True $NpcGroupList_hos25 )
+    Set   *Var0 $Script_CreateExitTriggers
+	Exec  EnterWalk
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:StarHaven 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+    Bind     $Script_DropMoney  .Trigger:FloorPressA ~Collider:platform 00000001 00000000
+    Call    $ReadAddress ( 80356000 0 *Var6 5A .False ) % *ModByte[5A] = *GB_HOS25_FountainCoins
+    If *Var6 >= 240`
+        Call    MakeItemEntity ( .Item:PUpDDownP ~Vec3d:Pos_Reward1 .ItemSpawnMode:Fixed_NeverVanish *GF_HOS25_Item2 )
+    EndIf
+    If *Var6 >= 80`
+        Call    MakeItemEntity ( .Item:PowerRush ~Vec3d:Pos_Reward2 .ItemSpawnMode:Fall_NeverVanish *GF_HOS25_Item1 )
+    EndIf
+	Return
+	End
+}
+
+#new:Script $Script_DropMoney
+{
+    Call    DisablePlayerInput ( .True )
+    Call    $ReadAddress ( 80356000 0 *Var6 5A .False ) % *ModByte[5A] = *GB_HOS25_FountainCoins
+    If *Var6 >= 240`
+        Call    ShowMessageAtScreenPos ( $String_EnoughCoins A0 28 )
+        Call    DisablePlayerInput ( .False )
+        Return
+    EndIf
+    Call    AddCoin ( 0 )
+    If *Var0 < 20`
+        Call    ShowMessageAtScreenPos ( $String_NotEnoughCoins A0 28 )
+        Call    DisablePlayerInput ( .False )
+        Return
+    EndIf
+    Call    InterpPlayerYaw ( 90` 0 )
+    Call    SetPlayerAnimation ( 00010002 )
+    Wait    5
+    Call    SetPlayerAnimation ( 0006000F )
+    Call    PlaySound ( 2005 )
+    Call    AddCoin ( -20` )
+    Call    MakeItemEntity ( .Item:Coin 0 -1000` 0 .ItemSpawnMode:Fixed_NeverVanish .False )
+    ExecWait $Script_UpdateCoinPos
+    Call    SetPlayerAnimation ( 00010002 )
+    % Rewards
+    Add     *GB_HOS25_FountainCoins 20`
+    Call    $ReadAddress ( 80356000 0 *Var6 5A .False ) % *ModByte[5A] = *GB_HOS25_FountainCoins
+    Switch  *Var6
+        Case == 80`
+            Call    MakeItemEntity ( .Item:PUpDDownP ~Vec3d:Pos_Reward2 .ItemSpawnMode:Fall_NeverVanish *GF_HOS25_Item1 )
+            Set	    *Var0 00080016 % surprised
+            Set	    *Var1 1 % !
+            Set	    *Var2 35`
+            ExecWait $SetPlayerAnimation
+        Case == 240`
+            Call    PlaySound ( 025A ) % shooting star
+            Set	    *Var0 00080016 % surprised
+            Set	    *Var1 1 % !
+            Set	    *Var2 35`
+            Exec    $SetPlayerAnimation
+            Call    PlayEffect  	( ~FX:ShootingStar:Normal ~Vec3d:Path_Star ~Vec3d:Pos_StarEnd 25` .False .False .False .False )
+            Wait    9
+            Set     *Var0 ~PosXd:Pos_Reward1
+            Set     *Var1 ~PosYd:Pos_Reward1
+            Set     *Var2 ~PosZd:Pos_Reward1
+            Add     *Var1 7 % y
+            Add     *Var2 2 % z
+            Call    PlayEffect  	( ~FX:Stars:Circle *Var0 *Var1 *Var2 10` 0 0 6 .False .False .False .False )
+            Call    PlaySound ( 000B )
+            Call    MakeItemEntity ( .Item:PowerRush ~Vec3d:Pos_Reward1 .ItemSpawnMode:Toss_NeverVanish *GF_HOS25_Item2 )
+            Wait    15`
+    EndSwitch
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+#new:Script $Script_UpdateCoinPos
+{
+    Set *VarA *Var0
+    ChildThread
+        Loop
+            Call    GetNpcPos ( .Npc:Coin *Var0 *Var1 *Var2 )
+            Call    SetItemPos ( *VarA *Var0 *Var1 *Var2 )
+            Wait    1
+        EndLoop
+    EndChildThread
+    Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Add     *Var0 3 % x
+    Add     *Var1 6 % y
+    Call    SetNpcPos ( .Npc:Coin *Var0 *Var1 *Var2 )
+    Call    RandInt ( 30` *Var3 )
+    Add     *Var0 10` % x
+    Add     *Var0 *Var3
+    Sub     *Var1 30` % y
+    Sub     *Var2 90` % z
+    Call    NpcJump0 ( .Npc:Coin *Var0 *Var1 *Var2 20` )
+    Add     *Var1 10` % y
+    Call    PlayEffect  	( ~FX:RisingBubble *Var0 *Var1 *Var2 0 .False .False .False .False .False .False .False )
+    Call    RemoveItemEntity ( *VarA )
+    Return
+    End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+	Bind     $Script_Exit0  .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0 {
+	Call     UseExitHeading  	( 3C ~Entry:Entry0 )
+	Exec     ExitWalk
+    Call     GotoMap	( "hos_03" B )
+	Wait     100`
+	Return
+	End
+}
+
+#new:NpcGroupList $NpcGroupList_hos25
+{
+    00000009 $NpcGroup_NPCs 00000000
+    00000001 $NpcGroup_Coin 00000000
+	00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_NPCs
+{
+00000001 $NpcSettings_Generic ~Vec3f:NPC_StarKid_1_1
+00110D09 $Script_InitNPC_Couple1_1 00000000 00000000 00000000
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_1_1
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000002 $NpcSettings_Generic ~Vec3f:NPC_StarKid_1_2
+00110D09 $Script_InitNPC_Couple1_2 00000000 00000000 0000010E
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_1_2
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000003 $NpcSettings_Generic ~Vec3f:NPC_StarKid_2_1
+00110D09 $Script_InitNPC_Couple2_1 00000000 00000000 0000010E
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_2_1
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000004 $NpcSettings_Generic ~Vec3f:NPC_StarKid_2_2
+00110D09 $Script_InitNPC_Couple2_1 00000000 00000000 00000000
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_2_2
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000005 $NpcSettings_Generic ~Vec3f:NPC_StarKid_3_1
+00110D09 $Script_InitNPC_Couple3_1 00000000 00000000 0000010E
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_3_1
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000006 $NpcSettings_Generic ~Vec3f:NPC_StarKid_3_2
+00110D09 $Script_InitNPC_Couple3_1 00000000 00000000 00000000
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_3_2
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000007 $NpcSettings_Generic ~Vec3f:NPC_StarKid_4_1
+00110D09 $Script_InitNPC_Couple4_1 00000000 00000000 00000000
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_4_1
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000008 $NpcSettings_Generic ~Vec3f:NPC_StarKid_4_2
+00110D09 $Script_InitNPC_Couple4_2 00000000 00000000 00000000
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_4_2
+00000001 00000000 00000000 $Tattle_Couple
+% 
+00000009 $NpcSettings_Generic ~Vec3f:NPC_StarKid_0
+00110D09 $Script_InitNPC_Couple0 00000000 00000000 00000000
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_0
+00000001 00000000 00000000 $Tattle_Solo
+}
+
+#new:NpcGroup $NpcGroup_Coin
+{
+.Npc:Coin $NpcSettings_Generic 0 -1000.0 0
+01114D29 $Script_InitNPC_Coin 00000000 00000000 00000000
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+~AnimationTable:NPC_StarKid_1_1
+00000001 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Generic
+{
+	00000000 001E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_InitNPC_Couple1_1
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Couple1_1 )
+    Return
+    End
+}
+
+#new:Script $Script_InitNPC_Couple1_2
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Couple1_2 )
+    Return
+    End
+}
+
+#new:Script $Script_InitNPC_Couple2_1
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Couple2_1 )
+    Return
+    End
+}
+
+#new:Script $Script_InitNPC_Couple3_1
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Couple3_1 )
+    Return
+    End
+}
+
+#new:Script $Script_InitNPC_Couple4_1
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Couple4_1 )
+    Return
+    End
+}
+
+#new:Script $Script_InitNPC_Couple4_2
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Couple4_2 )
+    Return
+    End
+}
+
+#new:Script $Script_InitNPC_Couple0
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Couple0 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Couple1_1
+{
+    Call    SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_Couple1_1_1 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Couple1_2
+{
+    Call    SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_Couple1_2_1 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Couple2_1
+{
+    Call    SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_Couple2_1_1 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Couple3_1
+{
+    Call    SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_Couple3_1_1 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Couple4_1
+{
+    Call    SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_Couple4_1_1 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Couple4_2
+{
+    Call    SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_Couple4_2_1 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Couple0
+{
+    Call    SpeakToPlayer ( .Npc:Self 00B30002 00B30001 00000000 $String_Couple0_1 )
+    Return
+    End
+}
+
+#new:Script $Script_InitNPC_Coin
+{
+    Call    SetNpcJumpscale ( .Npc:Self *Fixed[1.0] )
+    Call    EnableNpcShadow ( .Npc:Self .False )
+    Call    SetNpcFlagBits ( .Npc:Self 04000000 .True )
+    Return
+    End
+}
+
+%==================
+% Texture Panning
+
+#new:Script $Script_TexturePan_Update
+{
+    SetGroup  00000000
+    If  *Var[5]  ==  00000001
+        If  *Var[6]  ==  00000001
+            If  *Var[7]  ==  00000001
+                If  *Var[8]  ==  00000001
+                    Call  $Function_TexturePan_Simple ( )
+                    Return
+                EndIf
+            EndIf
+        EndIf
+    EndIf
+    Call  $Function_TexturePan_Complex ( )
+    Return
+    End
+}
+
+#new:Script $Script_SetupTexturePan
+{
+	Call     802C9000 	( ~Model:water1 1 )
+	Call     802C9000 	( ~Model:fountain2 0 )
+	Call     802C9000 	( ~Model:fountain3 0 )
+	Call     802C9000 	( ~Model:fountain4 0 )
+	Call     802C9000 	( ~Model:fountain1 0 )
+	Call     802C9000 	( ~Model:water2 1 )
+	Call     802C9000 	( ~Model:fountain5 0 )
+	Call     802C9000 	( ~Model:fountain6 0 )
+	Thread
+		Set  *Var[0] 0
+		Set  *Var[1] 0
+		Set  *Var[2] FFFFF830
+		Set  *Var[3] 0
+		Set  *Var[4] 0
+		Set  *Var[5] 1
+		Set  *Var[6] 1
+		Set  *Var[7] 1
+		Set  *Var[8] 1
+		Set  *Var[9] 0
+		Set  *Var[A] 0
+		Set  *Var[B] 0
+		Set  *Var[C] 0
+		Exec $Script_TexturePan_Update
+	EndThread
+	Thread
+		Set  *Var[0] 1
+		Set  *Var[1] 64
+		Set  *Var[2] FFFFFFB0
+		Set  *Var[3] FFFFFFCE
+		Set  *Var[4] 78
+		Set  *Var[5] 1
+		Set  *Var[6] 1
+		Set  *Var[7] 1
+		Set  *Var[8] 1
+		Set  *Var[9] 0
+		Set  *Var[A] 0
+		Set  *Var[B] 0
+		Set  *Var[C] 0
+		Exec $Script_TexturePan_Update
+	EndThread
+	Return
+	End
+}
+
+#new:Function $Function_TexturePan_Simple
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    SW          RA, 14 (SP)
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o30
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o40
+    ADDU        V0, V1, V0
+    .o30
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o44
+    SUBU        V0, V1, A0
+    .o40
+    SW          V0, A8 (S0)
+    .o44
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o64
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o74
+    ADDU        V0, V1, V0
+    .o64
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o78
+    SUBU        V0, V1, A0
+    .o74
+    SW          V0, AC (S0)
+    .o78
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o98
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA8
+    ADDU        V0, V1, V0
+    .o98
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oAC
+    SUBU        V0, V1, A0
+    .oA8
+    SW          V0, B0 (S0)
+    .oAC
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oCC
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oDC
+    ADDU        V0, V1, V0
+    .oCC
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE0
+    SUBU        V0, V1, A0
+    .oDC
+    SW          V0, B4 (S0)
+    .oE0
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+#new:Function $Function_TexturePan_Complex
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    BEQ         A1, R0, .o24
+    SW          RA, 14 (SP)
+    SW          R0, 70 (S0)
+    SW          R0, 74 (S0)
+    SW          R0, 78 (S0)
+    SW          R0, 7C (S0)
+    .o24
+    LW          V0, 70 (S0)
+    BNE         V0, R0, .o64
+    NOP
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o50
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o60
+    ADDU        V0, V1, V0
+    .o50
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o64
+    SUBU        V0, V1, A0
+    .o60
+    SW          V0, A8 (S0)
+    .o64
+    LW          V0, 74 (S0)
+    BNE         V0, R0, .oA4
+    NOP
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o90
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA0
+    ADDU        V0, V1, V0
+    .o90
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oA4
+    SUBU        V0, V1, A0
+    .oA0
+    SW          V0, AC (S0)
+    .oA4
+    LW          V0, 78 (S0)
+    BNE         V0, R0, .oE4
+    NOP
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oD0
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oE0
+    ADDU        V0, V1, V0
+    .oD0
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE4
+    SUBU        V0, V1, A0
+    .oE0
+    SW          V0, B0 (S0)
+    .oE4
+    LW          V0, 7C (S0)
+    BNE         V0, R0, .o124
+    NOP
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o110
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o120
+    ADDU        V0, V1, V0
+    .o110
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o124
+    SUBU        V0, V1, A0
+    .o120
+    SW          V0, B4 (S0)
+    .o124
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          V0, 70 (S0)
+    LW          V1, 78 (S0)
+    LW          A0, 98 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 70 (S0)
+    LW          V0, 74 (S0)
+    ADDIU       V1, V1, 1
+    SW          V1, 78 (S0)
+    LW          V1, 70 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 74 (S0)
+    LW          V0, 7C (S0)
+    SLT         V1, V1, A0
+    ADDIU       V0, V0, 1
+    BNE         V1, R0, .o198
+    SW          V0, 7C (S0)
+    SW          R0, 70 (S0)
+    .o198
+    LW          V0, 74 (S0)
+    LW          V1, 9C (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1AC
+    SW          R0, 74 (S0)
+    .o1AC
+    LW          V0, 78 (S0)
+    LW          V1, A0 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1C0
+    SW          R0, 78 (S0)
+    .o1C0
+    LW          V0, 7C (S0)
+    LW          V1, A4 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1D4
+    SW          R0, 7C (S0)
+    .o1D4
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+% strings
+
+#string $String_Couple1_1_1
+{
+[Style Right]
+Hey Mario, do you think wishes[BR]
+come true?[BR]
+[Wait][Next]
+I really hope so.
+[Wait][End]
+}
+
+#string $String_Couple1_2_1
+{
+[Style Right]
+I love coming here, it is my[BR]
+favorite place to spend time[BR]
+with him! [Heart]
+[Wait][End]
+}
+
+#string $String_Couple2_1_1
+{
+[Style Right]
+And I love you even more, my[BR]
+love!
+[Wait][End]
+}
+
+#string $String_Couple3_1_1
+{
+[Style Right]
+Hey Mario! Can you give us a[BR]
+little privacy please?![BR]
+[Wait][End]
+}
+
+#string $String_Couple4_1_1
+{
+[Style Right]
+Hey Mario, haven't you thought[BR]
+about throwing some coins in the[BR]
+wishing fountain?
+[Wait][End]
+}
+
+#string $String_Couple4_2_1
+{
+[Style Right]
+If you want to try your luck[BR]
+just go to that little pedestal[BR]
+and try throwing a few coins.[BR]
+[Wait][Next]
+Remember that the more you[BR]
+throw, the more likely good[BR]
+things will happen to you.
+[Wait][End]
+}
+
+#string $String_Couple0_1
+{
+[Style Right]
+Hey, Mario, do you know what[BR]
+they say about this fountain?[BR]
+[Wait][Next]
+They say that the more money[BR]
+you throw, the mores chance good[BR]
+things will happen to you.[BR]
+[Wait][Next]
+I'm not sure if that's completely[BR]
+true but who am I to ask?
+[Wait][End]
+}
+
+#string $String_EnoughCoins
+{
+[Style Inspect]
+I think I already threw enough[BR]
+coins.
+[Wait][End]
+}
+
+#string $String_NotEnoughCoins
+{
+[Style Inspect]
+I don't have enough coins...
+[Wait][End]
+}
+
+#string $Tattle_Couple
+{
+[Style Tattle]
+Just a couple having a[BR]
+good time together.[BR]
+[Wait][Next]
+To be honest I don't find the[BR]
+big appeal of having a couple,[BR]
+I prefer adventures![BR]
+[Wait][Next]
+You know what I mean, right[BR]
+Mario?
+[Wait][End]
+}
+
+#string $Tattle_Solo
+{
+[Style Tattle]
+This place is mostly known as a[BR]
+place to be with your loved ones[BR]
+but it's also good for having a[BR]
+good time alone you know?[BR]
+[Wait][Next]
+Nothing wrong with that.
+[Wait][End]
+}
+
+%
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle]
+This is the wish fountain, you can[BR]
+try throwing coins into the[BR]
+fountain.[BR]
+[Wait][Next]
+Maybe today is your lucky day[BR]
+Mario!
+[Wait][End]
+}

@@ -1,0 +1,1787 @@
+% Delete all original data and declare
+% everything once again to being able to
+% edit everything whatever way I want without
+% worring about causing an overflow.
+
+/%#delete $Function_80238000
+#delete $Function_80238114
+#delete $Function_802381EC
+#delete $Function_802382A4
+#delete $Function_80238328
+#delete $Function_80238480
+#delete $Function_80238E30%/
+#delete $Function_80238388
+#delete $Function_80238540
+
+#delete $Script_Init_80239010
+#delete $Script_Idle_80239070
+#delete $Script_HandleEvent_80239080
+#delete $Script_TakeTurn_802393EC
+#delete $Script_80239480
+#delete $Script_802394CC
+#delete $Script_80239508
+%#delete $Script_NextTurn_802395BC
+#delete $Script_802395CC
+#delete $Script_80239714
+#delete $Script_80239938
+#delete $Script_80239AE0
+#delete $Script_80239B68
+#delete $Script_80239BF0
+#delete $Script_80239CBC
+#delete $Script_80239DA4
+#delete $Script_8023AAE0
+%#delete $Script_8023B194 % unused script
+%#delete $Script_8023B974 % unused script
+
+/%#delete $ConstDouble_8023C060
+#delete $ConstDouble_8023C068%/
+#delete $IdleAnimations_80238ED0
+#delete $DefenseTable_80238F0C
+#delete $StatusTable_80238F18
+#delete $PartsTable_80238FC4
+
+@ $Sushie
+{
+    % stats
+    [Index]        75b
+    [Level]         0`b
+    [MaxHP]        99`b
+    [Coins]         0`b
+    [Flags]       00000000
+    [StatusTable] $StatusTable_Sushie_80238F18
+    % ai
+    [PartsCount]    1`s
+    [PartsTable]  $PartsTable_Sushie_80238FC4
+    [Script]      $Script_Sushie_Init_80239010
+    % move effectiveness
+    [Escape]        0`b
+    [Item]          0`b
+    [AirLift]       0`b
+    [Hurricane]     0`b % Bow's "Spook" as well
+    [UpAndAway]     0`b
+    [PowerBounce]  80`b
+    [SpinSmash]     4`b % weight (0-4)
+    % ui positions
+    [Size]         37`b  26`b % width height
+    [HealthBar]     0`b   0`b % dx dy
+    [StatusTurn]  -10`b  20`b % dx dy
+    [StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:Function $Function_WaterBlock_PlayFX_59
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  LA        V0, 800DC070
+    C:  SW        RA, 30 (SP)
+   10:  SW        S1, 2C (SP)
+   14:  SW        S0, 28 (SP)
+   18:  LW        S0, DC (V0) % load partnerActor
+   1C:  LW        S1, D8 (V0) % load playerActor
+   20:  JAL       ~Func:rand_int
+   24:  LI        A0, A
+   28:  LAD       F2, $ConstDouble_8023C060
+   30:  LWC1      F0, 144 (S1) % load partner X pos
+   34:  LWC1      F4, 144 (S0) % load partner X pos
+        LABU      A1, $MarioPos
+        BEQ       A1, R0, .GetPartnerYPos
+        NOP
+        % Move FX a little bit to the right if mario is on the right pos
+        ORI       A1, R0, C
+        MTC1      A1, F6
+        NOP
+        CVT.S.W   F6, F6
+        ADD.S     F4, F4, F6
+        .GetPartnerYPos
+   38:  LWC1      F6, 148 (S0) % load partner Y pos
+   3C:  LWC1      F10, 14C (S0) % load partner Z pos
+   40:  SWC1      F0, 10 (SP)
+   44:  MTC1      V0, F0
+   48:  NOP
+   4C:  CVT.D.W   F0, F0
+   50:  MUL.D     F0, F0, F2
+   54:  NOP
+   58:  LI        A0, 1
+   5C:  LWC1      F2, 148 (S1)
+   60:  LI        V0, 1E
+   64:  SWC1      F2, 14 (SP)
+   68:  LIF       F3, 1.875
+   70:  MTC1      R0, F2
+   74:  CVT.D.S   F4, F4
+   78:  ADD.D     F0, F0, F2
+   7C:  LIF       F3, 2.34375
+   84:  MTC1      R0, F2
+   88:  LWC1      F8, 14C (S1)
+   8C:  SUB.D     F4, F4, F2
+   90:  LIF       F3, 2.734375
+   98:  MTC1      R0, F2
+   9C:  CVT.D.S   F6, F6
+   A0:  SW        V0, 20 (SP)
+   A4:  SWC1      F8, 18 (SP)
+   A8:  ADD.D     F6, F6, F2
+   AC:  LIF       F2, 5.0
+   B4:  CVT.S.D   F4, F4
+   B8:  ADD.S     F10, F10, F2
+   BC:  MFC1      A1, F4
+   C0:  CVT.S.D   F6, F6
+   C4:  MFC1      A2, F6
+   C8:  MFC1      A3, F10
+   CC:  CVT.S.D   F0, F0
+   D0:  JAL       ~Func:playFX_59
+   D4:  SWC1      F0, 1C (SP)
+   D8:  LW        RA, 30 (SP)
+   DC:  LW        S1, 2C (SP)
+   E0:  LW        S0, 28 (SP)
+   E4:  SAW       V0, $End[0]
+   EC:  LI        V0, 2
+   F0:  JR        RA
+   F4:  ADDIU     SP, SP, 38
+}
+
+#new:Function $Function_80238540_Sushie
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S1, 24 (SP)
+    8:  LAW       S1, 800DC14C
+   10:  SW        S2, 28 (SP)
+   14:  COPY      S2, A0
+   18:  SW        RA, 2C (SP)
+   1C:  SW        S0, 20 (SP)
+   20:  SDC1      F20, 30 (SP)
+   24:  BEQ       A1, R0, .o30
+   28:  ADDIU     S0, S1, C
+   2C:  SW        R0, 70 (S2)
+        .o30
+   30:  LW        V1, 70 (S2)
+   34:  BEQ       V1, R0, .o4C
+   38:  LI        V0, 1
+   3C:  BEQ       V1, V0, .oF0
+   40:  LI        V0, 2
+   44:  BEQ       R0, R0, .o7D8
+   48:  NOP
+        .o4C
+   4C:  LWC1      F0, 144 (S1)
+   50:  LWC1      F2, 148 (S1)
+   54:  LWC1      F4, 14C (S1)
+   58:  LIF       F6, 313.0
+   64:  LIF       F8, 32.0
+   6C:  LIF       F10, 1.0
+   74:  LI        V0, 5A
+   78:  SW        R0, 5C (S1)
+   7C:  SH        V0, 70 (S1)
+   80:  SWC1      F0, C (S1)
+   84:  SWC1      F2, 10 (S1)
+   88:  SWC1      F4, 14 (S1)
+   8C:  SWC1      F6, 54 (S1)
+   90:  SWC1      F8, 4C (S1)
+   94:  SW        R0, 74 (S2)
+   98:  SW        R0, 78 (S2)
+   9C:  SWC1      F10, 10 (SP)
+   A0:  SW        R0, 14 (SP)
+   A4:  LW        A1, C (S1)
+   A8:  LW        A2, 10 (S1)
+   AC:  LW        A3, 14 (S1)
+   B0:  JAL       ~Func:playFX_5C
+   B4:  LI        A0, 1
+   B8:  LW        V1, C (V0)
+   BC:  LWC1      F0, 54 (S1)
+   C0:  SWC1      F0, 38 (V1)
+   C4:  LW        V1, C (V0)
+   C8:  LWC1      F0, 170 (S1)
+   CC:  SAW       V0, $End[0]
+   D4:  SWC1      F0, 3C (V1)
+   D8:  LW        V1, C (V0)
+   DC:  LWC1      F0, 170 (S1)
+   E0:  LI        V0, 1
+   E4:  SWC1      F0, 40 (V1)
+   E8:  BEQ       R0, R0, .o7D0
+   EC:  SW        V0, 70 (S2)
+        .oF0
+   F0:  COPY      A0, S0
+   F4:  LW        A2, 4C (S1)
+   F8:  LW        A3, 54 (S1)
+   FC:  JAL       ~Func:add_vec2D_polar
+  100:  ADDIU     A1, S1, 10
+  104:  LWC1      F2, C (S1)
+  108:  LIF       F0, -160.0
+  110:  NOP
+  114:  C.LT.S    F2, F0
+  118:  NOP
+  11C:  BC1F      .o228
+  120:  NOP
+  124:  LW        V0, 74 (S2)
+  128:  BNEL      V0, R0, .o4E8
+  12C:  LI        V0, 2
+  130:  LWC1      F2, 54 (S1)
+  134:  LIF       F0, 270.0
+  13C:  NOP
+  140:  C.LE.S    F0, F2
+  144:  NOP
+  148:  BC1F      .o1B0
+  14C:  NOP
+  150:  LIF       F0, 360.0
+  158:  NOP
+  15C:  C.LT.S    F2, F0
+  160:  NOP
+  164:  BC1F      .o1B0
+  168:  NOP
+  16C:  LIF       F12, 180.0
+  174:  JAL       ~Func:clamp_angle
+  178:  ADD.S     F12, F2, F12
+  17C:  LIF       F2, 90.0
+  184:  NOP
+  188:  SUB.S     F0, F2, F0
+  18C:  ADD.S     F0, F0, F2
+  190:  LI        A0, 4
+  194:  JAL       ~Func:rand_int
+  198:  SWC1      F0, 54 (S1)
+  19C:  ADDIU     V0, V0, FFFE
+  1A0:  MTC1      V0, F0
+  1A4:  NOP
+  1A8:  CVT.S.W   F0, F0
+  1AC:  SWC1      F0, 5C (S1)
+        .o1B0
+  1B0:  LWC1      F12, 48 (S0)
+  1B4:  LIF       F2, 180.0
+  1BC:  NOP
+  1C0:  C.LE.S    F2, F12
+  1C4:  NOP
+  1C8:  BC1F      .o228
+  1CC:  NOP
+  1D0:  LIF       F0, 270.0
+  1D8:  NOP
+  1DC:  C.LT.S    F12, F0
+  1E0:  NOP
+  1E4:  BC1F      .o228
+  1E8:  NOP
+  1EC:  JAL       ~Func:clamp_angle
+  1F0:  ADD.S     F12, F12, F2
+  1F4:  LIF       F2, 90.0
+  1FC:  NOP
+  200:  SUB.S     F0, F0, F2
+  204:  SUB.S     F2, F2, F0
+  208:  LI        A0, 4
+  20C:  JAL       ~Func:rand_int
+  210:  SWC1      F2, 48 (S0)
+  214:  ADDIU     V0, V0, FFFE
+  218:  MTC1      V0, F0
+  21C:  NOP
+  220:  CVT.S.W   F0, F0
+  224:  SWC1      F0, 50 (S0)
+        .o228
+  228:  LWC1      F2, 0 (S0)
+  22C:  LIF       F0, 160.0
+  234:  NOP
+  238:  C.LT.S    F0, F2
+  23C:  NOP
+  240:  BC1F      .o380
+  244:  NOP
+  248:  LW        V0, 74 (S2)
+  24C:  BEQ       V0, R0, .o28C
+  250:  LI        V0, 2
+  254:  BEQ       R0, R0, .o7D0
+  258:  SW        V0, 70 (S2)
+        .o25C
+  25C:  LIF       F12, 180.0
+  264:  JAL       ~Func:clamp_angle
+  268:  ADD.S     F12, F2, F12
+  26C:  LIF       F2, 270.0
+  274:  NOP
+  278:  SUB.S     F0, F2, F0
+  27C:  ADD.S     F0, F0, F2
+  280:  LI        A0, 4
+  284:  BEQ       R0, R0, .o320
+  288:  SWC1      F0, 48 (S0)
+        .o28C
+  28C:  LWC1      F2, 48 (S0)
+  290:  MTC1      R0, F0
+  294:  NOP
+  298:  C.LE.S    F0, F2
+  29C:  NOP
+  2A0:  BC1F      .o2C4
+  2A4:  NOP
+  2A8:  LIF       F0, 90.0
+  2B0:  NOP
+  2B4:  C.LT.S    F2, F0
+  2B8:  NOP
+  2BC:  BC1T      .o25C
+  2C0:  NOP
+        .o2C4
+  2C4:  LIF       F0, 90.0
+  2CC:  NOP
+  2D0:  C.LE.S    F0, F2
+  2D4:  NOP
+  2D8:  BC1F      .o33C
+  2DC:  NOP
+  2E0:  LIF       F0, 180.0
+  2E8:  NOP
+  2EC:  C.LT.S    F2, F0
+  2F0:  NOP
+  2F4:  BC1F      .o33C
+  2F8:  NOP
+  2FC:  JAL       ~Func:clamp_angle
+  300:  ADD.S     F12, F2, F0
+  304:  LIF       F2, 270.0
+  30C:  NOP
+  310:  SUB.S     F0, F0, F2
+  314:  SUB.S     F2, F2, F0
+  318:  LI        A0, 4
+  31C:  SWC1      F2, 48 (S0)
+        .o320
+  320:  JAL       ~Func:rand_int
+  324:  NOP
+  328:  ADDIU     V0, V0, FFFE
+  32C:  MTC1      V0, F0
+  330:  NOP
+  334:  CVT.S.W   F0, F0
+  338:  SWC1      F0, 50 (S0)
+        .o33C
+  33C:  LW        V0, 78 (S2)
+  340:  BEQ       V0, R0, .o354
+  344:  LI        A0, 29B
+  348:  LWC1      F0, 8 (S0)
+  34C:  BEQ       R0, R0, .o360
+  350:  SWC1      F0, 10 (SP)
+        .o354
+  354:  LWC1      F0, 8 (S0)
+  358:  LI        A0, 29C
+  35C:  SWC1      F0, 10 (SP)
+        .o360
+  360:  LW        A2, 0 (S0)
+  364:  LW        A3, 4 (S0)
+  368:  JAL       ~Func:sfx_play_sound_at_position
+  36C:  CLEAR     A1
+  370:  LW        V1, 78 (S2)
+  374:  LI        V0, 1
+  378:  SUBU      V0, V0, V1
+  37C:  SW        V0, 78 (S2)
+        .o380
+  380:  LWC1      F0, 4 (S0)
+  384:  MTC1      R0, F2
+  388:  NOP
+  38C:  C.LT.S    F0, F2
+  390:  NOP
+  394:  BC1F      .o4BC
+  398:  NOP
+  39C:  LW        V0, 74 (S2)
+  3A0:  BEQ       V0, R0, .o3D4
+  3A4:  LI        V0, 2
+  3A8:  BEQ       R0, R0, .o7D0
+  3AC:  SW        V0, 70 (S2)
+        .o3B0
+  3B0:  LIF       F20, 180.0
+  3B8:  JAL       ~Func:clamp_angle
+  3BC:  ADD.S     F12, F12, F20
+  3C0:  SUB.S     F0, F20, F0
+  3C4:  ADD.S     F0, F0, F20
+  3C8:  LI        A0, 4
+  3CC:  BEQ       R0, R0, .o45C
+  3D0:  SWC1      F0, 48 (S0)
+        .o3D4
+  3D4:  LWC1      F12, 48 (S0)
+  3D8:  LIF       F0, 270.0
+  3E0:  NOP
+  3E4:  C.LE.S    F0, F12
+  3E8:  NOP
+  3EC:  BC1F      .o410
+  3F0:  NOP
+  3F4:  LIF       F0, 360.0
+  3FC:  NOP
+  400:  C.LT.S    F12, F0
+  404:  NOP
+  408:  BC1T      .o3B0
+  40C:  NOP
+        .o410
+  410:  C.LE.S    F2, F12
+  414:  NOP
+  418:  BC1F      .o478
+  41C:  NOP
+  420:  LIF       F0, 90.0
+  428:  NOP
+  42C:  C.LT.S    F12, F0
+  430:  NOP
+  434:  BC1F      .o478
+  438:  NOP
+  43C:  LIF       F20, 180.0
+  444:  JAL       ~Func:clamp_angle
+  448:  ADD.S     F12, F12, F20
+  44C:  SUB.S     F0, F0, F20
+  450:  SUB.S     F20, F20, F0
+  454:  LI        A0, 4
+  458:  SWC1      F20, 48 (S0)
+        .o45C
+  45C:  JAL       ~Func:rand_int
+  460:  NOP
+  464:  ADDIU     V0, V0, FFFE
+  468:  MTC1      V0, F0
+  46C:  NOP
+  470:  CVT.S.W   F0, F0
+  474:  SWC1      F0, 50 (S0)
+        .o478
+  478:  LW        V0, 78 (S2)
+  47C:  BEQ       V0, R0, .o490
+  480:  LI        A0, 29B
+  484:  LWC1      F0, 8 (S0)
+  488:  BEQ       R0, R0, .o49C
+  48C:  SWC1      F0, 10 (SP)
+        .o490
+  490:  LWC1      F0, 8 (S0)
+  494:  LI        A0, 29C
+  498:  SWC1      F0, 10 (SP)
+        .o49C
+  49C:  LW        A2, 0 (S0)
+  4A0:  LW        A3, 4 (S0)
+  4A4:  JAL       ~Func:sfx_play_sound_at_position
+  4A8:  CLEAR     A1
+  4AC:  LW        V1, 78 (S2)
+  4B0:  LI        V0, 1
+  4B4:  SUBU      V0, V0, V1
+  4B8:  SW        V0, 78 (S2)
+        .o4BC
+  4BC:  LWC1      F2, 4 (S0)
+  4C0:  LIF       F0, 130.0
+  4C8:  NOP
+  4CC:  C.LT.S    F0, F2
+  4D0:  NOP
+  4D4:  BC1F      .o610
+  4D8:  NOP
+  4DC:  LW        V0, 74 (S2)
+  4E0:  BEQ       V0, R0, .o518
+  4E4:  LI        V0, 2
+        .o4E8
+  4E8:  BEQ       R0, R0, .o7D0
+  4EC:  SW        V0, 70 (S2)
+        .o4F0
+  4F0:  JAL       ~Func:clamp_angle
+  4F4:  ADD.S     F12, F12, F0
+  4F8:  LIF       F2, 360.0
+  500:  NOP
+  504:  SUB.S     F0, F2, F0
+  508:  ADD.S     F0, F0, F2
+  50C:  LI        A0, 4
+  510:  BEQ       R0, R0, .o5B0
+  514:  SWC1      F0, 48 (S0)
+        .o518
+  518:  LWC1      F12, 48 (S0)
+  51C:  LIF       F0, 90.0
+  524:  NOP
+  528:  C.LE.S    F0, F12
+  52C:  NOP
+  530:  BC1F      .o554
+  534:  NOP
+  538:  LIF       F0, 180.0
+  540:  NOP
+  544:  C.LT.S    F12, F0
+  548:  NOP
+  54C:  BC1T      .o4F0
+  550:  NOP
+        .o554
+  554:  LIF       F2, 180.0
+  55C:  NOP
+  560:  C.LE.S    F2, F12
+  564:  NOP
+  568:  BC1F      .o5CC
+  56C:  NOP
+  570:  LIF       F0, 270.0
+  578:  NOP
+  57C:  C.LT.S    F12, F0
+  580:  NOP
+  584:  BC1F      .o5CC
+  588:  NOP
+  58C:  JAL       ~Func:clamp_angle
+  590:  ADD.S     F12, F12, F2
+  594:  LIF       F2, 360.0
+  59C:  NOP
+  5A0:  SUB.S     F0, F0, F2
+  5A4:  SUB.S     F2, F2, F0
+  5A8:  LI        A0, 4
+  5AC:  SWC1      F2, 48 (S0)
+        .o5B0
+  5B0:  JAL       ~Func:rand_int
+  5B4:  NOP
+  5B8:  ADDIU     V0, V0, FFFE
+  5BC:  MTC1      V0, F0
+  5C0:  NOP
+  5C4:  CVT.S.W   F0, F0
+  5C8:  SWC1      F0, 50 (S0)
+        .o5CC
+  5CC:  LW        V0, 78 (S2)
+  5D0:  BEQ       V0, R0, .o5E4
+  5D4:  LI        A0, 29B
+  5D8:  LWC1      F0, 8 (S0)
+  5DC:  BEQ       R0, R0, .o5F0
+  5E0:  SWC1      F0, 10 (SP)
+        .o5E4
+  5E4:  LWC1      F0, 8 (S0)
+  5E8:  LI        A0, 29C
+  5EC:  SWC1      F0, 10 (SP)
+        .o5F0
+  5F0:  LW        A2, 0 (S0)
+  5F4:  LW        A3, 4 (S0)
+  5F8:  JAL       ~Func:sfx_play_sound_at_position
+  5FC:  CLEAR     A1
+  600:  LW        V1, 78 (S2)
+  604:  LI        V0, 1
+  608:  SUBU      V0, V0, V1
+  60C:  SW        V0, 78 (S2)
+        .o610
+  610:  LWC1      F0, 50 (S0)
+  614:  LIF       F3, 1.75
+  61C:  MTC1      R0, F2
+  620:  CVT.D.S   F0, F0
+  624:  MUL.D     F0, F0, F2
+  628:  NOP
+  62C:  LWC1      F12, 48 (S0)
+  630:  CVT.D.S   F12, F12
+  634:  ADD.D     F12, F12, F0
+  638:  JAL       ~Func:clamp_angle
+  63C:  CVT.S.D   F12, F12
+  640:  LIF       F12, 313.0
+  64C:  NOP
+  650:  SUB.S     F12, F0, F12
+  654:  JAL       ~Func:clamp_angle
+  658:  SWC1      F0, 48 (S0)
+  65C:  LWC1      F2, 170 (S1)
+  660:  LAD       F4, $ConstDouble_8023C068
+  668:  CVT.D.S   F2, F2
+  66C:  SUB.D     F2, F2, F4
+  670:  SWC1      F0, 164 (S1)
+  674:  CVT.S.D   F2, F2
+  678:  SWC1      F2, 170 (S1)
+  67C:  MOV.S     F0, F2
+  680:  SWC1      F2, 174 (S1)
+  684:  SWC1      F2, 178 (S1)
+  688:  LIF       F3, 1.875
+  690:  MTC1      R0, F2
+  694:  CVT.D.S   F0, F0
+  698:  C.LT.D    F0, F2
+  69C:  NOP
+  6A0:  BC1F      .o6C0
+  6A4:  NOP
+  6A8:  LIF       F0, 1.0
+  6B0:  NOP
+  6B4:  SWC1      F0, 170 (S1)
+  6B8:  SWC1      F0, 174 (S1)
+  6BC:  SWC1      F0, 178 (S1)
+        .o6C0
+  6C0:  LWC1      F2, 170 (S1)
+  6C4:  LIF       F0, -15.0
+  6CC:  NOP
+  6D0:  MUL.S     F2, F2, F0
+  6D4:  NOP
+  6D8:  ADDIU     A0, SP, 18
+  6DC:  LW        A3, 48 (S0)
+  6E0:  MTC1      R0, F20
+  6E4:  MFC1      A2, F2
+  6E8:  ADDIU     A1, SP, 1C
+  6EC:  SWC1      F20, 18 (SP)
+  6F0:  JAL       ~Func:add_vec2D_polar
+  6F4:  SWC1      F20, 1C (SP)
+  6F8:  LWC1      F0, 0 (S0)
+  6FC:  LWC1      F2, 18 (SP)
+  700:  LAW       V1, $End[0]
+  708:  ADD.S     F0, F0, F2
+  70C:  LW        V0, C (V1)
+  710:  SWC1      F0, 4 (V0)
+  714:  LWC1      F0, 4 (S0)
+  718:  LWC1      F2, 1C (SP)
+  71C:  LW        V0, C (V1)
+  720:  ADD.S     F0, F0, F2
+  724:  LIF       F2, 5.0
+  72C:  SWC1      F0, 8 (V0)
+  730:  LWC1      F0, 8 (S0)
+  734:  ADD.S     F0, F0, F2
+  738:  LW        V0, C (V1)
+  73C:  SWC1      F0, C (V0)
+  740:  LW        V0, C (V1)
+  744:  LWC1      F0, 48 (S0)
+  748:  SWC1      F0, 38 (V0)
+  74C:  LW        V0, C (V1)
+  750:  LWC1      F0, 170 (S1)
+  754:  SWC1      F0, 3C (V0)
+  758:  LW        V0, C (V1)
+  75C:  LWC1      F0, 170 (S1)
+  760:  SWC1      F0, 40 (V0)
+  764:  LH        V1, 64 (S0)
+  768:  LI        V0, 46
+  76C:  BNE       V1, V0, .o7B0
+  770:  LI        A0, 29D
+  774:  MFC1      A2, F20
+  778:  MFC1      A3, F20
+  77C:  CLEAR     A1
+  780:  JAL       ~Func:sfx_play_sound_at_position
+  784:  SWC1      F20, 10 (SP)
+  788:  CLEAR     A0
+  78C:  LUI       A1, C248
+  790:  LUI       A2, 41A0
+  794:  MFC1      A3, F20
+  798:  LIF       F0, 1.0
+  7A0:  LI        V0, 78
+  7A4:  SW        V0, 14 (SP)
+  7A8:  JAL       ~Func:playFX_5D
+  7AC:  SWC1      F0, 10 (SP)
+        .o7B0
+  7B0:  LH        V0, 64 (S0)
+  7B4:  LHU       V1, 64 (S0)
+  7B8:  BEQ       V0, R0, .o7C8
+  7BC:  ADDIU     V0, V1, FFFF
+  7C0:  BEQ       R0, R0, .o7D0
+  7C4:  SH        V0, 64 (S0)
+        .o7C8
+  7C8:  LI        V0, 1
+  7CC:  SW        V0, 74 (S2)
+        .o7D0
+  7D0:  LW        V1, 70 (S2)
+  7D4:  LI        V0, 2
+        .o7D8
+  7D8:  BEQ       V1, V0, .o7F0
+  7DC:  LI        V0, 3
+  7E0:  BEQ       V1, V0, .o804
+  7E4:  COPY      A0, S0
+  7E8:  BEQ       R0, R0, .o890
+  7EC:  NOP
+        .o7F0
+  7F0:  LI        V0, 5
+  7F4:  SH        V0, 64 (S0)
+  7F8:  LI        V0, 3
+  7FC:  SW        V0, 70 (S2)
+  800:  COPY      A0, S0
+        .o804
+  804:  LW        A2, 40 (S0)
+  808:  LW        A3, 48 (S0)
+  80C:  JAL       ~Func:add_vec2D_polar
+  810:  ADDIU     A1, S0, 4
+  814:  LAW       A0, $End[0]
+  81C:  LWC1      F0, 0 (S0)
+  820:  LW        V0, C (A0)
+  824:  SWC1      F0, 4 (V0)
+  828:  LW        V0, C (A0)
+  82C:  LWC1      F0, 4 (S0)
+  830:  SWC1      F0, 8 (V0)
+  834:  LW        V0, C (A0)
+  838:  LWC1      F0, 8 (S0)
+  83C:  SWC1      F0, C (V0)
+  840:  LW        V0, C (A0)
+  844:  LWC1      F0, 48 (S0)
+  848:  SWC1      F0, 38 (V0)
+  84C:  LW        V0, C (A0)
+  850:  LWC1      F0, 170 (S1)
+  854:  SWC1      F0, 3C (V0)
+  858:  LW        V0, C (A0)
+  85C:  LWC1      F0, 170 (S1)
+  860:  SWC1      F0, 40 (V0)
+  864:  LH        V0, 64 (S0)
+  868:  LHU       V1, 64 (S0)
+  86C:  BNE       V0, R0, .o88C
+  870:  ADDIU     V0, V1, FFFF
+  874:  SW        R0, 164 (S1)
+  878:  LW        V1, 0 (A0)
+  87C:  LI        V0, 2
+  880:  ORI       V1, V1, 10
+  884:  BEQ       R0, R0, .o8D4
+  888:  SW        V1, 0 (A0)
+        .o88C
+  88C:  SH        V0, 64 (S0)
+        .o890
+  890:  LWC1      F0, 0 (S0)
+  894:  LIF       F2, 1.0
+  89C:  SWC1      F0, 144 (S1)
+  8A0:  LWC1      F0, 4 (S0)
+  8A4:  SWC1      F0, 148 (S1)
+  8A8:  LWC1      F0, 8 (S0)
+  8AC:  LI        V0, A
+  8B0:  SWC1      F0, 14C (S1)
+  8B4:  SWC1      F2, 10 (SP)
+  8B8:  SW        V0, 14 (SP)
+  8BC:  LW        A1, 144 (S1)
+  8C0:  LW        A2, 148 (S1)
+  8C4:  LW        A3, 14C (S1)
+  8C8:  JAL       ~Func:playFX_5F
+  8CC:  LI        A0, 3
+  8D0:  CLEAR     V0
+        .o8D4
+  8D4:  LW        RA, 2C (SP)
+  8D8:  LW        S2, 28 (SP)
+  8DC:  LW        S1, 24 (SP)
+  8E0:  LW        S0, 20 (SP)
+  8E4:  LDC1      F20, 30 (SP)
+  8E8:  JR        RA
+  8EC:  ADDIU     SP, SP, 38
+}
+
+#new:IdleAnimations $IdleAnimations_Sushie_80238ED0
+{
+	.Status:Normal    000F0002
+	.Status:Stone     000F0000
+	.Status:Sleep     000F0015
+	.Status:Poison    000F0016
+	.Status:Stop      000F0000
+    .Status:Dizzy     000F0010
+	.Status:Daze      000F0010
+	.Status:TurnDone  000F0000
+    .Status:Danger    000F0016
+    .Status:Frozen	  000F0000
+    00000030    	  000F0014 % Defense
+	.Status:End
+}
+
+#new:DefenseTable $DefenseTable_Sushie_80238F0C
+{
+	.Element:Normal 00000000
+	.Element:End
+}
+
+#new:StatusTable $StatusTable_Sushie_80238F18
+{
+	.Status:Normal    100`
+	.Status:Default   100`
+	.Status:Sleep     100`
+	.Status:Poison    100`
+	.Status:Frozen    100`
+	.Status:Dizzy     100`
+	.Status:Fear      100`
+	.Status:Static    100`
+	.Status:Paralyze  100`
+	.Status:Shrink    100`
+	.Status:Stop      100`
+	.Status:DefaultTurnMod    0`
+	.Status:SleepTurnMod      0`
+	.Status:PoisonTurnMod     0`
+	.Status:FrozenTurnMod     0`
+	.Status:DizzyTurnMod      0`
+	.Status:FearTurnMod       0`
+	.Status:StaticTurnMod     0`
+	.Status:ParalyzeTurnMod   0`
+	.Status:ShrinkTurnMod     0`
+	.Status:StopTurnMod       0`
+	.Status:End
+}
+
+#new:PartsTable $PartsTable_Sushie_80238FC4
+{
+	00000000 01000000 0C1100FF $IdleAnimations_Sushie_80238ED0 $DefenseTable_Sushie_80238F0C 00000000 00000000 00000000 00000000
+}
+
+#new:Script $Script_Sushie_Init_80239010
+{
+    Call  BindTakeTurn  ( .Actor:Self $Script_Sushie_TakeTurn_802393EC )
+    Call  BindIdle      ( .Actor:Self $Script_Sushie_Idle_80239070 )
+    Call  BindHandleEvent   ( .Actor:Self $Script_Sushie_HandleEvent_80239080 )
+    Call  BindNextTurn  ( .Actor:Self $Script_NextTurn_802395BC )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_Idle_80239070
+{
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_HandleEvent_80239080
+{
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  CloseActionCommandInfo ( )
+    Call  GetLastEvent      ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        CaseOR  ==  .Event:HitCombo % 9
+        CaseOR  ==  .Event:Hit % A
+            SetConst  *Var0  FFFFFFFF 
+            Set  	  *Var1  000F0010
+            ExecWait  DoNormalHit 
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+        EndCaseGroup
+        CaseOR  ==  00000017 % 17
+        CaseOR  ==  .Event:Immune % 19
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            % Check if Partner used the defend command
+            Call $GetPartnerExtraBattleData_API ( E *Var0 )
+            If *Var0 == .False
+                  SetConst  *Var0  00000001
+                  SetConst  *Var1  000F0000
+            Else % Defend
+                  SetConst  *Var0  00000001
+                  SetConst  *Var1  000F0014
+            EndIf
+            ExecWait  DoImmune
+        EndCaseGroup
+        Case  ==  .Event:SpikeContact % 2A
+            SetConst  *Var1  000F000D
+            Set   *Var2  00000014
+            ExecWait  80294FE4
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnContact % 2C
+            SetConst  *Var1  000F000E
+            Set   *Var2  00000014
+            SetConst  *Var3  000F000F
+            ExecWait  80294C68
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnHit % E
+            SetConst  *Var1  000F000E
+            SetConst  *Var2  000F000F
+            ExecWait  8029621C
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:ShockHit % 2F
+            SetConst  *Var1  000F000D
+            Set   *Var2  00000014
+            ExecWait  80295744
+        Case  ==  00000033 % 33
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  00000034 % 34
+            SetConst  *Var0  00000001
+            SetConst  *Var1  000F0001
+            SetConst  *Var2  000F0003
+            Set   *Var3  00000000
+            ExecWait  80295EC4
+        CaseOR  ==  00000018 % 18
+        CaseOR  ==  .Event:Block % 1A
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            SetConst  *Var0  00000001
+            SetConst  *Var1  000F0014
+            ExecWait  DoImmune
+            Wait  10`
+        EndCaseGroup
+        Case  ==  .Event:Death % 20 % NEW!
+            Set *Var0 FFFFFFFF
+            Set *Var1 000F0010
+            ExecWait $PartnerDies
+            Return
+        Case  ==  43 % NEW! % .Event:Superguard
+            Set *Var0 FFFFFFFF
+			Set *Var1 000F0006
+            ExecWait $DoSuperguard
+        Default
+    EndSwitch
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_TakeTurn_802393EC
+{
+    Call  GetBattlePhase    ( *Var0 )
+    Switch  *Var0
+        Case  ==  .Phase:ExecuteAction
+            ExecWait  $Script_Sushie_802395CC
+        Case  ==  00000005
+            ExecWait  $Script_Sushie_80239480
+        Case  ==  .Phase:RunAwayStart
+            ExecWait  $Script_Sushie_RunAwayStart
+        Case  ==  .Phase:RunAwayFail
+            ExecWait  $Script_Sushie_RunAwayFail
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_80239480
+{
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0011 )
+    Wait  36`
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_RunAwayStart % Script_802394CC
+{
+    SetConst  *Var0  00000001
+    SetConst  *Var1  000F0003
+    ExecWait  80294AFC
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_RunAwayFail % Script_80239508
+{
+    Call  $GetPartnerHP_API ( *Var0 )
+    If *Var0 == .False
+        % Don't do anything if partner is dead
+        Return
+    EndIf
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call  SetActorYaw   ( .Actor:Partner 00000000 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_802395CC
+{
+    Call  802694A4  ( 00000001 )
+    Call  SetBattleFlagBits ( 00004000 .False )
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var0
+        Case  ==  00000008
+            Call  LoadStarPowerScript ( )
+            ExecWait  *Var0
+            Return
+        Case  ==  00000002 
+			Call  LoadItemScript
+			ExecWait *Var0
+			Return
+    EndSwitch
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000A7 % Belly Flop
+            ExecWait  $Script_Init_BellyFlop
+        Case  ==  000000A8 % Belly Flop - Super Rank
+            ExecWait  $Script_Init_BellyFlop
+        Case  ==  000000A9 % Belly Flop - Ultra Rank
+            ExecWait  $Script_Init_BellyFlop
+        Case  ==  000000AA % Squirt
+            ExecWait  $Script_Init_Squirt
+        Case  ==  000000AB % Water Block
+            ExecWait  $Script_Init_WaterBlock
+        Case  ==  000000AC % Tidal Wave
+            ExecWait  $Script_Init_TidalWave
+    EndSwitch
+    Return
+    End
+}
+
+% This is now in globals/patch/Stylish_GlobalScripts.patch
+%
+%#new:Script $Script_BellyFlop_GoBackToHome_Succeed
+
+
+#new:Script $Script_BellyFlop_GoBackToHome_Failed
+{
+    Call  80280818 ( )
+    Call  UseBattleCamPreset  ( 00000033 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0006 )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Sub   *Var0  0000000F
+    Set   *Var1  00000000
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[0.4] )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 00000008 .False .True .False )
+    Sub   *Var0  00000005
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 00000004 .False .True .False )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Wait  15`
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_80239AE0
+{
+    Call  80280818 ( )
+    Call  UseBattleCamPreset  ( 00000004 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_80239B68
+{
+    Call  80280818 ( )
+    Call  UseBattleCamPreset  ( 00000033 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_80239BF0
+{
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  00000028
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  GetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[4.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Sushie_80239CBC
+{
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Call  GetGoalPos        ( .Actor:Partner *VarB *VarC *VarD )
+    Call  GetActorPos       ( .Actor:Partner *VarC *VarD *VarE )
+    If  *VarB  >  *VarC
+        Sub   *VarB  *VarC
+    Else
+        Sub   *VarC  *VarB
+        Set   *VarB  *VarC
+    EndIf
+    Sub   *VarB  00000014
+    DivF  *VarB  *Fixed[10.588867]
+    AddF  *VarB  0000000F
+    Set   *VarA  *VarB
+    Return
+    End
+}
+
+#new:Script $Script_Init_BellyFlop
+{
+    Exec  $Script_NukeTracker
+    Call  LoadActionCommand ( 00000002 )
+    Call  802A9000 ( )
+    ExecWait  $Script_Sushie_80239BF0
+    ExecWait  $Script_Sushie_80239CBC
+    Loop  0000001E
+        Wait  1`
+        Call  CheckButtonDown   ( 00040000 *Var0 )
+        If  *Var0  !=  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Exec  $Script_InitTracker
+    Call  802A9258      ( 00000000 00000039 00000003 )
+    Call  802695D4      ( 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0004 )
+    Call  UseBattleCamPreset  ( 0000003B )
+    Set   *Var0  0000001E
+    Loop  0000003C
+        Wait  1`
+        Sub   *Var0  00000001
+        If  *Var0  ==  00000000
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0008 )
+        EndIf
+        Call  CheckButtonDown   ( 00040000 *Var0 )
+        If  *Var0  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Thread
+        Call  GetActionCommandResult   ( *Var0 )
+        Call  UseBattleCamPreset      ( 00000034 )
+        Call  MoveBattleCamOver ( 00000014 )
+    EndThread
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0005 )
+    Thread
+        Call  SetActorRotationOffset    ( .Actor:Partner 00000000 0000000C 00000000 )
+        Set   *Var0  00000000
+        Loop  0000000A
+            Add   *Var0  00000024
+            Call  SetActorRotation  ( .Actor:Partner 00000000 00000000 *Var0 )
+            Wait  1`
+        EndLoop
+        Call  SetActorRotation  ( .Actor:Partner 00000000 00000000 00000014 )
+    EndThread
+    Thread
+        Call  GetActionCommandResult   ( *Var0 )
+        If  *Var0  >  00000000
+            Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+            Switch  *Var2
+                Case  ==  000000A7
+                    Wait  13`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.1] *Fixed[1.1] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.1] *Fixed[1.1] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.2] *Fixed[1.2] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.2] *Fixed[1.2] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.3] *Fixed[1.3] *Fixed[1.0] )
+                Case  ==  000000A8
+                    Wait  13`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.15] *Fixed[1.15] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.2] *Fixed[1.2] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.35] *Fixed[1.35] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.55] *Fixed[1.55] *Fixed[1.0] )
+                Case  ==  000000A9
+                    Wait  13`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.2] *Fixed[1.2] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.3] *Fixed[1.3] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.5] *Fixed[1.5] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.6] *Fixed[1.6] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.8] *Fixed[1.8] *Fixed[1.0] )
+            EndSwitch
+        Else
+            Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+            Switch  *Var2
+                Case  ==  000000A7
+                    Wait  13`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+                Case  ==  000000A8
+                    Wait  13`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.05] *Fixed[1.05] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.1] *Fixed[1.1] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.15] *Fixed[1.15] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.2] *Fixed[1.2] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.25] *Fixed[1.25] *Fixed[1.0] )
+                Case  ==  000000A9
+                    Wait  13`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.1] *Fixed[1.1] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.2] *Fixed[1.2] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.3] *Fixed[1.3] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+                    Wait  1`
+                    Call  SetActorScale ( .Actor:Partner *Fixed[1.5] *Fixed[1.5] *Fixed[1.0] )
+            EndSwitch
+        EndIf
+    EndThread
+    Call  PlaySoundAtActor  ( .Actor:Partner 00002034 )
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Call  GetActionCommandResult   ( *Var0 )
+    If  *Var0  >  00000000 % Action Command Succeed
+        Thread
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0005 )
+            Wait  10`
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0006 )
+        EndThread
+        Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.6] )
+        % Belly Flop - Stylish Move
+        Thread
+            % Get Distance between sushie and the actor
+            Loop
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                If *Var0 == .False % The A button wasn't still pressed
+                    Call GetDistanceToGoal ( .Actor:Self *Var0 )
+                    If *Var0 < 25`
+                        Loop 2 % 2 frames
+                            % Timing Tutor Badge
+                            ExecWait $Script_TimingTutor % writes in var0,1,2
+                            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                            % Set *Var0 .True % testing
+                            If *Var0 == .True
+                                Set   *TrackInput .False % turn off tracker
+                                % Add 1 to the stylish counter (last move only)
+                                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                                Add *Var0 1
+                                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                                Set *VarA .False % this move doesn't have an SP cap
+                                ExecWait $Script_DoStylishFX
+                                Wait  1
+                                Goto  EndThread
+                            EndIf
+                            Wait 1
+                        EndLoop
+                        Wait 1
+                        Goto EndThread
+                    EndIf
+                Else % A button was pressed to soon
+                    Set   *TrackInput .False % turn off tracker
+                    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                    BreakLoop
+                EndIf
+                Wait 1
+            EndLoop
+            Label EndThread
+        EndThread
+        Call  JumpToGoal    ( .Actor:Partner 00000014 .False .True .False )
+    Else
+        Set   *TrackInput .False % turn off tracker
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Thread
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0005 )
+            Wait  10`
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0006 )
+        EndThread
+        Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.0] )
+        Call  JumpToGoal    ( .Actor:Partner 00000014 .False .True .False )
+    EndIf
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 000F0007 )
+    Call  SetActorRotation  ( .Actor:Partner 00000000 00000000 00000000 )
+    Call  SetActorRotationOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000A7
+            Set   *VarE  00000001
+            Set   *VarF  00000003
+        Case  ==  000000A8
+            Set   *VarE  00000002
+            Set   *VarF  00000004
+        Case  ==  000000A9
+            Set   *VarE  00000003
+            Set   *VarF  00000005
+    EndSwitch
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000001 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+        Call  LandJump      ( .Actor:Partner )
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  AddGoalPos    ( .Actor:Partner 0000000F 00000000 00000000 )
+        Call  JumpToGoal    ( .Actor:Partner 00000014 .False .True .False )
+        Call  AddGoalPos    ( .Actor:Partner 0000000A 00000000 00000000 )
+        Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+        Wait  10`
+        Call  SetGoalToHome ( .Actor:Partner )
+        Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+        Call  RunToGoal     ( .Actor:Partner 00000000 )
+        Return
+    EndIf
+    Thread
+        Wait  3`
+        Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    EndThread
+    Call  GetActionCommandResult   ( *Var0 )
+    Switch  *Var0
+        Case  >  00000000
+            Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:Jump 00000004 00000000 *VarF 00000070 )
+        Default
+            Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:Jump 00000004 00000000 *VarE 00000030 )
+    EndSwitch
+    Switch  *Var0
+        CaseOR  ==  .HitResult:Hit % 0
+        CaseOR  ==  00000002 % 2
+            Call  UseBattleCamPreset  ( 00000033 )
+            ExecWait  $Script_BellyFlop_GoBackToHome_Failed
+        EndCaseGroup
+        CaseOR  ==  00000001 % 1
+        CaseOR  ==  00000003 % 3
+            Call  UseBattleCamPreset      ( 00000003 )
+            Call  MoveBattleCamOver ( 00000008 )
+            ExecWait  $Script_BellyFlop_GoBackToHome_Succeed
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Init_Squirt
+{
+    Exec  $Script_NukeTracker
+    Call  LoadActionCommand ( 0000000F )
+    Call  802A9000 ( )
+    Call  GetActorLevel     ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        Case  ==  00000000
+            Call  SetupMashMeter  ( 00000003 00000028 0000004B 00000064 00000000 00000000 )
+        Case  ==  00000001
+            Call  SetupMashMeter  ( 00000004 00000023 0000003C 00000050 00000064 00000000 )
+        Case  ==  00000002
+            Call  SetupMashMeter  ( 00000005 00000014 00000028 0000003C 00000050 00000064 )
+    EndSwitch
+    Call  UseBattleCamPreset  ( 0000000D )
+    Call  BattleCamTargetActor  ( .Actor:Self )
+    Call  MoveBattleCamOver     ( 00000028 )
+    Call  InitTargetIterator ( )
+    Thread % Small jump before holding breath
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0005 )
+        Wait  5`
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0006 )
+    EndThread
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.0] )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Exec  $Script_InitTracker
+    % Timing Tutor Badge
+    Thread
+        Loop 3 % Stylish Frame window
+            ExecWait $Script_TimingTutor % writes in var0,1,2
+            Wait 1
+        EndLoop
+    EndThread
+    Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+    % Squirt - 1st Stylish Move
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .True
+        % Turn Off A Button Tracker
+        Set  *TrackInput .False
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        % Add 1 to the stylish counter (last move only)
+        Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+        Add *Var0 1
+        Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+        Set *VarA .False % this move doesn't have an SP cap
+        ExecWait $Script_DoStylishFX
+        %=====================
+        % Sushie Jump
+        % Rotate Sushie
+        Call PlaySoundAtActor ( .Actor:Self 2034 ) % Jump
+        Thread
+            Call  SetActorRotationOffset    ( .Actor:Self 0 12` 0 )
+            SetTimescale *Fixed[3.0]
+            Call    MakeLerp    	( 0 -180` 8 .Easing:Linear )
+            Loop     
+                Call     UpdateLerp
+                Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                Wait     1
+                If  *Var1  ==  .False
+                    BreakLoop
+                EndIf
+            EndLoop
+            % 2
+            Call    MakeLerp    	( -180` 0 8 .Easing:Linear )
+            Loop     
+                Call     UpdateLerp
+                Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                Wait     1
+                If  *Var1  ==  .False
+                    BreakLoop
+                EndIf
+            EndLoop
+            SetTimescale *Fixed[1.0]
+            Call  SetActorRotation  ( .Actor:Self 0 0 0 )
+            Call  SetActorRotationOffset    ( .Actor:Self 0 9 0 )
+        EndThread
+        Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+        % Do Jump
+        Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.4] )
+        Call  JumpToGoal    ( .Actor:Self 20` .False .False .False )
+    EndIf
+    Set  *TrackInput .False
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  $Function_80238000 ( )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0009 )
+    Call  AddBattleCamZoom      ( FFFFFFB0 )
+    Call  MoveBattleCamOver     ( 0000005A )
+    Call  802A911C      ( 00000000 00000057 00000003 )
+    Loop  0000005A
+        Call  GetActionResult  ( *Var0 )
+        If  *Var0  ==  00000000
+            Call  GetActorScale ( .Actor:Self *Var0 *Var1 *Var2 )
+            SetF  *Var1  *Var0
+            SubF  *Var1  *Fixed[1.0]
+            DivF  *Var1  00000004
+            SubF  *Var0  *Var1
+        Else
+            SetF  *Var0  *Var0
+            DivF  *Var0  00000064
+            SetF  *Var1  *Fixed[1.0]
+            AddF  *Var0  *Var1
+        EndIf
+        Call  SetActorScale ( .Actor:Self *Var0 *Var0 *Fixed[1.0] )
+        SetF  *VarE  *Var0
+        Wait  1`
+    EndLoop
+    Call  PlaySoundAtActor  ( .Actor:Partner 00000297 )
+    Call  UseBattleCamPreset      ( 00000003 )
+    Call  MoveBattleCamOver ( 0000000A )
+    Call  PartnerTestEnemy  ( *Var0 10000004 00000014 00000000 00000001 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F000A )
+        Call  SetActorScale ( .Actor:Self *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+        Call  SetActorRotationOffset    ( .Actor:Self 0 0 0 )
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Add   *Var0  0000000A
+        Add   *Var1  0000000B
+        Call  GetGoalPos    ( .Actor:Partner *Var3 *Var4 *Var5 )
+        Call  $Function_802382A4 ( )
+        Call  PlayEffect    ( ~FX:Squirt:Waterbeam *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *VarE 0000000A 00000000 00000000 00000000 00000000 )
+        Wait  20`
+        ExecWait  $Script_Sushie_80239B68
+        Return
+    EndIf
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F000A )
+    Thread
+        Call  $Function_802381EC ( )
+    EndThread
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  0000000A
+    Add   *Var1  0000000B
+    Call  GetGoalPos    ( .Actor:Partner *Var3 *Var4 *Var5 )
+    Call  PlayEffect    ( ~FX:Squirt:Waterbeam *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *VarE 0000000A 00000000 00000000 00000000 00000000 )
+    Exec  $Script_InitTracker
+    Wait  10`
+    Call  GetActionResult      ( *Var0 )
+    Call  $Function_80238114 ( )
+    Switch  *Var0
+        Case  >  00000000
+            Call  PartnerDamageEnemy    ( *Var0 10000004 00000212 00000000 *VarF 00000070 )
+            Call  PlaySoundAtActor      ( .Actor:Partner 00000110 )
+        Default
+            Call  PartnerDamageEnemy    ( *Var0 10000004 00000212 00000000 *VarF 00000030 )
+            Call  PlaySoundAtActor      ( .Actor:Partner 00000110 )
+    EndSwitch
+    Call  GetActionResult  ( *Var0 )
+    If *Var0 > 80` % Action Command Succesfull
+        % Squirt - 2nd Stylish Move
+        Exec  $Script_Squirt_DoStylish2 *Var9
+        Loop
+            DoesScriptExist ( *Var9 *Var0 )
+            If *Var0 == .False
+                BreakLoop
+            EndIf
+            Wait 1
+        EndLoop
+    EndIf
+    Call    SetActorRotationOffset    ( .Actor:Self 0 0 0 )
+    Call    SetActorRotation    ( .Actor:Self 0 0 0 )
+    Switch  *Var0
+        CaseOR  ==  .HitResult:Hit % 0
+        CaseOR  ==  00000002 % 2
+            ExecWait  $Script_Sushie_80239B68
+        EndCaseGroup
+        CaseOR  ==  00000001 % 1
+        CaseOR  ==  00000003 % 3
+            ExecWait  $Script_Sushie_80239AE0
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Squirt_DoStylish2
+{
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+	If *Var0 == .False % The A button wasn't still pressed
+		Loop 4 % 4 frames
+			% Timing Tutor Badge
+			ExecWait $Script_TimingTutor % writes in var0,1,2
+			Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+			% Set *Var0 .True % testing
+			If *Var0 == .True
+				Set   *TrackInput .False % turn off tracker
+				Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+				% Add 1 to the stylish counter (last move only)
+				Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+				Add *Var0 1
+				Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+				Set *VarA .False % this move doesn't have an SP cap
+				ExecWait $Script_DoStylishFX
+				% happy :D
+				Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0011 )
+				Wait  25`
+				BreakLoop
+			EndIf
+			Wait 1
+		EndLoop
+	EndIf
+    Return
+    End
+}
+
+#new:Script $Script_Init_WaterBlock
+{
+    Exec  $Script_NukeTracker
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  InitTargetIterator ( )
+    Call  UseBattleCamPreset      ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFFA1 0000001A 0000000A )
+    Call  SetBattleCamOffsetZ   ( 0000000B )
+    Call  SetBattleCamZoom  ( 000000EE )
+    Call  MoveBattleCamOver ( 0000001E )
+    Wait  10`
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 000F0009 )
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.0] )
+    Call  GetActorPos       ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  $GetMarioPos ( *Var3 )
+    If *Var3 == 0 % Mario is on the left
+        Add   *Var0  0000001E
+    EndIf
+    Call  SetGoalPos        ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal        ( .Actor:Partner 0000000A .False .True .False )
+    Call  LoadActionCommand ( 00000016 )
+    Call  802A9000  ( 00000000 )
+    Call  80269344  ( 00000000 )
+    Set   *Var0  00000000
+    Call  $GetMarioPos ( *Var3 )
+    If *Var3 == 0 % Mario is on the left
+        Loop  00000004
+            Add   *Var0  0000002D
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+    Else
+        Wait 4
+    EndIf
+    Wait  4`
+    Call  802A9398      ( 00000000 00000064 00000003 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F000B )
+    Wait  110`
+    Call  GetActionCommandResult       ( *Var0 )
+    If  *Var0  ==  00000000
+        Set   *VarA  *Var0
+        Goto  A
+    EndIf
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 000F000C )
+    Call  UseBattleCamPreset      ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFFA1 0000001B 0000000A )
+    Call  SetBattleCamOffsetZ   ( 0000000B )
+    Call  SetBattleCamZoom  ( 00000115 )
+    Call  MoveBattleCamOver ( 0000000A )
+    Thread
+        Call  PlaySoundAtActor  ( .Actor:Partner 00000298 )
+        Call  $Function_WaterBlock_PlayFX_59
+        Wait  65`
+        Exec  $Script_InitTracker
+        Call  SetAnimation      ( .Actor:Partner FFFFFFFF 000F0011 )
+    EndThread
+    Wait  45`
+    Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var1  00000053
+    Call  PlayEffect        ( ~FX:WaterFall *Var0 *Var1 *Var2 *Fixed[1.0] 00000032 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Call  PlaySoundAtActor  ( .Actor:Partner 00002035 )
+    Thread
+        Wait  20`
+        Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+        Add   *Var1  00000064
+        Call  PlayEffect    ( 00000011 00000004 *Var0 *Var1 *Var2 00000032 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Wait  5`
+        Sub   *Var1  00000014
+        Call  PlayEffect    ( 00000011 00000004 *Var0 *Var1 *Var2 00000032 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Wait  5`
+        Sub   *Var1  00000014
+        Call  PlayEffect    ( 00000011 00000004 *Var0 *Var1 *Var2 00000032 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Wait  5`
+        Sub   *Var1  00000014
+        Call  PlayEffect    ( 00000011 00000004 *Var0 *Var1 *Var2 00000032 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Wait  5`
+        Sub   *Var1  00000014
+        Call  PlayEffect    ( 00000011 00000004 *Var0 *Var1 *Var2 00000032 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    EndThread
+    Wait  40`
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    %Call  $Function_80238480    ( *Var0 *Var1 *Var2 )
+    Call  PlayEffect    ( ~FX:WaterBlock:FadeInOut *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+    Wait  30`
+    % Dissapear water block
+    Call  $ReadAddress ( $Data_LastFX 2 *Var0 .False .False )
+    Call  $ReadAddress ( *Var0 2 *Var0 C .False ) % get fxData
+    Call  $WriteAddress ( *Var0 2 20` 10 .False ) % waterBlockData(0x10)= s32 fade timer
+    Call  GetActionCommandResult       ( *Var0 )
+    %Call  $Function_80238328 ( )
+    Call  $AddDefenseBoost ( .Actor:Player 1 *Var0 )
+    Set   *VarA  *Var0
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var0  0000000F
+    Add   *Var1  00000023
+    Set   *VarF  00000006
+    Call  PlayEffect    ( 00000056 *VarF *Var0 *Var1 *Var2 *Fixed[1.5] 0000003C 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Wait  4`
+    Call  UseBattleCamPreset  ( 00000002 )
+    Call  MoveBattleCamOver     ( 00000014 )
+    Call  80280818 ( )
+    Label  A
+    % Water Block - Stylish Move
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .False % The A button wasn't still pressed
+        % Stylish Move
+		Exec  $Script_WaterBlock_DoStylish *Var9
+		Loop
+			DoesScriptExist ( *Var9 *Var0 )
+			If *Var0 == .False
+				BreakLoop
+			EndIf
+			Wait 1
+		EndLoop
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+	Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.0] )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+    If *Var0 > 0 % A stylish move was landed
+        Call  JumpToGoal    ( .Actor:Partner 12` .False .True .False )
+        Wait 10`
+    Else
+        Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+    EndIf
+    Set   *Var1  000000B4
+    Loop  00000004
+        Sub   *Var1  0000002D
+        Call  SetActorYaw   ( .Actor:Partner *Var1 )
+    EndLoop
+    Call  SetActorYaw   ( .Actor:Partner 00000000 )
+    If  *VarA  ==  00000000
+    Else
+        Call  ShowVariableMessageBox    ( 00000026 0000003C *VarA )
+    EndIf
+    Call  WaitForMessageBoxDone ( )
+    Return
+    End
+}
+
+#new:Script $Script_WaterBlock_DoStylish
+{
+    Loop 5 % 5 frames
+        % Timing Tutor Badge
+        ExecWait $Script_TimingTutor % writes in var0,1,2
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        % Set *Var0 .True % testing
+        If *Var0 == .True
+            Set   *TrackInput .False % turn off tracker
+            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            % Rotate Sushie
+            Thread
+                SetTimescale *Fixed[3.0]
+                Call  PlaySound ( 2034 ) % flip
+                Call  SetActorRotationOffset    ( .Actor:Self 0 15` 0 )
+                % 1
+                Call    MakeLerp    	( 0 180` 15` .Easing:Linear )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+                % 2
+                Call    MakeLerp    	( -180` 0 10` .Easing:Linear )
+                Loop     
+                    Call     UpdateLerp
+                    Call     SetActorRotation  ( .Actor:Self 0 0 *Var0 )
+                    Wait     1
+                    If  *Var1  ==  .False
+                        BreakLoop
+                    EndIf
+                EndLoop
+                SetTimescale *Fixed[1.0]
+                Call  SetActorRotation  ( .Actor:Self 0 0 0 )
+                Call  SetActorRotationOffset    ( .Actor:Self 0 0 0 )
+            EndThread
+            BreakLoop
+        EndIf
+        Wait 1
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_Init_TidalWave
+{
+    Exec  $Script_NukeTracker
+    Call  UseIdleAnimation      ( .Actor:Partner .False )
+    Call  LoadActionCommand     ( 00000017 )
+    Call  802A9000 ( )
+    Call  SetupMashMeter      ( 00000005 00000014 0000001E 0000003C 00000050 00000064 )
+    Call  InitTargetIterator ( )
+    Call  UseBattleCamPreset  ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFFBF 00000035 0000000A )
+    Call  SetBattleCamOffsetZ   ( 00000010 )
+    Call  SetBattleCamZoom      ( 000000D6 )
+    Call  MoveBattleCamOver     ( 00000014 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0003 )
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[0.5] )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 00000005 .False .True .False )
+    Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.0] )
+    Call  AddGoalPos    ( .Actor:Partner 0000001E 00000028 00000000 )
+    Call  JumpToGoal    ( .Actor:Partner 0000000F .False .True .False )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F000B )
+    Call  802A9138      ( 00000000 00000064 00000003 )
+    Call  SetActorRotationOffset    ( .Actor:Partner 00000000 0000000C 00000000 )
+    Thread
+        Wait  54`
+        Loop  00000008
+            Call  SetActorDispOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Partner FFFFFFFF 00000000 00000000 )
+            Wait  1`
+        EndLoop
+        Loop  00000007
+            Call  SetActorDispOffset    ( .Actor:Partner 00000001 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Partner FFFFFFFF 00000000 00000000 )
+            Wait  1`
+        EndLoop
+        Loop  00000008
+            Call  SetActorDispOffset    ( .Actor:Partner 00000001 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Partner FFFFFFFE 00000000 00000000 )
+            Wait  1`
+        EndLoop
+        Call  SetActorDispOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+    EndThread
+    Loop  00000064
+        Call  GetActionResult  ( *Var0 )
+        Call  $Function_80238E30 ( )
+        Wait  1`
+    EndLoop
+    Call  UseBattleCamPreset      ( 00000002 )
+    Call  MoveBattleCamOver ( 00000005 )
+    Wait  10`
+    Call  EnableActorBlur   ( .Actor:Partner 00000001 )
+    Call  $Function_80238540_Sushie ( )
+    Call  SetActorPos       ( .Actor:Partner FFFFFF24 00000000 00000000 )
+    Call  EnableActorBlur   ( .Actor:Partner 00000000 )
+    Wait  15`
+    Call  UseBattleCamPreset      ( 00000003 )
+    Call  MoveBattleCamOver ( 00000014 )
+    Call  GetActionSuccessCopy  ( *Var0 )
+    Set   *VarE  *Var0
+    Set   *VarF  *Var0
+    Call  InitTargetIterator ( )
+    Loop
+        Call  SetGoalToTarget   ( .Actor:Self )
+        Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000002 00000010 )
+        If  *Var0  ==  .HitResult:Miss % 6
+            Goto  A
+        EndIf
+        Switch  *VarE
+            Case  >=  00000006
+                Call  PartnerDamageEnemy    ( *Var0 30000004 00000000 00000000 *VarF 00000070 )
+            Default
+                Call  PartnerDamageEnemy    ( *Var0 30000004 00000000 00000000 *VarF 00000030 )
+        EndSwitch
+        Wait  5`
+        Label  A
+        Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+        If  *Var0  ==  FFFFFFFF % FFFFFFFF
+            BreakLoop
+        EndIf
+    EndLoop
+    Call  80280818 ( )
+    Exec  $Script_InitTracker
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  AddGoalPos    ( .Actor:Partner 00000000 00000096 00000000 )
+    Call  GetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  SetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  SetActorRotationOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+    Call  SetActorJumpGravity       ( .Actor:Partner *Fixed[1.0] )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000F0001 )
+    Call  JumpToGoal    ( .Actor:Partner 00000028 .False .True .False )
+    Call  SetActorJumpGravity       ( .Actor:Partner *Fixed[0.7] )
+    ExecWait $Script_TydalWave_GoBackToHome % globals/patch/Stylish_GlobalScripts.patch
+    Return
+    End
+}

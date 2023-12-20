@@ -1,0 +1,142 @@
+% Get actor data from /formation/import
+% to make easier to grab the enemies code from this mod to future projects
+
+#import enemy/24_AntiGuy.bpat
+#import enemy/24_Duplighost.bpat
+
+#new:Script $Script_80228100
+{
+    0:  Set   *VarA  *Var0
+   10:  Call  SetTexPanner  ( *VarA 00000001 )
+   24:  Set   *Var0  00000000
+   34:  Set   *Var1  00000000
+   44:  Loop
+   50:  	Call  SetTexPanOffset   ( 00000001 00000000 *Var0 *Var1 )
+   6C:  	Add   *Var0  00008000
+   7C:  	Add   *Var1  00000000
+   8C:  	Wait  5`
+   98:  EndLoop
+   A0:  Return
+   A8:  End
+}
+
+#new:Script $Script_BeforeBattle_802281B0
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Call  SetCamBGColor     ( .Cam:Battle 00000000 00000000 00000000 )
+   2C:  Call  SetGroupEnabled   ( ~Model:kpa_bt01:switch 00000000 )
+   40:  Thread
+   48:  	Set   *Var0  00000025
+   58:  	Exec  $Script_80228100
+   64:  	Wait  5`
+   70:  	Set   *Var0  00000027
+   80:  	Exec  $Script_80228100
+   8C:  EndThread
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_AfterBattle_80228254
+{
+    0:  Return
+    8:  End
+}
+
+#new:ForegroundModelList $ForegroundModelList_80228264
+{
+	~Model:kpa_bt01:o383
+	~Model:kpa_bt01:o382
+	~Model:kpa_bt01:o381
+	00000000
+}
+
+#new:Stage $Stage_80228274
+{
+	$ASCII_802284A0  % kpa_tex
+	$ASCII_80228490  % kpa_bt01_shape
+	$ASCII_80228480  % kpa_bt01_hit
+	$Script_BeforeBattle_802281B0
+	$Script_AfterBattle_80228254
+	00000000
+	$ForegroundModelList_80228264
+	00000000
+	00000000
+	00000000
+}
+
+
+
+#new:Formation $Formation_00
+{
+	$24_AntiGuy 00000000 0000000A 00000000 00000000 00000000 00000000
+	$24_AntiGuy 00000001 00000009 00000000 00000000 00000000 00000000
+	$24_AntiGuy 00000002 00000008 00000000 00000000 00000000 00000000
+}
+
+#new:Formation $Formation_01
+{
+	$24_Duplighost 00000001 0000000A 00000000 00000000 00000000 $ItemDropTable_Duplighost
+	$24_Duplighost 00000002 00000009 00000000 00000000 00000000 $ItemDropTable_Duplighost
+}
+
+#new:Formation $Formation_02
+{
+	$24_Duplighost 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Duplighost
+	$24_Duplighost 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Duplighost
+	$24_Duplighost 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Duplighost
+	$24_Duplighost 00000003 00000007 00000000 00000000 00000000 $ItemDropTable_Duplighost
+}
+
+#new:FormationTable $FormationTable
+{
+	$SJIS_802284C0 00000003 $Formation_00 $Stage_80228274 00000000
+	$SJIS_802284B4 00000002 $Formation_01 $Stage_80228274 00000000
+	$SJIS_802284A8 00000004 $Formation_02 $Stage_80228274 00000000
+	00000000 00000000 00000000 00000000 00000000
+}
+
+#new:StageTable $StageTable
+{
+	$ASCII_802284D4 $Stage_80228274
+	00000000 00000000
+}
+
+
+
+#new:ASCII $ASCII_80228480
+{
+	"kpa_bt01_hit"
+}
+
+#new:ASCII $ASCII_80228490
+{
+	"kpa_bt01_shape"
+}
+
+#new:ASCII $ASCII_802284A0
+{
+	"kpa_tex"
+}
+
+#new:SJIS $SJIS_802284A8
+{
+	バケバケx４ % bakebakex4
+}
+
+#new:SJIS $SJIS_802284B4
+{
+	バケバケx２ % bakebakex2
+}
+
+#new:SJIS $SJIS_802284C0
+{
+	ブラックヘイホーx３ % burakkuheiho-x3
+}
+
+#new:ASCII $ASCII_802284D4
+{
+	"kpa_01"
+}
+
+
+

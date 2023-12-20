@@ -1,0 +1,482 @@
+#define .Npc:Monty0 00000000
+#define .Npc:Hole1 	00000001
+#define .Npc:Hole2 	00000002
+#define .Npc:Hole3 	00000003
+#define .Npc:Hole4 	00000004
+#define .Npc:Hole5 	00000005
+#define .Npc:Hole6 	00000006
+
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList] $EntryList
+	[EntryCount] 2
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:GoombaVillage
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+    Call  MakeNpcs ( .False $NpcGroupList_kmr32 )
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:PleasantPath 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+	Call	GetEntryID ( *Var0 )
+	Switch *Var0 
+		Case == ~Entry:Entry0
+			Call $RunFunction ( $Function_ClearMinigameData_Moles )
+			Set   *Var0 $Script_CreateExitTriggers
+    		Exec  EnterWalk
+		Case == ~Entry:Entry1
+			Exec $Script_CreateExitTriggers
+			Exec $Script_Mole_AfterGame
+	EndSwitch
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+    SetGroup  0000001B
+	Call  $RunFunction ( $Function_ClearMinigameData_Moles )
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "kmr_03" 00000003 )
+    Wait  100`
+    Return
+    End
+}
+
+%========
+% NPCs
+%========
+
+#new:NpcGroupList $NpcGroupList_kmr32
+{
+00000001 $NpcGroup_Monty    00000000
+00000006 $NpcGroup_Montys   00000000
+00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Monty
+{
+	.Npc:Monty0 $NpcSettings_Generic ~Vec3f:NPC_MontyMole_00
+	00111D09 $Script_NPC_Init_Monty 00000000 00000000 0000010E
+	~NoDrops ~NoMovement
+	~AnimationTable:NPC_MontyMole_00
+	00000001 00000000 00000000 $Tattle_Monty
+}
+
+#new:NpcGroup $NpcGroup_Montys
+{
+	.Npc:Hole1 $NpcSettings_Generic ~Vec3f:NPC_Hole_01
+	01111D09 $Script_NPC_Init_Hole 00000000 00000000 0000010E
+	~NoDrops ~NoMovement
+	~AnimationTable:NPC_Hole_01
+	00000001 00000000 00000000 00000000 % no tattle string
+	%
+	.Npc:Hole2 $NpcSettings_Generic ~Vec3f:NPC_Hole_02
+	01111D09 $Script_NPC_Init_Hole 00000000 00000000 0000010E
+	~NoDrops ~NoMovement
+	~AnimationTable:NPC_Hole_02
+	00000001 00000000 00000000 00000000
+	%
+	.Npc:Hole3 $NpcSettings_Generic ~Vec3f:NPC_Hole_03
+	01111D09 $Script_NPC_Init_Hole 00000000 00000000 0000010E
+	~NoDrops ~NoMovement
+	~AnimationTable:NPC_Hole_03
+	00000001 00000000 00000000 00000000
+	%
+	.Npc:Hole4 $NpcSettings_Generic ~Vec3f:NPC_Hole_04
+	01111D09 $Script_NPC_Init_Hole 00000000 00000000 0000010E
+	~NoDrops ~NoMovement
+	~AnimationTable:NPC_Hole_04
+	00000001 00000000 00000000 00000000
+	%
+	.Npc:Hole5 $NpcSettings_Generic ~Vec3f:NPC_Hole_05
+	01111D09 $Script_NPC_Init_Hole 00000000 00000000 0000010E
+	~NoDrops ~NoMovement
+	~AnimationTable:NPC_Hole_05
+	00000001 00000000 00000000 00000000
+	%
+	.Npc:Hole6 $NpcSettings_Generic ~Vec3f:NPC_Hole_06
+	01111D09 $Script_NPC_Init_Hole 00000000 00000000 0000010E
+	~NoDrops ~NoMovement
+	~AnimationTable:NPC_Hole_06
+	00000001 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Generic
+{
+	00000000 000E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_NPC_Init_Monty
+{
+	Call	SetNpcFlagBits ( .Npc:Self 00040000 .True )
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_Monty0 )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_Monty0
+{
+	If *GF_KMR32_Intro == .False
+    	Call    SpeakToPlayer ( .Npc:Self 002F0001 002F0001 00000000 $String_Monty0_0 )
+		Call	CloseMessage
+		Set		*GF_KMR32_Intro .True
+	EndIf
+	Call    SpeakToPlayer ( .Npc:Self 002F0001 002F0001 00000000 $String_Monty0_1 )
+	Call	ShowChoice ( $String_Choice_Mole )
+	Set		*Var1 *Var0
+	Call	CloseMessage
+	Switch *Var1
+		Case == 1 % No
+			Return
+		Case == 2 % Stats
+			Call 	$ReadAddress ( 80356000 2 *Var1 14 .False ) % *ModByte[014] = *GB_KMR32_Highscore1
+			Call	SetMessageValue ( *Var1 00000000 )
+			Call    SpeakToPlayer ( .Npc:Self 002F0001 002F0001 00000000 $String_Monty0_Stats )
+			Return
+	EndSwitch
+	SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[255.0]  % dark
+    ExecWait $Script_FadeScreenOut
+	ExecWait $Script_InitGame
+    Return
+    End
+}
+
+#new:Script $Script_InitGame
+{
+	Call  	FadeOutMusic  ( 00000000 500` )
+	Call	SetPlayerPos ( ~Vec3d:Pos_StartGame )
+	Call	TeleportPartnerToPlayer
+	Call  	$WriteAddress ( $Minigame_Mole_Data 2 00003B00 0 .False ) % 00:59
+	Call 	$WriteAddress ( $GameState_Mole 0 1 .False .False )
+	Call	SetPlayerFlagBits ( 00000100 .True ) % Lock opening the items, partners lists and pausing the game
+	Call	SetNpcAnimation ( .Npc:Self 002F0012 )
+	Call	SetEnemyFlagBits ( .Npc:Self 00000020 .True ) % Disable interact script
+	SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[5.0]  % fully bright
+    ExecWait $Script_FadeScreenIn
+	Wait	95`
+	Call  	PushSong  ( .Song:Playroom 00000000 )
+	Return
+	End
+}
+
+#new:Script $Script_Mole_AfterGame
+{
+	Call	DisablePlayerInput ( .True )
+	Call 	$ReadAddress ( $Minigame_Mole_Data 2 *Var1 4 .False ) % current score
+	Call	SetMessageValue ( *Var1 00000000 )
+	Call 	$ReadAddress ( 80356000 2 *Var2 14 .False ) % *ModByte[014] = *GB_KMR32_Highscore1
+	If *Var1 > *Var2 % New Highscore
+		Call 	$WriteAddress ( 80356000 2 *Var1 14 .False ) % save new highscore
+		If *GF_KMR32_Badge == .False
+			If *Var1 >= 8000`
+				Call    SpeakToPlayer ( .Npc:Monty0 002F0001 002F0001 00000000 $String_Monty0_Badge )
+				Call    AddBadge ( .Item:SpeedySpin 00000000 )
+				Call    ShowGotItem ( .Item:SpeedySpin .True 00000000 )
+				Set 	*GF_KMR32_Badge .True
+			Else
+				Call    SpeakToPlayer ( .Npc:Monty0 002F0001 002F0001 00000000 $String_Monty0_NewHighscore )
+			EndIf
+		Else
+			% Player already had the badge
+			Call    SpeakToPlayer ( .Npc:Monty0 002F0001 002F0001 00000000 $String_Monty0_NewHighscore )
+		EndIf
+	Else % No new highscore
+		Call    SpeakToPlayer ( .Npc:Monty0 002F0001 002F0001 00000000 $String_Monty0_NoHighscore )
+	EndIf
+	Call 	$RunFunction ( $Function_ClearMinigameData_Moles )
+	Call	DisablePlayerInput ( .False )
+	Return
+	End
+}
+
+#new:Script $Script_NPC_Init_Hole
+{
+	Call	BindNpcIdle ( .Npc:Self $Script_Idle_Hole )
+	Call    BindNpcHit	( .Npc:Self $Script_Hit_Hole )
+	Return
+	End
+}
+
+#new:Script $Script_Idle_Hole
+{
+	Loop % Check if the game has already started
+		Call 	$ReadAddress ( $GameState_Mole 0 *Var0 .False .False )
+		If *Var0 == 2
+			BreakLoop
+		EndIf
+		Wait 	1
+	EndLoop
+	Loop
+		% get mole color
+		Call	RandInt ( 100` *Var0 )
+		Switch *Var0
+			Case <= 55`  % 55%
+				Set *Var1 0 % brown
+			Case <= 85`  % 30%
+				Set *Var1 1 % green
+			Case <= 100` % 15%
+				Set *Var1 2 % yellow
+		EndSwitch
+		% Check if too many moles of the same color have spawned
+		%
+		% yellow
+		If *MapVar[3] >= 15` % Only this amount of moles can spawn
+			Set *Var1 1 % green
+		EndIf
+		% green
+		If *MapVar[2] >= 35`
+			Set *Var1 0 % brown
+		EndIf
+		% brown
+		If *MapVar[1] >= 70`
+			Set *Var1 2 % yellow
+		EndIf
+		Set		*Var8 *Var1
+		Call	SetSelfVar ( 00000000 *Var1 )
+		% Increase counter
+		Switch *Var1
+			Case == 0 % brown
+				Add *MapVar[1] 1
+			Case == 1 % green
+				Add *MapVar[2] 1
+			Case == 2 % yellow
+				Add *MapVar[3] 1
+		EndSwitch
+		Switch *Var8
+			Case == 0
+				Call	SetNpcAnimation ( .Npc:Self 002F0016 )
+			Case == 1
+				Call	SetNpcAnimation ( .Npc:Self 002F0116 )
+			Case == 2
+				Call	SetNpcAnimation ( .Npc:Self 002F0D16 )
+		EndSwitch
+		Call	SetSelfEnemyFlagBits ( 00000001 .False ) % enable hitbox
+		% get how much the mole should wait to hide
+		Call  	$ReadAddress ( $Minigame_Mole_Data 0 *Var0 2 .False ) % get seconds left
+		Set		*Var3 *Var0
+		SetF	*Var0 *Var0 % convert to float
+		SetF	*Var1 *Fixed[59.0] % Because the minigame last 59 secs
+		SetF	*Var2 *Fixed[80.0] % Max amount to wait
+		% get time left in percentage
+		DivF	*Var0 *Var1
+		MulF	*Var0 *Var2
+		Set		*Var0 *Var0 % convert to int
+		If *Var0 <= 45` % if time to wait is <= 45 frames
+			Set *Var0 45`
+		EndIf
+		If *Var3 < 10` % In the last 9 secs wait 35 frames
+			Set *Var0 35`
+		EndIf
+		Wait	*Var0
+		Call	SetSelfEnemyFlagBits ( 00000001 .True ) % disable hitbox
+		Switch *Var8
+			Case == 0
+				Call	SetNpcAnimation ( .Npc:Self 002F0017 )
+			Case == 1
+				Call	SetNpcAnimation ( .Npc:Self 002F0117 )
+			Case == 2
+				Call	SetNpcAnimation ( .Npc:Self 002F0D17 )
+		EndSwitch
+		Wait	25`
+	EndLoop
+	Return
+	End
+}
+
+#new:Script $Script_Hit_Hole
+{
+	Call	SetSelfEnemyFlagBits ( 00000021 .True ) % Disable hitbox & kill idle and aux scripts
+	Call	GetSelfVar ( 00000000 *Var0 )
+	Switch *Var0
+		Case == 0
+			Call	SetNpcAnimation ( .Npc:Self 002F0005 )
+			Set		*Var0	100`
+		Case == 1
+			Call	SetNpcAnimation ( .Npc:Self 002F0105 )
+			Set		*Var0	250`
+		Case == 2
+			Call	SetNpcAnimation ( .Npc:Self 002F0D05 )
+			Set		*Var0	500`
+	EndSwitch
+	Call 	$ReadAddress ( $Minigame_Mole_Data 2 *Var1 4 .False )
+	Add		*Var1 *Var0
+	If *Var1 > 999999`
+		Set *Var1 999999`
+	EndIf
+	Call 	$WriteAddress ( $Minigame_Mole_Data 2 *Var1 4 .False )
+	Call	PlaySound ( 0010 ) % save
+	Wait	20`
+	% hide
+	Call	GetSelfVar ( 00000000 *Var0 )
+	Switch *Var0
+		Case == 0
+			Call	SetNpcAnimation ( .Npc:Self 002F0017 )
+		Case == 1
+			Call	SetNpcAnimation ( .Npc:Self 002F0117 )
+		Case == 2
+			Call	SetNpcAnimation ( .Npc:Self 002F0D17 )
+	EndSwitch
+	Wait	15`
+	Call	SetSelfEnemyFlagBits ( 00000020 .False )
+	Return
+	End
+}
+
+#string $String_Monty0_0
+{
+[Style Right]
+Hey Mario I have a challenge for[BR]
+you.[BR]
+[Wait][Next]
+My friends and I have heads of[BR]
+steel![BR]
+[Wait][Next]
+How about if we play a little[BR]
+whack-a-mole?[BR]
+[Wait][Next]
+I'm sure you won't be able to get[BR]
+at least [SaveColor][Color:19]8000 points[RestoreColor], we're the[BR]
+fastest moles around here!
+[Wait][End]
+}
+
+#string $String_Monty0_1
+{
+[Style Right]
+Hey Mario, you wanna play some[BR]
+whack-a-mole with us?[BR]
+[Yield][End]
+}
+
+#string $String_Monty0_Badge
+{
+[Style Right]
+[SaveColor][Color:19][Var 0][RestoreColor]?! Wow, you are better than[BR]
+I expected![BR]
+[Wait][Next]
+Here, take this Mario, you[BR]
+deserve it!
+[Wait][End]
+}
+
+#string $String_Monty0_NewHighscore
+{
+[Style Right]
+[SaveColor][Color:19][Var 0][RestoreColor]? You got a new hi-score,[BR]
+nice job![BR]
+[Wait][Next]
+Hey, what do you think if we play[BR]
+one more game?
+[Wait][End]
+}
+
+#string $String_Monty0_NoHighscore
+{
+[Style Right]
+You got a score of [SaveColor][Color:19][Var 0][RestoreColor], not[BR]
+bad Mario![BR]
+[Wait][Next]
+Hey, what do you think if we play[BR]
+one more game?
+[Wait][End]
+}
+
+#string $String_Choice_Mole
+{
+[Style Choice pos=110,90 size=105,62]
+[StartChoice]
+[Option 0]Sure[BR]
+[Option 1]No thanks[BR]
+[Option 2]Stats[BR]
+[EndChoice cancel=1][End]
+}
+
+#string $String_Monty0_Stats
+{
+[Style Right][DelayOff]
+[SavePos]
+[SetPosX 0][Down 0]Hi-score: [SaveColor][Color:19][Var 0][RestoreColor][RestorePos]
+[SetPos 5,9]
+[Animation spriteID=0x2F rasterIDs=0x00 delays=14]
+[SetPos 95,9]
+[Animation spriteID=0x2F rasterIDs=0x25 delays=14]
+[SetPos 185,9]
+[Animation spriteID=0x2F rasterIDs=0x26 delays=14]
+[RestorePos]
+[SetPosX 15][Down 36]100[RestorePos]
+[SetPosX 105][Down 36][Wave]250[/fx][RestorePos]
+[SetPosX 195][Down 36][Wave][Rainbow]500[/fx][/fx][RestorePos]
+[RestorePos]
+[Wait][End]
+}
+
+#string $Tattle_Monty
+{
+[Style Tattle][EnableCDownNext]
+This is a Monty Mole like no other,[BR]
+he must have a head of steel if he[BR]
+wants us to play with him, just like[BR]
+me.[BR]
+[Wait][Next]
+That's why my headbonks are the[BR]
+strongest, right Mario?
+[Wait][End]
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+This is the lair of a couple of[BR]
+friendly Mounty Moles, I wish all our[BR]
+enemies were like that Mario,[BR]
+friendly.[BR]
+[Wait][Next]
+We never do anything bad to anyone,[BR]
+you know what I mean?
+[Wait][End]      
+}

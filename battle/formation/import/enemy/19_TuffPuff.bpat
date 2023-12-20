@@ -1,0 +1,454 @@
+% Automatically dumped from section 19
+
+#new:Actor $19_TuffPuff {
+% stats
+[Index]        BBb 
+[Level]         0`b 
+[MaxHP]         1`b 
+[Coins]         0`b 
+[Flags]       00208200 
+[StatusTable] $StatusTable_8022F664_19 
+% ai
+[PartsCount]    2`s 
+[PartsTable]  $PartsTable_8022F710_19 
+[Script]      $Script_Init_8022F780_19 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]       0`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]     0`b 
+[PowerBounce]  90`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         24`b  32`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -15`b   0`b % dx dy
+[StatusIcon]   10`b  10`b % dx dy
+}
+
+#new:Function $Function_80218C40_19 {
+    0:  ADDIU     SP, SP, FFB8
+    4:  SW        S2, 18 (SP)
+    8:  COPY      S2, A0
+    C:  SW        RA, 28 (SP)
+   10:  SW        S5, 24 (SP)
+   14:  SW        S4, 20 (SP)
+   18:  SW        S3, 1C (SP)
+   1C:  SW        S1, 14 (SP)
+   20:  SW        S0, 10 (SP)
+   24:  SDC1      F24, 40 (SP)
+   28:  SDC1      F22, 38 (SP)
+   2C:  SDC1      F20, 30 (SP)
+   30:  LW        S0, C (S2)
+   34:  LW        S4, 0 (S0)
+   38:  ADDIU     S0, S0, 4
+   3C:  JAL       ~Func:get_variable
+   40:  COPY      A1, S4
+   44:  COPY      S3, V0
+   48:  LW        S5, 0 (S0)
+   4C:  ADDIU     S0, S0, 4
+   50:  LW        A1, 0 (S0)
+   54:  ADDIU     S0, S0, 4
+   58:  JAL       ~Func:get_float_variable
+   5C:  COPY      A0, S2
+   60:  LW        A1, 0 (S0)
+   64:  ADDIU     S0, S0, 4
+   68:  COPY      A0, S2
+   6C:  JAL       ~Func:get_float_variable
+   70:  MOV.S     F24, F0
+   74:  LW        A1, 0 (S0)
+   78:  ADDIU     S0, S0, 4
+   7C:  COPY      A0, S2
+   80:  JAL       ~Func:get_variable
+   84:  MOV.S     F20, F0
+   88:  LW        A1, 0 (S0)
+   8C:  ADDIU     S0, S0, 4
+   90:  COPY      A0, S2
+   94:  JAL       ~Func:get_variable
+   98:  COPY      S1, V0
+   9C:  COPY      A0, S2
+   A0:  LW        A1, 0 (S0)
+   A4:  JAL       ~Func:get_float_variable
+   A8:  COPY      S0, V0
+   AC:  LIF       F2, 180.0
+   B4:  LIF       F4, 3.141592
+   C0:  DIV.S     F0, F0, F2
+   C4:  MUL.S     F22, F0, F4
+   C8:  NOP
+   CC:  SUB.S     F20, F20, F24
+   D0:  LIF       F0, 0.5
+   D8:  NOP
+   DC:  MUL.S     F20, F20, F0
+   E0:  NOP
+   E4:  BEQ       S0, R0, .o104
+   E8:  SLT       V0, S1, S3
+   EC:  BEQ       V0, R0, .o104
+   F0:  COPY      A0, S2
+   F4:  COPY      S3, S1
+   F8:  COPY      A1, S4
+   FC:  JAL       ~Func:set_variable
+  100:  COPY      A2, S1
+        .o104
+  104:  LIF       F0, 3.141592
+  110:  MTC1      S3, F12
+  114:  NOP
+  118:  CVT.S.W   F12, F12
+  11C:  MUL.S     F12, F12, F0
+  120:  NOP
+  124:  MTC1      S1, F0
+  128:  NOP
+  12C:  CVT.S.W   F0, F0
+  130:  DIV.S     F12, F12, F0
+  134:  JAL       ~Func:cos_rad
+  138:  ADD.S     F12, F12, F22
+  13C:  MUL.S     F0, F20, F0
+  140:  NOP
+  144:  ADD.S     F2, F24, F20
+  148:  SUB.S     F2, F2, F0
+  14C:  COPY      A0, S2
+  150:  MFC1      A2, F2
+  154:  JAL       ~Func:set_float_variable
+  158:  COPY      A1, S5
+  15C:  LW        RA, 28 (SP)
+  160:  LW        S5, 24 (SP)
+  164:  LW        S4, 20 (SP)
+  168:  LW        S3, 1C (SP)
+  16C:  LW        S2, 18 (SP)
+  170:  LW        S1, 14 (SP)
+  174:  LW        S0, 10 (SP)
+  178:  LDC1      F24, 40 (SP)
+  17C:  LDC1      F22, 38 (SP)
+  180:  LDC1      F20, 30 (SP)
+  184:  LI        V0, 2
+  188:  JR        RA
+  18C:  ADDIU     SP, SP, 48
+}
+
+#new:IdleAnimations $IdleAnimations_8022F580_19 {
+.Status:Normal    004C0002
+.Status:Frozen    004C0000
+.Status:Sleep     004C0002
+.Status:Poison    004C0002
+.Status:Stop      004C0000
+.Status:Static    004C0002
+.Status:Paralyze  004C0002
+.Status:Paralyze  004C0000
+.Status:Dizzy     004C0002
+.Status:Dizzy     004C0002
+.Status:Fear      004C0002
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_8022F5DC_19 {
+.Status:Normal    004C0003
+.Status:Frozen    004C0001
+.Status:Sleep     004C0003
+.Status:Poison    004C0003
+.Status:Stop      004C0001
+.Status:Static    004C0003
+.Status:Paralyze  004C0003
+.Status:Paralyze  004C0001
+.Status:Dizzy     004C0003
+.Status:Dizzy     004C0003
+.Status:Fear      004C0003
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_8022F638_19 {
+.Element:Normal 00000000
+.Element:Shock  00000063
+.Element:Mystery00000000
+.Element:Jump   00000000
+.Element:Hammer 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_8022F664_19 {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep       0`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy       0`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze    0`
+.Status:Shrink      0`
+.Status:Stop        0`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_8022F710_19 {
+00020022 01000000 000000FF $IdleAnimations_8022F580_19 $DefenseTable_8022F638_19 00000000 00000000 00000000 00000000 
+80800023 02003200 00CE00FF 00000000 $DefenseTable_8022F638_19 00000000 00000000 00000000 00000000 
+}
+
+#new:Script $Script_Init_8022F780_19 {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_802305E8_19 )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_8022FA10_19 )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_8022FE2C_19 )
+   3C:  Call  BindNextTurn  ( .Actor:Self $Script_NextTurn_8022FA00_19 )
+   50:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   68:  If  *Var0  ==  00000000 
+   78:  	Call  8027D4C8      ( FFFFFF81 00000001 FFFFFFFF FFFFFFF7 )
+   94:  	Call  8027D4C8      ( FFFFFF81 00000002 FFFFFFFF FFFFFFF7 )
+   B0:  	Call  SetTargetOffset   ( .Actor:Self 00000001 FFFFFFFF 00000009 )
+   CC:  	Call  SetTargetOffset   ( .Actor:Self 00000002 FFFFFFFF FFFFFFD7 )
+   E8:  	Call  SetActorSize  ( .Actor:Self 00000014 00000019 )
+  100:  	Call  SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_8022F580_19 )
+  118:  	Call  SetAnimation  ( .Actor:Self 00000001 004C0002 )
+  130:  	Call  SetActorVar   ( .Actor:Self 00000000 00000000 )
+  148:  Else
+  150:  	Call  8027D4C8      ( FFFFFF81 00000001 FFFFFFF8 FFFFFFF3 )
+  16C:  	Call  8027D4C8      ( FFFFFF81 00000002 FFFFFFF8 FFFFFFF3 )
+  188:  	Call  SetTargetOffset   ( .Actor:Self 00000001 00000001 0000000E )
+  1A4:  	Call  SetTargetOffset   ( .Actor:Self 00000002 00000001 FFFFFFDC )
+  1C0:  	Call  SetActorSize  ( .Actor:Self 0000001C 00000023 )
+  1D8:  	Call  SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_8022F5DC_19 )
+  1F0:  	Call  SetAnimation  ( .Actor:Self 00000001 004C0003 )
+  208:  	Call  SetActorVar   ( .Actor:Self 00000000 00000001 )
+  220:  EndIf
+  228:  Call  SetActorVar   ( .Actor:Self 00000002 00000000 )
+  240:  Call  SetActorVar   ( .Actor:Self 00000003 00000064 )
+  258:  Call  SetActorVar   ( .Actor:Self 00000004 00000064 )
+  270:  Return
+  278:  End
+}
+
+#new:Script $Script_NextTurn_8022FA00_19 {
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_Idle_8022FA10_19 {
+    0:  Set   *VarF  00000000 
+   10:  Loop
+   1C:  	Call  GetActorVar   ( .Actor:Self 00000002 *VarA )
+   34:  	Switch  *VarA 
+   40:  		Case  ==  00000000 
+   4C:  			Call  $Function_80218C40_19 ( *VarF *Var0 *Fixed[0.97] *Fixed[1.03] 0000000F 00000000 00000000 )
+   74:  			Call  $Function_80218C40_19 ( *VarF *Var1 *Fixed[1.03] *Fixed[0.97] 0000000F 00000000 00000000 )
+   9C:  			Add   *VarF  00000001 
+   AC:  		Case  ==  00000001 
+   B8:  			Call  $Function_80218C40_19 ( *VarF *Var0 *Fixed[0.95] *Fixed[1.05] 0000000F 00000000 00000000 )
+   E0:  			Call  $Function_80218C40_19 ( *VarF *Var1 *Fixed[1.05] *Fixed[0.95] 0000000F 00000000 00000000 )
+  108:  			Add   *VarF  00000003 
+  118:  		Case  ==  00000002 
+  124:  			Call  $Function_80218C40_19 ( *VarF *Var0 *Fixed[0.9] *Fixed[1.1] 0000000F 00000000 00000000 )
+  14C:  			Call  $Function_80218C40_19 ( *VarF *Var1 *Fixed[1.1] *Fixed[0.9] 0000000F 00000000 00000000 )
+  174:  			Add   *VarF  00000005 
+  184:  	EndSwitch
+  18C:  	Call  GetActorVar   ( .Actor:Self 00000003 *Var2 )
+  1A4:  	Call  GetActorVar   ( .Actor:Self 00000004 *Var3 )
+  1BC:  	DivF  *Var2  *Fixed[100.0] 
+  1CC:  	DivF  *Var3  *Fixed[100.0] 
+  1DC:  	MulF  *Var1  *Var2 
+  1EC:  	MulF  *Var0  *Var3 
+  1FC:  	Call  SetActorScale ( .Actor:Self *Var1 *Var0 *Fixed[1.0] )
+  218:  	If  *VarF  >=  0000001E 
+  228:  		Set   *VarF  00000000 
+  238:  	EndIf
+  240:  	Wait  1`
+  24C:  EndLoop
+  254:  Return
+  25C:  End
+}
+
+#new:Script $Script_8022FC74_19 {
+    0:  Call  ActorExists   ( .Actor:Enemy0 *Var0 )
+   14:  If  *Var0  ==  .False 
+   24:  	Return
+   2C:  EndIf
+   34:  Call  GetActorVar   ( .Actor:Self 00000001 *Var0 )
+   4C:  Call  GetActorVar   ( .Actor:Enemy0 00000002 *Var1 )
+   64:  Switch  *Var0 
+   70:  	Case  ==  00000000 
+   7C:  		ConstAND  *Var1 FFFFFFFE 
+   8C:  	Case  ==  00000001 
+   98:  		ConstAND  *Var1 FFFFFFFD 
+   A8:  	Case  ==  00000002 
+   B4:  		ConstAND  *Var1 FFFFFFFB 
+   C4:  	Case  ==  00000003 
+   D0:  		ConstAND  *Var1 FFFFFFF7 
+   E0:  	Case  ==  00000004 
+   EC:  		ConstAND  *Var1 FFFFFFEF 
+   FC:  	Case  ==  00000005 
+  108:  		ConstAND  *Var1 FFFFFFDF 
+  118:  	Case  ==  00000006 
+  124:  		ConstAND  *Var1 FFFFFFBF 
+  134:  	Case  ==  00000007 
+  140:  		ConstAND  *Var1 FFFFFF7F 
+  150:  	Case  ==  00000008 
+  15C:  		ConstAND  *Var1 FFFFFEFF 
+  16C:  	Case  ==  00000009 
+  178:  		ConstAND  *Var1 FFFFFDFF 
+  188:  EndSwitch
+  190:  Call  SetActorVar   ( .Actor:Enemy0 00000002 *Var1 )
+  1A8:  Return
+  1B0:  End
+}
+
+#new:Script $Script_HandleEvent_8022FE2C_19 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   28:  Switch  *Var0 
+   34:  	Case  ==  .Event:HitCombo % 9
+   40:  		SetConst  *Var0  00000001 
+   50:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+   68:  		If  *Var1  ==  00000000 
+   78:  			SetConst  *Var1  004C000C 
+   88:  		Else
+   90:  			SetConst  *Var1  004C000D 
+   A0:  		EndIf
+   A8:  		ExecWait  DoNormalHit 
+   B4:  	Case  ==  .Event:Hit % A
+   C0:  		SetConst  *Var0  00000001 
+   D0:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+   E8:  		If  *Var1  ==  00000000 
+   F8:  			SetConst  *Var1  004C000C 
+  108:  		Else
+  110:  			SetConst  *Var1  004C000D 
+  120:  		EndIf
+  128:  		ExecWait  DoNormalHit 
+  134:  	Case  ==  .Event:BurnHit % E
+  140:  		Set   *Var0  00000001 
+  150:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  168:  		If  *Var1  ==  00000000 
+  178:  			SetConst  *Var1  004C000E 
+  188:  		Else
+  190:  			SetConst  *Var1  004C0010 
+  1A0:  		EndIf
+  1A8:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var2 )
+  1C0:  		If  *Var2  ==  00000000 
+  1D0:  			SetConst  *Var2  004C000F 
+  1E0:  		Else
+  1E8:  			SetConst  *Var2  004C0011 
+  1F8:  		EndIf
+  200:  		ExecWait  DoBurnHit 
+  20C:  	Case  ==  .Event:BurnDeath % 24
+  218:  		Set   *Var0  00000001 
+  228:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  240:  		If  *Var1  ==  00000000 
+  250:  			SetConst  *Var1  004C000E 
+  260:  		Else
+  268:  			SetConst  *Var1  004C0010 
+  278:  		EndIf
+  280:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var2 )
+  298:  		If  *Var2  ==  00000000 
+  2A8:  			SetConst  *Var2  004C000F 
+  2B8:  		Else
+  2C0:  			SetConst  *Var2  004C0011 
+  2D0:  		EndIf
+  2D8:  		ExecWait  DoBurnHit 
+  2E4:  		ExecWait  $Script_8022FC74_19 
+  2F0:  		SetConst  *Var0  00000001 
+  300:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  318:  		If  *Var1  ==  00000000 
+  328:  			SetConst  *Var1  004C000F 
+  338:  		Else
+  340:  			SetConst  *Var1  004C0011 
+  350:  		EndIf
+  358:  		ExecWait  DoDeath 
+  364:  		Return
+  36C:  	Case  ==  00000017 % 17
+  378:  		SetConst  *Var0  00000001 
+  388:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  3A0:  		If  *Var1  ==  00000000 
+  3B0:  			SetConst  *Var1  004C0002 
+  3C0:  		Else
+  3C8:  			SetConst  *Var1  004C0003 
+  3D8:  		EndIf
+  3E0:  		ExecWait  DoImmune 
+  3EC:  	Case  ==  .Event:Immune % 19
+  3F8:  		SetConst  *Var0  00000001 
+  408:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  420:  		If  *Var1  ==  00000000 
+  430:  			SetConst  *Var1  004C0002 
+  440:  		Else
+  448:  			SetConst  *Var1  004C0003 
+  458:  		EndIf
+  460:  		ExecWait  DoImmune 
+  46C:  	Case  ==  .Event:Death % 20
+  478:  		SetConst  *Var0  00000001 
+  488:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  4A0:  		If  *Var1  ==  00000000 
+  4B0:  			SetConst  *Var1  004C000C 
+  4C0:  		Else
+  4C8:  			SetConst  *Var1  004C000D 
+  4D8:  		EndIf
+  4E0:  		ExecWait  DoNormalHit 
+  4EC:  		ExecWait  $Script_8022FC74_19 
+  4F8:  		SetConst  *Var0  00000001 
+  508:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  520:  		If  *Var1  ==  00000000 
+  530:  			SetConst  *Var1  004C000C 
+  540:  		Else
+  548:  			SetConst  *Var1  004C000D 
+  558:  		EndIf
+  560:  		ExecWait  DoDeath 
+  56C:  		Return
+  574:  	Case  ==  .Event:RecoverStatus % 31
+  580:  		SetConst  *Var0  00000001 
+  590:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  5A8:  		If  *Var1  ==  00000000 
+  5B8:  			SetConst  *Var1  004C0002 
+  5C8:  		Else
+  5D0:  			SetConst  *Var1  004C0003 
+  5E0:  		EndIf
+  5E8:  		ExecWait  DoRecover 
+  5F4:  	Case  ==  .Event:BeginAirLift % 3A
+  600:  		SetConst  *Var0  00000001 
+  610:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  628:  		If  *Var1  ==  00000000 
+  638:  			SetConst  *Var1  004C0006 
+  648:  		Else
+  650:  			SetConst  *Var1  004C0007 
+  660:  		EndIf
+  668:  		ExecWait  DoAirLift 
+  674:  	Case  ==  .Event:BlowAway % 16
+  680:  		ExecWait  $Script_8022FC74_19 
+  68C:  		SetConst  *Var0  00000001 
+  69C:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  6B4:  		If  *Var1  ==  00000000 
+  6C4:  			SetConst  *Var1  004C000C 
+  6D4:  		Else
+  6DC:  			SetConst  *Var1  004C000D 
+  6EC:  		EndIf
+  6F4:  		ExecWait  DoBlowAway 
+  700:  		Return
+  708:  	Case  ==  .Event:AirLiftFailed % 1F
+  714:  		SetConst  *Var0  00000001 
+  724:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var1 )
+  73C:  		If  *Var1  ==  00000000 
+  74C:  			SetConst  *Var1  004C0002 
+  75C:  		Else
+  764:  			SetConst  *Var1  004C0003 
+  774:  		EndIf
+  77C:  		ExecWait  DoImmune 
+  788:  	Default
+  790:  EndSwitch
+  798:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  7AC:  Return
+  7B4:  End
+}
+
+#new:Script $Script_TakeTurn_802305E8_19 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+   3C:  Call  UseIdleAnimation  ( .Actor:Self .True )
+   50:  Return
+   58:  End
+}
+

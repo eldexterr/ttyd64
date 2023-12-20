@@ -1,0 +1,120 @@
+% Script File: kpa_100.mscr
+% Decoded from: 0 to 2E0 (kpa_100)
+
+
+#new:Function_Init $Function_Init
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LA        A0, 800D9230
+    C:  LA        A1, $ASCII_802402B0
+   14:  SW        RA, 10 (SP)
+   18:  JAL       ~Func:sprintf
+   1C:  NOP
+   20:  LA        A0, 800D91E0
+   28:  LA        A1, $ASCII_802402C0
+   2C:  JAL       ~Func:sprintf
+   30:  RESERVED
+   34:  LW        RA, 10 (SP)
+   38:  CLEAR     V0
+   3C:  JR        RA
+   40:  ADDIU     SP, SP, 18
+}
+
+PADDING: 80240044 to 80240050 (00000044 to 00000050)
+00000000 00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -208.0    0.0  100.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000001
+	[Background]  00000000
+	[MapTattle]   00190173
+}
+
+#new:Script $Script_802400A0
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000007 )
+   50:  EndThread
+   58:  Return
+   60:  End
+}
+
+PADDING: 80240108 to 80240110 (00000108 to 00000110)
+00000000 00000000
+
+#new:Script $Script_ExitWalk_80240110
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802402CC 00000001 ) % kpa_08
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_8024016C
+{
+    0:  Bind  $Script_ExitWalk_80240110 .Trigger:FloorAbove 0000000B 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  ExecWait  $Script_80240270
+   90:  Set   *Var0  $Script_8024016C
+   A0:  Exec  EnterWalk
+   AC:  Wait  1`
+   B8:  Exec  $Script_802400A0
+   C4:  Return
+   CC:  End
+}
+
+PADDING: 8024026C to 80240270 (0000026C to 00000270)
+00000000
+
+#new:Script $Script_80240270
+{
+    0:  Call  MakeItemEntity    ( .Item:BowserCastleKey ~Vec3d:Item80240270 00000000 *GF_KPA100_Item_CastleKey2 )
+   24:  Return
+   2C:  End
+}
+
+PADDING: 802402A4 to 802402B0 (000002A4 to 000002B0)
+00000000 00000000 00000000
+
+#new:ASCII $ASCII_802402B0
+{
+	"kpa_117_shape"
+}
+
+#new:ASCII $ASCII_802402C0
+{
+	"kpa_117_hit"
+}
+
+#new:ASCII $ASCII_802402CC
+{
+	"kpa_08"
+}
+
+PADDING: 802402D4 to 802402E0 (000002D4 to 000002E0)
+00000000 00000000 00000000
+

@@ -1,0 +1,75 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:BowsersCastle
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+    Set   *Var0 $Script_MakeExits
+    Exec  EnterWalk
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+    Call  MakeItemEntity ( .Item:SpeedySpin ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_KPA140_Item )
+	Return
+	End
+}
+
+#new:Script $Script_MakeExits
+{
+    Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit0
+{
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+    Exec  ExitWalk
+    Set   *AreaByte[F] 5
+    Call  GotoMap   ( "kpa_41" 00000001 )
+    Wait  100`
+    Return
+    End
+}
+
+#new:Function $Function_GetTattle
+{
+    LIO       V0, $String_Tattle
+    JR        RA
+    RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Well, it's not the route we expected[BR]
+but at least we found a secret!
+[Wait][End]      
+}

@@ -1,0 +1,260 @@
+% Script File: kmr_12.mscr
+% Decoded from: 0 to AC0 (kmr_12)
+
+#define .NpcID:Goomba_00            00
+
+#new:Function $Function_80240000
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  SW        RA, 14 (SP)
+   10:  JAL       ~Func:get_enemy_safe
+   14:  CLEAR     A0
+   18:  SW        V0, 84 (S0)
+   1C:  LW        RA, 14 (SP)
+   20:  LW        S0, 10 (SP)
+   24:  LI        V0, 2
+   28:  JR        RA
+   2C:  ADDIU     SP, SP, 18
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -126.0    0.0   12.0   90.0
+	~Vec4f:Entry1 %  471.0    0.0   12.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  80200000
+	[MapTattle]   00190040
+}
+
+#new:Script $Script_80240090
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:PleasantPath 00000000 00000008 )
+   1C:  Return
+   24:  End
+}
+
+PADDING: 802400BC to 802400C0 (000000BC to 000000C0)
+00000000
+
+#new:Script $Script_ExitWalk_802400C0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240AB0 00000001 ) % kmr_07
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_8024011C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240AB8 00000000 ) % kmr_11
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240178
+{
+    0:  Bind  $Script_ExitWalk_802400C0 .Trigger:FloorAbove ~Collider:deili1 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024011C .Trigger:FloorAbove ~Collider:deili2 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:GoombaRoad
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  MakeNpcs  ( .False $NpcGroupList_802409A8 )
+   84:  ExecWait  $Script_MakeEntities
+   90:  Exec  $Script_80240090
+   9C:  Set   *Var0  $Script_80240178
+   AC:  Exec  EnterWalk
+   B8:  Wait  1`
+   C4:  Bind  $Script_8024032C .Trigger:WallPressA ~Collider:o78 00000001 00000000
+   E0:  Return
+   E8:  End
+}
+
+#new:AISettings $AISettings_802402B0
+{
+    1.5 % move speed
+    30` % move time
+    30` % wait time
+  130.0 % alert radius
+    0.0
+    1`
+    2.5 % chase speed
+    180`
+    3`
+  150.0 % chase radius
+    0.0
+    1`
+}
+
+#new:Script $Script_NpcAI_802402E0
+{
+    0:  Call  DoBasicAI ( $AISettings_802402B0 )
+   10:  Return
+   18:  End
+}
+
+#new:NpcSettings $NpcSettings_80240300
+{
+	00000000 00140017 00000000 00000000 $Script_NpcAI_802402E0 80077F70 00000000 8007809C
+	00000000 00000000 00050000
+}
+
+#new:Script $Script_8024032C
+{
+    0:  SetGroup  00000000
+    C:  SuspendAll  00000001
+   18:  Call  DisablePlayerInput        ( .True )
+   28:  Call  ShowMessageAtScreenPos    ( 001D0167  160`  40` ) % Eat a Mushroom to regain your energy!
+   40:  ResumeAll  00000001
+   4C:  Set   *Flag[00]  .False
+   5C:  Call  $Function_80240000 ( )
+   68:  If  *Var0  !=  00000000
+   78:  	Call  GetNpcVar ( .NpcID:Goomba_00 00000000 *Var0 )
+   90:  	If  *Var0  ==  00000000
+   A0:  		Call  SetNpcVar ( .NpcID:Goomba_00 00000000 00000001 )
+   B8:  		Set   *Flag[00]  .True
+   C8:  		Wait  10`
+   D4:  	EndIf
+   DC:  EndIf
+   E4:  Call  DisablePlayerInput    ( .False )
+   F4:  If  *Flag[00]  ==  .True
+  104:  	Unbind
+  10C:  EndIf
+  114:  End
+}
+
+MISSING: 80240448 to 80240450 (00000448 to 00000450)
+00000002 00000000
+
+#new:Script $Script_Idle_80240450
+{
+    0:  Wait  1`
+    C:  Call  SetSelfVar        ( 00000000 00000000 )
+   20:  Call  SetNpcAnimation   ( .Npc:Self 0026000D )
+   34:  Call  EnableNpcShadow   ( .Npc:Self .False )
+   48:  Call  SetSelfEnemyFlagBits  ( 00000020 00000001 )
+   5C:  Label  0
+   68:  Call  GetSelfVar        ( 00000000 *Var0 )
+   7C:  Wait  1`
+   88:  If  *Var0  ==  00000000
+   98:  	Goto  0
+   A4:  EndIf
+   AC:  Call  SetNpcFlagBits    ( .Npc:Self 00240000 .True )
+   C4:  Wait  3`
+   D0:  SetF  *Var0  *Fixed[0.0]
+   E0:  Loop  00000009
+   EC:  	AddF  *Var0  *Fixed[10.0]
+   FC:  	Call  SetNpcRotation    ( .Npc:Self 00000000 *Var0 00000000 )
+  118:  	Wait  1`
+  124:  EndLoop
+  12C:  Call  SetNpcAnimation   ( .Npc:Self 00260000 )
+  140:  Loop  00000009
+  14C:  	AddF  *Var0  *Fixed[10.0]
+  15C:  	Call  SetNpcRotation    ( .Npc:Self 00000000 *Var0 00000000 )
+  178:  	Wait  1`
+  184:  EndLoop
+  18C:  Call  SetNpcAnimation   ( .Npc:Self 00260007 )
+  1A0:  Wait  20`
+  1AC:  Call  SetNpcAnimation   ( .Npc:Self 00260001 )
+  1C0:  Call  PlaySoundAtNpc    ( .Npc:Self 000000F8 00000000 )
+  1D8:  Call  802CFE2C  ( FFFFFFFF 00002000 )
+  1EC:  Call  802CFD30  ( FFFFFFFF 00000005 00000006 00000001 00000001 00000000 )
+  210:  Wait  12`
+  21C:  Wait  5`
+  228:  Call  PlaySoundAtNpc    ( .Npc:Self 0000032C 00000000 )
+  240:  Call  EnableNpcShadow   ( .Npc:Self .True )
+  254:  Call  SetNpcJumpscale   ( .Npc:Self *Fixed[0.6] )
+  268:  Call  NpcJump0  ( .Npc:Self  -35`  0`  30`  23` )
+  288:  Call  802CFD30  ( FFFFFFFF 00000000 00000000 00000000 00000000 00000000 )
+  2AC:  Call  InterpNpcYaw      ( .Npc:Self  90`  0` )
+  2C4:  Call  SetNpcFlagBits    ( .Npc:Self 00240000 .False )
+  2DC:  Call  SetSelfEnemyFlagBits  ( 00000020 00000000 )
+  2F0:  Call  SetSelfEnemyFlagBits  ( 40000000 00000001 )
+  304:  Bind  $Script_8024032C .Trigger:WallPressA ~Collider:o78 00000001 00000000
+  320:  Call  BindNpcAI ( .Npc:Self $Script_NpcAI_802402E0 )
+  334:  Return
+  33C:  End
+}
+
+#new:Script $Script_Init_80240794
+{
+    0:  Call  BindNpcIdle   ( .Npc:Self $Script_Idle_80240450 )
+   14:  Return
+   1C:  End
+}
+
+#new:NpcGroup $NpcGroup_802407B8
+{
+	.NpcID:NPC_Goomba_00 $NpcSettings_80240300 ~Vec3f:NPC_Goomba_00 % -33 30 -25
+	00000C00 $Script_Init_80240794 00000000 00000000 0000005A
+	~Items:5:Mushroom:A ~HP:GenerousWhenLow:2 ~FP:GenerousWhenLow:2 ~NoCoinBonus
+	~Movement:NPC_Goomba_00
+	~AnimationTable:NPC_Goomba_00 % .Sprite:Goomba
+	00000000 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroupList $NpcGroupList_802409A8
+{
+	00000001 $NpcGroup_802407B8 00010003
+	00000000 00000000 00000000
+}
+
+#new:Script $Script_802409C0
+{
+    0:  Call  IsStartingConversation    ( *Var0 )
+   10:  If  *Var0  ==  .True
+   20:  	Return
+   28:  EndIf
+   30:  SetGroup  00000000
+   3C:  Call  SetTimeFreezeMode     ( 00000001 )
+   4C:  Call  DisablePlayerInput    ( .True )
+   5C:  Call  ShowMessageAtScreenPos    ( 001D0168  160`  40` ) % Goomba King's Fortress Ahead
+   74:  Call  DisablePlayerInput    ( .False )
+   84:  Call  SetTimeFreezeMode     ( 00000000 )
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeEntity    ( .Entity:Signpost ~Vec4d:Entity80240A64 80000000 )
+   24:  Call  AssignScript  ( $Script_802409C0 )
+   34:  Return
+   3C:  End
+}
+
+PADDING: 80240AA8 to 80240AB0 (00000AA8 to 00000AB0)
+00000000 00000000
+
+#new:ASCII $ASCII_80240AB0
+{
+	"kmr_07"
+}
+
+#new:ASCII $ASCII_80240AB8
+{
+	"kmr_11"
+}
+

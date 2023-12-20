@@ -1,0 +1,139 @@
+% Script File: dgb_17.mscr
+% Decoded from: 0 to 4E0 (dgb_17)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -570.0    0.0  180.0   90.0
+	~Vec4f:Entry1 % -180.0    0.0  180.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  00000000
+	[MapTattle]   001900D1
+}
+
+#new:Script $Script_80240060
+{
+    0:  Switch  *GB_StoryProgress
+    C:  	Case  <  .Story:Ch3_TubbaWokeUp % FFFFFFE3
+   18:  		Call  SetMusicTrack ( 00000000 .Song:TubbasManor 00000000 00000008 )
+   34:  	Case  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+   40:  		Call  SetMusicTrack ( 00000000 .Song:TubbaEscape 00000000 00000008 )
+   5C:  	Default
+   64:  		Call  SetMusicTrack ( 00000000 .Song:TubbasManor 00000000 00000008 )
+   80:  EndSwitch
+   88:  Return
+   90:  End
+}
+
+PADDING: 802400F8 to 80240100 (000000F8 to 00000100)
+00000000 00000000
+
+#new:Script $Script_ExitDoubleDoor_80240100
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Creaky )
+   2C:  Set   *Var0  ~Entry:Entry0
+   3C:  Set   *Var1  ~Collider:deilittw
+   4C:  Set   *Var2  ~Model:o142
+   5C:  Set   *Var3  ~Model:o143
+   6C:  Exec  ExitDoubleDoor
+   78:  Wait  17`
+   84:  Call  GotoMap   ( $ASCII_802404D0 00000001 ) % dgb_15
+   98:  Wait  100`
+   A4:  Return
+   AC:  End
+}
+
+#new:Script $Script_ExitDoubleDoor_802401B4
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Creaky )
+   2C:  Set   *Var0  ~Entry:Entry1
+   3C:  Set   *Var1  ~Collider:deilitte
+   4C:  Set   *Var2  ~Model:o199
+   5C:  Set   *Var3  ~Model:o198
+   6C:  Exec  ExitDoubleDoor
+   78:  Wait  17`
+   84:  Call  GotoMap   ( $ASCII_802404D8 00000005 ) % dgb_01
+   98:  Wait  100`
+   A4:  Return
+   AC:  End
+}
+
+#new:Script $Script_80240268
+{
+    0:  Bind  $Script_ExitDoubleDoor_80240100 .Trigger:WallPressA ~Collider:deilittw 00000001 00000000
+   1C:  Bind  $Script_ExitDoubleDoor_802401B4 .Trigger:WallPressA ~Collider:deilitte 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_EnterDoubleDoor_802402B0
+{
+    0:  Call  GetLoadType   ( *Var1 )
+   10:  If  *Var1  ==  00000001
+   20:  	Exec  EnterSavePoint
+   2C:  	Exec  $Script_80240268
+   38:  	Return
+   40:  EndIf
+   48:  Call  UseDoorSounds ( .DoorSounds:Creaky )
+   58:  Call  GetEntryID    ( *Var0 )
+   68:  Switch  *Var0
+   74:  	Case  ==  ~Entry:Entry0
+   80:  		Set   *Var2  ~Model:o142
+   90:  		Set   *Var3  ~Model:o143
+   A0:  		ExecWait  EnterDoubleDoor
+   AC:  	Case  ==  ~Entry:Entry1
+   B8:  		Set   *Var2  ~Model:o199
+   C8:  		Set   *Var3  ~Model:o198
+   D8:  		ExecWait  EnterDoubleDoor
+   E4:  EndSwitch
+   EC:  Exec  $Script_80240268
+   F8:  Return
+  100:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:TubbasManor
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  ExecWait  $Script_MakeEntities
+   90:  Exec  $Script_80240060
+   9C:  Exec  $Script_EnterDoubleDoor_802402B0
+   A8:  Return
+   B0:  End
+}
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeEntity    ( .Entity:SavePoint ~Vec4d:Entity80240470 80000000 )
+   24:  Call  MakeEntity    ( .Entity:HealingBlock ~Vec4d:Entity80240494 80000000 )
+   48:  Return
+   50:  End
+}
+
+PADDING: 802404C8 to 802404D0 (000004C8 to 000004D0)
+00000000 00000000
+
+#new:ASCII $ASCII_802404D0
+{
+	"dgb_15"
+}
+
+#new:ASCII $ASCII_802404D8
+{
+	"dgb_01"
+}
+

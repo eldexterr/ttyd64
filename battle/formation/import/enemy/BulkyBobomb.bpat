@@ -1,0 +1,684 @@
+#new:Actor $3B_BulkyBobomb
+{
+% stats
+[Index]        67b 
+[Level]        17`b 
+[MaxHP]        6`b 
+[Coins]         0`b 
+[Flags]       00000000
+[StatusTable] $StatusTable_BulkyBobomb
+% ai
+[PartsCount]   1`s 
+[PartsTable]  $PartsTable_BulkyBobomb
+[Script]      $Script_Init_BulkyBobomb
+% move effectiveness
+[Escape]       40`b 
+[Item]         75`b 
+[AirLift]      20`b 
+[Hurricane]    80`b % Bow's "Spook" as well
+[UpAndAway]    95`b 
+[PowerBounce] 100`b 
+[SpinSmash]     4`b % weight (0-4)
+% ui positions
+[Size]         56`b  80`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]   -6`b  38`b % dx dy
+[StatusIcon]   12`b  47`b % dx dy
+}
+
+#new:PartsTable $PartsTable_BulkyBobomb {
+00800000 01000000 003400FF $IdleAnimations_BulkyBobomb_1 $DefenseTable_BulkyBobomb 00000200 00000000 00EC0000 00000000 
+}
+
+#new:IdleAnimations $IdleAnimations_BulkyBobomb_1 {
+.Status:Normal    00EC0001
+.Status:Frozen    00EC0000
+.Status:Sleep     00EC0015
+.Status:Poison    00EC0001
+.Status:Stop      00EC0000
+.Status:Static    00EC0000
+.Status:Paralyze  00EC0000
+.Status:Dizzy     00EC0015
+.Status:Fear      00EC0000
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_BulkyBobomb_2 {
+.Status:Normal    00EC0002
+.Status:Frozen    00EC0000
+.Status:Sleep     00EC0015
+.Status:Poison    00EC0001
+.Status:Stop      00EC0000
+.Status:Static    00EC0000
+.Status:Paralyze  00EC0000
+.Status:Dizzy     00EC0015
+.Status:Fear      00EC0000
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_BulkyBobomb_3 {
+.Status:Normal    00EC0003
+.Status:Frozen    00EC0000
+.Status:Sleep     00EC0015
+.Status:Poison    00EC0001
+.Status:Stop      00EC0000
+.Status:Static    00EC0000
+.Status:Paralyze  00EC0000
+.Status:Dizzy     00EC0015
+.Status:Fear      00EC0000
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_BulkyBobomb_4 {
+.Status:Normal    00EC0004
+.Status:Frozen    00EC0000
+.Status:Sleep     00EC0015
+.Status:Poison    00EC0001
+.Status:Stop      00EC0000
+.Status:Static    00EC0000
+.Status:Paralyze  00EC0000
+.Status:Dizzy     00EC0015
+.Status:Fear      00EC0000
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_BulkyBobomb_5 {
+.Status:Normal    00EC0005
+.Status:Frozen    00EC0000
+.Status:Sleep     00EC0015
+.Status:Poison    00EC0001
+.Status:Stop      00EC0000
+.Status:Static    00EC0000
+.Status:Paralyze  00EC0000
+.Status:Dizzy     00EC0015
+.Status:Fear      00EC0000
+.Status:End
+}
+
+#new:StatusTable $StatusTable_BulkyBobomb
+{
+.Status:Normal            0`
+.Status:Sleep            90`
+.Status:Poison          100`
+.Status:Frozen          100`
+.Status:Dizzy            70`
+.Status:Static           75`
+.Status:Paralyze         75`
+.Status:Shrink           80`
+.Status:Stop             75`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_BulkyBobomb {
+.Element:Normal 00000001
+.Element:End
+}
+
+#new:Script $Script_Init_BulkyBobomb
+{
+    Call    BindTakeTurn  ( .Actor:Self $Script_TakeTurn_BulkyBobomb )
+    Call    BindHandleEvent   ( .Actor:Self $Script_HandleEvent_BulkyBobomb )
+    Call    BindIdle ( .Actor:Self $Script_Idle_BulkyBobomb )
+    Return
+    End
+}
+
+#new:Script $Script_TakeTurn_BulkyBobomb
+{
+    Call    UseIdleAnimation ( .Actor:Self .False )
+	Call    EnableIdleScript ( .Actor:Self 0 )
+    Call    GetActorVar ( .Actor:Self 00000000 *Var0 )
+    Switch *Var0
+        Case == 0 % light fuse
+            Call    SetAnimation ( .Actor:Self 00000001 00EC0006 )
+            Call    PlaySoundAtActor ( .Actor:Self 20CC )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EC0002 )
+            Call    PlaySound ( 0287 )
+            Wait    10`
+            Call    StopSound ( 0287 )
+            Wait    20`
+            Call    SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_BulkyBobomb_2 )
+            Call    SetActorVar ( .Actor:Self 00000000 00000001 )
+        Case == 1 % defense boost
+            Call    SetAnimation ( .Actor:Self 00000001 00EC0009 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EC0007 )
+            Call    PlaySoundAtActor ( .Actor:Self 20CC )
+            Wait    15`
+            % Show blue arrow
+            Call    GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add     *Var0  15` % x
+            Add     *Var1  35` % y
+            Set     *VarF  6 % z
+            Call    PlayEffect    ( ~FX:StatChange:DefensePlus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+            % set arrowFx's number
+            Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+            Call    $WriteAddress ( *Var0 2 3 20 .False  ) % set amount inside the arrow
+            % show wave fx
+            Call    GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    PlayEffect ( ~FX:Debuff:Blue *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+            % sfx
+            Call    PlaySoundAtActor ( .Actor:Self 208F ) % Charging
+            % end
+            Wait    20`
+            Call    $AddDefenseBoost ( .Actor:Self 3 3 )
+            Wait    20`
+            Call    SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_BulkyBobomb_3 )
+            Call    SetActorVar ( .Actor:Self 00000000 00000002 )
+        Case == 2 % attack boost
+            Call    SetAnimation ( .Actor:Self 00000001 00EC000A )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EC0008 )
+            Call    PlaySoundAtActor ( .Actor:Self 20CC )
+            Wait    15`
+            % Show red arrow
+            Call    GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add     *Var0  15` % x
+            Add     *Var1  35` % y
+            Set     *VarF  6 % z
+            Call    PlayEffect    ( ~FX:StatChange:AttackPlus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+            % show wave fx
+            Call    GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+            % sfx
+            Call    PlaySoundAtActor ( .Actor:Self 208E ) % pipe
+            % set arrowFx's number
+            Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+            Call    $WriteAddress ( *Var0 2 3 20 .False  ) % set amount inside the arrow
+            Call    $AddAttackBoost ( .Actor:Self 3 3 )
+            % end
+            Wait    20`
+            Call    SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_BulkyBobomb_4 )
+            Call    SetActorVar ( .Actor:Self 00000000 00000003 )
+        Case == 3 % charge
+            Call    SetAnimation ( .Actor:Self 00000001 00EC000B )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EC0017 )
+            Call    PlaySoundAtActor ( .Actor:Self 20CC )
+            Wait    15`
+            % charge Bulky
+            Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+            Call	PlaySound   ( 208E ) % Pipe
+            Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add	    *Var0 20` % x
+            Add	    *Var1 5 % y
+            Add     *Var2 1 % z
+            Call    PlayEffect ( ~FX:StatChange:AttackPlus3 *Var0 *Var1 *Var2 *Fixed[1.0] 30` .False .False .False .False .False .False .False )
+            % set boost
+            Call    $GetActorExtraData ( .Actor:Self F *Var6 ) % charge byte
+            Add     *Var6 3
+            If *Var6 > FF % check cap
+                Set *Var6 FF
+            EndIf
+            Call    $SetActorExtraData ( .Actor:Self F *Var6 ) % charge byte
+            Wait    22`
+            Call    SetIdleAnimations ( .Actor:Self 00000001 $IdleAnimations_BulkyBobomb_5 )
+            Call    SetActorVar ( .Actor:Self 00000000 00000004 )
+        Case == 4 % explode
+            Call    SetAnimation ( .Actor:Self 00000001 00EC000C )
+            Wait    20`
+            ExecWait $Script_ExplosionFX
+            ExecWait $Script_Attack_Explosion_HurtAllTargets
+            SetConst  *Var0  00000001 
+            SetConst  *Var1  00EC000C 
+            Set   *Var2  FFFFCFC7 
+            ExecWait  DoDeath 
+            Return
+    EndSwitch
+    Call    EnableIdleScript  ( .Actor:Self 00000001 )
+    Call    UseIdleAnimation  ( .Actor:Self .True )
+    Return
+    End
+}
+
+#new:Script $Script_Attack_Explosion_HurtAllTargets
+{
+    % target player team
+    Call  EnemyCreateTargetList ( 00000108 )
+    Call  InitTargetIterator
+    Label  DamagePlayerTeam
+    Call  GetOwnerTarget        ( *Var0 *Var1 )
+    Call  SetGoalToTarget ( .Actor:Self )
+    Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000001 00000010 )
+    Switch  *VarA
+        CaseOR  ==  .HitResult:Miss % 6
+        CaseOR  ==  .HitResult:Lucky % 5
+            If  *VarA  ==  .HitResult:Lucky % 5
+                Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+            EndIf
+        Default
+            Call    EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact|Blast 00000000 00000000 00000002 00000020 )
+            Wait    2
+        EndCaseGroup
+    EndSwitch
+    Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+    If  *Var0  !=  FFFFFFFF 
+        Goto  DamagePlayerTeam
+    EndIf
+    % target enemy team
+    Call  EnemyCreateTargetList ( 00008002 )
+    Call  InitTargetIterator
+    Label  DamageEnemyTeam
+    Call  GetOwnerTarget        ( *Var0 *Var1 )
+    Call  GetOwnerID ( *Var2 )
+    If *Var0 == *Var2 % skip owner
+        Goto  ChooseNextTarget_Enemies
+    EndIf
+    Call  SetGoalToTarget ( .Actor:Self )
+    Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000001 00000010 )
+    Switch  *VarA
+        CaseOR  ==  .HitResult:Miss % 6
+        CaseOR  ==  .HitResult:Lucky % 5
+            If  *VarA  ==  .HitResult:Lucky % 5
+                Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+            EndIf
+        Default
+            Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact|Blast 00000000 00000000 00000002 00000020 )
+            Wait    2
+        EndCaseGroup
+    EndSwitch
+    Label ChooseNextTarget_Enemies
+    Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+    If  *Var0  !=  FFFFFFFF 
+        Goto  DamageEnemyTeam
+    EndIf
+    Call  UseBattleCamPreset    ( 00000002 )
+    Call  MoveBattleCamOver ( 0000000A )
+    Wait  10`
+    Return
+    End
+}
+
+% grabbed from `06_Bobomb.bpat`
+#new:Script $Script_ExplosionFX % `Script_8021AB54_06`
+{
+    %0:  ExecWait  $Script_8021AAE8_06 
+    C:  Call  StartRumble   ( 0000000B )
+   1C:  Thread
+   24:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.75] )
+   40:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[3.0] )
+   5C:  	Call  ShakeCam  ( .Cam:Battle 00000000 0000000A *Fixed[4.5] )
+   78:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[3.0] )
+   94:  EndThread
+   9C:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+   B8:  Add   *Var2  00000002 
+        Call  PlayEffect    ( ~FX:SmokeRing:Blast2 *Var0 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  10C:  Add   *Var1  00000014 
+  11C:  Add   *Var2  00000002 
+        Call  PlayEffect    ( ~FX:Explosion2 *Var0 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  170:  Call  PlaySoundAtActor  ( .Actor:Self .Sound:BombBlast )
+  184:  Return
+  18C:  End
+}
+
+#new:Script $Script_HandleEvent_BulkyBobomb {
+    Call  UseIdleAnimation  ( .Actor:Self .False )
+    Call  EnableIdleScript  ( .Actor:Self 00000000 )
+    Call  GetActorVar ( .Actor:Self 00000000 *VarA )
+    Call  GetLastEvent      ( .Actor:Self *Var0 )
+    Switch  *Var0 
+    	Case  ==  .Event:HitCombo % 9
+            SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoNormalHit 
+    	Case  ==  .Event:Hit % A
+            Call  GetLastElement    ( *VarE )
+            If  *VarE  &  00000020 
+                SetConst  *Var0  00000001 
+                SetConst  *Var1  00EC0014 
+                SetConst  *Var2  00EC0015 
+                ExecWait  DoBurnHit 
+                Wait    10`
+                ExecWait $Script_ExplosionFX
+                ExecWait $Script_Attack_Explosion_HurtAllTargets
+                SetConst  *Var0  00000001 
+                SetConst  *Var1  00EC000C 
+                Set   *Var2  FFFFCFC7 
+                ExecWait  DoDeath 
+                Return
+            Else
+                SetConst  *Var0  00000001 
+                Switch *VarA
+                    Case == 0
+                        SetConst  *Var1  00EC000D
+                    Case == 1
+                        SetConst  *Var1  00EC000E
+                    Case == 2
+                        SetConst  *Var1  00EC000F
+                    Case == 3
+                        SetConst  *Var1  00EC0010
+                    Case == 4
+                        SetConst  *Var1  00EC0011
+                EndSwitch
+                ExecWait  DoNormalHit 
+            EndIf
+    	EndCaseGroup
+    	CaseOR  ==  .Event:BurnHit % E
+        CaseOR  ==  .Event:BurnDeath % 24
+    		SetConst  *Var0  00000001 
+            SetConst  *Var1  00EC0014 
+            SetConst  *Var2  00EC0015 
+            ExecWait  DoBurnHit 
+            Wait    10`
+            ExecWait $Script_ExplosionFX
+            ExecWait $Script_Attack_Explosion_HurtAllTargets
+            SetConst  *Var0  00000001 
+            SetConst  *Var1  00EC000C 
+            Set   *Var2  FFFFCFC7 
+            ExecWait  DoDeath 
+            Return
+        EndCaseGroup
+    	Case  ==  .Event:SpinSmashHit % B
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoSpinSmashHit 
+    	Case  ==  .Event:SpinSmashDeath % 21
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoSpinSmashHit 
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoDeath 
+    		Return
+    	Case  ==  .Event:ShockHit % 2F
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoShockHit 
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoJumpBack 
+    		Call  JumpToGoal    ( .Actor:Self 00000005 .False .True .False )
+    		Call  SetAnimationRate      ( .Actor:Self 00000001 *Fixed[2.0] )
+    		Call  SetAnimation  ( .Actor:Self 00000001 00EC0013 )
+    		Call  SetGoalToHome ( .Actor:Self )
+    		Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+    		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    		Call  SetAnimationRate      ( .Actor:Self 00000001 *Fixed[1.0] )
+    		Wait  5`
+    		Call  SetAnimation  ( .Actor:Self 00000001 00EC0001 )
+    		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.6] )
+    		Call  JumpToGoal    ( .Actor:Self 00000005 .False .True .False )
+    	Case  ==  .Event:ShockDeath % 26
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoShockHit 
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoDeath 
+    		Return
+    	Case  ==  .Event:StarBeam % 13
+    	CaseOR  ==  00000017 % 17
+    	CaseOR  ==  .Event:Immune % 19
+    	CaseOR  ==  .Event:AirLiftFailed % 1F
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EC0001 
+    		ExecWait  DoImmune 
+    	EndCaseGroup
+    	Case  ==  .Event:Death % 20
+            Call  GetLastElement    ( *VarE )
+            If  *VarE  &  00000020 
+                SetConst  *Var0  00000001 
+                SetConst  *Var1  00EC0014 
+                SetConst  *Var2  00EC0015 
+                ExecWait  DoBurnHit 
+                Wait    10`
+                ExecWait $Script_ExplosionFX
+                ExecWait $Script_Attack_Explosion_HurtAllTargets
+                SetConst  *Var0  00000001 
+                SetConst  *Var1  00EC000C 
+                Set   *Var2  FFFFCFC7 
+                ExecWait  DoDeath 
+                Return
+            Else
+                SetConst  *Var0  00000001 
+                Switch *VarA
+                    Case == 0
+                        SetConst  *Var1  00EC000D
+                    Case == 1
+                        SetConst  *Var1  00EC000E
+                    Case == 2
+                        SetConst  *Var1  00EC000F
+                    Case == 3
+                        SetConst  *Var1  00EC0010
+                    Case == 4
+                        SetConst  *Var1  00EC0011
+                EndSwitch
+                ExecWait  DoNormalHit 
+                Wait  10`
+                SetConst  *Var0  00000001 
+                Switch *VarA
+                    Case == 0
+                        SetConst  *Var1  00EC000D
+                    Case == 1
+                        SetConst  *Var1  00EC000E
+                    Case == 2
+                        SetConst  *Var1  00EC000F
+                    Case == 3
+                        SetConst  *Var1  00EC0010
+                    Case == 4
+                        SetConst  *Var1  00EC0011
+                EndSwitch
+                ExecWait  DoDeath 
+                Return
+            EndIf
+        Case  ==  .Event:ExplodeTrigger % 22
+            SetConst  *Var0  00000001 
+            SetConst  *Var1  00EC0014 
+            SetConst  *Var2  00EC0015 
+            ExecWait  DoBurnHit 
+            Wait    10`
+            ExecWait $Script_ExplosionFX
+            ExecWait $Script_Attack_Explosion_HurtAllTargets
+            SetConst  *Var0  00000001 
+            SetConst  *Var1  00EC000C 
+            Set   *Var2  FFFFCFC7 
+            ExecWait  DoDeath 
+            Return
+    	Case  ==  .Event:RecoverStatus % 31
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EC0001 
+    		ExecWait  DoRecover 
+    	Case  ==  .Event:ScareAway % 39
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EC0013
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var2  00EC000D
+                Case == 1
+                    SetConst  *Var2  00EC000E
+                Case == 2
+                    SetConst  *Var2  00EC000F
+                Case == 3
+                    SetConst  *Var2  00EC0010
+                Case == 4
+                    SetConst  *Var2  00EC0011
+            EndSwitch
+    		ExecWait  DoScareAway 
+    		Return
+    	Case  ==  .Event:BeginAirLift % 3A
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoAirLift 
+    	Case  ==  .Event:BlowAway % 16
+    		SetConst  *Var0  00000001 
+    		Switch *VarA
+                Case == 0
+                    SetConst  *Var1  00EC000D
+                Case == 1
+                    SetConst  *Var1  00EC000E
+                Case == 2
+                    SetConst  *Var1  00EC000F
+                Case == 3
+                    SetConst  *Var1  00EC0010
+                Case == 4
+                    SetConst  *Var1  00EC0011
+            EndSwitch
+    		ExecWait  DoBlowAway 
+    		Return
+    	Default
+    EndSwitch
+    Call  SetAnimation      ( .Actor:Self 00000001 00EC0001 )
+    Call  EnableIdleScript  ( .Actor:Self 00000001 )
+    Call  UseIdleAnimation  ( .Actor:Self .True )
+    Return
+    End
+}
+
+#new:Script $Script_Idle_BulkyBobomb
+{
+    Label  A
+    Call  GetStatusFlags    ( .Actor:Self *Var1 )
+    If  *Var1  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Wait  1`
+        Goto  A
+    EndIf
+    Call    GetActorVar ( .Actor:Self 00000000 *Var0 )
+    If *Var0 != 4 % about to explode
+        Wait    1
+        Goto    A
+    EndIf
+    Call  SetActorYaw ( .Actor:Self 0 )
+    Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+    Sub   *Var0  15`
+    Call  SetActorIdleSpeed ( .Actor:Self *Fixed[1.8] )
+    Call  SetIdleGoal       ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  IdleRunToGoal ( .Actor:Self 00000000 )
+    Label  1
+    Call  GetStatusFlags    ( .Actor:Self *Var1 )
+    If  *Var1  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Wait  1`
+        Goto  1
+    EndIf
+    Call  SetActorYaw ( .Actor:Self 180` )
+    Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+    Add   *Var0  15`
+    Call  SetActorIdleSpeed ( .Actor:Self *Fixed[1.8] )
+    Call  SetIdleGoal       ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  IdleRunToGoal ( .Actor:Self 00000000 )
+    Label  2
+    Call  GetStatusFlags    ( .Actor:Self *Var1 )
+    If  *Var1  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Wait  1`
+        Goto  2
+    EndIf
+    Goto  A
+    Return
+    End
+    Return
+    End
+}

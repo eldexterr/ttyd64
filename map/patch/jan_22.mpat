@@ -1,0 +1,38 @@
+% Make a rock breakable and hide an item there
+
+@ $Script_Main
+{
+    [16C]  Exec  $Script_InitNewStuff
+}
+
+#new:Script $Script_InitNewStuff % Script_80241D38
+{
+    If *GF_JAN22_Rock == .True
+        Call    EnableModel ( ~Model:o246 .False )
+        Call    EnableModel ( ~Model:crack .False )
+        Call    ModifyColliderFlags 	( .False ~Collider:rock 7FFFFE00 )
+    Else
+        Bind    $Script_BlastRock .Trigger:PointBomb $TriggerCoord_Rock 00000001 00000000
+    EndIf
+    Call    MakeItemEntity ( .Item:StarPiece ~Vec3d:bombTrigger .ItemSpawnMode:Fixed_NeverVanish *GF_JAN22_RockItem )
+    Exec $Script_80241D38 % restore vanilla code
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Rock
+{
+	~BombPos:bombTrigger
+}
+
+#new:Script $Script_BlastRock
+{
+    Call     PlayEffect  	( 66` 0 ~Model:o246 ~Model:o246 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Call     EnableModel 	( ~Model:o246 .False )
+    Call     EnableModel 	( ~Model:crack .False )
+    Call     ModifyColliderFlags 	( .False ~Collider:rock 7FFFFE00 )
+    Set     *GF_JAN22_Rock .True
+    Unbind
+    Return
+    End
+}

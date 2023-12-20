@@ -1,0 +1,13 @@
+% Fix by Jdaster64, ported to Star Rod by Rain
+
+% Fix Tidal wave crashing when the player do so many inputs correctly
+@Hook 42CD34 { %802A9644
+    ADDIU v0, r0, 000B %restore from hook, normal state for button press checks
+    LB t0, 005D (s1) %get total inputs correct
+    SLTI t1, t0, E %less than 14
+    BEQL t1, r0, .normalstate
+    ADDIU v0, r0, 000D %stops producing buttons to press
+    .normalstate
+    J 802A964C
+    SH v0, 004C (s1)
+}

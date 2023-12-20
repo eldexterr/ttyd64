@@ -1,0 +1,164 @@
+% Script File: kpa_41.mscr
+% Decoded from: 0 to 560 (kpa_41)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -340.0    0.0  -70.0   90.0
+	~Vec4f:Entry1 %  340.0    0.0  -70.0  270.0
+	~Vec4f:Entry2 %  340.0  119.0 -230.0  270.0
+	~Vec4f:Entry3 % -340.0  119.0 -230.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000004
+	[Background]  00000000
+	[MapTattle]   00190175
+}
+
+#new:Script $Script_80240080
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000007 )
+   50:  EndThread
+   58:  Return
+   60:  End
+}
+
+PADDING: 802400E8 to 802400F0 (000000E8 to 000000F0)
+00000000 00000000
+
+#new:Script $Script_ExitWalk_802400F0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240540 00000001 ) % kpa_40
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_8024014C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Switch  *AreaByte[B]
+   38:  	CaseOR  ==  00000001
+   44:  	CaseOR  ==  00000002
+   50:  	CaseOR  ==  00000004
+   5C:  		Add   *AreaByte[B]  00000001
+   6C:  		Call  GotoMap   ( $ASCII_80240548 00000000 ) % kpa_41
+   80:  	EndCaseGroup
+   88:  	CaseOR  ==  00000000
+   94:  	CaseOR  ==  00000003
+   A0:  	CaseOR  ==  00000005
+   AC:  		Call  GotoMap   ( $ASCII_80240540 00000003 ) % kpa_40
+   C0:  	EndCaseGroup
+   C8:  EndSwitch
+   D0:  Wait  100`
+   DC:  Return
+   E4:  End
+}
+
+#new:Script $Script_ExitWalk_80240238
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry3 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240540 00000002 ) % kpa_40
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_80240294
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+   20:  Exec  ExitWalk
+   2C:  Switch  *AreaByte[B]
+   38:  	Case  ==  00000005
+   44:  		Set   *AreaByte[B]  00000000
+   54:  		Call  GotoMap   ( $ASCII_80240550 00000000 ) % kpa_102
+   68:  	Case  ==  00000003
+   74:  		Add   *AreaByte[B]  00000001
+   84:  		Call  GotoMap   ( $ASCII_80240548 00000003 ) % kpa_41
+   98:  	CaseOR  ==  00000000
+   A4:  	CaseOR  ==  00000001
+   B0:  	CaseOR  ==  00000002
+   BC:  	CaseOR  ==  00000004
+   C8:  		Call  GotoMap   ( $ASCII_80240540 00000003 ) % kpa_40
+   DC:  	EndCaseGroup
+   E4:  EndSwitch
+   EC:  Wait  100`
+   F8:  Return
+  100:  End
+}
+
+#new:Script $Script_8024039C
+{
+    0:  Bind  $Script_ExitWalk_802400F0 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024014C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   38:  Bind  $Script_ExitWalk_80240238 .Trigger:FloorAbove ~Collider:deili3 00000001 00000000
+   54:  Bind  $Script_ExitWalk_80240294 .Trigger:FloorAbove ~Collider:deili4 00000001 00000000
+   70:  Return
+   78:  End
+}
+
+#new:Script $Script_EnterWalk_8024041C
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry2
+   28:  		Set   *AreaByte[B]  00000005
+   38:  	Default
+   40:  EndSwitch
+   48:  Set   *Var0  $Script_8024039C
+   58:  Exec  EnterWalk
+   64:  Wait  1`
+   70:  Return
+   78:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Exec  $Script_EnterWalk_8024041C
+   7C:  Exec  $Script_80240080
+   88:  Return
+   90:  End
+}
+
+PADDING: 80240534 to 80240540 (00000534 to 00000540)
+00000000 00000000 00000000
+
+#new:ASCII $ASCII_80240540
+{
+	"kpa_40"
+}
+
+#new:ASCII $ASCII_80240548
+{
+	"kpa_41"
+}
+
+#new:ASCII $ASCII_80240550
+{
+	"kpa_102"
+}
+
+PADDING: 80240558 to 80240560 (00000558 to 00000560)
+00000000 00000000
+

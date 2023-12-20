@@ -1,0 +1,547 @@
+% Add 3 new cubes and make 2 already existing holes posible to throw water too
+% And finally add a new hole with an item in it
+
+#alias $Script_80240854 $Script_PushGrid_ShowWaterStream
+#alias $Script_80240ADC $Script_PushGrid_ShowWaterStream_BigRock
+
+#delete $Script_80242438 % replaced with $Script_PushGrid_Init
+#delete $Script_80241154 % replaced with $Script_PushGrid_UpdateCompletedAnimation
+#delete $Script_80241F5C % replaced with $Script_PushGrid_KnockBackMario
+
+#define .Block 00000001
+#define .Obstruction 00000002
+
+@ $Script_Main_EnterWalk
+{
+   [7C]  Exec  $Script_PushGrid_Init
+}
+
+#new:Script $Script_PushGrid_Init % Script_80242438
+{
+        If *GF_JAN13_ItemAppeared == .True
+            Call MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemPosition .ItemSpawnMode:Fixed_NeverVanish *GF_JAN13_ItemGrabbed )
+        EndIf
+    0:  Call  CreatePushBlockGrid   ( 00000000 ~PushGrid:Grid_80242438 00000000 )
+        % Init blocks
+   28:  Call  SetPushBlock  ( 00000000  7`  5` .Block )
+   44:  Call  SetPushBlock  ( 00000000  13`  9` .Block )
+   60:  Call  SetPushBlock  ( 00000000  16`  5` .Block )
+   7C:  Call  SetPushBlock  ( 00000000  21`  2` .Block )
+   98:  Call  SetPushBlock  ( 00000000  22`  4` .Block )
+   B4:  Call  SetPushBlock  ( 00000000  26`  6` .Block )
+   D0:  Call  SetPushBlock  ( 00000000  27`  7` .Block )
+        % new
+        Call  SetPushBlock  ( 00000000  5    8  .Block )
+        Call  SetPushBlock  ( 00000000  17`  8  .Block )
+        Call  SetPushBlock  ( 00000000  8    9  .Block )
+        Call  SetPushBlock  ( 00000000  22`  8  .Block )
+        % Init obstructions
+   EC:  Call  SetPushBlock  ( 00000000  15`  0` .Obstruction )
+  108:  Call  SetPushBlock  ( 00000000  16`  0` .Obstruction )
+  124:  Call  SetPushBlock  ( 00000000  17`  0` .Obstruction )
+  140:  Call  SetPushBlock  ( 00000000  18`  0` .Obstruction )
+  15C:  Call  SetPushBlock  ( 00000000  19`  0` .Obstruction )
+  178:  Call  SetPushBlock  ( 00000000  15`  1` .Obstruction )
+  194:  Call  SetPushBlock  ( 00000000  16`  1` .Obstruction )
+  1B0:  Call  SetPushBlock  ( 00000000  17`  1` .Obstruction )
+  1CC:  Call  SetPushBlock  ( 00000000  18`  1` .Obstruction )
+  1E8:  Call  SetPushBlock  ( 00000000  19`  1` .Obstruction )
+  204:  Call  SetPushBlock  ( 00000000  15`  2` .Obstruction )
+  220:  Call  SetPushBlock  ( 00000000  16`  2` .Obstruction )
+  23C:  Call  SetPushBlock  ( 00000000  17`  2` .Obstruction )
+  258:  Call  SetPushBlock  ( 00000000  18`  2` .Obstruction )
+  274:  Call  SetPushBlock  ( 00000000  19`  2` .Obstruction )
+  290:  Set   *Var0  00000000
+  2A0:  Loop  00000020
+  2AC:  	Call  SetPushBlock  ( 00000000 *Var0  0` .Obstruction )
+  2C8:  	Add   *Var0  00000001
+  2D8:  EndLoop
+  2E0:  Set   *Var0  00000000
+  2F0:  Loop  0000000F
+  2FC:  	Call  SetPushBlock  ( 00000000 *Var0  1` .Obstruction )
+  318:  	Add   *Var0  00000001
+  328:  EndLoop
+  330:  Set   *Var0  00000014
+  340:  Loop  0000000C
+  34C:  	Call  SetPushBlock  ( 00000000 *Var0  1` .Obstruction )
+  368:  	Add   *Var0  00000001
+  378:  EndLoop
+  380:  Set   *Var0  00000000
+  390:  Loop  00000003
+  39C:  	Call  SetPushBlock  ( 00000000 *Var0  2` .Obstruction )
+  3B8:  	Add   *Var0  00000001
+  3C8:  EndLoop
+  3D0:  Set   *Var0  0000000A
+  3E0:  Loop  00000004
+  3EC:  	Call  SetPushBlock  ( 00000000 *Var0  2` .Obstruction )
+  408:  	Add   *Var0  00000001
+  418:  EndLoop
+  420:  Set   *Var0  0000001A
+  430:  Loop  00000006
+  43C:  	Call  SetPushBlock  ( 00000000 *Var0  2` .Obstruction )
+  458:  	Add   *Var0  00000001
+  468:  EndLoop
+  470:  Set   *Var0  00000000
+  480:  Loop  00000002
+  48C:  	Call  SetPushBlock  ( 00000000 *Var0  3` .Obstruction )
+  4A8:  	Add   *Var0  00000001
+  4B8:  EndLoop
+  4C0:  Set   *Var0  0000000A
+  4D0:  Loop  00000004
+  4DC:  	Call  SetPushBlock  ( 00000000 *Var0  3` .Obstruction )
+  4F8:  	Add   *Var0  00000001
+  508:  EndLoop
+  510:  Exec  $Script_PushGrid_UpdateCompletedAnimation
+        % Update Water Models
+  51C:  Set   *Var0  ~Model:o72
+  52C:  Set   *Var1  00000000
+  53C:  Set   *Var2  ~Collider:o50
+  54C:  Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+  564:  Exec  $Script_PushGrid_ShowWaterStream
+  570:  Set   *Var0  ~Model:o73
+  580:  Set   *Var1  00000001
+  590:  Set   *Var2  ~Collider:o51
+  5A0:  Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+  5B8:  Exec  $Script_PushGrid_ShowWaterStream
+  5C4:  Set   *Var0  ~Model:o74
+  5D4:  Set   *Var1  00000002
+  5E4:  Set   *Var2  ~Collider:o52
+  5F4:  Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+  60C:  Exec  $Script_PushGrid_ShowWaterStream
+  618:  Set   *Var0  ~Model:o75
+  628:  Set   *Var1  00000003
+  638:  Set   *Var2  ~Collider:o53
+  648:  Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+  660:  Exec  $Script_PushGrid_ShowWaterStream
+  66C:  Set   *Var0  ~Model:o76
+  67C:  Set   *Var1  00000004
+  68C:  Set   *Var2  ~Collider:o49
+  69C:  Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+  6B4:  Exec  $Script_PushGrid_ShowWaterStream
+        % Big rock
+  6C0:  Set   *Var0  ~Model:o71
+  6D0:  Set   *Var1  00000005
+  6E0:  Set   *Var2  ~Collider:o76
+  6F0:  Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+  708:  Exec  $Script_PushGrid_ShowWaterStream_BigRock
+        %======
+        % new
+        %======
+        Set   *Var0  ~Model:water1
+        Set   *Var1  00000006
+        Set   *Var2  ~Collider:hole1
+        Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+        Exec  $Script_PushGrid_ShowWaterStream
+        %
+        Set   *Var0  ~Model:water2
+        Set   *Var1  00000007
+        Set   *Var2  ~Collider:hole2
+        Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+        Exec  $Script_PushGrid_ShowWaterStream
+        %
+        Set   *Var0  ~Model:water3
+        Set   *Var1  00000008
+        Set   *Var2  ~Collider:hole3
+        Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+        Exec  $Script_PushGrid_ShowWaterStream
+        %
+        Set   *Var0  ~Model:water4
+        Set   *Var1  00000009
+        Set   *Var2  ~Collider:hole4
+        Call  ModifyColliderFlags   ( 00000000 *Var2 7FFFFE00 )
+        Exec  $Script_PushGrid_ShowWaterStream
+        %
+  714:  Exec  $Script_PushGrid_KnockBackMario
+  720:  Call  EnableTexPanning  ( ~Model:o72 .True )
+  734:  Call  EnableTexPanning  ( ~Model:o73 .True )
+  748:  Call  EnableTexPanning  ( ~Model:o74 .True )
+  75C:  Call  EnableTexPanning  ( ~Model:o75 .True )
+  770:  Call  EnableTexPanning  ( ~Model:o76 .True )
+  784:  Call  EnableTexPanning  ( ~Model:o71 .True )
+        Call  EnableTexPanning  ( ~Model:water1 .True )
+        Call  EnableTexPanning  ( ~Model:water2 .True )
+        Call  EnableTexPanning  ( ~Model:water3 .True )
+        Call  EnableTexPanning  ( ~Model:water4 .True )
+  798:  Call  SetModelCustomGfx ( ~Model:o72 00000000 FFFFFFFF )
+  7B0:  Call  SetModelCustomGfx ( ~Model:o73 00000000 FFFFFFFF )
+  7C8:  Call  SetModelCustomGfx ( ~Model:o74 00000000 FFFFFFFF )
+  7E0:  Call  SetModelCustomGfx ( ~Model:o75 00000000 FFFFFFFF )
+  7F8:  Call  SetModelCustomGfx ( ~Model:o76 00000000 FFFFFFFF )
+  810:  Call  SetModelCustomGfx ( ~Model:o71 00000000 FFFFFFFF )
+        Call  SetModelCustomGfx ( ~Model:water1 00000000 FFFFFFFF )
+        Call  SetModelCustomGfx ( ~Model:water2 00000000 FFFFFFFF )
+        Call  SetModelCustomGfx ( ~Model:water3 00000000 FFFFFFFF )
+        Call  SetModelCustomGfx ( ~Model:water4 00000000 FFFFFFFF )
+  828:  Call  SetCustomGfxBuilders  ( 00000000 $Function_80240000 00000000 )
+  840:  Set   *Var0  00000000
+  850:  Loop
+  85C:  	Sub   *Var0  000007D0
+  86C:  	If  *Var0  <  FFFF0000
+  87C:  		Add   *Var0  00010000
+  88C:  	EndIf
+  894:  	Call  SetTexPanOffset   ( 00000001 00000000 00000000 *Var0 )
+  8B0:  	Wait  1`
+  8BC:  EndLoop
+  8C4:  Return
+  8CC:  End
+}
+
+#new:Script $Script_PushGrid_UpdateCompletedAnimation % Script_80241154
+{
+    0:  Set   *Flag[00]  .False
+   10:  Set   *AreaByte[2]  00000000
+   20:  Set   *AreaByte[3]  FFFFFFFF
+   30:  Exec  $Script_80240FB8
+   3C:  Label  0
+   48:  If  *GF_JAN13_SolvedBlockPuzzle  ==  .True
+   58:  	If  *Flag[00]  ==  .False
+                % Disable obstructions
+   68:  		Call  EnableModel   ( ~Model:o33 .False )
+   7C:  		Call  ModifyColliderFlags   ( 00000000 ~Collider:o33 7FFFFE00 )
+   94:  		Call  SetPushBlock  ( 00000000  15`  0` 00000000 )
+   B0:  		Call  SetPushBlock  ( 00000000  16`  0` 00000000 )
+   CC:  		Call  SetPushBlock  ( 00000000  17`  0` 00000000 )
+   E8:  		Call  SetPushBlock  ( 00000000  18`  0` 00000000 )
+  104:  		Call  SetPushBlock  ( 00000000  19`  0` 00000000 )
+  120:  		Call  SetPushBlock  ( 00000000  15`  1` 00000000 )
+  13C:  		Call  SetPushBlock  ( 00000000  16`  1` 00000000 )
+  158:  		Call  SetPushBlock  ( 00000000  17`  1` 00000000 )
+  174:  		Call  SetPushBlock  ( 00000000  18`  1` 00000000 )
+  190:  		Call  SetPushBlock  ( 00000000  19`  1` 00000000 )
+  1AC:  		Call  SetPushBlock  ( 00000000  15`  2` 00000000 )
+  1C8:  		Call  SetPushBlock  ( 00000000  16`  2` 00000000 )
+  1E4:  		Call  SetPushBlock  ( 00000000  17`  2` 00000000 )
+  200:  		Call  SetPushBlock  ( 00000000  18`  2` 00000000 )
+  21C:  		Call  SetPushBlock  ( 00000000  19`  2` 00000000 )
+  238:  		Set   *Flag[00]  .True
+  248:  	EndIf
+  250:  EndIf
+  258:  Call  GetPushBlock  ( 00000000  28`  6` *Var0 )
+  274:  If  *Var0  ==  00000000
+  284:  	Set   *MapVar[0]  00000000
+  294:  	Goto  1
+  2A0:  EndIf
+  2A8:  Call  GetPushBlock  ( 00000000  25`  4` *Var0 )
+  2C4:  If  *Var0  ==  00000000
+  2D4:  	Set   *MapVar[0]  00000001
+  2E4:  	Goto  1
+  2F0:  EndIf
+  2F8:  Call  GetPushBlock  ( 00000000  21`  8` *Var0 )
+  314:  If  *Var0  ==  00000000
+  324:  	Set   *MapVar[0]  00000002
+  334:  	Goto  1
+  340:  EndIf
+  348:  Call  GetPushBlock  ( 00000000  4`  4` *Var0 )
+  364:  If  *Var0  ==  00000000
+  374:  	Set   *MapVar[0]  00000003
+  384:  	Goto  1
+  390:  EndIf
+  398:  Call  GetPushBlock  ( 00000000  14`  6` *Var0 )
+  3B4:  If  *Var0  ==  00000000
+  3C4:  	Set   *MapVar[0]  00000004
+  3D4:  	Goto  1
+  3E0:  EndIf
+  3E8:  If  *GF_JAN13_SolvedBlockPuzzle  ==  .False
+            % Do giant rock animation
+  3F8:  	Call  DisablePlayerInput    ( .True )
+            % Disable obstructions
+  408:  	Call  SetPushBlock  ( 00000000  15`  0` 00000000 )
+  424:  	Call  SetPushBlock  ( 00000000  16`  0` 00000000 )
+  440:  	Call  SetPushBlock  ( 00000000  17`  0` 00000000 )
+  45C:  	Call  SetPushBlock  ( 00000000  18`  0` 00000000 )
+  478:  	Call  SetPushBlock  ( 00000000  19`  0` 00000000 )
+  494:  	Call  SetPushBlock  ( 00000000  15`  1` 00000000 )
+  4B0:  	Call  SetPushBlock  ( 00000000  16`  1` 00000000 )
+  4CC:  	Call  SetPushBlock  ( 00000000  17`  1` 00000000 )
+  4E8:  	Call  SetPushBlock  ( 00000000  18`  1` 00000000 )
+  504:  	Call  SetPushBlock  ( 00000000  19`  1` 00000000 )
+  520:  	Call  SetPushBlock  ( 00000000  15`  2` 00000000 )
+  53C:  	Call  SetPushBlock  ( 00000000  16`  2` 00000000 )
+  558:  	Call  SetPushBlock  ( 00000000  17`  2` 00000000 )
+  574:  	Call  SetPushBlock  ( 00000000  18`  2` 00000000 )
+  590:  	Call  SetPushBlock  ( 00000000  19`  2` 00000000 )
+  5AC:  	Set   *MapVar[0]  00000005
+  5BC:  	Wait  30`
+  5C8:  	Loop  00000002
+  5D4:  		Exec  $Script_80241110
+  5E0:  		Call  RotateModel   ( ~Model:o33 00000003 00000000 *Fixed[0.2] 00000001 )
+  600:  		Wait  8`
+  60C:  		Call  RotateModel   ( ~Model:o33 FFFFFFFD 00000000 *Fixed[0.2] 00000001 )
+  62C:  		Wait  8`
+  638:  	EndLoop
+  640:  	Thread
+  648:  		Call  PlaySoundAtPlayer ( 00000262 00000000 )
+  65C:  		Call  ShowEmote ( 00000000 .Emote:Exclamation  0`  20` .False  0`  0`  0`  0` )
+  68C:  		Call  GetModelCenter    ( ~Model:o33 )
+  69C:  		Call  802D2884  ( *Var0 *Var2 00000004 )
+  6B4:  		Call  GetPlayerPos      ( *Var3 *Var1 *Var2 )
+  6CC:  		Set   *Var4  *Var0
+  6DC:  		Set   *Var5  *Var0
+  6EC:  		Sub   *Var4  00000078
+  6FC:  		Add   *Var5  00000078
+  70C:  		Switch  *Var3
+  718:  			Case  *Var4  to  *Var5
+  728:  				Add   *Var0  *Var3
+  738:  				Div   *Var0  00000002
+  748:  		EndSwitch
+  750:  		Call  UseSettingsFrom   ( .Cam:Default *Var0 *Var1 *Var2 )
+  76C:  		Call  SetPanTarget      ( .Cam:Default *Var0 *Var1 *Var2 )
+  788:  		Call  SetCamDistance    ( .Cam:Default  400` )
+  79C:  		Call  SetCamSpeed       ( .Cam:Default *Fixed[3.0] )
+  7B0:  		Call  PanToTarget       ( .Cam:Default 00000000 00000001 )
+  7C8:  	EndThread
+  7D0:  	Loop  00000003
+  7DC:  		Exec  $Script_80241110
+  7E8:  		Call  RotateModel   ( ~Model:o33 00000005 00000000 *Fixed[0.2] 00000001 )
+  808:  		Wait  5`
+  814:  		Call  RotateModel   ( ~Model:o33 FFFFFFFB 00000000 *Fixed[0.2] 00000001 )
+  834:  		Wait  5`
+  840:  	EndLoop
+  848:  	Loop  00000007
+  854:  		Exec  $Script_80241110
+  860:  		Call  RotateModel   ( ~Model:o33 00000007 00000000 *Fixed[0.2] 00000001 )
+  880:  		Wait  3`
+  88C:  		Call  RotateModel   ( ~Model:o33 FFFFFFF9 00000000 *Fixed[0.2] 00000001 )
+  8AC:  		Wait  3`
+  8B8:  	EndLoop
+  8C0:  	Loop  00000008
+  8CC:  		Call  RandInt   ( 00000002 *Var0 )
+  8E0:  		Switch  *Var0
+  8EC:  			Case  ==  00000000
+  8F8:  				Call  PlayEffect    ( ~FX:Steam:SmallOutward 00000008 00000000 FFFFFFAE 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  93C:  			Case  ==  00000001
+  948:  				Call  PlayEffect    ( ~FX:Steam:SmallOutward 00000026 00000000 FFFFFFC2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  98C:  			Case  ==  00000002
+  998:  				Call  PlayEffect    ( ~FX:Steam:SmallOutward 0000004E 00000000 FFFFFFB3 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  9DC:  		EndSwitch
+  9E4:  		Exec  $Script_80241110
+  9F0:  		Call  RotateModel   ( ~Model:o33 0000000A 00000000 *Fixed[0.2] 00000001 )
+  A10:  		Wait  3`
+  A1C:  		Call  RotateModel   ( ~Model:o33 FFFFFFF6 00000000 *Fixed[0.2] 00000001 )
+  A3C:  		Wait  3`
+  A48:  	EndLoop
+  A50:  	Thread
+  A58:  		Call  ShakeCam  ( .Cam:Default 00000000  15` *Fixed[0.4] )
+  A74:  	EndThread
+  A7C:  	Call  PlaySoundAt   ( 8000001D 00000000 00000025 00000000 FFFFFF76 )
+  A9C:  	Set   *AreaByte[2]  00000001
+  AAC:  	Thread
+  AB4:  		Loop  000000C8
+  AC0:  			Call  RotateModel   ( ~Model:o33 0000000A 00000000 *Fixed[0.2] 00000001 )
+  AE0:  			Wait  3`
+  AEC:  			Call  RotateModel   ( ~Model:o33 FFFFFFF6 00000000 *Fixed[0.2] 00000001 )
+  B0C:  			Wait  3`
+  B18:  		EndLoop
+  B20:  	EndThread
+  B28:  	Set   *Var0  00000000
+  B38:  	Loop  00000012
+  B44:  		Add   *Var0  00000003
+  B54:  		Call  TranslateModel    ( ~Model:o33 00000000 *Var0 00000000 )
+  B70:  		Wait  1`
+  B7C:  	EndLoop
+  B84:  	Loop  0000003C
+  B90:  		Call  TranslateModel    ( ~Model:o33 00000000 *Var0 00000000 )
+  BAC:  		Wait  1`
+  BB8:  	EndLoop
+  BC0:  	Set   *AreaByte[2]  00000002
+  BD0:  	Loop  00000019
+  BDC:  		Add   *Var0  00000008
+  BEC:  		Call  TranslateModel    ( ~Model:o33 00000000 *Var0 00000000 )
+  C08:  		Wait  1`
+  C14:  	EndLoop
+  C1C:  	Set   *Var0  000000C8
+  C2C:  	Set   *Var1  00000000
+  C3C:  	Set   *Var2  00000000
+  C4C:  	Loop  0000003C
+  C58:  		Add   *Var1  00000001
+  C68:  		Sub   *Var0  *Var1
+  C78:  		Add   *Var2  0000000A
+  C88:  		Add   *Var2  FFFFFFF6
+  C98:  		Call  TranslateModel    ( ~Model:o33 FFFFFF38 *Var0 FFFFFE0C )
+  CB4:  		Call  RotateModel       ( ~Model:o33 *Var2 FFFFFFFF *Fixed[0.1] *Fixed[0.1] )
+  CD4:  		Wait  1`
+  CE0:  	EndLoop
+  CE8:  	Call  EnableModel   ( ~Model:o33 .False )
+  CFC:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:o33 7FFFFE00 )
+  D14:  	Set   *GF_JAN13_SolvedBlockPuzzle  .True
+  D24:  	Set   *Flag[00]  .True
+  D34:  	Call  ResetCam  ( .Cam:Default *Fixed[5.0] )
+  D48:  	Call  DisablePlayerInput    ( .False )
+  D58:  Else
+  D60:  	Call  GetPushBlock  ( 00000000  17`  0` *Var0 )
+  D7C:  	If  *Var0  ==  00000000
+  D8C:  		Set   *MapVar[0]  00000005
+  D9C:  		Goto  1
+  DA8:  	EndIf
+            % Add 4 new holes
+            Call  GetPushBlock  ( 00000000  20`  3` *Var0 )
+            If  *Var0  ==  00000000
+                Set   *MapVar[0]  00000006
+                Goto  1
+            EndIf
+            %
+            Call  GetPushBlock  ( 00000000  10`  4` *Var0 )
+            If  *Var0  ==  00000000
+                Set   *MapVar[0]  00000007
+                Goto  1
+            EndIf
+            %
+            Call  GetPushBlock  ( 00000000  9`  9` *Var0 )
+            If  *Var0  ==  00000000
+                Set   *MapVar[0]  00000008
+                Goto  1
+            EndIf
+            %
+            Call  GetPushBlock  ( 00000000  26`  9` *Var0 )
+            If  *Var0  ==  00000000
+                Set   *MapVar[0]  00000009
+                If *GF_JAN13_ItemAppeared == .False
+                    Set *GF_JAN13_ItemAppeared .True
+                    Call MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemPosition_Toss .ItemSpawnMode:Toss_NeverVanish *GF_JAN13_ItemGrabbed )
+                    Call $WriteBitFlag  ( 8010EFCC .False .False 4 .True ) % playerFlags2[0(bit4)] % to avoid a softlock if the player grab the item while being pushed by the water
+                    Call PlaySound		( 2005 ) % Parakarry's kick
+                EndIf
+                Goto  1
+            EndIf
+  DB0:  EndIf
+        Set   *MapVar[0]  00000010`
+  DC8:  Label  1
+  DD4:  Exec  $Script_80240FB8
+  DE0:  Wait  1`
+  DEC:  Goto  0
+  DF8:  Return
+  E00:  End
+}
+
+#new:Script $Script_PushGrid_KnockBackMario % Script_80241F5C
+{
+    0:  Loop
+    C:  	Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+   24:  	Call  GetGridIndexFromPos   ( 00000000 *Var0 *Var1 *Var2 *Var3 *Var4 )
+   48:  	Set   *Var5  00000000
+   58:  	If  *MapVar[0]  ==  00000000
+   68:  		If  *Var3  ==  0000001C
+   78:  			If  *Var4  ==  00000006
+   88:  				Set   *Var5  00000001
+   98:  			EndIf
+   A0:  		EndIf
+   A8:  	EndIf
+   B0:  	If  *MapVar[0]  ==  00000001
+   C0:  		If  *Var3  ==  00000019
+   D0:  			If  *Var4  ==  00000004
+   E0:  				Set   *Var5  00000001
+   F0:  			EndIf
+   F8:  		EndIf
+  100:  	EndIf
+  108:  	If  *MapVar[0]  ==  00000002
+  118:  		If  *Var3  ==  00000015
+  128:  			If  *Var4  ==  00000008
+  138:  				Set   *Var5  00000001
+  148:  			EndIf
+  150:  		EndIf
+  158:  	EndIf
+  160:  	If  *MapVar[0]  ==  00000003
+  170:  		If  *Var3  ==  00000004
+  180:  			If  *Var4  ==  00000004
+  190:  				Set   *Var5  00000001
+  1A0:  			EndIf
+  1A8:  		EndIf
+  1B0:  	EndIf
+  1B8:  	If  *MapVar[0]  ==  00000004
+  1C8:  		If  *Var3  ==  0000000E
+  1D8:  			If  *Var4  ==  00000006
+  1E8:  				Set   *Var5  00000001
+  1F8:  			EndIf
+  200:  		EndIf
+  208:  	EndIf
+  210:  	If  *MapVar[0]  ==  00000005
+  220:  		If  *Var3  ==  00000011
+  230:  			If  *Var4  ==  00000000
+  240:  				Set   *Var5  00000001
+  250:  			EndIf
+  258:  		EndIf
+  260:  	EndIf
+  268:  	If  *MapVar[0]  ==  00000005
+  278:  		If  *Var3  ==  00000010
+  288:  			If  *Var4  ==  00000000
+  298:  				Set   *Var5  00000001
+  2A8:  			EndIf
+  2B0:  		EndIf
+  2B8:  	EndIf
+  2C0:  	If  *MapVar[0]  ==  00000005
+  2D0:  		If  *Var3  ==  00000012
+  2E0:  			If  *Var4  ==  00000000
+  2F0:  				Set   *Var5  00000001
+  300:  			EndIf
+  308:  		EndIf
+  310:  	EndIf
+  318:  	If  *MapVar[0]  ==  00000005
+  328:  		If  *Var3  ==  00000013
+  338:  			If  *Var4  ==  00000000
+  348:  				Set   *Var5  00000001
+  358:  			EndIf
+  360:  		EndIf
+  368:  	EndIf
+            % Add new holes
+            If  *MapVar[0]  ==  00000006
+                If  *Var3  ==  20`
+                    If  *Var4  ==  3
+                        Set   *Var5  00000001
+                    EndIf
+                EndIf
+            EndIf
+            %
+            If  *MapVar[0]  ==  00000007
+                If  *Var3  ==  10`
+                    If  *Var4  ==  4
+                        Set   *Var5  00000001
+                    EndIf
+                EndIf
+            EndIf
+            %
+            If  *MapVar[0]  ==  00000008
+                If  *Var3  ==  9
+                    If  *Var4  ==  9
+                        Set   *Var5  00000001
+                    EndIf
+                EndIf
+            EndIf
+            %
+            If  *MapVar[0]  ==  00000009
+                If  *Var3  ==  26`
+                    If  *Var4  ==  9
+                        Set   *Var5  00000001
+                    EndIf
+                EndIf
+            EndIf
+  370:  	If  *Var5  ==  00000001
+  380:  		Call  DisablePlayerInput    ( .True )
+  390:  		Call  $Function_802402B8 ( )
+  39C:  		Call  802D2B6C ( )
+  3A8:  		Loop  0000000A
+  3B4:  			Call  GetPlayerPos  ( *Var3 *Var4 *Var5 )
+  3CC:  			If  *Var4  <  00000028
+  3DC:  				AddF  *Var4  00000006
+  3EC:  			EndIf
+  3F4:  			MulF  *Var3  0000000A
+  404:  			MulF  *Var5  0000000A
+  414:  			AddF  *Var3  *Var0
+  424:  			AddF  *Var5  *Var2
+  434:  			DivF  *Var3  0000000B
+  444:  			DivF  *Var5  0000000B
+  454:  			Call  SetPlayerPos  ( *Var3 *Var4 *Var5 )
+  46C:  			Call  SetPlayerAnimation    ( 0001002E )
+  47C:  			Wait  1`
+  488:  		EndLoop
+  490:  		Call  SetPlayerAnimation    ( 00010002 )
+  4A0:  		Call  DisablePlayerInput    ( .False )
+  4B0:  	EndIf
+  4B8:  	Wait  1`
+  4C4:  EndLoop
+  4CC:  Return
+  4D4:  End
+}
+
+@ $Script_80240FB8 {
+   [88]  		If  *MapVar[0] == 10` % was 00000006
+}

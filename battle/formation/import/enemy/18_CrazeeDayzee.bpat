@@ -1,0 +1,377 @@
+% Automatically dumped from section 18
+
+#new:Actor $18_CrazeeDayzee {
+% stats
+[Index]        32b 
+[Level]        19`b 
+[MaxHP]         8`b 
+[Coins]         2`b 
+[Flags]       00000000 
+[StatusTable] $StatusTable_8021D7AC_18 
+% ai
+[PartsCount]    1`s 
+[PartsTable]  $PartsTable_8021D858_18 
+[Script]      $Script_Init_8021D8F0_18 
+% move effectiveness
+[Escape]       50`b 
+[Item]        100`b 
+[AirLift]      85`b 
+[Hurricane]    80`b % Bow's "Spook" as well
+[UpAndAway]    95`b 
+[PowerBounce]  75`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         32`b  34`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -14`b  17`b % dx dy
+[StatusIcon]    9`b  25`b % dx dy
+}
+
+#new:DefenseTable $DefenseTable_8021D7A0_18 {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_8021D7AC_18 {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep      95`
+.Status:Poison     50`
+.Status:Frozen     60`
+.Status:Dizzy      30`
+.Status:Fear        0`
+.Status:Static     50`
+.Status:Paralyze   30`
+.Status:Shrink     30`
+.Status:Stop       30`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   1`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_8021D858_18 {
+00800000 01000000 FE1E00FF $IdleAnimations_8021D8A4_18 $DefenseTable_8021D7A0_18 00000000 00000000 00F80000 00000000 
+}
+
+#new:IdleAnimations $IdleAnimations_8021D8A4_18 {
+.Status:Normal    00480001
+.Status:Frozen    00480000
+.Status:Sleep     0048000C
+.Status:Poison    00480001
+.Status:Stop      00480000
+.Status:Static    00480001
+.Status:Paralyze  00480000
+.Status:Dizzy     0048000B
+.Status:Fear      0048000B
+.Status:End
+}
+
+#new:Script $Script_Init_8021D8F0_18 {
+    0:  Call  BindTakeTurn      ( .Actor:Self $Script_TakeTurn_8021E7BC_18 )
+   14:  Call  BindIdle  ( .Actor:Self $Script_Idle_8021D93C_18 )
+   28:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_8021D988_18 )
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_Idle_8021D93C_18 {
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_8021D94C_18 {
+    0:  SetConst  *Var0  00000001 
+   10:  SetConst  *Var1  00480003 
+   20:  ExecWait  DoReturnHome 
+   2C:  Return
+   34:  End
+}
+
+#new:Script $Script_HandleEvent_8021D988_18 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   28:  Switch  *Var0 
+   34:  	CaseOR  ==  .Event:HitCombo % 9
+   40:  	CaseOR  ==  .Event:Hit % A
+   4C:  		SetConst  *Var0  00000001 
+   5C:  		SetConst  *Var1  00480008 
+   6C:  		ExecWait  DoNormalHit 
+   78:  	EndCaseGroup
+   80:  	Case  ==  .Event:BurnHit % E
+   8C:  		SetConst  *Var0  00000001 
+   9C:  		SetConst  *Var1  00480009 
+   AC:  		SetConst  *Var2  0048000A 
+   BC:  		ExecWait  DoBurnHit 
+   C8:  	Case  ==  .Event:BurnDeath % 24
+   D4:  		SetConst  *Var0  00000001 
+   E4:  		SetConst  *Var1  00480009 
+   F4:  		SetConst  *Var2  0048000A 
+  104:  		ExecWait  DoBurnHit 
+  110:  		SetConst  *Var0  00000001 
+  120:  		SetConst  *Var1  0048000A 
+  130:  		ExecWait  DoDeath 
+  13C:  		Return
+  144:  	Case  ==  .Event:SpinSmashHit % B
+  150:  		SetConst  *Var0  00000001 
+  160:  		SetConst  *Var1  00480008 
+  170:  		ExecWait  DoSpinSmashHit 
+  17C:  	Case  ==  .Event:SpinSmashDeath % 21
+  188:  		SetConst  *Var0  00000001 
+  198:  		SetConst  *Var1  00480008 
+  1A8:  		ExecWait  DoSpinSmashHit 
+  1B4:  		SetConst  *Var0  00000001 
+  1C4:  		SetConst  *Var1  00480008 
+  1D4:  		ExecWait  DoDeath 
+  1E0:  		Return
+  1E8:  	Case  ==  .Event:ShockHit % 2F
+  1F4:  		SetConst  *Var0  00000001 
+  204:  		SetConst  *Var1  00480008 
+  214:  		ExecWait  DoShockHit 
+  220:  		SetConst  *Var0  00000001 
+  230:  		SetConst  *Var1  00480008 
+  240:  		ExecWait  DoJumpBack 
+  24C:  		ExecWait  $Script_8021D94C_18 
+  258:  	Case  ==  .Event:ShockDeath % 26
+  264:  		SetConst  *Var0  00000001 
+  274:  		SetConst  *Var1  00480008 
+  284:  		ExecWait  DoShockHit 
+  290:  		SetConst  *Var0  00000001 
+  2A0:  		SetConst  *Var1  00480008 
+  2B0:  		ExecWait  DoDeath 
+  2BC:  		Return
+  2C4:  	CaseOR  ==  00000017 % 17
+  2D0:  	CaseOR  ==  .Event:Immune % 19
+  2DC:  	CaseOR  ==  .Event:AirLiftFailed % 1F
+  2E8:  		SetConst  *Var0  00000001 
+  2F8:  		SetConst  *Var1  00480001 
+  308:  		ExecWait  DoImmune 
+  314:  	EndCaseGroup
+  31C:  	Case  ==  .Event:Death % 20
+  328:  		SetConst  *Var0  00000001 
+  338:  		SetConst  *Var1  00480008 
+  348:  		ExecWait  DoNormalHit 
+  354:  		Wait  10`
+  360:  		SetConst  *Var0  00000001 
+  370:  		SetConst  *Var1  00480008 
+  380:  		ExecWait  DoDeath 
+  38C:  		Return
+  394:  	Case  ==  .Event:RecoverStatus % 31
+  3A0:  		SetConst  *Var0  00000001 
+  3B0:  		SetConst  *Var1  00480001 
+  3C0:  		ExecWait  DoRecover 
+  3CC:  	Case  ==  .Event:ScareAway % 39
+  3D8:  		SetConst  *Var0  00000001 
+  3E8:  		SetConst  *Var1  00480004 
+  3F8:  		SetConst  *Var2  00480008 
+  408:  		ExecWait  DoScareAway 
+  414:  		Return
+  41C:  	Case  ==  .Event:BeginAirLift % 3A
+  428:  		SetConst  *Var0  00000001 
+  438:  		SetConst  *Var1  00480004 
+  448:  		ExecWait  DoAirLift 
+  454:  	Case  ==  .Event:BlowAway % 16
+  460:  		Call  GetStatusFlags    ( .Actor:Self *Var0 )
+  474:  		If  *Var0  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+  484:  			If  *Var0  &  ~Flags:StatusFlags:Shrink % 80000
+  494:  				Call  SetActorDispOffset    ( .Actor:Self 00000000 00000001 00000000 )
+  4B0:  			Else
+  4B8:  				Call  SetActorDispOffset    ( .Actor:Self 00000000 00000003 00000000 )
+  4D4:  			EndIf
+  4DC:  		EndIf
+  4E4:  		SetConst  *Var0  00000001 
+  4F4:  		SetConst  *Var1  00480008 
+  504:  		ExecWait  DoBlowAway 
+  510:  		Return
+  518:  	Default
+  520:  EndSwitch
+  528:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  53C:  Return
+  544:  End
+}
+
+#new:Script $Script_Crazee_Sing_18 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+        Call  $SetTargetActorInFront ( .Actor:Self )
+   28:  Call  GetBattlePhase    ( *Var0 )
+   38:  If  *Var0  ==  00000001 
+   48:  	Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+   64:  	Call  SetActorPos   ( .Actor:Self FFFFFFEC *Var1 *Var2 )
+   80:  Else
+   88:  	Call  UseBattleCamPreset    ( 0000003F )
+   98:  	Call  BattleCamTargetActor  ( .Actor:Self )
+   A8:  	Call  8024ECF8  ( FFFFFFFF 00000001 00000000 )
+   C0:  	Call  MoveBattleCamOver     ( 00000046 )
+   D0:  	Set   *Flag[00]  .False 
+   E0:  	Label  0
+   EC:  	If  *Flag[00]  ==  .False 
+   FC:  		Call  SetAnimation  ( .Actor:Self 00000001 0048000E )
+  114:  		Set   *Flag[00]  .True 
+  124:  	Else
+  12C:  		Call  SetAnimation  ( .Actor:Self 00000001 0048000F )
+  144:  		Set   *Flag[00]  .False 
+  154:  	EndIf
+  15C:  	Wait  1`
+  168:  	Call  SetActorJumpGravity   ( .Actor:Self *Fixed[0.5] )
+  17C:  	Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  198:  	Sub   *Var0  00000014 
+  1A8:  	Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+  1C4:  	Call  JumpToGoal    ( .Actor:Self 0000000F .False .True .False )
+  1E4:  	If  *Var0  >  00000000 
+  1F4:  		Goto  0
+  200:  	EndIf
+  208:  	If  *Flag[00]  ==  .False 
+  218:  		Call  SetAnimation  ( .Actor:Self 00000001 0048000E )
+  230:  		Set   *Flag[00]  .True 
+  240:  	Else
+  248:  		Call  SetAnimation  ( .Actor:Self 00000001 0048000F )
+  260:  		Set   *Flag[00]  .False 
+  270:  	EndIf
+  278:  	Wait  1`
+  284:  	Call  SetActorJumpGravity   ( .Actor:Self *Fixed[0.5] )
+  298:  	Call  SetGoalPos    ( .Actor:Self FFFFFFDD 00000000 0000000A )
+  2B4:  	Call  JumpToGoal    ( .Actor:Self 0000000F .False .True .False )
+  2D4:  EndIf
+  2DC:  Call  SetAnimation  ( .Actor:Self 00000001 00480001 )
+  2F4:  Wait  10`
+  300:  Thread
+  308:  	Call  SetAnimation  ( .Actor:Self 00000001 00480006 )
+  320:  	Wait  40`
+  32C:  	Call  SetAnimation  ( .Actor:Self 00000001 00480007 )
+  344:  EndThread
+  34C:  Wait  20`
+  358:  Call  PlaySoundAtActor  ( .Actor:Self .Sound:DayzeeSong )
+  36C:  Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+  388:  Add   *Var1  00000019 
+  398:  Add   *Var2  00000002 
+  3A8:  Loop  0000000D 
+  3B4:  	Call  RandInt       ( 0000001E *Var3 )
+  3C8:  	Sub   *Var3  0000000F 
+  3D8:  	Add   *Var3  *Var0 
+  3E8:  	Call  PlayEffect    ( ~FX:MusicNote:Left *Var3 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  42C:  	Wait  10`
+  438:  EndLoop
+  440:  Call  SetAnimation      ( .Actor:Self 00000001 00480001 )
+  458:  Wait  10`
+        Call  SetGoalToTarget   ( .Actor:Self )
+  464:  Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:0 00000000 00000001 00000010 )
+  488:  Switch  *Var0 
+  494:  	CaseOR  ==  .HitResult:Miss % 6
+  4A0:  	CaseOR  ==  .HitResult:Lucky % 5
+  4AC:  		Set   *VarA  *Var0 
+  4BC:  		If  *VarA  ==  .HitResult:Lucky % 5
+  4CC:  			Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+  4F0:  		EndIf
+  5A4:  	EndCaseGroup
+          Default
+            Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:NoContact|IgnoreDefense 00000000 80001314 00000004 00000020 )
+  5AC:  EndSwitch
+        Call  $SetTargetActorInTheBack ( .Actor:Self )
+        Call  SetGoalToTarget   ( .Actor:Self )
+        Call  EnemyTestTarget   ( .Actor:Self *VarF ~Flags:DamageType:0 00000000 00000001 00000010 )
+        Switch  *VarF 
+          CaseOR  ==  .HitResult:Miss % 6
+          CaseOR  ==  .HitResult:Lucky % 5
+            If  *VarF  ==  .HitResult:Lucky % 5
+              Call  EnemyTestTarget   ( .Actor:Self *VarF ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+            EndIf
+            Call  UseBattleCamPreset    ( 00000002 )
+            Call  MoveBattleCamOver     ( 0000000A )
+            Wait  20`
+            Call  YieldTurn ( )
+            ExecWait  $Script_8021D94C_18 
+            Return
+          EndCaseGroup
+          Default
+            Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:NoContact|IgnoreDefense 00000000 80001314 00000004 00000020 )
+        EndSwitch
+  60C:  Switch  *VarF 
+  618:  	CaseOR  ==  .HitResult:Hit % 0
+  624:  	CaseOR  ==  00000002 % 2%/
+  630:  		Call  UseBattleCamPreset    ( 00000002 )
+  640:  		Call  MoveBattleCamOver     ( 0000000A )
+  650:  		Wait  20`
+  65C:  		Call  YieldTurn ( )
+  668:  		ExecWait  $Script_8021D94C_18 
+  674:  	EndCaseGroup
+  67C:  EndSwitch
+  684:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  698:  Return
+  6A0:  End
+}
+
+#new:Script $Script_Crazee_RunAway_18 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  UseBattleCamPreset    ( 00000013 )
+   24:  Call  SetBattleCamZoom  ( 0000012C )
+   34:  Call  SetBattleCamOffsetZ   ( 0000001E )
+   44:  Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+   60:  Sub   *Var0  00000014 
+   70:  Call  SetBattleCamTarget    ( *Var0 *Var1 *Var2 )
+   88:  Call  MoveBattleCamOver ( 0000001E )
+   98:  Call  SetActorYaw       ( .Actor:Self 000000B4 )
+   AC:  Call  SetAnimation      ( .Actor:Self 00000001 00480003 )
+   C4:  Wait  10`
+   D0:  Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+   EC:  Call  SetActorSpeed     ( .Actor:Self *Fixed[1.0] )
+  100:  Sub   *Var0  00000014 
+  110:  Call  SetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+  12C:  Call  RunToGoal ( .Actor:Self 00000000 .False )
+  144:  Wait  20`
+  150:  Call  UseBattleCamPreset    ( 00000002 )
+  160:  Call  EnableActorBlur   ( .Actor:Self 00000001 )
+  174:  Call  SetAnimation      ( .Actor:Self 00000001 00480004 )
+  18C:  Call  SetActorSpeed     ( .Actor:Self *Fixed[12.0] )
+  1A0:  Add   *Var0  000000C8 
+  1B0:  Call  SetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+  1CC:  Call  RunToGoal ( .Actor:Self 00000000 .False )
+  1E4:  Call  EnableActorBlur   ( .Actor:Self 00000000 )
+  1F8:  Call  SetBattleFlagBits ( 00040000 .True )
+  20C:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  220:  Call  RemoveActor       ( .Actor:Self )
+  230:  Return
+  238:  End
+}
+
+#new:Script $Script_TakeTurn_8021E7BC_18 {
+    0:  Call  GetBattlePhase    ( *Var0 )
+   10:  If  *Var0  ==  00000001 
+   20:  	ExecWait  $Script_Crazee_Sing_18 
+   2C:  	Return
+   34:  EndIf
+   3C:  Call  GetActorHP    ( .Actor:Self *Var0 )
+   50:  Call  RandInt       ( 00000064 *Var1 )
+   64:  Switch  *Var0 
+   70:  	Case  ==  00000001 
+   7C:  		If  *Var1  <  00000050 
+   8C:  			ExecWait  $Script_Crazee_RunAway_18 
+   98:  			Return
+   A0:  		EndIf
+   A8:  	Case  ==  00000002 
+   B4:  		If  *Var1  <  00000028 
+   C4:  			ExecWait  $Script_Crazee_RunAway_18 
+   D0:  			Return
+   D8:  		EndIf
+   E0:  	Case  ==  00000003 
+   EC:  		If  *Var1  <  00000014 
+   FC:  			ExecWait  $Script_Crazee_RunAway_18 
+  108:  			Return
+  110:  		EndIf
+  118:  	Case  ==  00000004 
+  124:  		If  *Var1  <  0000000A 
+  134:  			ExecWait  $Script_Crazee_RunAway_18 
+  140:  			Return
+  148:  		EndIf
+  150:  EndSwitch
+  158:  ExecWait  $Script_Crazee_Sing_18 
+  164:  Return
+  16C:  End
+}
+

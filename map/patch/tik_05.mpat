@@ -1,0 +1,108 @@
+% Add new hidden item
+
+@ $Script_MakeEntities
+{
+    0:  Call  MakeEntity    ( .Entity:Chest ~Vec4d:Entity80241B80 00000000 80000000 )
+   28:  Call  AssignFlag    ( *GF_TIK05_Chest_PowerSmash1 )
+   38:  Call  AssignScript  ( $Script_80241B34 )
+   48:  Call  MakeEntity    ( .Entity:BrickBlock ~Vec4d:Entity80241BC8 80000000 )
+   6C:  Call  AssignScript  ( $Script_8024194C )
+        If *GF_TIK05_Switch == .False
+   7C:      If  *GF_TIK05_SpringBrick  ==  .False
+   8C:      	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity80241C0C 100` 80000000 )
+   %B4:      	Set   *MapVar[0]  *Var0
+   C4:      Else
+   CC:      	Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity80241C4C 100` 80000000 )
+   F4:      EndIf
+        Else % New spring
+            Call  MakeEntity    ( .Entity:SimpleSpring ~Vec4d:Entity80241C4C 210` 80000000 )
+        EndIf
+        Set   *MapVar[0]  *Var0
+        If *GF_TIK05_Switch == .False
+            Call  MakeEntity    ( .Entity:SingleTriggerBlock ~Vec4d:Entity_TriggerBlock 80000000 )
+            Call  AssignScript  ( $Script_ActivateNewSpring )
+        EndIf
+        Call  MakeEntity    ( .Entity:Chest ~Vec4d:Entity_Chest 00000000 80000000 )
+        Call  AssignFlag    ( *GF_TIK05_Chest )
+        Call  AssignScript  ( $Script_OpenChest )
+   FC:  Return
+  104:  End
+}
+
+#new:Script $Script_ActivateNewSpring
+{
+    SetGroup 2
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePlayerPhysics ( .True )
+    Call    DisablePartnerAI ( .True )
+    Set     *GF_TIK05_Switch .True
+    Call    $GetEntityPointer ( *MapVar[0] *Var0 )
+    Call    $ReadAddress  ( *Var0 2 *Var0 40 .False )
+    Call    $WriteAddress ( *Var0 2 210` .False .False ) % increase spring's jump
+    % Move camera
+    Call    UseSettingsFrom ( .Cam:Default ~Vec3d:Entity80241C4C )
+	Call    SetCamSpeed 	( .Cam:Default *Fixed[7.0] )
+	Call    SetPanTarget 	( .Cam:Default ~Vec3d:Entity80241C4C )
+    Call    PanToTarget 	( .Cam:Default .Easing:Linear 00000001 )
+    Wait    10`
+    % FX
+    Call    PlaySound ( 000B )
+    Set     *Var1 ~PosXd:Entity80241C4C
+    Set     *Var2 ~PosYd:Entity80241C4C
+    Set     *Var3 ~PosZd:Entity80241C4C
+    Add     *Var2 15` % y
+    Call    PlayEffect    ( ~FX:RedShimmer:Burst *Var1 *Var2 *Var3 80` 55` 8 50` .False .False .False .False .False ) % X/Y/Z, emitter radius, emitter height, num particles
+    Wait    30`
+    Call    SetCamSpeed ( .Cam:Default *Fixed[1.0] )
+    Call    ResetCam ( .Cam:Default *Fixed[5.0] )
+    Call    DisablePlayerInput ( .False )
+    Call    DisablePlayerPhysics ( .False )
+    Call    DisablePartnerAI ( .False )
+    Return
+    End
+}
+
+%
+
+#new:Script $Script_OpenChest
+{
+    0:  Set   *VarA  .Item:ItemHog
+   10:  Set   *VarB  00000002 % Badge
+   20:  Set   *GF_TIK05_Chest  .True
+   30:  ExecWait  $Script_GiveItem
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_ShowGotItem
+{
+    0:  SetGroup  00000000
+    C:  Call  SetTimeFreezeMode ( 00000002 )
+   1C:  Wait  40`
+   28:  Call  ShowGotItem       ( *Var0 .False 00000000 )
+   40:  Call  SetTimeFreezeMode ( 00000000 )
+   50:  Return
+   58:  Return
+   60:  End
+}
+
+#new:Script $Script_GiveItem
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Set   *Var0  *VarA
+   20:  If  *VarA  !=  00000000
+   30:  	ExecWait  $Script_ShowGotItem
+   3C:  EndIf
+   44:  Switch  *VarB
+   50:  	Case  ==  00000000
+   5C:  		Call  AddItem   ( *VarA *Var0 )
+   70:  	Case  ==  00000001
+   7C:  		Call  AddKeyItem    ( *VarA )
+   8C:  	Case  ==  00000002
+   98:  		Call  AddBadge  ( *VarA *Var0 )
+   AC:  EndSwitch
+   B4:  Wait  15`
+   C0:  Call  DisablePlayerInput    ( .False )
+   D0:  Return
+   D8:  End
+}

@@ -1,0 +1,105 @@
+% Script File: sbk_99.mscr
+% Decoded from: 0 to 350 (sbk_99)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -484.0  100.0    5.0   90.0
+	~Vec4f:Entry1 %  346.0    0.0 -342.0  220.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  80200000
+	[MapTattle]   0019005F
+}
+
+#new:Script $Script_ExitWalk_80240060
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240340 00000001 ) % iwa_04
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_802400BC
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240348 00000000 ) % sbk_30
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240118
+{
+    0:  Bind  $Script_ExitWalk_80240060 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802400BC .Trigger:FloorAbove ~Collider:deiline 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_EnterWalk_80240160
+{
+    0:  Call  GetLoadType   ( *Var1 )
+   10:  If  *Var1  ==  00000001
+   20:  	Exec  EnterSavePoint
+   2C:  	Exec  $Script_80240118
+   38:  	Return
+   40:  EndIf
+   48:  Set   *Var0  $Script_80240118
+   58:  Exec  EnterWalk
+   64:  Return
+   6C:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:DryDryDesert
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  152`  240` )
+   5C:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   78:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   8C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   A0:  Set   *GF_Map_DryDryDesert  .True
+   B0:  ExecWait  $Script_MakeEntities
+   BC:  Call  SetMusicTrack     ( 00000000 .Song:MtRugged 00000000 00000008 )
+   D8:  Exec  $Script_EnterWalk_80240160
+   E4:  Wait  1`
+   F0:  Return
+   F8:  End
+}
+
+PADDING: 802402D4 to 802402E0 (000002D4 to 000002E0)
+00000000 00000000 00000000
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeEntity    ( .Entity:SavePoint ~Vec4d:Entity802402E0 80000000 )
+   24:  Call  MakeEntity    ( .Entity:HealingBlock ~Vec4d:Entity80240304 80000000 )
+   48:  Return
+   50:  End
+}
+
+PADDING: 80240338 to 80240340 (00000338 to 00000340)
+00000000 00000000
+
+#new:ASCII $ASCII_80240340
+{
+	"iwa_04"
+}
+
+#new:ASCII $ASCII_80240348
+{
+	"sbk_30"
+}
+

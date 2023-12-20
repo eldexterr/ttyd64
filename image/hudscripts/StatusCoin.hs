@@ -1,0 +1,26 @@
+SetVisible
+SetTileSize ( .IconSize:16x16 )
+Loop
+	op_15       ( 00000000 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_0 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_1 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_4 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_5 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_6 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_7 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_8 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_9 )
+	RandomRestart   ( 100` 70` )
+	op_15       ( 00000001 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_0 )
+	SetCI       ( 2` ~ImageCI:ui/status/coin_1 )
+	SetCI       ( 1` ~ImageCI:ui/status/coin_2 )
+	SetCI       ( 1` ~ImageCI:ui/status/coin_3 )
+	SetCI       ( 2` ~ImageCI:ui/status/coin_4 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_5 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_6 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_7 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_8 )
+	SetCI       ( 3` ~ImageCI:ui/status/coin_9 )
+Restart
+End

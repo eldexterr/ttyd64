@@ -1,0 +1,1626 @@
+% Delete all original data and declare
+% everything once again to being able to
+% edit everything whatever way I want without
+% worring about causing an overflow.
+
+#delete $Script_Init_80238440
+#delete $Script_Idle_802384A0
+#delete $Script_HandleEvent_802384B0
+#delete $Script_TakeTurn_8023881C
+#delete $Script_802388B0
+#delete $Script_802388FC
+#delete $Script_80238938
+#delete $Script_NextTurn_802389EC
+#delete $Script_80238A5C
+#delete $Script_80238BB8
+#delete $Script_80238D4C
+#delete $Script_80238EE0
+#delete $Script_80238F58
+#delete $Script_80239B40
+#delete $Script_80239F5C
+#delete $Script_8023A0E8
+#delete $Script_8023AF38
+#delete $IdleAnimations_80238300
+#delete $DefenseTable_8023833C
+#delete $StatusTable_80238348
+#delete $PartsTable_802383F4
+
+@ $Bow
+{
+    % stats
+    [Index]        73b
+    [Level]         0`b
+    [MaxHP]        99`b
+    [Coins]         0`b
+    [Flags]       00000200
+    [StatusTable] $StatusTable_Bow_80238348
+    % ai
+    [PartsCount]    1`s
+    [PartsTable]  $PartsTable_Bow_802383F4
+    [Script]      $Script_Bow_Init_80238440
+    % move effectiveness
+    [Escape]        0`b
+    [Item]          0`b
+    [AirLift]       0`b
+    [Hurricane]     0`b % Bow's "Spook" as well
+    [UpAndAway]     0`b
+    [PowerBounce]  80`b
+    [SpinSmash]     4`b % weight (0-4)
+    % ui positions
+    [Size]         36`b  29`b % width height
+    [HealthBar]     0`b   0`b % dx dy
+    [StatusTurn]  -10`b  22`b % dx dy
+    [StatusIcon]   10`b  22`b % dx dy
+}
+
+#new:IdleAnimations $IdleAnimations_Bow_80238300
+{
+	.Status:Normal    000D0002
+	.Status:Stone     000D0000
+	.Status:Sleep     000D001C
+	.Status:Poison    000D001D
+	.Status:Stop      000D0000
+    .Status:Dizzy     000D001A
+	.Status:Daze      000D001A
+	.Status:TurnDone  000D0000
+    .Status:Danger    000D001D
+    .Status:Frozen	  000D0000
+    00000030    	  000D001B % Defense
+	.Status:End
+}
+
+#new:DefenseTable $DefenseTable_Bow_8023833C
+{
+	.Element:Normal 00000000
+	.Element:End
+}
+
+#new:StatusTable $StatusTable_Bow_80238348
+{
+	.Status:Normal    100`
+	.Status:Default   100`
+	.Status:Sleep     100`
+	.Status:Poison    100`
+	.Status:Frozen    100`
+	.Status:Dizzy     100`
+	.Status:Fear      100`
+	.Status:Static    100`
+	.Status:Paralyze  100`
+	.Status:Shrink    100`
+	.Status:Stop      100`
+	.Status:DefaultTurnMod    0`
+	.Status:SleepTurnMod      0`
+	.Status:PoisonTurnMod     0`
+	.Status:FrozenTurnMod     0`
+	.Status:DizzyTurnMod      0`
+	.Status:FearTurnMod       0`
+	.Status:StaticTurnMod     0`
+	.Status:ParalyzeTurnMod   0`
+	.Status:ShrinkTurnMod     0`
+	.Status:StopTurnMod       0`
+	.Status:End
+}
+
+#new:PartsTable $PartsTable_Bow_802383F4
+{
+	00000000 01000000 091300FF $IdleAnimations_Bow_80238300 $DefenseTable_Bow_8023833C 00000000 00000000 00000000 00000000
+}
+
+#new:Script $Script_Bow_Init_80238440
+{
+    Call  BindTakeTurn  ( .Actor:Self $Script_Bow_TakeTurn_8023881C )
+    Call  BindIdle      ( .Actor:Self $Script_Bow_Idle_802384A0 )
+    Call  BindHandleEvent   ( .Actor:Self $Script_Bow_HandleEvent_802384B0 )
+    Call  BindNextTurn  ( .Actor:Self $Script_Bow_NextTurn_802389EC )
+    Return
+    End
+}
+
+#new:Script $Script_Bow_Idle_802384A0
+{
+    Return
+    End
+}
+
+#new:Script $Script_Bow_HandleEvent_802384B0
+{
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  CloseActionCommandInfo ( )
+    Call  GetLastEvent      ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        CaseOR  ==  .Event:HitCombo % 9
+        CaseOR  ==  .Event:Hit % A
+            SetConst  *Var0  FFFFFFFF 
+            Set  	  *Var1  000D0015
+            ExecWait  DoNormalHit 
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+        EndCaseGroup
+        CaseOR  ==  00000017 % 17
+        CaseOR  ==  .Event:Immune % 19
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            % Check if Partner used the defend command
+            Call $GetPartnerExtraBattleData_API ( E *Var0 )
+            If *Var0 == .False
+                  SetConst  *Var0  00000001
+                  SetConst  *Var1  000D0000
+            Else % Defend
+                  SetConst  *Var0  00000001
+                  SetConst  *Var1  000D001B
+            EndIf
+            ExecWait  DoImmune
+        EndCaseGroup
+        Case  ==  .Event:SpikeContact % 2A
+            SetConst  *Var1  000D0015
+            Set   *Var2  0000000E
+            ExecWait  80294FE4
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnContact % 2C
+            SetConst  *Var1  000D0016
+            Set   *Var2  0000000E
+            SetConst  *Var3  000D0017
+            ExecWait  80294C68
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnHit % E
+            SetConst  *Var1  000D0016
+            SetConst  *Var2  000D0017
+            ExecWait  8029621C
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:ShockHit % 2F
+            SetConst  *Var1  000D0015
+            Set   *Var2  0000000E
+            ExecWait  80295744
+        Case  ==  00000033 % 33
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  00000034 % 34 % Recover
+            SetConst  *Var0  00000001
+            SetConst  *Var1  000D0001
+            SetConst  *Var2  000D0003
+            Set   *Var3  00000009 % Height
+            ExecWait  80295EC4
+        CaseOR  ==  00000018 % 18
+        CaseOR  ==  .Event:Block % 1A
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            SetConst  *Var0  00000001
+            SetConst  *Var1  000D001B
+            ExecWait  DoImmune
+            Wait  10`
+        EndCaseGroup
+        Case  ==  .Event:Death % 20 % NEW!
+            Set *Var0 FFFFFFFF
+            Set *Var1 000D0015
+            ExecWait $PartnerDies
+            Return
+        Case  ==  43 % NEW! % .Event:Superguard
+            Set *Var0 FFFFFFFF
+			Set *Var1 000D000D
+            ExecWait $DoSuperguard
+        Default
+    EndSwitch
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Return
+    End
+}
+
+#new:Script $Script_Bow_TakeTurn_8023881C
+{
+    Call  GetBattlePhase    ( *Var0 )
+    Switch  *Var0
+        Case  ==  .Phase:FirstStrike
+            ExecWait  $Script_Init_Smack_FirstStrike
+        Case  ==  .Phase:ExecuteAction
+            ExecWait  $Script_Bow_80238A5C
+        Case  ==  00000005
+            ExecWait  $Script_Bow_802388B0
+        Case  ==  .Phase:RunAwayStart
+            ExecWait  $Script_Bow_RunAwayStart
+        Case  ==  .Phase:RunAwayFail
+            ExecWait  $Script_Bow_RunAwayFail
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Bow_802388B0
+{
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0011 )
+    Wait  36`
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Bow_RunAwayStart % Script_802388FC
+{
+    SetConst  *Var0  00000001
+    SetConst  *Var1  000D0003
+    ExecWait  80294AFC
+    Return
+    End
+}
+
+#new:Script $Script_Bow_RunAwayFail % Script_80238938
+{
+    Call  $GetPartnerHP_API ( *Var0 )
+    If *Var0 == .False
+        % Don't do anything if partner is dead
+        Return
+    EndIf
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0003 )
+    Call  SetActorYaw   ( .Actor:Partner 00000000 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Return
+    End
+}
+
+#new:Script $Script_Bow_NextTurn_802389EC
+{
+    Call  GetBattlePhase    ( *Var0 )
+    Switch  *Var0
+        Case  ==  0000000C
+            Call  $Function_80238000 ( )
+            If  *Var0  !=  00000000
+                ExecWait  $Script_OuttaSight_Reappear
+            EndIf
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Bow_80238A5C
+{
+    Call  802694A4  ( 00000001 )
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var0
+        Case  ==  00000008
+            Call  LoadStarPowerScript ( )
+            ExecWait  *Var0
+            Return
+        Case  ==  00000002 
+			Call  LoadItemScript
+			ExecWait *Var0
+			Return
+    EndSwitch
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000B3 % Smack
+            ExecWait  $Script_Init_Smack
+        Case  ==  000000B4 % Smack - Super Rank
+            ExecWait  $Script_Init_Smack
+        Case  ==  000000B5 % Smack - Ultra Rank
+            ExecWait  $Script_Init_Smack
+        Case  ==  000000B6 % Outta Sight
+            Call  SetBattleFlagBits ( 00004000 .False )
+            ExecWait  $Script_Init_OuttaSight
+        Case  ==  000000B7 % Spook
+            Call  SetBattleFlagBits ( 00004000 .False )
+            ExecWait  $Script_Init_Spook
+        Case  ==  000000B8 % Fan Smack
+            ExecWait  $Script_Init_FanSmack
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Smack_GoBackToHome_Succeed
+{
+    Exec  $Script_InitTracker % Init A Button Tracker
+    Call  80280818 ( )
+    Call  UseBattleCamPreset      ( 00000004 )
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooVanish )
+    Thread
+        Set   *Var0  000000C8
+        Loop  00000014
+            Sub   *Var0  0000000A
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Wait  10`
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooAppear )
+    Thread
+        Set   *Var0  00000037
+        Loop  00000014
+            Add   *Var0  0000000A
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+            Wait  1`
+        EndLoop
+        Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 000000FF )
+    EndThread
+    % Stylish
+    Wait 1
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .False % The A button wasn't still pressed
+        Loop 4 % 4 frames
+            % Timing Tutor Badge
+            ExecWait $Script_TimingTutor % writes in var0,1,2
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            % Set *Var0 .True % testing
+            If *Var0 == .True
+                Set   *TrackInput .False % turn off tracker
+                Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                % Add 1 to the stylish counter (last move only)
+                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                Add *Var0 1
+                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                Set *VarA .False % this move doesn't have an SP cap
+                ExecWait $Script_DoStylishFX
+                % haha
+                Call  GetMenuSelection  ( .False .False *Var0 )
+                If *Var0 != B8 % Smack
+                    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000F )
+                    Wait  5
+                Else % Fan Smack
+                    Exec  $Script_InitTracker
+                    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0010 )
+                    Wait  20`
+                    %=================
+                    % Fan Smack - 2nd Stylish Move
+                    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                    If *Var0 == .False % The A button wasn't still pressed
+                        Loop 5 % 5 frames
+                            % Timing Tutor Badge
+                            ExecWait $Script_TimingTutor % writes in var0,1,2
+                            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                            % Set *Var0 .True % testing
+                            If *Var0 == .True
+                                Set   *TrackInput .False % turn off tracker
+                                Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                                % Add 1 to the stylish counter (last move only)
+                                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                                Add *Var0 1
+                                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                                Set *VarA .False % this move doesn't have an SP cap
+                                ExecWait $Script_DoStylishFX
+                                % haha 2
+                                Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0011 )
+                                Exec  $Script_InitTracker
+                                Wait  20`
+                                %=================
+                                % Fan Smack - 3rd Stylish Move
+                                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                                If *Var0 == .False % The A button wasn't still pressed
+                                    Loop 5 % 5 frames
+                                        % Timing Tutor Badge
+                                        ExecWait $Script_TimingTutor % writes in var0,1,2
+                                        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                                        % Set *Var0 .True % testing
+                                        If *Var0 == .True
+                                            Set   *TrackInput .False % turn off tracker
+                                            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                                            % Add 1 to the stylish counter (last move only)
+                                            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                                            Add *Var0 1
+                                            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                                            Set *VarA .False % this move doesn't have an SP cap
+                                            ExecWait $Script_DoStylishFX
+                                            % haha 2
+                                            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0012 )
+                                            Wait  10`
+                                            BreakLoop
+                                        EndIf
+                                        Wait 1
+                                    EndLoop
+                                EndIf
+                                BreakLoop
+                            EndIf
+                            Wait 1
+                        EndLoop
+                    EndIf
+                EndIf
+                BreakLoop
+            EndIf
+            Wait 1
+        EndLoop
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Wait  20`
+    Return
+    End
+}
+
+#new:Script $Script_Bow_80238D4C
+{
+    Call  80280818 ( )
+    Call  UseBattleCamPreset      ( 00000033 )
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooVanish )
+    Thread
+        Set   *Var0  000000C8
+        Loop  00000014
+            Sub   *Var0  0000000A
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Wait  10`
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooAppear )
+    Set   *Var0  00000037
+    Loop  00000014
+        Add   *Var0  0000000A
+        Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+        Wait  1`
+    EndLoop
+    Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 000000FF )
+    Return
+    End
+}
+
+#new:Script $Script_Spook_GoBackToHome
+{
+    Call  GetActionCommandResult  ( *Var0 )
+    %Set *Var0 100` % testing
+    If *Var0 >= 60` % If Action command was 60% or above
+        % Stylish
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .False % The A button wasn't still pressed
+            Loop 2 % 2 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                % Set *Var0 .True % testing
+                If *Var0 == .True
+                    Set   *TrackInput .False % turn off tracker
+                    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                    % Add 1 to the stylish counter (last move only)
+                    Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                    Add *Var0 1
+                    Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                    Set *VarA .False % this move doesn't have an SP cap
+                    ExecWait $Script_DoStylishFX
+                    % haha
+                    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000F )
+                    Exec  $Script_InitTracker
+                    Wait  20`
+                    %=================
+                    % 2nd Stylish Move
+                    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                    If *Var0 == .False % The A button wasn't still pressed
+                        Loop 5 % 5 frames
+                            % Timing Tutor Badge
+                            ExecWait $Script_TimingTutor % writes in var0,1,2
+                            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                            % Set *Var0 .True % testing
+                            If *Var0 == .True
+                                Set   *TrackInput .False % turn off tracker
+                                Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                                % Add 1 to the stylish counter (last move only)
+                                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                                Add *Var0 1
+                                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                                Set *VarA .False % this move doesn't have an SP cap
+                                ExecWait $Script_DoStylishFX
+                                % haha 2
+                                Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000E )
+                                Wait  30`
+                                Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000F )
+                                Wait  15`
+                                BreakLoop
+                            EndIf
+                            Wait 1
+                        EndLoop
+                    EndIf
+                    BreakLoop
+                EndIf
+                Wait 1
+            EndLoop
+        EndIf
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  80280818 ( )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000000F 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Return
+    End
+}
+
+% Make Bow's Smack to behave like TTYD's Yoshi Kid's Ground Pound
+#new:Script $Script_Init_Smack
+{
+    Call  LoadActionCommand ( 00000012 )
+    Exec  $Script_NukeTracker
+    Call  802A9000 ( )
+    Call  80269344  ( 00000000 )
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000B3
+            Call  SetupMashMeter  ( 00000004 00000028 00000046 00000063 00000064 00000000 )
+            Set   *VarB  0000003C
+            Set   *VarC  00000001
+        Case  ==  000000B4
+            Call  SetupMashMeter  ( 00000005 00000023 0000003C 00000050 00000063 00000064 )
+            Set   *VarB  0000003C
+            Set   *VarC  00000001
+        Case  ==  000000B5
+            Call  SetupMashMeter  ( 00000005 00000023 0000003C 00000050 00000063 00000064 )
+            Set   *VarB  0000003C
+            Set   *VarC  00000001
+    EndSwitch
+    Wait  10`
+    Thread
+        Wait  10`
+        Set   *Var0  *VarB
+        Add   *Var0  FFFFFFFD
+        Call  802A917C  ( 00000000 *Var0 00000003 00000000 )
+        Call  SetBattleFlagBits ( 00004000 .False )
+    EndThread
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooVanish )
+    Call  SetPartAlpha      ( .Actor:Partner FFFFFFFF 00000037 )
+    Call  InitTargetIterator ( )
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Thread
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0003 )
+        Call  AddGoalPos    ( .Actor:Partner FFFFFFF1 FFFFFFF6 00000000 )
+        Call  FlyToGoal     ( .Actor:Partner 0000000F 00000000 .Easing:CosInOut )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    EndThread
+    Call  UseBattleCamPreset      ( 0000000D )
+    Call  BattleCamTargetActor  ( .Actor:Self )
+    Call  SetBattleCamZoom  ( 000000B4 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  SetBattleCamOffsetZ   ( 00000009 )
+    Call  8024EDA4 ( )
+    Wait  15`
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooAppear )
+    Set   *Var0  00000037
+    Loop  00000005
+        Add   *Var0  00000028
+        Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+        Wait  1`
+    EndLoop
+    Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 000000FF )
+    Call  8024E664      ( 00000013 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0005 )
+    Wait  20`
+    Set   *VarF  00000000
+    Set   *VarE  00000000
+    Set   *VarD  00000000
+    Set   *Flag[00]  .False
+    Call  InitTargetIterator ( )
+    Call  SetGoalToTarget   ( .Actor:Self )
+    Loop  0000000F
+        Call  SetActorDispOffset    ( .Actor:Partner *Fixed[0.5] 00000000 00000000 )
+        Wait  1`
+        Call  SetActorDispOffset    ( .Actor:Partner *Fixed[-0.5] 00000000 00000000 )
+        Wait  1`
+    EndLoop
+    Call  GetActionCommandResult  ( *VarB )
+    Call  80269600  ( *VarD ) % get mashMetter level result
+    Label  0
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000001 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0007 )
+        Call  CloseActionCommandInfo ( )
+        Set   *Var0  00000000
+        Loop  00000014
+            Add   *Var0  FFFFFFD3
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+        Call  SetActorYaw   ( .Actor:Partner 00000000 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D001A )
+        Call  AddActorDecoration    ( .Actor:Self 00000000 00000000 .Decoration:SeeingStars )
+        Wait  30`
+        Call  RemoveActorDecoration ( .Actor:Self 00000000 00000000 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+        Wait  10`
+        ExecWait  $Script_Bow_80238D4C
+        Return
+    EndIf
+    Add   *VarE  00000001
+    If  *VarE  >  *VarD
+        Goto  2
+    EndIf
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+    If  *Flag[00]  ==  .False
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0007 )
+        Set   *Flag[00]  .True
+        Call  80269EAC      ( 0000000A )
+    Else
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0008 )
+        Set   *Flag[00]  .False
+        Call  80269EAC      ( 0000000B )
+    EndIf
+    Wait  2`
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    Thread
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.2] )
+    EndThread
+    If  *VarE  ==  00000001
+        Call  $Function_80238014 ( )
+        Call  AddBattleCamZoom  ( *Var0 )
+        Call  MoveBattleCamOver ( 00000005 )
+    Else
+        Call  AddBattleCamZoom  ( 00000019 )
+        Call  MoveBattleCamOver ( 00000005 )
+    EndIf
+    Call  SetActorSounds    ( .Actor:Partner .ActorSound:Hurt 00002019 00000000 )
+    If  *VarE  ==  00000001 % First Smack
+        If  *VarB  >  00000063
+            Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000050 )
+        Else
+            Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000010 )
+        EndIf
+        If *GameMode != 1
+            Call    $ReadAddress ( 800DC070 1 *VarC 180 .False ) % battleStatus(0x180)= s16 lastAttackDamage
+            If *VarC < -1
+                Set *VarC 0
+            EndIf
+        EndIf
+        Goto  1
+    Else
+        If *GameMode != 1
+            If *VarC > 1
+                Sub *VarC 1
+            EndIf
+            If  *VarB  >  00000063
+                Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:IgnoreDefense 00000005 00000000 *VarC 00000040 )
+            Else
+                Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:IgnoreDefense 00000005 00000000 *VarC 00000000 )
+            EndIf
+        Else
+            % super bow mode
+            If  *VarB  >  00000063
+                Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000040 )
+            Else
+                Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000000 )
+            EndIf
+        EndIf        
+        Goto  1
+    EndIf
+    Label  1
+    Wait  8`
+    Add   *VarF  0000000A
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Goto  0
+    Label  2
+    If  *VarE  ==  00000001
+        Call  $Function_80238014 ( )
+        Call  AddBattleCamZoom  ( *Var0 )
+        Call  MoveBattleCamOver ( 00000005 )
+    Else
+        Call  AddBattleCamZoom  ( 00000019 )
+        Call  MoveBattleCamOver ( 00000005 )
+    EndIf
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+    If  *Flag[00]  ==  .False
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0007 )
+        Set   *Flag[00]  .True
+        Call  80269EAC      ( 0000000C )
+    Else
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0008 )
+        Set   *Flag[00]  .False
+        Call  80269EAC      ( 0000000D )
+    EndIf
+    Wait  2`
+    Call  SetActorScale     ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    Call  SetActorSounds    ( .Actor:Partner .ActorSound:Hurt 00002019 00000000 )
+    If *GameMode != 1
+        If *VarC > 1
+            Sub *VarC 1
+        EndIf
+        Call  GetActionCommandResult  ( *Var0 )
+        Switch  *Var0
+            Case  >  00000063 % Last Smack
+                If *VarD == 0 % Only 1 smack was done
+                    Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000060 )
+                Else
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:IgnoreDefense 00000005 00000000 *VarC 00000060 )
+                EndIf
+            Default
+                If *VarD == 0 % Only 1 smack was done
+                    Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000020 )
+                Else
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:IgnoreDefense 00000005 00000000 *VarC 00000020 )
+                EndIf
+        EndSwitch
+    Else
+        % super bow mode
+        Call  GetActionCommandResult  ( *Var0 )
+        Switch  *Var0
+            Case  >  00000063 % Last Smack
+                Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000060 )
+            Default
+                Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000020 )
+        EndSwitch
+    EndIf
+    Wait  8`
+    Switch  *Var0
+        CaseOR  ==  .HitResult:Hit % 0
+        CaseOR  ==  00000002 % 2
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+            ExecWait  $Script_Bow_80238D4C
+        EndCaseGroup
+        CaseOR  ==  00000001 % 1
+        CaseOR  ==  00000003 % 3
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+            ExecWait  $Script_Smack_GoBackToHome_Succeed
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Init_Smack_FirstStrike
+{
+    Set   *VarB  0000003C
+    Set   *VarC  00000001
+    % get partner rank
+    Call  $GetPartnerData_API ( *Var0 )
+    Call  $ReadAddress ( *Var0 0 *Var0 1 .False )
+    Switch *Var0 % amount of smacks to do
+        Case == 0
+            Set   *VarD  00000004
+        Case == 1
+            Set   *VarD  00000005
+        Case == 2
+            Set   *VarD  00000006
+    EndSwitch
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooVanish )
+    Call  SetPartAlpha      ( .Actor:Partner FFFFFFFF 00000037 )
+    Call  InitTargetIterator ( )
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Thread
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0003 )
+        Call  AddGoalPos    ( .Actor:Partner FFFFFFF1 FFFFFFF6 00000000 )
+        Call  FlyToGoal     ( .Actor:Partner 0000000F 00000000 .Easing:CosInOut )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    EndThread
+    Call  UseBattleCamPreset      ( 0000000D )
+    Call  BattleCamTargetActor  ( .Actor:Self )
+    Call  SetBattleCamZoom  ( 000000B4 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  SetBattleCamOffsetZ   ( 00000009 )
+    Call  8024EDA4 ( )
+    Wait  15`
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooAppear )
+    Set   *Var0  00000037
+    Loop  00000005
+        Add   *Var0  00000028
+        Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+        Wait  1`
+    EndLoop
+    Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 000000FF )
+    Call  8024E664      ( 00000013 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0005 )
+    Wait  10`
+    Set   *VarF  00000000
+    Set   *VarE  00000000
+    Set   *Flag[00]  .False
+    Call  InitTargetIterator ( )
+    Call  SetGoalToTarget   ( .Actor:Self )
+    Label  0
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000001 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0007 )
+        Set   *Var0  00000000
+        Loop  00000014
+            Add   *Var0  FFFFFFD3
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+        Call  SetActorYaw   ( .Actor:Partner 00000000 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D001A )
+        Call  AddActorDecoration    ( .Actor:Self 00000000 00000000 .Decoration:SeeingStars )
+        Wait  30`
+        Call  RemoveActorDecoration ( .Actor:Self 00000000 00000000 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+        Wait  10`
+        ExecWait  $Script_Bow_80238D4C
+        Return
+    EndIf
+    Add   *VarE  00000001
+    If  *VarE  >  *VarD
+        Goto  2
+    EndIf
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+    If  *Flag[00]  ==  .False
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0007 )
+        Set   *Flag[00]  .True
+        Call  80269EAC      ( 0000000A )
+    Else
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0008 )
+        Set   *Flag[00]  .False
+        Call  80269EAC      ( 0000000B )
+    EndIf
+    Wait  2`
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    Thread
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.2] )
+    EndThread
+    If  *VarE  ==  00000001
+        Call  $Function_80238014 ( )
+        Call  AddBattleCamZoom  ( *Var0 )
+        Call  MoveBattleCamOver ( 00000005 )
+    Else
+        Call  AddBattleCamZoom  ( 00000019 )
+        Call  MoveBattleCamOver ( 00000005 )
+    EndIf
+    Call  SetActorSounds    ( .Actor:Partner .ActorSound:Hurt 00002019 00000000 )
+    If  *VarE  ==  00000001 % First Smack
+        Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000010 )
+        If *GameMode != 1
+            Call    $ReadAddress ( 800DC070 1 *VarC 180 .False ) % battleStatus(0x180)= s16 lastAttackDamage
+            If *VarC < -1
+                Set *VarC 0
+            EndIf
+        EndIf
+        Goto  1
+    Else
+        If *GameMode != 1
+            If *VarC > 1
+                Sub *VarC 1
+            EndIf
+            Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:IgnoreDefense 00000005 00000000 *VarC 00000000 )
+        Else
+            % super bow mode
+            Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000000 )
+        EndIf        
+        Goto  1
+    EndIf
+    Label  1
+    Wait  8`
+    Add   *VarF  0000000A
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Goto  0
+    Label  2
+    If  *VarE  ==  00000001
+        Call  $Function_80238014 ( )
+        Call  AddBattleCamZoom  ( *Var0 )
+        Call  MoveBattleCamOver ( 00000005 )
+    Else
+        Call  AddBattleCamZoom  ( 00000019 )
+        Call  MoveBattleCamOver ( 00000005 )
+    EndIf
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+    If  *Flag[00]  ==  .False
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0007 )
+        Set   *Flag[00]  .True
+        Call  80269EAC      ( 0000000C )
+    Else
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0008 )
+        Set   *Flag[00]  .False
+        Call  80269EAC      ( 0000000D )
+    EndIf
+    Wait  2`
+    Call  SetActorScale     ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    Call  SetActorSounds    ( .Actor:Partner .ActorSound:Hurt 00002019 00000000 )
+    If *GameMode != 1
+        If *VarC > 1
+            Sub *VarC 1
+        EndIf
+        Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:IgnoreDefense 00000005 00000000 *VarC 00000020 )
+    Else
+        % super bow mode
+        Call  PartnerDamageEnemy    ( *Var0 00000000 00000005 00000000 *VarC 00000020 )
+    EndIf
+    Wait  8`
+    Switch  *Var0
+        CaseOR  ==  .HitResult:Hit % 0
+        CaseOR  ==  00000002 % 2
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+            ExecWait  $Script_Bow_80238D4C
+        EndCaseGroup
+        CaseOR  ==  00000001 % 1
+        CaseOR  ==  00000003 % 3
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+            ExecWait  $Script_Smack_GoBackToHome_Succeed
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+% $End[0] == Mario turn was used when Outta Sight was used. (byteFlag)
+
+#new:Script $Script_Init_OuttaSight
+{
+    Call  SetActorFlagBits  ( .Actor:Player 20000000 .True )
+    Call  SetActorFlagBits  ( .Actor:Player 04000000 .False )
+    Call  UseBattleCamPreset      ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFF7F 0000001C 00000000 )
+    Call  SetBattleCamOffsetZ   ( 0000000F )
+    Call  SetBattleCamZoom  ( 00000104 )
+    Call  MoveBattleCamOver ( 00000028 )
+    Thread
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Add   *Var1  00000005
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  FlyToGoal     ( .Actor:Partner 0000000A 00000000 .Easing:CosInOut )
+    EndThread
+    Set   *Var0  00000000
+    Loop  0000000A
+        Add   *Var0  00000012
+        Call  SetActorYaw   ( .Actor:Partner *Var0 )
+        Wait  1`
+    EndLoop
+    Wait  10`
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var0  FFFFFFE2
+    Add   *Var1  0000001E
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 0000001E .Easing:CosInOut )
+    Thread
+        Set   *Var0  000000B4
+        Loop  0000000A
+            Sub   *Var0  00000012
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Thread
+        Set   *Var0  000000FF
+        Loop  0000001E
+            Sub   *Var0  00000005
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    Call  $Function_802380E4    ( FFFFFFF6 00000014 )
+    Add   *Var2  00000005
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 00000000 .Easing:Linear )
+    Call  $Function_80238198 ( )
+    If  *Var0  ==  00000000
+        Call  SetAnimation  ( .Actor:Player 00000000 00010014 )
+    EndIf
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BowVanish )
+    Set   *Var0  000000FF
+    Loop  0000000F
+        Sub   *Var0  0000000A
+        Call  SetPartAlpha  ( .Actor:Player 00000001 *Var0 )
+        Wait  1`
+    EndLoop
+    Wait  15`
+    Call  GetBattleFlags2 ( *Var0 )
+    If *Var0 & 00000002 % Mario turn used (bitflag)
+        Call  $WriteAddress ( $End 0 .True .False .False )
+    EndIf
+    Call  UseBattleCamPreset      ( 00000002 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  $Function_8023808C ( )
+    Call  SetActorFlagBits  ( .Actor:Player 20000000 .False )
+    Return
+    End
+}
+
+#new:Script $Script_OuttaSight_Reappear
+{
+    Exec  $Script_NukeTracker
+    Call  UseBattleCamPreset      ( 00000002 )
+    Wait  20`
+    Exec  $Script_InitTracker
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BowAppear )
+    Thread
+        Wait  10`
+        Set   *Var0  00000069
+        Loop  0000001E
+            Add   *Var0  00000005
+            Call  SetPartAlpha  ( .Actor:Player 00000001 *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Thread
+        Set   *Var0  00000069
+        Loop  0000001E
+            Add   *Var0  00000005
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  80280818 ( )
+    Call  UseBattleCamPreset  ( 00000002 )
+    Call  MoveBattleCamOver ( 00000028 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 00000000 .Easing:CosInOut )
+    % Set player turn as used if neccesary
+    Call  $ReadAddress ( $End 0 *Var0 .False .False )
+    If *Var0 == .True
+        Call    SetBattleFlagBits2 ( 00000002 .True ) % set player turn as used.
+    EndIf
+    Call  $WriteAddress ( $End 0 .False .False .False ) % clear $End
+    Call  $Function_802381C8 ( )
+    % Stylish
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .False % The A button wasn't still pressed
+        Loop 4 % 4 frames
+            % Timing Tutor Badge
+            ExecWait $Script_TimingTutor % writes in var0,1,2
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            % Set *Var0 .True % testing
+            If *Var0 == .True
+                Set   *TrackInput .False % turn off tracker
+                Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                % Add 1 to the stylish counter (last move only)
+                Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                Add *Var0 1
+                Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                Set *VarA .False % this move doesn't have an SP cap
+                ExecWait $Script_DoStylishFX
+                % haha
+                Call  UseIdleAnimation  ( .Actor:Partner .False )
+                Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000F )
+                Wait  25`
+                Call  UseIdleAnimation  ( .Actor:Partner .True )
+                Return
+            EndIf
+            Wait 1
+        EndLoop
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Wait  16`
+    Return
+    End
+}
+
+#new:Script $Script_Init_Spook
+{
+    Call  LoadActionCommand ( 00000015 )
+    Exec  $Script_NukeTracker
+    Call  802A9000 ( )
+    Call  SetupMashMeter  ( 00000001 00000064 00000000 00000000 00000000 00000000 )
+    Call  80269344  ( 00000014 )
+    Wait  10`
+    Thread
+        Call  UseBattleCamPreset  ( 0000000F )
+        Call  BattleCamTargetActor  ( .Actor:Self )
+        Call  SetBattleCamOffsetZ   ( 00000004 )
+        Call  AddBattleCamZoom      ( FFFFFF6A )
+        Call  MoveBattleCamOver     ( 00000014 )
+        Call  8024EDA4 ( )
+    EndThread
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  00000028
+    Add   *Var1  20` % was 10`
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 00000000 .Easing:CosInOut )
+    Wait  15`
+    Call  8024E664      ( 00000013 )
+    Thread
+        Wait  74`
+        Loop  00000008
+            Call  SetActorDispOffset    ( .Actor:Partner 00000001 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Partner FFFFFFFF 00000000 00000000 )
+            Wait  1`
+        EndLoop
+        Loop  00000007
+            Call  SetActorDispOffset    ( .Actor:Partner 00000002 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Partner FFFFFFFE 00000000 00000000 )
+            Wait  1`
+        EndLoop
+        Loop  00000008
+            Call  SetActorDispOffset    ( .Actor:Partner 00000003 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Partner FFFFFFFD 00000000 00000000 )
+            Wait  1`
+        EndLoop
+        Call  SetActorDispOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+    EndThread
+    Call  $Function_802381E8 ( )
+    Call  802A917C      ( 00000000 00000057 00000003 *Var0 )
+    Call  802695A8      ( *Var1 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000C )
+    Set   *Var1  00000000
+    Set   *Var2  00000000
+    Loop  0000005A
+        Switch  *Var1
+            Case  >  00000050
+                If  *Var2  ==  00000007
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000008
+                EndIf
+            Case  >  00000046
+                If  *Var2  ==  00000006
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000007
+                EndIf
+            Case  >  0000003C
+                If  *Var2  ==  00000005
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000006
+                EndIf
+            Case  >  00000032
+                If  *Var2  ==  00000004
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000005
+                EndIf
+            Case  >  00000028
+                If  *Var2  ==  00000003
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000004
+                EndIf
+            Case  >  0000001E
+                If  *Var2  ==  00000002
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000003
+                EndIf
+            Case  >  00000014
+                If  *Var2  ==  00000001
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000002
+                EndIf
+            Case  >  0000000A
+                If  *Var2  ==  00000000
+                    Call  AddBattleCamZoom  ( FFFFFFEC )
+                    Call  MoveBattleCamOver ( 00000014 )
+                    Call  8024ECF8  ( 00000000 00000000 00000001 )
+                    Set   *Var2  00000001
+                EndIf
+        EndSwitch
+        Add   *Var1  00000001
+        Wait  1`
+    EndLoop
+    Call  SetActorDispOffset        ( .Actor:Partner 00000000 00000000 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000E )
+    Call  SetActorRotationOffset    ( .Actor:Self 00000000 0000000C 00000000 )
+    Thread
+        Call  UseBattleCamPreset      ( 00000002 )
+        Call  MoveBattleCamOver ( 00000005 )
+        Wait  5`
+        Call  UseBattleCamPreset      ( 00000001 )
+        Loop  00000005
+            Call  8024E748  ( 00000003 0000006E )
+            Wait  2`
+            Call  8024E748  ( 00000003 00000064 )
+            Wait  2`
+        EndLoop
+    EndThread
+    Exec  $Script_InitTracker
+    Thread
+        Set   *Var0  000000FF
+        Loop  0000000F
+            Sub   *Var0  0000000A
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BowSpook )
+    SetF  *Var0  *Fixed[1.0]
+    Call  802695A8  ( *Var2 )
+    Switch  *Var2
+        Case  <=  00000014
+            SetF  *Var1  *Fixed[0.3]
+        Case  <=  00000028
+            SetF  *Var1  *Fixed[0.4]
+        Case  <=  0000003C
+            SetF  *Var1  *Fixed[0.5]
+        Case  <=  00000050
+            SetF  *Var1  *Fixed[0.6]
+        Default
+            SetF  *Var1  *Fixed[0.7]
+    EndSwitch
+    Loop  00000005
+        AddF  *Var0  *Var1
+        Call  SetActorScale ( .Actor:Partner *Var0 *Var0 *Var0 )
+        Wait  1`
+    EndLoop
+    SetF  *VarE  *Var0
+    Thread
+        Loop  00000005
+            Loop  00000003
+                SubF  *Var0  *Fixed[0.23]
+                Call  SetActorScale ( .Actor:Partner *Var0 *Var0 *Var0 )
+                Wait  1`
+            EndLoop
+            Loop  00000003
+                AddF  *Var0  *Fixed[0.23]
+                Call  SetActorScale ( .Actor:Partner *Var0 *Var0 *Var0 )
+                Wait  1`
+            EndLoop
+        EndLoop
+    EndThread
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  00000020
+    Call  PlayEffect    ( ~FX:EnergyIn:LongStreaks1 *Var0 *Var1 *Var2 *Fixed[1.8] 0000002D 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Call  PlayEffect    ( ~FX:EnergyIn:LongStreaks1 *Var0 *Var1 *Var2 *Fixed[1.0] 0000002D 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Wait  15`
+    Call  InitTargetIterator ( )
+    Call  802695A8      ( *VarF )
+    Loop
+        Call  SetGoalToTarget   ( .Actor:Self )
+        Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000002 00000010 )
+        If  *Var0  ==  .HitResult:Miss % 6
+            Goto  A
+        EndIf
+        Call  80269EAC  ( 00000012 )
+        Switch  *VarF
+            Case  >  00000063
+                Call  PartnerAfflictEnemy   ( *Var0 70000000 00000000 00400000 *VarF 00000000 00000070 )
+            Default
+                Call  PartnerAfflictEnemy   ( *Var0 70000000 00000000 00400000 *VarF 00000000 000000B0 )
+        EndSwitch
+        Label  A
+        Wait  5`
+        Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+        If  *Var0  ==  FFFFFFFF % FFFFFFFF
+            BreakLoop
+        EndIf
+    EndLoop
+    Call  GetActionCommandResult  ( *Var0 )
+    Switch  *Var0
+        Case  >  00000063
+            Call  UseBattleCamPreset  ( 00000004 )
+        Default
+            Call  UseBattleCamPreset  ( 00000033 )
+    EndSwitch
+    Wait  30`
+    Thread
+        Set   *Var0  00000069
+        Loop  0000000F
+            Add   *Var0  0000000A
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  802695A8  ( *Var2 )
+    Switch  *Var2
+        Case  <=  00000014
+            SetF  *Var1  *Fixed[0.3]
+        Case  <=  00000028
+            SetF  *Var1  *Fixed[0.4]
+        Case  <=  0000003C
+            SetF  *Var1  *Fixed[0.5]
+        Case  <=  00000050
+            SetF  *Var1  *Fixed[0.6]
+        Default
+            SetF  *Var1  *Fixed[0.7]
+    EndSwitch
+    SetF  *Var0  *VarE
+    Loop  00000005
+        SubF  *Var0  *Var1
+        Call  SetActorScale ( .Actor:Partner *Var0 *Var0 *Var0 )
+        Wait  1`
+    EndLoop
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    ExecWait  $Script_Spook_GoBackToHome
+    Return
+    End
+}
+
+% Fan Smack now does 4 smacks instead of 5, and the start damage is 4 and get decreased by each
+% smack, like the original Smack.
+#new:Script $Script_Init_FanSmack
+{
+    Call  LoadActionCommand ( 00000012 )
+    Exec  $Script_NukeTracker
+    Call  802A9000 ( )
+    Call  80269344  ( 00000000 )
+    Call  SetupMashMeter  ( 00000004 00000023 00000045 00000063 00000064 00000000 )
+    Set   *VarB  0000005A
+    Set   *VarC  00000004
+    Wait  10`
+    Thread
+        Wait  10`
+        Set   *Var0  *VarB
+        Add   *Var0  FFFFFFFD
+        Call  802A917C  ( 00000000 *Var0 00000003 00000001 )
+        Call  SetBattleFlagBits ( 00004000 .False )
+    EndThread
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooVanish )
+    Call  SetPartAlpha      ( .Actor:Partner FFFFFFFF 00000037 )
+    Call  InitTargetIterator ( )
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Thread
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0003 )
+        Call  AddGoalPos    ( .Actor:Partner FFFFFFE7 FFFFFFF6 00000000 )
+        Call  FlyToGoal     ( .Actor:Partner 0000000F 00000000 .Easing:CosInOut )
+    EndThread
+    Call  UseBattleCamPreset      ( 0000000D )
+    Call  BattleCamTargetActor  ( .Actor:Self )
+    Call  SetBattleCamZoom  ( 000000B4 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  SetBattleCamOffsetZ   ( 00000009 )
+    Call  8024EDA4 ( )
+    Wait  15`
+    Call  PlaySoundAtActor  ( .Actor:Partner .Sound:BooAppear )
+    Set   *Var0  00000037
+    Loop  00000005
+        Add   *Var0  00000028
+        Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+        Wait  1`
+    EndLoop
+    Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 000000FF )
+    Call  8024E664      ( 00000013 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0011 )
+    Wait  20`
+    Set   *VarF  00000000
+    Set   *VarE  00000000
+    Set   *VarD  00000000
+    Set   *Flag[00]  .False
+    Call  InitTargetIterator ( )
+    Call  SetGoalToTarget   ( .Actor:Self )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0012 )
+    Loop  0000001E
+        Call  SetActorDispOffset    ( .Actor:Partner *Fixed[0.5] 00000000 00000000 )
+        Wait  1`
+        Call  SetActorDispOffset    ( .Actor:Partner *Fixed[-0.5] 00000000 00000000 )
+        Wait  1`
+    EndLoop
+    Call  GetActionCommandResult  ( *VarB )
+    Call  80269600  ( *VarD )
+    % Bow only smack 4 times instead of 5
+    Switch *VarD
+        CaseOR == 3 % 4 smacks
+        CaseOR == 4 % 5 smacks
+            Sub *VarD 1
+        EndCaseGroup
+    EndSwitch
+    Label  0
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 00000001 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000A )
+        Call  CloseActionCommandInfo ( )
+        Set   *Var0  00000000
+        Loop  0000000F
+            Add   *Var0  FFFFFFD3
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+        Loop  0000000F
+            Add   *Var0  FFFFFFA6
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+        Call  SetActorYaw   ( .Actor:Partner 00000000 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D001A )
+        Call  AddActorDecoration    ( .Actor:Self 00000000 00000000 .Decoration:SeeingStars )
+        Wait  40`
+        Call  RemoveActorDecoration ( .Actor:Self 00000000 00000000 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+        Wait  10`
+        ExecWait  $Script_Bow_80238D4C
+        Return
+    EndIf
+    Add   *VarE  00000001
+    If  *VarE  >  *VarD
+        Goto  2
+    EndIf
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+    If  *Flag[00]  ==  .False
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000A )
+        Set   *Flag[00]  .True
+        Call  80269EAC      ( 0000000E )
+    Else
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000B )
+        Set   *Flag[00]  .False
+        Call  80269EAC      ( 0000000F )
+    EndIf
+    Wait  2`
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    Thread
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.2] )
+    EndThread
+    If  *VarE  ==  00000001
+        Call  $Function_80238014 ( )
+        Call  AddBattleCamZoom  ( *Var0 )
+        Call  MoveBattleCamOver ( 00000005 )
+    Else
+        Call  AddBattleCamZoom  ( 00000019 )
+        Call  MoveBattleCamOver ( 00000005 )
+    EndIf
+    Call  GetGoalPos        ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  PlayEffect        ( ~FX:Confetti:Burst3 *Var0 *Var1 *Var2 *Fixed[1.0] 00000014 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Call  SetActorSounds    ( .Actor:Partner .ActorSound:Hurt 0000201A 00000000 )
+    If  *VarE  ==  00000001 % First Smack
+        If  *VarB  >  00000063
+            Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000050 )
+        Else
+            Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000010 )
+        EndIf
+        If *GameMode != 1
+            Call    $ReadAddress ( 800DC070 1 *VarC 180 .False ) % battleStatus(0x180)= s16 lastAttackDamage
+            If *VarC < -1
+                Set *VarC 0
+            EndIf
+        EndIf
+        Goto  1
+    Else
+        If *GameMode != 1 % Super Bow mode
+            If *VarC > 1
+                Sub *VarC 1
+            EndIf
+            If  *VarB  >  00000063
+                Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact|IgnoreDefense 00000095 00000000 *VarC 00000040 )
+            Else
+                Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact|IgnoreDefense 00000095 00000000 *VarC 00000000 )
+            EndIf
+        Else
+            % super bow mode
+            If  *VarB  >  00000063
+                Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000040 )
+            Else
+                Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000000 )
+            EndIf
+        EndIf
+        Goto  1
+    EndIf
+    Label  1
+    If  *VarE  ==  00000001
+        Set   *Var0  00000000
+        Loop  00000008
+            Add   *Var0  00000090
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+    Else
+        Set   *Var0  00000000
+        Loop  00000008
+            Sub   *Var0  00000090
+            Call  SetActorYaw   ( .Actor:Partner *Var0 )
+            Wait  1`
+        EndLoop
+    EndIf
+    Call  SetActorYaw   ( .Actor:Partner 00000000 )
+    Add   *VarF  0000000A
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+    Goto  0
+    Label  2
+    Thread
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.5] )
+        Call  ShakeCam  ( .Cam:Battle 00000000 00000001 *Fixed[0.2] )
+    EndThread
+    If  *VarE  ==  00000001
+        Call  $Function_80238014 ( )
+        Call  AddBattleCamZoom  ( *Var0 )
+        Call  MoveBattleCamOver ( 00000005 )
+    Else
+        Call  AddBattleCamZoom  ( 00000019 )
+        Call  MoveBattleCamOver ( 00000005 )
+    EndIf
+    Call  SetActorScale ( .Actor:Partner *Fixed[1.4] *Fixed[1.4] *Fixed[1.0] )
+    If  *Flag[00]  ==  .False
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000A )
+        Set   *Flag[00]  .True
+        Call  80269EAC      ( 00000010 )
+    Else
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D000B )
+        Set   *Flag[00]  .False
+        Call  80269EAC      ( 00000011 )
+    EndIf
+    Wait  2`
+    Call  SetActorScale     ( .Actor:Partner *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+    Call  SetActorSounds    ( .Actor:Partner .ActorSound:Hurt 0000201A 00000000 )
+    If *GameMode != 1 % Super Bow mode
+        If *VarC > 1
+            Sub *VarC 1
+        EndIf
+        Call  GetActionCommandResult  ( *Var0 )
+        Switch  *Var0
+            Case  >  00000063 % Last smack
+                If *VarD == 0 % Only 1 smack was done
+                    Add   *VarC 1
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000060 )
+                Else
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact|IgnoreDefense 00000095 00000000 *VarC 00000060 )
+                EndIf
+            Default
+                If *VarD == 0 % Only 1 smack was done
+                    Add   *VarC 1
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000020 )
+                Else
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact|IgnoreDefense 00000095 00000000 *VarC 00000020 )
+                EndIf
+        EndSwitch
+    Else
+        % super bow mode
+        Call  GetActionCommandResult  ( *Var0 )
+        Switch  *Var0
+            Case  >  00000063 % Last smack
+                If *VarD == 0 % Only 1 smack was done
+                    Add   *VarC 1
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000060 )
+                Else
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000060 )
+                EndIf
+            Default
+                If *VarD == 0 % Only 1 smack was done
+                    Add   *VarC 1
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000020 )
+                Else
+                    Call  PartnerDamageEnemy    ( *Var0 ~Flags:DamageType:NoContact 00000095 00000000 *VarC 00000020 )
+                EndIf
+        EndSwitch
+    EndIf
+    Thread
+        If  *VarE  ==  00000001
+            Set   *Var0  00000000
+            Loop  00000008
+                Add   *Var0  00000090
+                Call  SetActorYaw   ( .Actor:Partner *Var0 )
+                Wait  1`
+            EndLoop
+        Else
+            Set   *Var0  00000000
+            Loop  00000008
+                Sub   *Var0  00000090
+                Call  SetActorYaw   ( .Actor:Partner *Var0 )
+                Wait  1`
+            EndLoop
+        EndIf
+        If  *VarE  ==  00000001
+            Set   *Var0  00000000
+            Loop  00000008
+                Add   *Var0  00000048
+                Call  SetActorYaw   ( .Actor:Partner *Var0 )
+                Wait  1`
+            EndLoop
+        Else
+            Set   *Var0  00000000
+            Loop  00000008
+                Sub   *Var0  00000048
+                Call  SetActorYaw   ( .Actor:Partner *Var0 )
+                Wait  1`
+            EndLoop
+        EndIf
+        Call  SetActorYaw   ( .Actor:Partner 00000000 )
+    EndThread
+    Switch  *Var0
+        CaseOR  ==  00000000
+        CaseOR  ==  00000002
+            Wait  10`
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+            ExecWait  $Script_Bow_80238D4C
+        EndCaseGroup
+        CaseOR  ==  00000001
+        CaseOR  ==  00000003
+            Wait  10`
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000D0001 )
+            ExecWait  $Script_Smack_GoBackToHome_Succeed
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}

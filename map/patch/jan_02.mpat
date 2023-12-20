@@ -1,0 +1,320 @@
+% Add Exit2
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  80200000
+    [MapTattle]   001900ED
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 % -450.0    0.0 -450.0  135.0
+    ~Vec4f:Entry1 %  640.0    0.0    0.0  270.0
+    ~Vec4f:Entry2
+}
+
+@ $Script_Main_EnterWalk {
+    [120] Exec  $Script_TrackEntry
+    [12C] Exec  $Script_InitExit2
+}
+
+@ $Function_80241750
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_80241750[1E4]
+}
+
+#new:Script $Script_InitExit2
+{
+    Call    ParentColliderToModel ( ~Collider:o326 ~Model:o312 )
+    Call    ParentColliderToModel ( ~Collider:Statue_Left ~Model:o312 )
+    Call    ParentColliderToModel ( ~Collider:Statue_Right ~Model:o312 )
+    If *GB_JAN02_Statue == .False
+        Bind  $Script_MoveStatue_InitLeft .Trigger:WallPush ~Collider:Statue_Left 00000001 00000000
+        Bind  $Script_MoveStatue_InitRight .Trigger:WallPush ~Collider:Statue_Right 00000001 00000000
+    Else
+        If *GB_JAN02_Statue == 1 % rock was moved to the right
+            Call    TranslateGroup ( ~Model:g93 70` 0 0 )
+        Else
+            Call    TranslateGroup ( ~Model:g93 -70` 0 0 )
+        EndIf
+        Call    UpdateColliderTransform ( ~Collider:o326 )
+        Call    UpdateColliderTransform ( ~Collider:Statue_Left )
+        Call    UpdateColliderTransform ( ~Collider:Statue_Right )
+    EndIf
+    % restore vanilla code
+    Exec  $Script_80242980 % setup music track
+    Return
+    End
+}
+
+#new:Script $Script_MoveStatue_InitLeft
+{
+    Set *Var0 1
+    ExecWait $Script_MoveStatue
+    Return
+    End
+}
+
+
+#new:Script $Script_MoveStatue_InitRight
+{
+    Set *Var0 -1
+    ExecWait $Script_MoveStatue
+    Return
+    End
+}
+
+#new:Script $Script_MoveStatue
+{
+    Thread % shake camera
+        Call  ShakeCam  ( .Cam:Default 00000000  100` *Fixed[0.6] )
+    EndThread
+    Thread % move camera
+        Call    GetModelCenter ( ~Model:o311 )
+        Call    UseSettingsFrom ( .Cam:Default *Var0 .False *Var2 )
+        Call    GetPlayerPos ( .False *Var1 .False )
+        Call    SetCamSpeed 	( .Cam:Default *Fixed[3.0] )
+        Call    SetPanTarget 	( .Cam:Default *Var0 *Var1 *Var2 )
+        Call    PanToTarget 	( .Cam:Default .Easing:Linear 00000001 )
+    EndThread
+    Set     *Var3 *Var0
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePlayerPhysics ( .True )
+    Call    PlaySound ( 80000010 )
+    % move statue
+    Set     *Var0 70`
+    Mul     *Var0 *Var3
+    Call     MakeLerp    	( 0 *Var0 100` .Easing:Linear )
+    Loop     
+        Call    UpdateLerp
+        Call    TranslateGroup ( ~Model:g93 *Var0 0 0 )
+        Call    UpdateColliderTransform ( ~Collider:o326 )
+        Call    UpdateColliderTransform ( ~Collider:Statue_Left )
+        Call    UpdateColliderTransform ( ~Collider:Statue_Right )
+        Set     *Var4 *Var1
+        % check if player is already on the center of the hole
+        Set     *Var7 .False
+        Call    GetModelCenter ( ~Model:hole )
+        Call    GetPlayerPos ( *Var1 .False .False )
+        If *Var3 == 1
+            If *Var1 <= *Var0 % center of the hole
+                Set *Var7 .True
+            EndIf
+        Else
+            If *Var1 >= *Var0 % center of the hole
+                Set *Var7 .True
+            EndIf
+        EndIf
+        If *Var7 == .True % update player pos
+            Call    GetModelCenter ( ~Model:o311 )
+            Set     *Var5 -37`
+            Mul     *Var5 *Var3
+            Add     *Var0 *Var5
+            Call    GetPlayerPos ( .False *Var1 *Var2 )
+            Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+        EndIf
+        Call    SetPlayerActionState  ( 00000014 )
+        Wait    1
+        If  *Var4  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Call    StopSound ( 80000010 )
+    Wait    10`
+    If *Var3 == 1 % Statue was moved to the right
+        Set *GB_JAN02_Statue 1
+    Else
+        Set *GB_JAN02_Statue 2
+    EndIf
+    % mario fall off
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( 00080016 ) % :O
+    Call    PlaySoundAtPlayer ( 0262 0 ) % !
+    Call    ShowEmote       ( 0 .Emote:Exclamation -45` 20` 0 0 0 0 0 )
+    Wait    20`
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( 00080017 ) % !!!
+    Wait    20`
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( 00080018 ) % OoO
+    Wait    10`
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( 00080019 ) % OoO (shaking)
+    Call	PlaySound ( 0161 ) % Falling
+    Loop 10`
+        Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+        Sub     *Var1 10`
+        Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+        Wait    1
+    EndLoop
+    Call    GotoMap ( "jan_24" 0 )
+    Wait    200`
+    Call    StopSound ( 0161 )
+    Return
+    End
+}
+
+% patch Yoshi leader cutscene according to the statue's position
+
+#delete $Script_8024587C
+
+@ $Script_Interact_80245ECC
+{
+   [A0]     ExecWait  $Script_Cutscene_GiveJadeRaven
+}
+
+#new:Script $Script_Cutscene_GiveJadeRaven % Script_8024587C
+{
+    0:  Call  SetNpcFlagBits    ( .Npc:Partner 00000040 .True )
+   18:  If  *GF_JAN02_Met_VillageLeader  ==  .True
+   28:  	Call  SpeakToPlayer ( .Npc:Self 00C20009 00C20003 00000000 00100023 ) % Mario, I must thank you. You have saved the childr ...
+   48:  Else
+   50:  	Call  SpeakToPlayer ( .Npc:Self 00C20009 00C20003 00000000 00100024 ) % Mario, I must thank you. You have saved the childr ...
+   70:  EndIf
+   78:  Wait  5`
+   84:  Call  SetNpcFlagBits    ( .Npc:Self 00000100 .True )
+   9C:  Call  SetNpcAnimation   ( .Npc:Self 00C20006 )
+        If *GB_JAN02_Statue == .False
+   B0:      Call  NpcMoveTo     ( .Npc:Self  8`  -140`  25` )
+        Else
+            If *GB_JAN02_Statue == 1 % rock was moved to the right
+                Call  NpcMoveTo     ( .Npc:Self  68`  -140`  25` )
+            Else
+                Call  NpcMoveTo     ( .Npc:Self  -48`  -140`  25` )
+            EndIf
+        EndIf
+   CC:  Call  SetNpcFlagBits    ( .Npc:Self 00000100 .False )
+   E4:  Call  SetNpcAnimation   ( .Npc:Self 00C20003 )
+   F8:  Wait  5`
+  104:  Call  UseSettingsFrom   ( .Cam:Default  25`  15`  -150` )
+  120:  Call  SetPanTarget  ( .Cam:Default  25`  15`  -150` )
+  13C:  Call  SetCamDistance    ( .Cam:Default *Fixed[300.0] )
+  150:  Call  SetCamPitch   ( .Cam:Default *Fixed[16.0] *Fixed[-8.0] )
+  168:  Call  SetCamSpeed   ( .Cam:Default *Fixed[4.0] )
+  17C:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  194:  Wait  5`
+        If *GB_JAN02_Statue == .False
+            Call  PlayerMoveTo  (  58`  -140`  25` )
+        Else
+            If *GB_JAN02_Statue == 1 % rock was moved to the right
+                Call  PlayerMoveTo  (  118`  -140`  25` )
+            Else
+                Call  PlayerMoveTo  (  8`  -140`  25` )
+            EndIf
+        EndIf
+  1B8:  Call  PlayerFaceNpc ( .Npc:Self .False )
+  1CC:  Call  802D2C14      ( 00000001 )
+  1DC:  Call  SetNpcFlagBits    ( .Npc:Partner 00000100 .True )
+  1F4:  Wait  30`
+  200:  Call  SetNpcAnimation   ( .Npc:Self 00C2000E )
+  214:  Wait  30`
+  220:  Call  SpeakToPlayer ( .Npc:Self 00C2000E 00C2000E 00000005 00100025 ) % Huh...? I thought it was... somewhere around here. ...
+  240:  Wait  60`
+  24C:  Call  SetNpcAnimation   ( .Npc:Self 00C20003 )
+  260:  Call  SpeakToPlayer ( .Npc:Self 00C20009 00C20003 00000000 00100026 ) % Oh, yes. I found it. Here it is. Take it, please.
+  280:  Set   *Var0  0000002A
+  290:  Set   *Var1  00000001
+  2A0:  ExecWait  $Script_802431E8
+  2AC:  Call  AddKeyItem    ( .Item:JadeRaven )
+  2BC:  Call  SpeakToPlayer ( .Npc:Self 00C20009 00C20003 00000000 00100027 ) % Whenever events beyond our control occur on this i ...
+  2DC:  Set   *GB_StoryProgress  .Story:Ch5_GotJadeRaven
+  2EC:  Wait  15`
+  2F8:  Call  GetPlayerPos  ( *Var3 *Var4 *Var5 )
+  310:  Add   *Var3  00000019
+  320:  Call  SetPanTarget  ( .Cam:Default *Var3 *Var4 *Var5 )
+  33C:  Call  SetCamSpeed   ( .Cam:Default *Fixed[2.5] )
+  350:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  368:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  37C:  Call  SetNpcFlagBits    ( .Npc:Partner 00000040 .False )
+  394:  Call  802D2C14      ( 00000000 )
+  3A4:  Call  GetCurrentPartnerID   ( *Var0 )
+  3B4:  If  *Var0  ==  .Partner:Sushie % 7
+  3C4:  	Thread
+  3CC:  		Wait  15`
+  3D8:  		Call  PlayerFaceNpc ( .Npc:Partner .False )
+  3EC:  	EndThread
+  3F4:  	Call  DisablePartnerAI  ( 00000000 )
+  404:  	Call  SpeakToPlayer     ( .Npc:Partner 00070004 00070001 00000002 00100028 ) % Wait just one minute... You must have one heck of  ...
+  424:  Else
+  42C:  	Call  $Function_802426A8    ( 00000007 )
+  43C:  	Call  SpeakToPlayer     ( .Npc:Partner FFFFFFFF FFFFFFFF 00000005 00100029 ) % Wait just one minute...
+  45C:  	Call  SetNpcFlagBits    ( .Npc:Partner 00000100 .True )
+  474:  	Wait  15`
+  480:  	Call  GetNpcPos ( .Npc:Partner *Var2 *Var3 *Var4 )
+  49C:  	Call  MakeLerp  ( *Var2 00000055 0000000A .Easing:Linear )
+  4B8:  	Loop
+  4C4:  		Call  UpdateLerp ( )
+  4D0:  		Call  SetNpcPos ( .Npc:Partner *Var0 *Var3 *Var4 )
+  4EC:  		Wait  1`
+  4F8:  		If  *Var1  ==  00000000
+  508:  			BreakLoop
+  510:  		EndIf
+  518:  	EndLoop
+  520:  	Call  InterpNpcYaw  ( .Npc:Partner  270`  0` )
+  538:  	Wait  10`
+  544:  	Thread
+  54C:  		Wait  10`
+  558:  		Call  PlayerFaceNpc ( .Npc:Partner .False )
+  56C:  	EndThread
+  574:  	Call  DisablePartnerAI  ( 00000000 )
+  584:  	Call  ContinueSpeech    ( .Npc:Partner 00070004 00070001 00000005 0010002A ) % Why in the world would you want to go to Mt. Laval ...
+  5A4:  	Wait  10`
+  5B0:  EndIf
+  5B8:  Call  ContinueSpeech    ( .Npc:Partner 00070004 00070001 00000005 0010002B ) % It's VERY hot and VERY dangerous in the volcano! I ...
+  5D8:  Call  SetPlayerAnimation    ( 00080007 )
+  5E8:  Wait  30`
+  5F4:  Call  SpeakToPlayer     ( .Npc:Partner 00070004 00070001 00000005 0010002C ) % Uh-huh... Oh... Oh! You're going to the volcano be ...
+  614:  Wait  10`
+  620:  Call  EnablePartnerAI ( )
+  62C:  Call  ResetCam  ( .Cam:Default *Fixed[2.0] )
+  640:  Return
+  648:  End
+}
+
+%
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_ExitWalk_80242ACC .Trigger:FloorAbove ~Collider:deilinw 00000001 00000000
+    Bind  $Script_ExitWalk_80242B34 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+    Bind  $Script_Exit2 .Trigger:FloorTouch ~Collider:Exit2 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_TrackEntry
+{
+    Call    GetEntryID ( *Var0 )
+    If *Var0 == ~Entry:Entry2
+        Call DisablePlayerInput ( .True )
+        Call DisablePlayerPhysics ( .True )
+        Call ResetCam ( .Cam:Default 30` )
+        Call DisablePlayerPhysics ( .False )
+        Call GetPlayerPos ( *Var0 *Var1 *Var2 )
+        If *GB_JAN02_Statue == 1 % rock was moved to the right
+            Sub  *Var0 47` % x
+        Else
+            Add  *Var0 47` % x
+        EndIf
+        Add  *Var1 23` % y
+        Add  *Var2 28` % z
+        Call PlayerJump ( *Var0 *Var1 *Var2 20` )
+        Call DisablePlayerInput ( .False )
+        Exec $Script_CreateExitTriggers
+    Else
+        Set   *Var0  $Script_CreateExitTriggers
+        Exec  EnterWalk
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_Exit2 {
+    Call  DisablePlayerInput ( .True )
+    Call  GotoMap   ( "jan_24" 0 )
+    Wait  100`
+    Return
+    End
+}

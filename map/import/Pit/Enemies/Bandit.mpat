@@ -1,0 +1,117 @@
+#new:Npc $Npc_Bandit {
+00000000 $NpcSettings_80240964_sbk_06 ~Vec3f:NPC_Bandit
+00002C00 00000000 00000000 00000000 0000005A 
+~Items:5:HoneySyrup:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:1:3
+~Movement:NPC_Bandit
+~AnimationTable:NPC_Bandit % .Sprite:Bandit
+00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:Function $Function_80240040_sbk_06 {
+    0:  ADDIU     SP, SP, FFD8
+    4:  SW        S3, 1C (SP)
+    8:  COPY      S3, A0
+    C:  SW        RA, 24 (SP)
+   10:  SW        S4, 20 (SP)
+   14:  SW        S2, 18 (SP)
+   18:  SW        S1, 14 (SP)
+   1C:  SW        S0, 10 (SP)
+   20:  LW        S0, C (S3)
+   24:  BEQL      A1, R0, .o9C
+   28:  COPY      A0, S3
+   2C:  LW        A1, 0 (S0)
+   30:  JAL       ~Func:get_variable
+   34:  ADDIU     S0, S0, 4
+   38:  LW        A1, 0 (S0)
+   3C:  ADDIU     S0, S0, 4
+   40:  COPY      A0, S3
+   44:  JAL       ~Func:get_variable
+   48:  COPY      S1, V0
+   4C:  COPY      S4, V0
+   50:  LI        V0, FFFF
+   54:  LW        S2, 0 (S0)
+   58:  BNE       S1, V0, .o6C
+   5C:  LUI       V0, EFE8
+   60:  LW        A0, 14C (S3)
+   64:  BEQ       R0, R0, .o80
+   68:  NOP
+        .o6C
+   6C:  ORI       V0, V0, 2080
+   70:  SLT       V0, S1, V0
+   74:  BNE       V0, R0, .o8C
+   78:  COPY      S0, S1
+   7C:  COPY      A0, S1
+        .o80
+   80:  JAL       ~Func:get_npc_unsafe
+   84:  NOP
+   88:  COPY      S0, V0
+        .o8C
+   8C:  SW        S0, 70 (S3)
+   90:  SW        S4, 74 (S3)
+   94:  SW        S2, 78 (S3)
+   98:  COPY      A0, S3
+        .o9C
+   9C:  LW        S0, 70 (A0)
+   A0:  LW        A1, 78 (A0)
+   A4:  JAL       ~Func:get_variable
+   A8:  LW        S4, 74 (A0)
+   AC:  BEQ       V0, R0, .oE0
+   B0:  LI        V0, 2
+   B4:  LWC1      F2, 3C (S0)
+   B8:  LIF       F0, 30.0
+   C0:  NOP
+   C4:  ADD.S     F2, F2, F0
+   C8:  LW        A1, 38 (S0)
+   CC:  LW        A3, 40 (S0)
+   D0:  MFC1      A2, F2
+   D4:  JAL       ~Func:set_item_entity_position
+   D8:  COPY      A0, S4
+   DC:  CLEAR     V0
+        .oE0
+   E0:  LW        RA, 24 (SP)
+   E4:  LW        S4, 20 (SP)
+   E8:  LW        S3, 1C (SP)
+   EC:  LW        S2, 18 (SP)
+   F0:  LW        S1, 14 (SP)
+   F4:  LW        S0, 10 (SP)
+   F8:  JR        RA
+   FC:  ADDIU     SP, SP, 28
+}
+
+#new:Script $Script_80240630_sbk_06 {
+    0:  Set   *VarA  *Var0 
+   10:  Call  GetNpcPos ( *VarA *Var1 *Var2 *Var3 )
+   2C:  Add   *Var2  0000001E 
+   3C:  Call  MakeItemEntity    ( .Item:Coin *Var1 *Var2 *Var3 .ItemSpawnMode:Decoration 00000000 )
+   60:  Call  $Function_80240040_sbk_06 ( *VarA *Var0 *AreaFlag[001] )
+   78:  Call  RemoveItemEntity  ( *Var0 )
+   88:  Return
+   90:  End
+}
+
+#new:AISettings $AISettings_802406C8_sbk_06 {
+    2.7 % move speed
+    45` % move time
+    30` % wait time
+  450.0 % alert radius
+    0.0
+    10`
+    8.3 % chase speed
+    180`
+    100`
+  550.0 % chase radius
+  100.0
+    1`
+}
+
+#new:Script $Script_NpcAI_802406F8_sbk_06 {
+    0:  Call  DoBasicAI ( $AISettings_802406C8_sbk_06 )
+   10:  Return
+   18:  End
+}
+
+#new:NpcSettings $NpcSettings_80240964_sbk_06 {
+00000000 001A0018 00000000 00000000 $Script_NpcAI_802406F8_sbk_06 80077F70 00000000 00000000
+00000000 00000000 00090005 
+}
+

@@ -1,0 +1,776 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 3
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+	~Vec4f:Entry2
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:ToadTownTunnels
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Set	  *Flag_LockInputs_GiantChest .False
+    Set   *AreaByte[0] .False
+	Exec  $Script_MakeEntities
+	Exec  $Script_SetupMusic
+	Exec  $Script_SetupTexturePan
+	Exec  $Script_EnterMap
+	Call  ClearDefeatedEnemies
+	Return
+	End
+}
+
+#new:Function_Init $Function_Init
+{
+	PUSH    RA
+	LIA     A0, 800B0CF0
+	LIA     A1, "tik_tex"
+	JAL     800654F0 % sprintf
+	RESERVED
+	CLEAR  V0
+	JPOP   RA
+}
+
+#new:Script $Script_MakeEntities
+{
+	Call  MakeEntity    ( .Entity:SavePoint ~Vec4d:Entity_SaveBlock 80000000 )
+	Call  MakeEntity    ( .Entity:HealingBlock ~Vec4d:Entity_HealBlock 80000000 )
+	Call  MakeEntity    ( .Entity:Signpost ~Vec4d:Entity_Sign 80000000 )
+	Call  AssignScript    ( $Script_ReadSign_Entity_Sign )
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:ToadTownTunnels 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+	Call  MakeItemEntity ( .Item:StarPiece ~Vec3d:Item_StarPiece .ItemSpawnMode:Fixed_NeverVanish *GF_PIT00_StarPiece )
+	Call  GetLoadType   ( *Var[0] )
+	If  *Var[0]  ==  1
+		Exec  EnterSavePoint
+		Exec $Script_CreateExitTriggers
+		Return
+	EndIf
+    Call    GetEntryID ( *Var0 )
+    Switch *Var0
+        Case == ~Entry:Entry0
+            Set  *Var0 $Script_CreateExitTriggers
+            Exec EnterWalk
+        Case == ~Entry:Entry2
+            Set   *VarA $Script_CreateExitTriggers
+            Exec  $Script_EnterVerticalPipe
+    EndSwitch
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+    Bind  $Script_Exit1 .Trigger:FloorTouch ~Collider:Exit1 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "tik_02" 00000001 )
+    Wait  100`
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+	SetGroup 0000001B
+    Set   *AreaByte[0] 1 % Floor 1
+	Set   *Var[A] ~Entry:Entry1
+	Set   *Var[B] ~Collider:Exit1
+	Set   *Var[C] $Script_GotoMap_Exit1
+	ExecWait  $Script_ExitVerticalPipe
+	Return
+	End
+}
+
+#new:Script $Script_GotoMap_Exit1
+{
+	Call  GotoMap   ( "pit_01" 00000000 )
+	Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_ReadSign_Entity_Sign
+{
+	Call  DisablePlayerInput        ( .True )
+	Call  ShowMessageAtScreenPos    ( $String_ReadSign_Entity_Sign 000000A0 00000028 )
+	Call  DisablePlayerInput        ( .False )
+	Return
+	End
+}
+
+#string $String_ReadSign_Entity_Sign
+{
+[DelayOff][Style Sign]
+[CenterX 255]
+[Down 3][SaveColor][Color:19]DANGER!!! DO NOT ENTER![RestoreColor][BR]
+The pipe is the entrance to[BR]
+the Pit of 100 Trials!
+[DelayOn]
+[Wait][End]
+}
+
+% Pipes code
+
+#new:Script $Script_EnterVerticalPipe
+{
+	Call  DisablePlayerInput    ( .True )
+	Call  DisablePlayerPhysics  ( .True )
+	Call  DisablePartnerAI      ( 00000000 )
+	Call  HidePlayerShadow      ( .True )
+	Call  SetPlayerAnimation    ( .PlayerAnim:StandStill )
+	Call  GetCurrentPartnerID   ( *Var0 )
+	If  *Var0  !=  .Partner:None % 0
+		Call  EnableNpcShadow   ( .Npc:Partner .False )
+		Call  SetNpcPos ( .Npc:Partner 00000000 -1000` 00000000 )
+	EndIf
+	Call  GetEntryID    ( *Var0 )
+	Call  $Function_Pipe_GetEntryCoords
+	Sub   *Var2  40`
+	Call  SetPlayerPos  ( *Var1 *Var2 *Var3 )
+	Call  InterpPlayerYaw   ( *Var4 00000000 )
+	Call  PlaySound     ( 00000163 )
+	Call  802D286C      ( 00000100 )
+	Call  802D2520      ( 00010000 00000005 00000002 00000001 00000001 00000000 )
+	Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+	Loop  40`
+		Add   *Var1  00000001
+		Call  SetPlayerPos  ( *Var0 *Var1 *Var2 )
+		Wait  1`
+	EndLoop
+	Wait  3`
+	Call  GetCurrentPartnerID   ( *Var0 )
+	If  *Var0  !=  .Partner:None % 0
+		Thread
+			Call  DisablePartnerAI  ( 00000000 )
+			Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+			Sub   *Var2  00000003
+			Call  SetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+			Call  SetNpcFlagBits    ( .Npc:Partner 00000002 .False )
+			Call  EnablePartnerAI
+			Call  EnableNpcShadow   ( .Npc:Partner .True )
+		EndThread
+	EndIf
+	Wait  2`
+	Call  802D2520  ( 00010000 00000000 00000000 00000000 00000000 00000000 )
+	Wait  1`
+	Call  SetPlayerAnimation    ( 00010002 )
+	Call  DisablePlayerPhysics  ( .False )
+	Call  DisablePlayerInput    ( .False )
+	Call  HidePlayerShadow      ( .False )
+	Label  0
+	Call  $Function_Pipe_GetCurrentFloor
+	Wait  1`
+	If  *Var0  !=  FFFFFFFF % FFFFFFFF
+		Goto  0
+	EndIf
+	Exec  *VarA
+	Return
+	End
+}
+
+/%
+	ARGS:
+	*VarA  entryID
+	*VarB  colliderID
+	*VarC  $Script_GotoMap
+%/
+#new:Script $Script_ExitVerticalPipe
+{
+	Call  $Function_Pipe_CheckDownInput
+	If  *Var0  ==  00000000
+		Return
+	EndIf
+	Call  GetCurrentPartner ( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Call  GetCurrentPartnerID   ( *Var1 )
+		If  *Var1  !=  .Partner:Watt % 6
+			Return
+		Else
+			Call  802D2B6C
+			Call  DisablePlayerInput    ( .True )
+		EndIf
+	Else
+		Call  DisablePlayerInput    ( .True )
+	EndIf
+	SetGroup  0000001B
+	Call  $Function_Pipe_SetAnimFlag
+	Call  DisablePlayerPhysics  ( .True )
+	Call  HidePlayerShadow  ( .True )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  PlayerMoveTo      ( *Var1 *Var3 00000003 )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  SetPlayerPos      ( *Var1 *Var2 *Var3 )
+	Call  SetPlayerFlagBits ( 00200000 .True )
+	Call  $Function_Pipe_GetCameraYaw
+	Call  InterpPlayerYaw   ( *Var0 00000000 )
+	Wait  2`
+	Call  SetPlayerFlagBits ( 00200000 .False )
+	Call  PlaySound ( 00000163 )
+	Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+	Thread
+		Wait  4`
+		Loop  40`
+			Sub   *Var1  00000001
+			Call  SetPlayerPos  ( *Var0 *Var1 *Var2 )
+			Wait  1`
+		EndLoop
+	EndThread
+	Call  802D286C  ( 00000800 )
+	Call  802D2520  ( 00010002 00000005 00000002 00000001 00000001 00000000 )
+	Wait  25`
+	ExecWait  *VarC
+	Return
+	End
+}
+
+% Pipe functions
+
+% Pipe Code
+
+#new:Function $Function_Pipe_SetAnimFlag
+{
+	LAW       V0, 800F7B30
+	LW        V1, 4 (V0)
+	LUI       A0, 10
+	OR        V1, V1, A0
+	SW        V1, 4 (V0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_GetCurrentFloor
+{
+	LAH       V0, 8015A552
+	SW        V0, 84 (A0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_CheckDownInput
+{
+	LAH       V1, 8015A552
+	ADDIU     SP, SP, FFE8
+	SW        S0, 10 (SP)
+	COPY      S0, A0
+	SW        RA, 14 (SP)
+	LW        V0, B0 (S0)
+	BEQ       V1, V0, .o2C
+	ADDIU     V0, R0, 2
+	BEQ       R0, R0, .oAC
+	SW        R0, 84 (S0)
+	.o2C
+	LAW       V1, 8007419C
+	LB        V0, 40 (V1)
+	LB        A3, 44 (V1)
+	BLTZL     V0, .o44
+	SUBU      V0, R0, V0
+	.o44
+	BNE       V0, R0, .o54
+	NOP
+	BEQL      A3, R0, .oAC
+	CLEAR     V0
+	.o54
+	MTC1      V0, F4
+	NOP
+	CVT.S.W   F4, F4
+	MFC1      A2, F4
+	MTC1      A3, F4
+	NOP
+	CVT.S.W   F4, F4
+	MTC1      R0, F12
+	MFC1      A3, F4
+	JAL       ~Func:atan2
+	MOV.S     F14, F12
+	LIF       F2, 60.0
+	NOP
+	C.LT.S    F0, F2
+	NOP
+	BC1F      .oA8
+	ADDIU     V0, R0, 1
+	SW        V0, 84 (S0)
+	BEQ       R0, R0, .oAC
+	ADDIU     V0, R0, 2
+	.oA8
+	CLEAR     V0
+	.oAC
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetEntryCoords
+{
+	ADDIU     SP, SP, FFE0
+	SW        S1, 14 (SP)
+	COPY      S1, A0
+	SW        RA, 1C (SP)
+	SW        S2, 18 (SP)
+	JAL       ~Func:get_current_map_header
+	SW        S0, 10 (SP)
+	COPY      A0, S1
+	LIO       A1, *Var0
+	JAL       ~Func:get_variable
+	COPY      S2, V0
+	COPY      A0, S1
+	LUI       A1, FE36
+	LW        V1, 14 (S2)
+	SLL       S0, V0, 4
+	ADDU      V1, S0, V1
+	LWC1      F0, 0 (V1)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 4 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C82 % Var2
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 8 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C83 % Var3
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      S0, S0, V0
+	LWC1      F0, C (S0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C84 % Var4
+	LW        RA, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_Pipe_GetCameraYaw
+{
+	LAW       V1, 80077410
+	LIF       F12, 180.0
+	ADDIU     SP, SP, FFE8
+	SW        RA, 14 (SP)
+	SW        S0, 10 (SP)
+	SLL       V0, V1, 2
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 2
+	SUBU      V0, V0, V1
+	SLL       V1, V0, 3
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 3
+	LTF       F0, V0 (800B1DEC)
+	ADD.S     F12, F0, F12
+	JAL       ~Func:clamp_angle
+	COPY      S0, A0
+	TRUNC.W.S F2, F0
+	SWC1      F2, 84 (S0)
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetPointInFrontOfPlayer
+{
+	ADDIU     SP, SP, FFD8
+	SW        S0, 18 (SP)
+	COPY      S0, A0
+	SW        RA, 1C (SP)
+	SDC1      F20, 20 (SP)
+	LW        V0, C (S0)
+	JAL       ~Func:get_float_variable
+	LW        A1, 0 (V0)
+	ADDIU     A0, SP, 10
+	LIA       V0, 8010EFC8
+	MFC1      A2, F0
+	LWC1      F0, 28 (V0) % player X
+	LWC1      F2, 30 (V0) % player Z
+	SWC1      F0, 10 (SP) % arg0 for add_vec2D_polar
+	SWC1      F2, 14 (SP) % arg1 for add_vec2D_polar
+	LW        A3, 80 (V0)
+	LWC1      F20, 2C (V0)
+	JAL       ~Func:add_vec2D_polar
+	ADDIU     A1, SP, 14
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 10 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C80 % Var0
+	COPY      A0, S0
+	LUI       A1, FE36
+	MFC1      A2, F20
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 14 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C82 % Var2
+	LW        RA, 1C (SP)
+	LW        S0, 18 (SP)
+	LDC1      F20, 20 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 28
+}
+
+% Texture panners
+
+#new:Script $Script_TexturePan_Update
+{
+    SetGroup  00000000
+    If  *Var[5]  ==  00000001
+        If  *Var[6]  ==  00000001
+            If  *Var[7]  ==  00000001
+                If  *Var[8]  ==  00000001
+                    Call  $Function_TexturePan_Simple ( )
+                    Return
+                EndIf
+            EndIf
+        EndIf
+    EndIf
+    Call  $Function_TexturePan_Complex ( )
+    Return
+    End
+}
+
+#new:Function $Function_TexturePan_Simple
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    SW          RA, 14 (SP)
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o30
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o40
+    ADDU        V0, V1, V0
+    .o30
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o44
+    SUBU        V0, V1, A0
+    .o40
+    SW          V0, A8 (S0)
+    .o44
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o64
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o74
+    ADDU        V0, V1, V0
+    .o64
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o78
+    SUBU        V0, V1, A0
+    .o74
+    SW          V0, AC (S0)
+    .o78
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o98
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA8
+    ADDU        V0, V1, V0
+    .o98
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oAC
+    SUBU        V0, V1, A0
+    .oA8
+    SW          V0, B0 (S0)
+    .oAC
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oCC
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oDC
+    ADDU        V0, V1, V0
+    .oCC
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE0
+    SUBU        V0, V1, A0
+    .oDC
+    SW          V0, B4 (S0)
+    .oE0
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+#new:Function $Function_TexturePan_Complex
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    BEQ         A1, R0, .o24
+    SW          RA, 14 (SP)
+    SW          R0, 70 (S0)
+    SW          R0, 74 (S0)
+    SW          R0, 78 (S0)
+    SW          R0, 7C (S0)
+    .o24
+    LW          V0, 70 (S0)
+    BNE         V0, R0, .o64
+    NOP
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o50
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o60
+    ADDU        V0, V1, V0
+    .o50
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o64
+    SUBU        V0, V1, A0
+    .o60
+    SW          V0, A8 (S0)
+    .o64
+    LW          V0, 74 (S0)
+    BNE         V0, R0, .oA4
+    NOP
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o90
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA0
+    ADDU        V0, V1, V0
+    .o90
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oA4
+    SUBU        V0, V1, A0
+    .oA0
+    SW          V0, AC (S0)
+    .oA4
+    LW          V0, 78 (S0)
+    BNE         V0, R0, .oE4
+    NOP
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oD0
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oE0
+    ADDU        V0, V1, V0
+    .oD0
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE4
+    SUBU        V0, V1, A0
+    .oE0
+    SW          V0, B0 (S0)
+    .oE4
+    LW          V0, 7C (S0)
+    BNE         V0, R0, .o124
+    NOP
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o110
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o120
+    ADDU        V0, V1, V0
+    .o110
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o124
+    SUBU        V0, V1, A0
+    .o120
+    SW          V0, B4 (S0)
+    .o124
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          V0, 70 (S0)
+    LW          V1, 78 (S0)
+    LW          A0, 98 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 70 (S0)
+    LW          V0, 74 (S0)
+    ADDIU       V1, V1, 1
+    SW          V1, 78 (S0)
+    LW          V1, 70 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 74 (S0)
+    LW          V0, 7C (S0)
+    SLT         V1, V1, A0
+    ADDIU       V0, V0, 1
+    BNE         V1, R0, .o198
+    SW          V0, 7C (S0)
+    SW          R0, 70 (S0)
+    .o198
+    LW          V0, 74 (S0)
+    LW          V1, 9C (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1AC
+    SW          R0, 74 (S0)
+    .o1AC
+    LW          V0, 78 (S0)
+    LW          V1, A0 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1C0
+    SW          R0, 78 (S0)
+    .o1C0
+    LW          V0, 7C (S0)
+    LW          V1, A4 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1D4
+    SW          R0, 7C (S0)
+    .o1D4
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+#new:Script $Script_SetupTexturePan
+{
+	Call     802C9000 	( ~Model:mizu 1 )
+	Call     802C9000 	( ~Model:nagare1 0 )
+	Thread
+		Set  *Var[0] 0
+		Set  *Var[1] 32
+		Set  *Var[2] C8
+		Set  *Var[3] 6E
+		Set  *Var[4] 1F4
+		Set  *Var[5] 1
+		Set  *Var[6] 1
+		Set  *Var[7] 1
+		Set  *Var[8] 1
+		Set  *Var[9] 0
+		Set  *Var[A] 0
+		Set  *Var[B] 0
+		Set  *Var[C] 0
+		Exec $Script_TexturePan_Update
+	EndThread
+	Thread
+		Set  *Var[0] 1
+		Set  *Var[1] 0
+		Set  *Var[2] FFFFFF38
+		Set  *Var[3] FFFFFF9C
+		Set  *Var[4] FFFFFE0C
+		Set  *Var[5] 1
+		Set  *Var[6] 1
+		Set  *Var[7] 1
+		Set  *Var[8] 1
+		Set  *Var[9] 0
+		Set  *Var[A] 0
+		Set  *Var[B] 0
+		Set  *Var[C] 0
+		Exec $Script_TexturePan_Update
+	EndThread
+	Return
+	End
+}
+
+#new:Function $Function_GetTattle
+{
+    LIO       V0, $String_Tattle
+    JR        RA
+    RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle]
+This is the entrance to the pit[BR]
+of 100 trials, inside that pipe[BR]
+there is a very deep place full[BR]
+of enemies.[BR]
+[Wait][Next]
+We should enter only when you're[BR]
+sure we're ready for this huge[BR]
+challenge Mario!
+}

@@ -1,0 +1,86 @@
+% Add new exit to kpa_136
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000004
+    [Background]  00000000
+    [MapTattle]   $Function_GetTattle
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 %   30.0   30.0 -150.0   90.0
+	~Vec4f:Entry1 % 1470.0   30.0 -150.0  270.0
+	~Vec4f:Entry2 %   17.0  -20.0  -17.0   90.0
+    ~Vec4f:Entry3
+}
+
+@ $Script_80240788
+{
+    0:  Bind  $Script_ExitWalk_8024060C .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024069C .Trigger:FloorAbove ~Collider:deilisw 00000001 00000000
+   38:  Bind  $Script_ExitWalk_8024072C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+        Bind  $Script_Exit3 .Trigger:FloorAbove ~Collider:Exit3 00000001 00000000
+   54:  Return
+   5C:  End
+}
+
+#new:Script $Script_Exit3
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry3 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "kpa_136" 00000000 )
+    Wait  100`
+    Return
+    End
+}
+
+@ $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  If  *GF_KPA16_ShutOffLava  ==  .False
+            Call  EnableGroup   ( ~Model:New .False )
+   80:  	Call  EnableGroup   ( ~Model:after .False )
+   94:  	Exec  $Script_802407EC
+   A0:  Else
+   A8:  	Call  EnableGroup   ( ~Model:before .False )
+            Call  ModifyColliderFlags 	( .False ~Collider:lockExit3 7FFFFE00 )
+   BC:  EndIf
+   C4:  Exec  $Script_802404E0
+   D0:  If  *GF_KPA16_ShutOffLava  ==  .False
+   E0:  	Exec  $Script_802414C4
+   EC:  EndIf
+   F4:  Set   *Var0  $Script_80240788
+  104:  Exec  EnterWalk
+  110:  If  *GF_KPA16_ShutOffLava  ==  .False
+  120:  	Thread
+  128:  		Wait  2`
+  134:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o356 00000003 )
+  14C:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o358 00000003 )
+  164:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o359 00000003 )
+  17C:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o360 00000003 )
+  194:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o361 00000003 )
+  1AC:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o362 00000003 )
+  1C4:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o363 00000003 )
+  1DC:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o364 00000003 )
+  1F4:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o365 00000003 )
+  20C:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o370 00000003 )
+  224:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o371 00000003 )
+  23C:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o419 00000003 )
+  254:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:o420 00000003 )
+  26C:  		Call  ModifyColliderFlags   ( 00000003 ~Collider:deilisw 00000003 )
+  284:  		Thread
+  28C:  			Call  ResetFromLava ( $LavaResetList_80240988 )
+  29C:  		EndThread
+  2A4:  	EndThread
+  2AC:  EndIf
+  2B4:  Wait  1`
+  2C0:  Return
+  2C8:  End
+}

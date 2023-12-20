@@ -1,0 +1,453 @@
+% This file has all code for the randomized mode
+
+% Randomize item from item blocks
+%
+% ~Func:entity_ItemBlock_spawn_item
+@Hook 802E3F60
+{
+    PUSH    RA, A1, A2, A3, V0, V1
+    % check if current mode is rando
+    CLEAR   A0
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    ORI     A1, R0, 2
+    BNE     V0, A1, .End
+    LH	    A0, 0010 (S1) % get itemID
+    % skip if item was a coin
+    ORI     A1, R0, 0157 % .Item:Coin
+    BEQ     A0, A1, .End
+    NOP
+    JAL     $Function_Mode_Random_GetItem
+    CLEAR   A0
+    COPY    A0, V0
+    .End
+    POP     RA, A1, A2, A3, V0, V1
+    J       802E3F68
+    ADDIU	V0, R0, 0157 % .Item:Coin
+}
+
+% Set global flag as true the moment the item spawns
+%
+% ~Func:entity_ItemBlock_spawn_item
+@Hook 802E4020
+{
+    JAL     ~Func:make_item_entity
+    NOP
+    PUSH    RA, A1, A2, A3, V0, V1
+    % check if current mode is rando
+    CLEAR   A0
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    ORI     A1, R0, 2
+    BNE     V0, A1, .End
+    LH	    A0, 0010 (S1) % get itemID
+    % skip if item was a coin
+    ORI     A1, R0, 0157 % .Item:Coin
+    BEQ     A0, A1, .End
+    NOP
+    % set block's global flag as true
+    LW      A0, 40 (S0)
+    JAL     ~Func:set_global_flag
+    LHU     A0, A (A0) % get global flag
+    .End
+    POP     RA, A1, A2, A3, V0, V1
+    %
+    J       802E4028
+    NOP
+}
+
+% returns random item in S6, if player is playing in rando mode
+#export:Function $Function_Mode_Random_GetEnemyItem
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    ORI     A1, R0, 2
+    BNE     V0, A1, .End
+    NOP
+    JAL     $Function_Mode_Random_GetItem
+    CLEAR   A0
+    COPY    S6, V0
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% `A0`= chest (bool)
+#new:Function $Function_Mode_Random_GetItem
+{
+    PUSH    RA, A0, A1, A2, A3, S0, S1, S2
+    COPY    S0, A0
+    CLEAR   S1
+    % current mode is rando, get a random item
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    % badge or item?
+    SLTIU   V0, V0, 30`
+    LIO     S1, $Data_Random_Items
+    .GetTableSize_Items
+    ORI     A0, R0, 139` % amount of items in the table
+    BEQ     V0, R0, .GetRandomItem
+    NOP
+    LIO     S1, $Data_Random_Badges
+    BNEL    S0, R0, .GetTableSize_Badges
+    ORI     S2, R0, 2
+    .GetTableSize_Badges
+    ORI     A0, R0, 60` % amount of badges in the table
+    .GetRandomItem
+    JAL     ~Func:rand_int
+    ADDI    A0, A0, -1
+    % get random item
+    ORI     A0, R0, 4
+    MULT    A0, V0
+    MFLO    A0
+    ADDU    S1, S1, A0
+    LW      V0, 0 (S1)
+    COPY    V1, S2
+    POP     RA, A0, A1, A2, A3, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+%=======
+% Chest
+%=======
+
+% Randomize normal chests
+%
+% AssignScript(API)
+@Hook 80111FE0
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % check if current mode is rando
+    CLEAR   A0
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    ORI     A1, R0, 2
+    BNE     V0, A1, .End
+    NOP
+    % check if entity is an small chest
+    LIO     A0, 802EAE30 % .Entity:Chest
+    LW      V0, 24 (SP) % pop V0
+    LW      V0, 38 (V0)
+    BNE     A0, V0, .End
+    NOP
+    % check if chest gives an actual item
+    LW      A0, 18 (S0)
+    LIO     A1, *VarB
+    BNE     A0, A1, .End
+    NOP
+    % check if chest had a key item
+    LW      A0, 1C (S0)
+    ORI     A1, R0, 1
+    BEQ     A0, A1, .End
+    NOP
+    LIO     S0, $Script_OpenRandomChest
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    SW	    S0, 0028 (V0) % save entity's script
+    J       80111FE8
+    ADDIU	V0, R0, 0002
+}
+
+% Call  $Function_GetRandomChestItem ( *out_itemID *out_itemType )
+#new:Function $Function_GetRandomChestItem
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    S0, A0
+    JAL     $Function_Mode_Random_GetItem
+    ORI     A0, R0, 1
+    COPY    S1, V1
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 0 (A1)
+    JAL     ~Func:set_variable
+    COPY    A2, V0
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 4 (A1)
+    JAL     ~Func:set_variable
+    COPY    A2, S1
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+#export:Script $Script_OpenRandomChest
+{
+        % set global flag
+        Call  $ReadAddress ( 8010F08F 0 *Var0 .False .False ) % get entityID
+        If *Var0 != FF
+            Call  $GetEntityPointer ( *Var0 *Var0 )
+            Call  $ReadAddress ( *Var0 2 *Var0 40 .False )
+            Call  $ReadAddress ( *Var0 1 *Var0 0 .False ) % get globalFlagIndex
+            Call  $Function_SetGlobalFlag_byIndex ( *Var0 )
+        EndIf
+        % get random item
+        Call  $Function_GetRandomChestItem ( *Var0 *Var1 )
+    0:  Set   *VarA  *Var0
+   10:  Set   *VarB  *Var1
+   30:  ExecWait  $Script_GiveItem
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_GiveItem
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Set   *Var0  *VarA
+   20:  If  *VarA  !=  00000000
+   30:  	ExecWait  $Script_ShowGotItem
+   3C:  EndIf
+   44:  Switch  *VarB
+   50:  	Case  ==  00000000
+   5C:  		Call  AddItem   ( *VarA *Var0 )
+   70:  	Case  ==  00000001
+   7C:  		Call  AddKeyItem    ( *VarA )
+   8C:  	Case  ==  00000002
+   98:  		Call  AddBadge  ( *VarA *Var0 )
+   AC:  EndSwitch
+   B4:  Wait  15`
+   C0:  Call  DisablePlayerInput    ( .False )
+   D0:  Return
+   D8:  End
+}
+
+#new:Script $Script_ShowGotItem
+{
+    0:  SetGroup  00000000
+    C:  Call  SetTimeFreezeMode ( 00000002 )
+   1C:  Wait  40`
+   28:  Call  ShowGotItem       ( *Var0 .False 00000000 )
+   40:  Call  SetTimeFreezeMode ( 00000000 )
+   50:  Return
+   58:  Return
+   60:  End
+}
+
+% Call  $Function_SetGlobalFlag_byIndex ( globalFlagIndex )
+%
+% Set global flag as true
+#new:Function $Function_SetGlobalFlag_byIndex
+{
+    PUSH        RA, A0, A1, A2, A3, V0, V1
+    LW          A1, C (A0)
+    JAL         ~Func:get_variable
+    LW          A1, 0 (A1)
+    JAL         ~Func:set_global_flag
+    COPY        A0, V0
+    POP         RA, A0, A1, A2, A3, V0, V1
+    JR          RA
+    ORI         V0, R0, 2
+}
+
+#new:Data $Data_Random_Items
+{
+    .Item:FireFlower
+    .Item:SnowmanDoll
+    .Item:ThunderRage
+    .Item:ShootingStar
+    .Item:ThunderBolt
+    .Item:Pebble
+    .Item:DustyHammer
+    .Item:TastyTonic
+    .Item:Mushroom
+    .Item:VoltShroom
+    .Item:SuperShroom
+    .Item:DriedShroom
+    .Item:UltraShroom
+    .Item:SleepySheep
+    .Item:POWBlock
+    .Item:StopWatch
+    .Item:WhackasBump
+    .Item:Apple
+    .Item:LifeShroom
+    .Item:Mystery
+    .Item:RepelGel
+    .Item:FrightJar
+    .Item:DizzyDial
+    .Item:SuperSoda
+    .Item:Lemon
+    .Item:Lime
+    .Item:JamminJelly
+    .Item:MapleSyrup
+    .Item:HoneySyrup
+    .Item:Goomnut
+    .Item:KoopaLeaf
+    .Item:DriedPasta
+    .Item:DriedFruit
+    .Item:StrangeLeaf
+    .Item:Coconut
+    .Item:Melon
+    .Item:StinkyHerb
+    .Item:IcedPotato
+    .Item:SpicySoup
+    .Item:ApplePie
+    .Item:HoneyUltra
+    .Item:MapleUltra
+    .Item:JellyUltra
+    .Item:Koopasta
+    .Item:FriedShroom
+    .Item:ShroomCake
+    .Item:ShroomSteak
+    .Item:HotShroom
+    .Item:SweetShroom
+    .Item:YummyMeal
+    .Item:HealthyJuice
+    .Item:BlandMeal
+    .Item:DeluxeFeast
+    .Item:SpecialShake
+    .Item:BigCookie
+    .Item:Cake
+    .Item:Mistake
+    .Item:KoopaTea
+    .Item:HoneySuper
+    .Item:MapleSuper
+    .Item:JellySuper
+    .Item:Spaghetti
+    .Item:EggMissile
+    .Item:FriedEgg
+    .Item:HoneyShroom
+    .Item:HoneyCandy
+    .Item:ElectroPop
+    .Item:FirePop
+    .Item:LimeCandy
+    .Item:CocoPop
+    .Item:LemonCandy
+    .Item:JellyPop
+    .Item:StrangeCake
+    .Item:KookyCookie
+    .Item:FrozenFries
+    .Item:PotatoSalad
+    .Item:NuttyCake
+    .Item:MapleShroom
+    .Item:BoiledEgg
+    .Item:YoshiCookie
+    .Item:JellyShroom1
+    % TTYD items
+    .Item:CourageShell
+    .Item:DriedBouquet
+    .Item:EarthQuake
+    .Item:FreshPasta
+    .Item:Goldbar
+    .Item:GoldbarX3
+    .Item:GoldenLeaf
+    .Item:GradualSyrup
+    .Item:Horsetail
+    .Item:HotDog
+    .Item:HotSauce
+    .Item:HPDrainItem
+    .Item:IceStorm
+    .Item:KeelMango
+    .Item:MiniMrMini
+    .Item:MrSoftener
+    .Item:PeachyPeach
+    .Item:PointSwap
+    .Item:PowerPunch
+    .Item:RuinPowder
+    .Item:SlowShroom
+    % TTYD recipes
+    .Item:PoisonShroom
+    .Item:TrialStew
+    .Item:ChocoCake
+    .Item:CocoCandy
+    .Item:CoconutBomb
+    .Item:CouplesCake
+    .Item:CourageMeal
+    .Item:FreshJuice
+    .Item:FruitParfait
+    .Item:HealthySalad
+    .Item:HeartfulCake
+    .Item:IciclePop
+    .Item:InkPasta
+    .Item:InkySauce
+    .Item:JellyCandy
+    .Item:KoopaBun
+    .Item:LovePudding
+    .Item:MangoDelight
+    .Item:MeteorMeal
+    .Item:MousseCake
+    .Item:OmeletteMeal
+    .Item:PeachTart
+    .Item:ShroomBroth
+    .Item:ShroomCrepe
+    .Item:ShroomRoast
+    .Item:SnowBunny
+    .Item:SpaceFood
+    .Item:SpicyPasta
+    .Item:TayceCookie
+    .Item:TayceDeluxe
+    .Item:TayceDinner
+    .Item:TayceDynamite
+    .Item:TayceFrappe
+    .Item:TayceSpecial
+    .Item:TayceTea    
+}
+
+#new:Data $Data_Random_Badges
+{
+    .Item:SpinSmash
+    .Item:Multibounce
+    .Item:PowerPlusA
+    .Item:HPPlusA
+    .Item:QuakeHammer
+    .Item:SleepStomp
+    .Item:FireShield
+    .Item:PrettyLucky
+    .Item:HPDrain
+    .Item:SlowGo
+    .Item:FPPlusA
+    .Item:IcePower
+    .Item:DefendPlusA
+    .Item:PayOff
+    .Item:MoneyMoney
+    .Item:HappyHeartA
+    .Item:FlowerSaverA
+    .Item:HammerThrow
+    .Item:PowerRush
+    .Item:LastStand
+    .Item:CloseCall
+    .Item:PUpDDown
+    .Item:LuckyDay
+    .Item:PDownDUp
+    .Item:HeartFinder
+    .Item:FlowerFinder
+    .Item:DizzyAttack
+    .Item:SpeedySpin
+    .Item:PowerJump
+    .Item:PowerSmash1
+    .Item:DeepFocus1
+    .Item:SoftStomp
+    .Item:ShrinkStomp
+    .Item:DamageDodgeA
+    .Item:HappyFlowerA
+    .Item:DeepFocusP
+    .Item:Charge
+    .Item:FPDrain
+    .Item:PityFlower
+    .Item:ItemHog
+    .Item:PoisonDrive
+    .Item:TornadoJump_1
+    .Item:IceSmash
+    .Item:HeadRattle
+    .Item:ChargeP
+    .Item:CloseCallP
+    .Item:PrettyLuckyP
+    .Item:DamageDodgeP
+    .Item:DefendPlusP
+    .Item:LastStandP
+    .Item:PowerPlusP
+    .Item:PowerRushP
+    .Item:MegaRushP
+    .Item:PDownDUpP
+    .Item:PUpDDownP
+    .Item:FlowerSaverP
+    .Item:HappyHeartP
+    .Item:HPDrainP
+    .Item:HPPlusP
+}

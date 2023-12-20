@@ -1,0 +1,95 @@
+% This file has all the code for the Super Bow mode
+
+% Always load bow as your partner
+%
+% ~Func:load_partner_actor
+@Hook:Battle 80264BB0
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    % skip if isn't the start of the battle
+    LAW     A0, 800DC068 % battleStatus
+    ORI     A1, R0, 1D % .BattleState:ChangePartner
+    BEQ     A0, A1, .End
+    LW      A0, 10 (SP)
+    CLEAR   A0
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    ORI     A1, R0, 1 % Bow mode
+    BNE     V0, A1, .End
+    LW      A0, 10 (SP)
+    % skip if current partner is Goompa or Twink
+    ORI     A1, R0, 5 % .Partner:Goompa
+    BEQ     A0, A1, .End
+    ORI     A1, R0, B % .Partner:Twink
+    BEQ     A0, A1, .End
+    NOP
+    % change to bow, but first push your previous partner
+    LIO     A1, *BowMode_LastPartner
+    JAL     ~Func:set_variable
+    LW      A2, 10 (SP)
+    ORI     A0, R0, 9 % .Partner:Bow
+    SAB     A0, 8010F2A2 % currentPartner
+    .End
+    POP     R0, A1, A2, A3, V0, V1
+    LIO     S2, 800DC070 % battleStatus
+    J       80264BB8
+    RESERVED
+}
+
+% restore previous partner
+%
+% ~Func:state_step_end_battle
+@Hook 80033D54
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    CLEAR   A0
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    LW      V1, 20 (SP)
+    ORI     A1, R0, 1 % Bow mode
+    BNE     V0, A1, .End
+    LB	    A0, 0012 (V1) % get current partner
+    % skip if current partner is Goompa or Twink
+    ORI     A1, R0, 5 % .Partner:Goompa
+    BEQ     A0, A1, .End
+    ORI     A1, R0, B % .Partner:Twink
+    BEQ     A0, A1, .End
+    NOP
+    % get previous partner
+    CLEAR   A0
+    LIO     A1, *BowMode_LastPartner
+    JAL     ~Func:get_variable
+    RESERVED
+    COPY    A0, V0
+    .End
+    JAL	    ~Func:partner_init_after_battle
+    NOP
+    POP     A0, A1, A2, A3, V0, V1
+    J       80033D5C
+    NOP
+}
+
+% Watt only battles, skip in Bow mode
+%
+% ~Func:btl_update
+@Hook:Battle 8023E834
+{
+    PUSH    A0, A1, A2, A3, V0
+    LIO     A1, *GameMode
+    JAL     ~Func:get_variable
+    RESERVED
+    ORI     A1, R0, 1 % Bow mode
+    BNE     V0, A1, .End
+    LB	    V1, 0432 (S0) % dark byte
+    % player is playing in Bow mode
+    SB	    R0, 0432 (S0)
+    CLEAR   V1    
+    .End
+    POP     A0, A1, A2, A3, V0
+    J       8023E83C
+    ADDIU	V0, R0, FFFE
+}
+
+

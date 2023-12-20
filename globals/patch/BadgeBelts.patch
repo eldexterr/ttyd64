@@ -1,0 +1,1764 @@
+% This patch does everything about the new functions assigned for the D-Pad
+
+% It also has the code responsable of Opening the Extra Tab when u press Start
+% at the moment a notification is active, is here because use the same hook
+% when you hold D-Up to open the badge menu.
+
+% Addresses used on this patch
+/%
+80074036 - D Pad Inputs, One Frame
+bit0=Right
+bit1=Left
+bit2=Down
+bit3=Up
+bit4=Start
+
+800B1D83
+01=Player isn't touching the ground
+
+8010F2A2 - Current Partner ID
+8 = Lakilester
+
+8010CD33
+bit3=Using Partner
+
+8010EFCA - PlayerFlags (3rd Byte)
+bit4=DisablePlayerInputs
+bit5=DisablePlayerPhysics
+
+800DACFB - File you've got loaded
+b2= Menu
+00= File 1
+01= File 2
+02= File 3
+03= File 4
+
+80074094 - Event ID
+00=Overworld
+01=Battle
+02=Pause
+%/
+
+% Functions about tracking the D Pads Inputs
+% And tracking the R button for quickswapping (the quickswapping code is at globals/patch/QuickSwapPartners.patch)
+
+/% Checking if Dpad Up is pressed + Check if R is pressed to quickswap partners
+@Hook 83BFC % 800EA74C
+{
+LABU 	T0, 80074026 % Holded Inputs
+SLL	T0, T0, 28`
+SRL  	T0, T0, 31` % Move all bits to just leave bit3
+ADDIU T1, R0, 1
+BNE	T0, T1, .CheckConditions % If the player didn't pressed D Pad Up, just end the function
+COPY  GP, T0
+LAW   T0, $Data_DPads_HoldTimers_UP
+ADDIU T0, T0, 1
+SAW   T0, $Data_DPads_HoldTimers_UP
+.CheckConditions
+% Checking if Mario isn't touching the ground
+LAB	T0, 800B1D83
+BEQ	T0, T1, .ResetFrameWindow % If mario isn't touching solid ground, finish the function
+NOP
+% Checking Partners
+ADDIU	T2, R0, 0
+LAB	T0, 8010F2A2 % Partner ID
+ADDIU T1, R0, 8 	 % Lakilester
+BEQ	T0, T1, .CheckingFrameWindow % If the player have laki just launch the script, the lock inputs flag work different when using laki
+NOP
+% The player have Bow out?
+ADDIU T1, R0, 9 	 % Bow ID
+BEQL	T0, T1, .BowOrWatt
+ADDIU	T2, R0, 1	 % Set T2 as 1, it means Mario have Bow or Watt out so the Commands list can be opened while using them
+% The player have Watt out?
+ADDIU T1, R0, 6 	 % Watt ID
+BEQL	T0, T1, .BowOrWatt
+ADDIU	T2, R0, 1	 % Set T2 as 1
+.BowOrWatt
+BNE	T2, R0, .CheckingFrameWindow
+NOP
+% The player is using any other partner?
+LAB	T0, 8010CD33 % Using a partner
+SLL	T0, T0, 28`
+SRL  	T0, T0, 31`  % Move all bits to just leave bit3
+ADDIU T1, R0, 1
+BEQ	T0, T1, .ResetFrameWindow % If the player is using any other partner, don't open the Commands list
+NOP
+.CheckInputsLocked
+LABU	T0, 8010EFCA % PlayerFlags (3rd Byte)
+ANDI  T0, T0, 30 % bit4+5
+BNE	T0, R0, .ResetFrameWindow % If the player have the controls locked, finish the function
+NOP
+.CheckingFrameWindow
+LAW   V0, $Data_DPads_HoldTimers_UP
+% Check if the player hold the dpad enough
+% to go to the badge tab or to open the belts menu
+BEQ   V0, R0, .End
+NOP
+SLTIU V1, V0, 8 % Hold for this amount of frames to pause the game
+BNE   V1, R0, .OpenBeltsMenu
+NOP
+% Pause the game
+ORI   A2, R0, 0
+SAB   A2, $HandleSpammingPadUp
+LIO   A1, *GoToBadgeTab
+JAL   ~Func:set_variable
+ORI   A2, R0, 1
+SAB	R0, 8009A652 % Unfreeze all NPCs
+SAB	R0, 8010CD01 % Enable C Left and C Right lists
+ADDIU	V0, R0, 10 % bit4=Start button
+SAB	V0, 80074036 % One Frame Inputs
+BEQ   R0, R0, .ResetFrameWindow
+RESERVED
+.OpenBeltsMenu
+% GP = D Pad Up was pressed (Bool)
+BNE   GP, R0, .End
+NOP
+% Launching Script
+.LaunchScript
+CLEAR A2
+LIA	A0, $ScriptMap_BadgeBelts
+JAL	~Func:start_script
+ADDIU	A1, R0, 1
+.ResetFrameWindow
+SAW   R0, $Data_DPads_HoldTimers_UP
+.End
+% Quick Swap Partners
+JAL   $Function_TrackRButton_Quickswap
+NOP
+POP 	RA, V0, V1, A0, A1, A2
+% restore vanilla code
+LW	V0, 0 (V0)
+J	800EA754 
+SW	V0, 8 (A1)
+}%/
+
+#new:Data $Data_DPads_HoldTimers_UP
+{ 00000000 }
+
+#new:Data $Data_DPads_HoldTimers_LEFT
+{ 00000000 }
+
+#new:Data $Data_DPads_HoldTimers_DOWN
+{ 00000000 }
+
+#new:Data $Data_DPads_HoldTimers_RIGHT
+{ 00000000 }
+
+#new:Function $Function_FreezeNPCs
+{
+ADDIU	      T0, R0, 77
+SAB		T0, 8009A652 % Freeze all NPCs
+JR RA
+ADDI	      V0, R0, 2
+}
+
+/% Checking if Dpad Left/Right/Down are pressed
+@Hook 83BD8 % 800EA728
+{
+PUSH 	RA, A0, A1, A2, V0, V1
+LABU 	T0, 80074026 % Holded Inputs
+% Checking Right Dpad Input
+%==========================
+SLL	T0, T0, 31`
+SRL  	T0, T0, 31` % Move all bits to just leave bit0
+ADDIU T1, R0, 1
+COPY  GP, T0
+BEQL	T0, T1, .CheckInputsLocked % If the player pressed D Pad Right, check if he have the inputs locked
+ADDIU	T2, R0, 0 % T2 = List to Load
+% Checking Left Dpad Input
+%==========================
+LABU 	T0, 80074026 % Holded Inputs
+SLL	T0, T0, 30`
+SRL  	T0, T0, 31` % Move all bits to just leave bit0
+ADDIU T1, R0, 1
+COPY  GP, T0
+BEQL	T0, T1, .CheckInputsLocked % If the player pressed D Pad Left, check if he have the inputs locked
+ADDIU	T2, R0, 1 % T2 = List to Load
+% Checking Down Dpad Input
+%==========================
+LABU 	T0, 80074026 % Holded Inputs
+SLL	T0, T0, 29`
+SRL  	T0, T0, 31` % Move all bits to just leave bit0
+ADDIU T1, R0, 1
+COPY  GP, T0
+BEQ	T0, T1, .CheckInputsLocked
+ADDIU	T2, R0, 2 % T2 = List to Load
+.CheckInputsLocked
+% Check if the player is mounting lakilester
+LABU	T0, 802BFF17 % Laki's cloud state
+ADDIU T1, R0, 1 	 % Mounting Cloud
+BEQ	T0, T1, .NotLocked
+NOP
+LABU	T0, 8010EFCA % PlayerFlags (3rd Byte)
+ANDI  T0, T0, 30 % bit4+5
+BNE	T0, R0, .ResetFrameWindows % If the player have the controls locked, finish the function
+NOP
+% Check if the player released the dpad but didn't hold enough
+% to save a belt, load the belt instead if there still dpad holded data
+%========
+.NotLocked
+BNE   GP, R0, .LoadSaveBelts
+NOP
+% A belt has been already saved?
+LIO   T0, $Data_BeltSaved_Flag
+LBU   T1, 0 (T0)
+BNEL  T1, R0, .ResetFrameWindows
+SW    R0, 0 (T0)
+LAW   T0, $Data_DPads_HoldTimers_LEFT
+BNE   T0, R0, .LoadBelt
+NOP
+LAW   T0, $Data_DPads_HoldTimers_RIGHT
+BNE   T0, R0, .LoadBelt
+NOP
+LAW   T0, $Data_DPads_HoldTimers_DOWN
+BNE   T0, R0, .LoadBelt
+NOP
+BEQ   R0, R0, .End
+NOP
+%===========
+% Load/Save Belts
+%===========
+.LoadSaveBelts
+BEQ	T2, R0, .LoadRightList
+NOP
+ADDIU	T1, R0, 1
+BEQ	T2, T1, .LoadLeftList
+NOP
+% If T2 isn't equal to 0 or 1, load down list
+.LoadDownList
+LAW   T0, $Data_DPads_HoldTimers_DOWN
+ADDIU T0, T0, 1
+SAW   T0, $Data_DPads_HoldTimers_DOWN
+% Save Belt
+LIO 	A1, *BeltIDtoLoad
+JAL 	~Func:set_variable
+ADDIU	A2, R0, 0	% ListID
+% The button has been hold enough?
+LAW   T0, $Data_DPads_HoldTimers_DOWN
+SLTIU A1, T0, 8 % Hold for this amount of frames to save the belt
+BEQ   A1, R0, .SaveBelt
+NOP
+BEQ	R0, R0, .End
+NOP
+.LoadLeftList
+LAW   T0, $Data_DPads_HoldTimers_LEFT
+ADDIU T0, T0, 1
+SAW   T0, $Data_DPads_HoldTimers_LEFT
+% Save Belt
+LIO 	A1, *BeltIDtoLoad
+JAL 	~Func:set_variable
+ADDIU	A2, R0, 1	% ListID
+% The button has been hold enough?
+LAW   T0, $Data_DPads_HoldTimers_LEFT
+SLTIU A1, T0, 8 % Hold for this amount of frames to save the belt
+BEQ   A1, R0, .SaveBelt
+NOP
+BEQ	R0, R0, .End
+NOP
+.LoadRightList
+LAW   T0, $Data_DPads_HoldTimers_RIGHT
+ADDIU T0, T0, 1
+SAW   T0, $Data_DPads_HoldTimers_RIGHT
+% Save Belt
+LIO 	A1, *BeltIDtoLoad
+JAL 	~Func:set_variable
+ADDIU	A2, R0, 2	% ListID
+% The button has been hold enough?
+LAW   T0, $Data_DPads_HoldTimers_RIGHT
+SLTIU A1, T0, 8 % Hold for this amount of frames to save the belt
+BEQ   A1, R0, .SaveBelt
+NOP
+BEQ	R0, R0, .End
+NOP
+.LoadBelt
+LIA	A0, $Script_PlayFX
+JAL	$Function_RunScript
+RESERVED
+LIA	A0, $Script_Belts_Load
+JAL	$Function_RunScript
+RESERVED
+BEQ   R0, R0, .ResetFrameWindows
+NOP
+.SaveBelt
+% A belt has been already saved?
+LABU  A0, $Data_BeltSaved_Flag
+BNE   A0, R0, .End
+NOP
+ORI   A0, R0, 1
+SAB   A0, $Data_BeltSaved_Flag
+LIA	A0, $Script_PlayFX
+JAL	$Function_RunScript
+RESERVED
+LIA	A0, $Script_Belts_Save
+JAL	$Function_RunScript
+RESERVED
+.ResetFrameWindows
+SAW   R0, $Data_DPads_HoldTimers_LEFT
+SAW   R0, $Data_DPads_HoldTimers_DOWN
+SAW   R0, $Data_DPads_HoldTimers_RIGHT
+.End
+POP 	RA, A0, A1, A2, V0, V1
+% restore vanilla code
+LB	V0, 0081 (V1)
+J	800EA730
+ADDU	V0, V1, V0
+}%/
+
+% A0 = $Script
+#new:Function $Function_RunScript
+{
+PUSH	      RA, A1, A2, A3, V0, V1
+CLEAR	      A2
+JAL		~Func:start_script
+ADDIU	      A1, R0, 1
+POP		RA, A1, A2, A3, V0, V1
+JR 		RA
+NOP
+}
+
+#new:Function $Function_TrackInputs_DPadLRD % D-Pad Left/Right/Down
+{
+PUSH	      RA, A2, A1, V0
+% Checking Right Dpad Input
+LABU 	      T0, 80074026 % Inputs
+SLL	 	T0, T0, 31`
+SRL   	T0, T0, 31` % Move all bits to just leave bit0
+ADDIU 	T1, R0, 1
+BEQL	      T0, T1, .SaveVar
+ADDI 	      A2, R0, 3
+% Checking Left Dpad Input
+LABU  	T0, 80074026 % Inputs
+SLL	 	T0, T0, 30`
+SRL  	      T0, T0, 31` % Move all bits to just leave bit1
+BEQL  	T0, T1, .SaveVar
+ADDI 	      A2, R0, 2
+% Checking Down Dpad Input
+LABU 	      T0, 80074026 % Inputs
+SLL	 	T0, T0, 29`
+SRL  	      T0, T0, 31` % Move all bits to just leave bit2
+BEQL	      T0, T1, .SaveVar
+ADDI 	      A2, R0, 1
+BEQ		R0, R0, .End
+NOP
+.SaveVar
+LIO 	      A1, *Var1
+JAL 	      ~Func:set_variable
+RESERVED
+ADDI 	      A2, R0, 1
+LIO 	      A1, *Var3
+JAL 	      ~Func:set_variable
+RESERVED
+.End
+POP		RA, A2, A1, V0
+JR		RA
+NOP
+}
+
+% Scripts used for each D-Pad Direction
+
+#new:Data $HandleSpammingPadUp
+{ 00 }
+
+% D-Pad Up Script
+#new:Script:Map $ScriptMap_BadgeBelts
+{
+      Call  $ReadAddress ( $HandleSpammingPadUp 0 *Var0 .False .False )
+	If *Var0 == .True % Used to prevent the player from spamming the list and crashing the game
+		Return
+      EndIf
+      SetGroup 0
+	Call	$Function_LockCLists
+      Call  $WriteAddress ( $HandleSpammingPadUp 0 .True .False .False )
+	Call	DisablePlayerInput ( .True )
+      Call	$Function_FreezeNPCs
+      Call  GetCurrentPartnerID 	( *Var0 )
+	If  *Var0  !=  0
+		Call     DisablePartnerAI ( .False )
+	EndIf
+	SuspendAll .True
+	Label Start
+	ExecWait $Script_ManageBelts_Start
+	Return
+	End
+}
+
+#new:Script $Script_ManageBelts_Start
+{
+      Call	$Function_ManageBelts
+	% You always need to put a Wait after using a list, this is to not mess with the cursor position when a new list is opened
+	Wait	5
+      % After a list get closed it writes on the following vars:
+      %
+      % Var0 = ItemID from element choosen (-1 if cancel)
+      % Var2 = Element choosen's Index
+      % Var4 = Element choosen's name string
+      % Var5 = ???
+      % -NEW- VarF = DPad Up Pressed (Bool)
+	If  *Var0  ==  -1 % The Player Pressed the B button?
+		Jump	$Script_ManageBelts_End
+	EndIf
+	Set 	*VarA *Var2 % Remember the Command selected
+      Jump  $Script_ManageBelts_Choose_Belts
+      Return
+      End
+}
+
+%% Open the Belts List
+#new:Script $Script_ManageBelts_Choose_Belts
+{
+      Call	$Function_WhichBelt
+	Wait  5
+	If  *Var0  ==  -1 % The Player Pressed the B button?
+		If *VarF == .True % If DPad Up was pressed close everything
+			Jump $Script_ManageBelts_End
+		EndIf
+		Jump $Script_ManageBelts_Start
+	EndIf
+	Set *VarB *Var2 % Remember the Belt selected
+      Jump $Script_ManageBelts_RunCommand
+      Return
+      End
+}
+
+%% After the player selected everything now do the magic
+#new:Script $Script_ManageBelts_RunCommand
+{
+      Switch *VarA
+      Case == 0 % Save
+            Switch *VarB
+                  Case == 0 % Left Belt
+                        Call $Function_Save_LeftBelt		  % Save Currently Equipped Badges inside Left Belt
+                  Case == 1 % Right Belt
+                        Call $Function_Save_RightBelt
+                  Case == 2 % Bottom Belt
+                        Call $Function_Save_BottomBelt
+            EndSwitch
+            Call  PlaySound ( 0010 ) % Belt saved sound
+      Case == 1 % Load
+            Call $Function_DisableActivatedBadges
+            Switch *VarB
+                  Case == 0 % Left Belt
+                        Call $Function_Load_LeftBelt		% Load Badges previously saved in Left Belt
+                  Case == 1 % Right Belt
+                        Call $Function_Load_RightBelt
+                  Case == 2 % Bottom Belt
+                        Call $Function_Load_BottomBelt
+            EndSwitch
+            Call  PlaySound ( 0009 ) % Belt loaded Sound
+      Case == 2 % Set FX
+            Call $Function_SetFX
+            Wait 5
+            If  *Var0  ==  -1 % The Player Pressed the B button?
+                  If *VarF == .True % If DPad Up was pressed close everything
+                        Jump $Script_ManageBelts_End
+                  EndIf
+                  Jump  $Script_ManageBelts_Choose_Belts
+            EndIf
+            % Saving FX
+            Add *Var2 1 % FX IDs start from 1 in Script_PlayFX, and not from 0 like in Function_SetFX
+            Switch *VarB % Which Belt?
+                  Case == 0 % Left
+                        Set	*FXIDLeft *Var2
+                  Case == 1 % Right
+                        Set	*FXIDRight *Var2
+                  Case == 2 % Bottom
+                        Set	*FXIDBottom *Var2
+            EndSwitch
+            Call  PlaySound ( 000B ) % FX Saved Sound
+            Jump  $Script_ManageBelts_Choose_Belts % After saving a FX go to the Belt lists again
+      EndSwitch
+      Jump  $Script_ManageBelts_End
+      Return
+      End
+}
+
+#new:Script $Script_ManageBelts_End
+{
+      Call  $WriteAddress ( $HandleSpammingPadUp 0 .False .False .False )
+	Call	$Function_UnfreezeNpcs
+	Call	$Function_EnableCLists
+      Call	DisablePlayerInput ( .False )
+      Call  GetCurrentPartnerID 	( *Var0 )
+	If  *Var0  !=  0
+		Call     EnablePartnerAI
+	EndIf
+	ResumeAll .True
+      Return
+      End
+}
+	
+% Pause the game and go directly to the pause menu
+@Hook 422C % 80028E2C
+{
+PUSH	RA, V0, A0, A1, A2
+LABU	T0, 80074094 % Wait until the pause menu is loaded
+ADDIU T1, R0, 2
+BNE	T0, T1, .End
+NOP
+LIO 	A1, *GoToBadgeTab
+JAL	~Func:get_variable
+NOP
+BEQ	V0, R0, .End % If the flag isn't true check for the extra tab flag
+NOP
+% Go to the Badge Tab
+ADDIU	T1, R0, 1	 % Badge Tab
+SAB	T1, 8024F315 % Pause Menu, Tab ID
+ADDIU	T0, R0, 2 	 % Badge Tab
+SAB	T0, 802700D4 % Pause Menu, Current opened Tab ID
+% Restore Flag
+ADDIU T1, R0, 2
+LABU	T0, 80074094 % Wait until the pause menu is loaded
+BNE	T0, T1, .End
+NOP
+ADDI 	A2, R0, 0
+LIO 	A1, *GoToBadgeTab % Set the flag as false again
+JAL 	~Func:set_variable
+NOP
+.End
+POP	RA, V0, A0, A1, A2
+% Restoring Code
+LW	V0, 30 (A1) % Restoring Code
+J	80028E34
+SW	A0, 0 (A1) % Restoring Code
+} 
+	
+#new:Function $Function_UnfreezeNpcs
+{
+SAB		R0, 8009A652 % Unfreeze all NPCs
+JR		RA
+NOP
+}
+
+#new:Function $Function_LockCLists % Used to stopping the player from opening both list at the same time and crashing the game
+{
+ADDI	      T0, R0, 4
+SAB		T0, 8010CD01
+JR		RA
+NOP
+}
+
+#new:Function $Function_EnableCLists
+{
+SAB		R0, 8010CD01
+JR		RA
+NOP
+}
+
+#new:Data $Data_BeltSaved_Flag
+{ 00000000 }
+
+% D-Pad Left/Right/Down, FX Script	
+#new:Script:Map $Script_Belts_Save
+{
+Call 	$WriteAddress ( $Data_BeltSaved_Flag 0 .True .False .False )
+Switch *BeltIDtoLoad
+      Case == 0 % Bottom
+            Call	$Function_Save_BottomBelt
+      Case == 1 % Left
+            Call	$Function_Save_LeftBelt
+      Case == 2 % Right
+            Call	$Function_Save_RightBelt
+EndSwitch
+Call 	ShowEmote	( 0 .Emote:Exclamation FFFFFFD3 14 0 0 0 0 0 )
+Call	PlaySound 	( 0010 ) % Save Sound
+Return
+End
+}
+
+% D-Pad Left/Right/Down, FX Script	
+#new:Script:Map $Script_Belts_Load
+{
+% Load Belts % If any holding input wasn't true load the belts instead
+Switch *BeltIDtoLoad
+	Case == 0 % Bottom
+		Call	$Function_DisableActivatedBadges
+		Call	$Function_Load_BottomBelt
+	Case == 1 % Left
+		Call	$Function_DisableActivatedBadges
+		Call	$Function_Load_LeftBelt
+	Case == 2 % Right
+		Call	$Function_DisableActivatedBadges
+		Call	$Function_Load_RightBelt
+EndSwitch
+Return
+End
+}
+
+% D-Pad Left/Right/Down, FX Script	
+#new:Script:Map $Script_PlayFX
+{
+Label	PlayFX
+% Get FX ID to load
+Switch *BeltIDtoLoad % Load FX ID already saved inside a belt
+	Case == 0 % Bottom
+		If *FXIDBottom == 0 % If is the 1st time saving this belt
+			Set *FXIDBottom 1 % Set to default animation for this belt
+		EndIf
+		Set *Var0 *FXIDBottom
+	Case == 1 % Left
+		If *FXIDLeft == 0 % If is the 1st time saving this belt
+			Set *FXIDLeft 2 % Set to default animation for this belt
+		EndIf
+		Set *Var0 *FXIDLeft
+	Case == 2 % Right
+		If *FXIDRight == 0 % If is the 1st time saving this belt
+			Set *FXIDRight 3 % Set to default animation for this belt
+		EndIf
+		Set *Var0 *FXIDRight
+EndSwitch
+% Play Effect
+Switch *Var0
+	Case == 1  % Star
+		Call	PlaySound		( 241 ) % Focus
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var1 14
+		Call  PlayEffect  	( ~FX:Sparkles:Star *Var0 *Var1 *Var2 14 0 0 0 0 0 0 0 0 )
+	Case == 2 % Attack +3
+		Call	PlaySound		( 208E ) % Pipe
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Sub	*Var0 1
+		Add	*Var1 8
+		Call  PlayEffect  	( ~FX:StatChange:AttackPlus3 *Var0 *Var1 *Var2 *Fixed[0.7] 1E 0 0 0 0 0 0 0 )
+	Case == 3 % Heart
+		Call	PlaySound		( 213 ) % Healing up
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var0 7
+		Add	*Var1 1A
+		Call  PlayEffect  	( ~FX:Recover:LittleHeart *Var0 *Var1 *Var2 )
+	Case == 4 % Tornado
+		Call	PlaySound		( 2023 ) % Tornado
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Call  PlayEffect    	( ~FX:Whirlwind *Var0 *Var1 *Var2 *Fixed[0.9] 2A 0 0 0 0 0 0 0 )
+	Case == 5 % Electricity
+		Call	PlaySound		( 37B ) % Electricity
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var1 D
+		Call  PlayEffect  	( ~FX:SnakingStatic *Var0 *Var1 *Var2 *Fixed[0.8] 1E 0 0 0 0 0 0 0 )
+	Case == 6 % Snowflakes
+		Call	PlaySound		( EB ) % Snowflakes
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var1 6
+		Call  PlayEffect  	( ~FX:BigSnowFlakes *Var0 *Var1 *Var2 0 0 0 0 0 0 0 0 0 )
+	Case == 7 % Nice
+		Call	PlaySound		( 208C ) % Attack Blocked
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var1 14
+		Call  PlayEffect  	( ~FX:TextPopup:Nice *Var0 *Var1 *Var2 7 14 0 0 0 0 0 0 0 )
+	Case == 8 % Peril
+		Call	PlaySound		( 3F2 ) % Peril
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var1 14
+		Call  PlayEffect  	( ~FX:TextPopup:Miss *Var0 *Var1 *Var2 7 14 0 0 0 0 0 0 0 )
+	Case == 9 % Energy Wave
+		Call	PlaySound		( 208F ) % Charging
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var1 F
+		Call  PlayEffect  	( ~FX:EnergyWaveOut:Red *Var0 *Var1 *Var2 *Fixed[0.2] 1A 0 0 0 0 0 0 0 )
+	Case == A % Musical Notes
+		Call	PlaySound		( 2D7 ) % Lullaby
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var0 F
+		Sub	*Var1 A
+		Call  PlayEffect  	( ~FX:MusicNote:Up *Var0 *Var1 *Var2 0 0 0 0 0 0 0 0 0 )
+		Wait	2
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Sub	*Var0	F
+		Add	*Var1 4
+		Call  PlayEffect  	( ~FX:MusicNote:Up *Var0 *Var1 *Var2 0 0 0 0 0 0 0 0 0 )
+		Wait	2
+		Call	GetPlayerPos	( *Var0 *Var1 *Var2 )
+		Add	*Var0 5
+		Add	*Var1 14
+		Call  PlayEffect  	( ~FX:MusicNote:Up *Var0 *Var1 *Var2 0 0 0 0 0 0 0 0 0 )
+EndSwitch
+Return
+End
+}
+	
+
+% Lists
+	
+#new:Data $List_BadgesBelt
+{
+000000F0 00000000 00000000 % Left Belt % ItemID Price Description_StringID
+000000F6 00000000 00000000 % Right Belt
+00000101 00000000 00000000 % Bottom Belt
+}
+
+#new:Data $List_SaveLoadFX
+{
+00000102 00000000 002F000B % Load % ItemID Price Description_StringID
+0000010E 00000000 002F000D % Save
+0000010F 00000000 002F000F % FX
+}
+
+#new:Data $List_FX
+{
+00000110 00000000 002F0011 % Star
+00000110 00000000 002F0012 % Attack +3
+00000110 00000000 002F0013 % Heart
+00000110 00000000 002F0014 % Tornado
+00000110 00000000 002F0015 % Electricity
+00000110 00000000 002F0016 % Snowflakes
+00000110 00000000 002F0017 % Nice
+00000110 00000000 002F0018 % Peril
+00000110 00000000 002F0019 % Energy Wave
+00000110 00000000 002F001A % Music Notes
+}
+
+% FX's Names
+#string $ListNames_Star
+{
+Star[END]
+}
+
+#string $ListNames_Attack3
+{
+Buff[END]
+}
+
+#string $ListNames_Heart
+{
+Heart[END]
+}
+
+#string $ListNames_Tornado
+{
+Tornado[END]
+}
+
+#string $ListNames_Electricity
+{
+Electricity[END]
+}
+
+#string $ListNames_Snowflakes
+{
+Snow[END]
+}
+
+#string $ListNames_Nice
+{
+Nice[END]
+}
+
+#string $ListNames_Peril
+{
+Peril[END]
+}
+
+#string $ListNames_Energy
+{
+Energy[END]
+}
+
+#string $ListNames_Music
+{
+Music[END]
+}
+
+% Save Current Badges on Each Belt
+#new:Function $Function_Save_LeftBelt
+{
+PUSH	      T0
+LAH		T0, 8010F498 % Activated Badge 1
+SAH		T0, 80356030 % Saved Badge - Left Slot 1
+LAH		T0, 8010F49A % Activated Badge 2
+SAH		T0, 80356032 % Saved Badge - Left Slot 2
+LAH		T0, 8010F49C % Activated Badge 3
+SAH		T0, 80356034 % Saved Badge - Left Slot 3
+LAH		T0, 8010F49E % Activated Badge 4
+SAH		T0, 80356036 % Saved Badge - Left Slot 4
+LAH		T0, 8010F4A0 % Activated Badge 5
+SAH		T0, 8035603A % Saved Badge - Left Slot 5
+LAH		T0, 8010F4A2 % Activated Badge 6
+SAH		T0, 8035603C % Saved Badge - Left Slot 6
+LAH		T0, 8010F4A4 % Activated Badge 7
+SAH		T0, 8035603E % Saved Badge - Left Slot 7
+LAH		T0, 8010F4A6 % Activated Badge 8
+SAH		T0, 80356040 % Saved Badge - Left Slot 8
+LAH		T0, 8010F4A8 % Activated Badge 9
+SAH		T0, 80356042 % Saved Badge - Left Slot 9
+LAH		T0, 8010F4AA % Activated Badge 10
+SAH		T0, 80356044 % Saved Badge - Left Slot 10
+LAH		T0, 8010F4AC % Activated Badge 11
+SAH		T0, 80356046 % Saved Badge - Left Slot 11
+LAH		T0, 8010F4AE % Activated Badge 12
+SAH		T0, 80356048 % Saved Badge - Left Slot 12
+LAH		T0, 8010F4B0 % Activated Badge 13
+SAH		T0, 8035604A % Saved Badge - Left Slot 13
+LAH		T0, 8010F4B2 % Activated Badge 14
+SAH		T0, 8035604C % Saved Badge - Left Slot 14
+LAH		T0, 8010F4B4 % Activated Badge 15
+SAH		T0, 80356052 % Saved Badge - Left Slot 15
+LAH		T0, 8010F4B6 % Activated Badge 16
+SAH		T0, 80356054 % Saved Badge - Left Slot 16
+LAH		T0, 8010F4B8 % Activated Badge 17
+SAH		T0, 80356056 % Saved Badge - Left Slot 17
+LAH		T0, 8010F4BA % Activated Badge 18
+SAH		T0, 80356058 % Saved Badge - Left Slot 18
+LAH		T0, 8010F4BC % Activated Badge 19
+SAH		T0, 8035605C % Saved Badge - Left Slot 19
+LAH		T0, 8010F4BE % Activated Badge 20
+SAH		T0, 8035605E % Saved Badge - Left Slot 20
+LAH		T0, 8010F4C0 % Activated Badge 21
+SAH		T0, 80356060 % Saved Badge - Left Slot 21
+LAH		T0, 8010F4C2 % Activated Badge 22
+SAH		T0, 80356062 % Saved Badge - Left Slot 22
+LAH		T0, 8010F4C4 % Activated Badge 23
+SAH		T0, 80356068 % Saved Badge - Left Slot 23
+LAH		T0, 8010F4C6 % Activated Badge 24
+SAH		T0, 8035606A % Saved Badge - Left Slot 24
+LAH		T0, 8010F4C8 % Activated Badge 25
+SAH		T0, 8035606C % Saved Badge - Left Slot 25
+LAH		T0, 8010F4CA % Activated Badge 26
+SAH		T0, 8035606E % Saved Badge - Left Slot 26
+LAH		T0, 8010F4CC % Activated Badge 27
+SAH		T0, 80356072 % Saved Badge - Left Slot 27
+LAH		T0, 8010F4CE % Activated Badge 28
+SAH		T0, 80356074 % Saved Badge - Left Slot 28
+LAH		T0, 8010F4D0 % Activated Badge 29
+SAH		T0, 80356076 % Saved Badge - Left Slot 29
+LAH		T0, 8010F4D2 % Activated Badge 30
+SAH		T0, 80356078 % Saved Badge - Left Slot 30
+POP		T0
+JR		RA
+NOP
+}
+
+#new:Function $Function_Save_RightBelt
+{
+PUSH	T0
+LAH		T0, 8010F498 % Activated Badge 1
+SAH		T0, 80356080 % Saved Badge - Right Slot 1
+LAH		T0, 8010F49A % Activated Badge 2
+SAH		T0, 80356082 % Saved Badge - Right Slot 2
+LAH		T0, 8010F49C % Activated Badge 3
+SAH		T0, 80356084 % Saved Badge - Right Slot 3
+LAH		T0, 8010F49E % Activated Badge 4
+SAH		T0, 8035608A % Saved Badge - Right Slot 4
+LAH		T0, 8010F4A0 % Activated Badge 5
+SAH		T0, 8035608C % Saved Badge - Right Slot 5
+LAH		T0, 8010F4A2 % Activated Badge 6
+SAH		T0, 8035608E % Saved Badge - Right Slot 6
+LAH		T0, 8010F4A4 % Activated Badge 7
+SAH		T0, 80356090 % Saved Badge - Right Slot 7
+LAH		T0, 8010F4A6 % Activated Badge 8
+SAH		T0, 80356094 % Saved Badge - Right Slot 8
+LAH		T0, 8010F4A8 % Activated Badge 9
+SAH		T0, 80356096 % Saved Badge - Right Slot 9
+LAH		T0, 8010F4AA % Activated Badge 10
+SAH		T0, 80356098 % Saved Badge - Right Slot 10
+LAH		T0, 8010F4AC % Activated Badge 11
+SAH		T0, 8035609A % Saved Badge - Right Slot 11
+LAH		T0, 8010F4AE % Activated Badge 12
+SAH		T0, 803560A2 % Saved Badge - Right Slot 12
+LAH		T0, 8010F4B0 % Activated Badge 13
+SAH		T0, 803560A4 % Saved Badge - Right Slot 13
+LAH		T0, 8010F4B2 % Activated Badge 14
+SAH		T0, 803560A6 % Saved Badge - Right Slot 14
+LAH		T0, 8010F4B4 % Activated Badge 15
+SAH		T0, 803560A8 % Saved Badge - Right Slot 15
+LAH		T0, 8010F4B6 % Activated Badge 16
+SAH		T0, 803560AE % Saved Badge - Right Slot 16
+LAH		T0, 8010F4B8 % Activated Badge 17
+SAH		T0, 803560B0 % Saved Badge - Right Slot 17
+LAH		T0, 8010F4BA % Activated Badge 18
+SAH		T0, 803560B2 % Saved Badge - Right Slot 18
+LAH		T0, 8010F4BC % Activated Badge 19
+SAH		T0, 803560B4 % Saved Badge - Right Slot 19
+LAH		T0, 8010F4BE % Activated Badge 20
+SAH		T0, 803560B8 % Saved Badge - Right Slot 20
+LAH		T0, 8010F4C0 % Activated Badge 21
+SAH		T0, 803560BA % Saved Badge - Right Slot 21
+LAH		T0, 8010F4C2 % Activated Badge 22
+SAH		T0, 803560BC % Saved Badge - Right Slot 22
+LAH		T0, 8010F4C4 % Activated Badge 23
+SAH		T0, 803560BE % Saved Badge - Right Slot 23
+LAH		T0, 8010F4C6 % Activated Badge 24
+SAH		T0, 803560C2 % Saved Badge - Right Slot 24
+LAH		T0, 8010F4C8 % Activated Badge 25
+SAH		T0, 803560C4 % Saved Badge - Right Slot 25
+LAH		T0, 8010F4CA % Activated Badge 26
+SAH		T0, 803560C6 % Saved Badge - Right Slot 26
+LAH		T0, 8010F4CC % Activated Badge 27
+SAH		T0, 803560C8 % Saved Badge - Right Slot 27
+LAH		T0, 8010F4CE % Activated Badge 28
+SAH		T0, 803560CE % Saved Badge - Right Slot 28
+LAH		T0, 8010F4D0 % Activated Badge 29
+SAH		T0, 803560D0 % Saved Badge - Right Slot 29
+LAH		T0, 8010F4D2 % Activated Badge 30
+SAH		T0, 803560D2 % Saved Badge - Right Slot 30
+POP		T0
+JR		RA
+NOP
+}
+
+#new:Function $Function_Save_BottomBelt
+{
+PUSH	T0
+LAH		T0, 8010F498 % Activated Badge 1
+SAH		T0, 80356120 % Saved Badge - Bottom Slot 1
+LAH		T0, 8010F49A % Activated Badge 2
+SAH		T0, 80356122 % Saved Badge - Bottom Slot 2
+LAH		T0, 8010F49C % Activated Badge 3
+SAH		T0, 80356124 % Saved Badge - Bottom Slot 3
+LAH		T0, 8010F49E % Activated Badge 4
+SAH		T0, 80356126 % Saved Badge - Bottom Slot 4
+LAH		T0, 8010F4A0 % Activated Badge 5
+SAH		T0, 80356132 % Saved Badge - Bottom Slot 5
+LAH		T0, 8010F4A2 % Activated Badge 6
+SAH		T0, 80356134 % Saved Badge - Bottom Slot 6
+LAH		T0, 8010F4A4 % Activated Badge 7
+SAH		T0, 80356136 % Saved Badge - Bottom Slot 7
+LAH		T0, 8010F4A6 % Activated Badge 8
+SAH		T0, 80356138 % Saved Badge - Bottom Slot 8
+LAH		T0, 8010F4A8 % Activated Badge 9
+SAH		T0, 80356148 % Saved Badge - Bottom Slot 9
+LAH		T0, 8010F4AA % Activated Badge 10
+SAH		T0, 8035614A % Saved Badge - Bottom Slot 10
+LAH		T0, 8010F4AC % Activated Badge 11
+SAH		T0, 8035614C % Saved Badge - Bottom Slot 11
+LAH		T0, 8010F4AE % Activated Badge 12
+SAH		T0, 8035614E % Saved Badge - Bottom Slot 12
+LAH		T0, 8010F4B0 % Activated Badge 13
+SAH		T0, 80356150 % Saved Badge - Bottom Slot 13
+LAH		T0, 8010F4B2 % Activated Badge 14
+SAH		T0, 80356152 % Saved Badge - Bottom Slot 14
+LAH		T0, 8010F4B4 % Activated Badge 15
+SAH		T0, 80356154 % Saved Badge - Bottom Slot 15
+LAH		T0, 8010F4B6 % Activated Badge 16
+SAH		T0, 80356156 % Saved Badge - Bottom Slot 16
+LAH		T0, 8010F4B8 % Activated Badge 17
+SAH		T0, 80356158 % Saved Badge - Bottom Slot 17
+LAH		T0, 8010F4BA % Activated Badge 18
+SAH		T0, 80356164 % Saved Badge - Bottom Slot 18
+LAH		T0, 8010F4BC % Activated Badge 19
+SAH		T0, 80356166 % Saved Badge - Bottom Slot 19
+LAH		T0, 8010F4BE % Activated Badge 20
+SAH		T0, 80356168 % Saved Badge - Bottom Slot 20
+LAH		T0, 8010F4C0 % Activated Badge 21
+SAH		T0, 8035616A % Saved Badge - Bottom Slot 21
+LAH		T0, 8010F4C2 % Activated Badge 22
+SAH		T0, 8035618C % Saved Badge - Bottom Slot 22
+LAH		T0, 8010F4C4 % Activated Badge 23
+SAH		T0, 8035618E % Saved Badge - Bottom Slot 23
+LAH		T0, 8010F4C6 % Activated Badge 24
+SAH		T0, 80356190 % Saved Badge - Bottom Slot 24
+LAH		T0, 8010F4C8 % Activated Badge 25
+SAH		T0, 80356192 % Saved Badge - Bottom Slot 25
+LAH		T0, 8010F4CA % Activated Badge 26
+SAH		T0, 80356196 % Saved Badge - Bottom Slot 26
+LAH		T0, 8010F4CC % Activated Badge 27
+SAH		T0, 80356198 % Saved Badge - Bottom Slot 27
+LAH		T0, 8010F4CE % Activated Badge 28
+SAH		T0, 8035619A % Saved Badge - Bottom Slot 28
+LAH		T0, 8010F4D0 % Activated Badge 29
+SAH		T0, 8035619C % Saved Badge - Bottom Slot 29
+LAH		T0, 8010F4D2 % Activated Badge 30
+SAH		T0, 803561A0 % Saved Badge - Bottom Slot 30
+POP		T0
+JR		RA
+NOP
+}
+
+% Load Belts Functions
+
+#new:Function $Function_Load_LeftBelt
+{
+PUSH	T0
+LAH		T0, 80356030 % Saved Badge - Left Slot 1
+SAH		T0, 8010F498 % Activated Badge 1
+LAH		T0, 80356032 % Saved Badge - Left Slot 2
+SAH		T0, 8010F49A % Activated Badge 2
+LAH		T0, 80356034 % Saved Badge - Left Slot 3
+SAH		T0, 8010F49C % Activated Badge 3
+LAH		T0, 80356036 % Saved Badge - Left Slot 4
+SAH		T0, 8010F49E % Activated Badge 4
+LAH		T0, 8035603A % Saved Badge - Left Slot 5
+SAH		T0, 8010F4A0 % Activated Badge 5
+LAH		T0, 8035603C % Saved Badge - Left Slot 6
+SAH		T0, 8010F4A2 % Activated Badge 6
+LAH		T0, 8035603E % Saved Badge - Left Slot 7
+SAH		T0, 8010F4A4 % Activated Badge 7
+LAH		T0, 80356040 % Saved Badge - Left Slot 8
+SAH		T0, 8010F4A6 % Activated Badge 8
+LAH		T0, 80356042 % Saved Badge - Left Slot 9
+SAH		T0, 8010F4A8 % Activated Badge 9
+LAH		T0, 80356044 % Saved Badge - Left Slot 10
+SAH		T0, 8010F4AA % Activated Badge 10
+LAH		T0, 80356046 % Saved Badge - Left Slot 11
+SAH		T0, 8010F4AC % Activated Badge 11
+LAH		T0, 80356048 % Saved Badge - Left Slot 12
+SAH		T0, 8010F4AE % Activated Badge 12
+LAH		T0, 8035604A % Saved Badge - Left Slot 13
+SAH		T0, 8010F4B0 % Activated Badge 13
+LAH		T0, 8035604C % Saved Badge - Left Slot 14
+SAH		T0, 8010F4B2 % Activated Badge 14
+LAH		T0, 80356052 % Saved Badge - Left Slot 15
+SAH		T0, 8010F4B4 % Activated Badge 15
+LAH		T0, 80356054 % Saved Badge - Left Slot 16
+SAH		T0, 8010F4B6 % Activated Badge 16
+LAH		T0, 80356056 % Saved Badge - Left Slot 17
+SAH		T0, 8010F4B8 % Activated Badge 17
+LAH		T0, 80356058 % Saved Badge - Left Slot 18
+SAH		T0, 8010F4BA % Activated Badge 18
+LAH		T0, 8035605C % Saved Badge - Left Slot 19
+SAH		T0, 8010F4BC % Activated Badge 19
+LAH		T0, 8035605E % Saved Badge - Left Slot 20
+SAH		T0, 8010F4BE % Activated Badge 20
+LAH		T0, 80356060 % Saved Badge - Left Slot 21
+SAH		T0, 8010F4C0 % Activated Badge 21
+LAH		T0, 80356062 % Saved Badge - Left Slot 22
+SAH		T0, 8010F4C2 % Activated Badge 22
+LAH		T0, 80356068 % Saved Badge - Left Slot 23
+SAH		T0, 8010F4C4 % Activated Badge 23
+LAH		T0, 8035606A % Saved Badge - Left Slot 24
+SAH		T0, 8010F4C6 % Activated Badge 24
+LAH		T0, 8035606C % Saved Badge - Left Slot 25
+SAH		T0, 8010F4C8 % Activated Badge 25
+LAH		T0, 8035606E % Saved Badge - Left Slot 26
+SAH		T0, 8010F4CA % Activated Badge 26
+LAH		T0, 80356072 % Saved Badge - Left Slot 27
+SAH		T0, 8010F4CC % Activated Badge 27
+LAH		T0, 80356074 % Saved Badge - Left Slot 28
+SAH		T0, 8010F4CE % Activated Badge 28
+LAH		T0, 80356076 % Saved Badge - Left Slot 29
+SAH		T0, 8010F4D0 % Activated Badge 29
+LAH		T0, 80356078 % Saved Badge - Left Slot 30
+SAH		T0, 8010F4D2 % Activated Badge 30
+POP		T0
+JR		RA
+NOP
+}
+
+#new:Function $Function_Load_RightBelt
+{
+PUSH	T0
+LAH		T0, 80356080 % Saved Badge - Right Slot 1
+SAH		T0, 8010F498 % Activated Badge 1
+LAH		T0, 80356082 % Saved Badge - Right Slot 2
+SAH		T0, 8010F49A % Activated Badge 2
+LAH		T0, 80356084 % Saved Badge - Right Slot 3
+SAH		T0, 8010F49C % Activated Badge 3
+LAH		T0, 8035608A % Saved Badge - Right Slot 4
+SAH		T0, 8010F49E % Activated Badge 4
+LAH		T0, 8035608C % Saved Badge - Right Slot 5
+SAH		T0, 8010F4A0 % Activated Badge 5
+LAH		T0, 8035608E % Saved Badge - Right Slot 6
+SAH		T0, 8010F4A2 % Activated Badge 6
+LAH		T0, 80356090 % Saved Badge - Right Slot 7
+SAH		T0, 8010F4A4 % Activated Badge 7
+LAH		T0, 80356094 % Saved Badge - Right Slot 8
+SAH		T0, 8010F4A6 % Activated Badge 8
+LAH		T0, 80356096 % Saved Badge - Right Slot 9
+SAH		T0, 8010F4A8 % Activated Badge 9
+LAH		T0, 80356098 % Saved Badge - Right Slot 10
+SAH		T0, 8010F4AA % Activated Badge 10
+LAH		T0, 8035609A % Saved Badge - Right Slot 11
+SAH		T0, 8010F4AC % Activated Badge 11
+LAH		T0, 803560A2 % Saved Badge - Right Slot 12
+SAH		T0, 8010F4AE % Activated Badge 12
+LAH		T0, 803560A4 % Saved Badge - Right Slot 13
+SAH		T0, 8010F4B0 % Activated Badge 13
+LAH		T0, 803560A6 % Saved Badge - Right Slot 14
+SAH		T0, 8010F4B2 % Activated Badge 14
+LAH		T0, 803560A8 % Saved Badge - Right Slot 15
+SAH		T0, 8010F4B4 % Activated Badge 15
+LAH		T0, 803560AE % Saved Badge - Right Slot 16
+SAH		T0, 8010F4B6 % Activated Badge 16
+LAH		T0, 803560B0 % Saved Badge - Right Slot 17
+SAH		T0, 8010F4B8 % Activated Badge 17
+LAH		T0, 803560B2 % Saved Badge - Right Slot 18
+SAH		T0, 8010F4BA % Activated Badge 18
+LAH		T0, 803560B4 % Saved Badge - Right Slot 19
+SAH		T0, 8010F4BC % Activated Badge 19
+LAH		T0, 803560B8 % Saved Badge - Right Slot 20
+SAH		T0, 8010F4BE % Activated Badge 20
+LAH		T0, 803560BA % Saved Badge - Right Slot 21
+SAH		T0, 8010F4C0 % Activated Badge 21
+LAH		T0, 803560BC % Saved Badge - Right Slot 22
+SAH		T0, 8010F4C2 % Activated Badge 22
+LAH		T0, 803560BE % Saved Badge - Right Slot 23
+SAH		T0, 8010F4C4 % Activated Badge 23
+LAH		T0, 803560C2 % Saved Badge - Right Slot 24
+SAH		T0, 8010F4C6 % Activated Badge 24
+LAH		T0, 803560C4 % Saved Badge - Right Slot 25
+SAH		T0, 8010F4C8 % Activated Badge 25
+LAH		T0, 803560C6 % Saved Badge - Right Slot 26
+SAH		T0, 8010F4CA % Activated Badge 26
+LAH		T0, 803560C8 % Saved Badge - Right Slot 27
+SAH		T0, 8010F4CC % Activated Badge 27
+LAH		T0, 803560CE % Saved Badge - Right Slot 28
+SAH		T0, 8010F4CE % Activated Badge 28
+LAH		T0, 803560D0 % Saved Badge - Right Slot 29
+SAH		T0, 8010F4D0 % Activated Badge 29
+LAH		T0, 803560D2 % Saved Badge - Right Slot 30
+SAH		T0, 8010F4D2 % Activated Badge 30
+POP		T0
+JR		RA
+NOP
+}
+
+#new:Function $Function_Load_BottomBelt
+{
+PUSH	T0
+LAH		T0, 80356120 % Saved Badge - Bottom Slot 1
+SAH		T0, 8010F498 % Activated Badge 1
+LAH		T0, 80356122 % Saved Badge - Bottom Slot 2
+SAH		T0, 8010F49A % Activated Badge 2
+LAH		T0, 80356124 % Saved Badge - Bottom Slot 3
+SAH		T0, 8010F49C % Activated Badge 3
+LAH		T0, 80356126 % Saved Badge - Bottom Slot 4
+SAH		T0, 8010F49E % Activated Badge 4
+LAH		T0, 80356132 % Saved Badge - Bottom Slot 5
+SAH		T0, 8010F4A0 % Activated Badge 5
+LAH		T0, 80356134 % Saved Badge - Bottom Slot 6
+SAH		T0, 8010F4A2 % Activated Badge 6
+LAH		T0, 80356136 % Saved Badge - Bottom Slot 7
+SAH		T0, 8010F4A4 % Activated Badge 7
+LAH		T0, 80356138 % Saved Badge - Bottom Slot 8
+SAH		T0, 8010F4A6 % Activated Badge 8
+LAH		T0, 80356148 % Saved Badge - Bottom Slot 9
+SAH		T0, 8010F4A8 % Activated Badge 9
+LAH		T0, 8035614A % Saved Badge - Bottom Slot 10
+SAH		T0, 8010F4AA % Activated Badge 10
+LAH		T0, 8035614C % Saved Badge - Bottom Slot 11
+SAH		T0, 8010F4AC % Activated Badge 11
+LAH		T0, 8035614E % Saved Badge - Bottom Slot 12
+SAH		T0, 8010F4AE % Activated Badge 12
+LAH		T0, 80356150 % Saved Badge - Bottom Slot 13
+SAH		T0, 8010F4B0 % Activated Badge 13
+LAH		T0, 80356152 % Saved Badge - Bottom Slot 14
+SAH		T0, 8010F4B2 % Activated Badge 14
+LAH		T0, 80356154 % Saved Badge - Bottom Slot 15
+SAH		T0, 8010F4B4 % Activated Badge 15
+LAH		T0, 80356156 % Saved Badge - Bottom Slot 16
+SAH		T0, 8010F4B6 % Activated Badge 16
+LAH		T0, 80356158 % Saved Badge - Bottom Slot 17
+SAH		T0, 8010F4B8 % Activated Badge 17
+LAH		T0, 80356164 % Saved Badge - Bottom Slot 18
+SAH		T0, 8010F4BA % Activated Badge 18
+LAH		T0, 80356166 % Saved Badge - Bottom Slot 19
+SAH		T0, 8010F4BC % Activated Badge 19
+LAH		T0, 80356168 % Saved Badge - Bottom Slot 20
+SAH		T0, 8010F4BE % Activated Badge 20
+LAH		T0, 8035616A % Saved Badge - Bottom Slot 21
+SAH		T0, 8010F4C0 % Activated Badge 21
+LAH		T0, 8035618C % Saved Badge - Bottom Slot 22
+SAH		T0, 8010F4C2 % Activated Badge 22
+LAH		T0, 8035618E % Saved Badge - Bottom Slot 23
+SAH		T0, 8010F4C4 % Activated Badge 23
+LAH		T0, 80356190 % Saved Badge - Bottom Slot 24
+SAH		T0, 8010F4C6 % Activated Badge 24
+LAH		T0, 80356192 % Saved Badge - Bottom Slot 25
+SAH		T0, 8010F4C8 % Activated Badge 25
+LAH		T0, 80356196 % Saved Badge - Bottom Slot 26
+SAH		T0, 8010F4CA % Activated Badge 26
+LAH		T0, 80356198 % Saved Badge - Bottom Slot 27
+SAH		T0, 8010F4CC % Activated Badge 27
+LAH		T0, 8035619A % Saved Badge - Bottom Slot 28
+SAH		T0, 8010F4CE % Activated Badge 28
+LAH		T0, 8035619C % Saved Badge - Bottom Slot 29
+SAH		T0, 8010F4D0 % Activated Badge 29
+LAH		T0, 803561A0 % Saved Badge - Bottom Slot 30
+SAH		T0, 8010F4D2 % Activated Badge 30
+POP		T0
+JR		RA
+NOP
+}
+
+%% Disable all Badges
+#new:Function $Function_DisableActivatedBadges
+{
+% Nuke all 64th Activated Badges slots
+LIO		T0, 8010F498 % Activated #1 & #2
+LIO		T1, 8010F518 % after slot 64th
+.Loop
+SW		R0, 0 (T0)
+ADDIU	      T0, T0, 4
+BNE		T0, T1, .Loop
+NOP
+.End
+JR 		RA
+ORI		V0, R0, 2
+}
+
+#export $Function_Load_LeftBelt
+#export $Function_Load_RightBelt
+#export $Function_Load_BottomBelt
+#export $Function_Save_LeftBelt
+#export $Function_Save_RightBelt
+#export $Function_Save_BottomBelt
+#export $Function_DisableActivatedBadges
+
+%% Load Lists
+
+%% Badge List Type
+  
+#new:Function $Function_ManageBelts
+{
+    0:  ADDIU		SP, SP, FFC8
+    4:  SW			S3, 1C (SP)
+    8:  COPY		S3, A0
+    C:  SW			S6, 28 (SP)
+            LIA       	S6, 8010F28D % This Line load the players coins (The Two LHU commands below do a offset to the coins address)
+   18:  SW			RA, 34 (SP)
+   1C:  SW			S8, 30 (SP)
+   20:  SW			S7, 2C (SP)
+   24:  SW			S5, 24 (SP)
+   28:  SW			S4, 20 (SP)
+   2C:  SW			S2, 18 (SP)
+   30:  SW			S1, 14 (SP)
+   34:  BEQ			A1, R0, .o130
+   38:  SW			S0, 10 (SP)
+   3C:  JAL			~Func:heap_malloc
+   40:  ADDIU		A0, R0, 330
+   44:  SW			V0, 78 (S3)
+   48:  COPY		S5, V0
+   4C:  CLEAR		S4
+   50:  COPY		S2, S4
+        CLEAR           S7
+   5C:  LIA       	S8, 8008A680 % Load Elements Icons?
+		LIA    	  	S1, $List_SaveLoadFX % Elements to Show in the List
+		DADDU     	S0, S5, R0
+        .o70
+   70:  CLEAR		A0
+        CLEAR           V0
+   78:  ADDU		A1, S2, S7
+   7C:  BNEL		V0, R0, .o108
+   80:  ADDIU		S2, S2, 1
+   84:  LW	        V0, 0 (S1)		% Load List_SaveLoadFX on v0 to know what Names and Icons to print
+   88:  LIA			A2, 800878E0
+   90:  SLL			V0, V0, 5
+   94:  ADDU		V0, V0, A2
+   98:  LH	        V1, 4 (V0)		% Print Icons from v0
+   9C:  SW			S2, 108 (S0)
+   A0:  LW			V0, 0 (V0)
+   A4:  SLL			V1, V1, 3
+   A8:  ADDU		A0, V1, S8
+   AC:  SW	        V0, 84 (S0) % Load the Elements Names
+   B0:  LW			V0, 0 (A0)
+   B4:  SW	        V0, 0 (S0) % Load the Elements Icons
+   B8:  LHU		    V0, F (S6) % This line load the coins address and turn on/off the elements
+   BC:  LW			V1, 4 (S1)
+   C0:  SLT			V0, V0, V1
+   C4:  XORI		V0, V0, 1
+   C8:  SW			V0, 18C (S0)
+   CC:  LHU		    V0, F (S6) % Related to track if player have enough coins?
+   D0:  LW			V1, 4 (S1)
+   D4:  SLT			V0, V0, V1
+   D8:  BEQ			V0, R0, .oEC
+   DC:  NOP
+   E0:  LW			V0, 4 (A0)
+   E4:  SW			R0, 18C (S0)
+   E8:  SW			V0, 0 (S0)
+        .oEC
+   EC:  LW        	V0, 8 (S1) % Load Elements Descriptions
+   F0:  SW			V0, 294 (S0)
+   F4:  LW        	V0, 4 (S1) % Load Elements Prices?
+   F8:  ADDIU     	S4, S4, 1	 % A NOP make just a blank list
+   FC:  SW			V0, 210 (S0)
+  100:  ADDIU		S0, S0, 4
+  104:  ADDIU		S2, S2, 1
+        .o108
+  108:  SLTI      	V0, S2, 3 % Maximum Amount of Elements in the List
+  10C:  BNE			V0, R0, .o70
+  110:  ADDIU		S1, S1, C
+  114:  COPY		A0, S5
+		%ADDIU     	V0, R0, B % Style List ID - B = Letters for Mario
+		ADDIU     	V0, R0, 6 % Style List ID - 6 = Checking Items (Use while choosing Save/Load/FX)
+		%ADDIU     	V0, R0, 9 % Style List ID - 9 = Claiming Items - 
+  11C:  SW			V0, 318 (A0)
+  120:  SW			S4, 324 (A0)
+  124:  JAL			800F4E40 % Create List JAL
+  128:  SW			R0, 328 (A0)
+  12C:  SW			R0, 70 (S3)
+        .o130
+  130:  LW			V0, 70 (S3)
+  134:  LW			S5, 78 (S3)
+  138:  BNE			V0, R0, .o15C
+  13C:  ADDIU		V0, V0, 1
+  140:  LH			V0, 32C (S5)
+		% The List is on screen?
+		ADDIU		T0, R0, 43 % Check if the list is on screen, if not bypass checking the DPad
+		BNE			V1, T0, .DontCloseList
+		NOP
+		% The player pressed Up DPad while having the list visible?, used to close the list by pressing Up DPad again
+		LABU 	T0, 80074036 % One frame Inputs
+		SLL	 	T0, T0, 28`
+		SRL  	T0, T0, 31` % Move all bits to just leave bit3
+		ADDIU 	T1, R0, 1
+		BNE		T0, T1, .DontCloseList % If the player didn't pressed D Pad Up, bypass adding FF
+		NOP
+		% Playing Closing Sound %
+		ADDIU	A0, R0, CA % XX = Sound ID
+		CLEAR 	A1
+		COPY 	A2, A1 % ADDIU	A2, R0, 18 % Volume
+		JAL 	~Func:sfx_adjust_env_sound_pos
+		COPY 	A3, A1
+		%
+		ADDIU	V0, R0, FF % If the player pressed D Pad Up, save FF in v0 and close the list
+		%
+		.DontCloseList
+  144:  BEQ			V0, R0, .o16C
+  148:  SW			V0, 74 (S3)
+  14C:  JAL			800F13B0 % This JAL close/open the list
+  150:  NOP
+  154:  LW			V0, 70 (S3)
+  158:  ADDIU		V0, V0, 1
+        .o15C
+  15C:  SW			V0, 70 (S3)
+  160:  SLTI		V0, V0, 14
+  164:  BEQ			V0, R0, .o174
+  168:  NOP
+        .o16C
+  16C:  BEQ			R0, R0, .o224
+  170:  CLEAR		V0
+        .o174
+  174:  JAL       	800F1538 % Looks like everything above this line was about initialize the list,
+%							 	everything below looks like doesn't have anything to do with that.
+  178:  NOP
+  17C:  LW			V1, 74 (S3)
+  180:  ADDIU		V0, R0, FF
+  184:  BEQ			V1, V0, .B_Button_GoBack
+  188:  ADDIU		V0, V1, FFFF
+  18C:  SLL			V0, V0, 2
+  190:  ADDU		V0, S5, V0
+  194:  LW			S2, 108 (V0)
+		LIA       	V0, $List_SaveLoadFX
+  1A0:  SLL			V1, S2, 1
+  1A4:  ADDU		V1, V1, S2
+  1A8:  SLL			V1, V1, 2
+  1AC:  ADDU		V1, V1, V0
+  1B0:  LW			V0, 0 (V1)
+  1B4:  SW			V0, 84 (S3)
+  1B8:  LW			V0, 4 (V1)
+  1BC:  SW			S2, 8C (S3)
+  1C0:  SW			V0, 88 (S3)
+  1C4:  LW			V0, 0 (V1)
+  1C8:  SLL			V0, V0, 5
+  1CC:  LTW			V0, V0 (800878E0)
+  1D8:  SW			V0, 94 (S3)
+  1DC:  LW			V0, 0 (V1)
+  1E0:  SLL			V0, V0, 5
+  1E4:  LTBU		V1, V0 (800878FA)
+  1F0:  SLL			V0, V1, 2
+  1F4:  ADDU		V0, V0, V1
+  1F8:  SLL			V0, V0, 2
+  1FC:  LTB			V0, V0 (8008F072)
+  208:  BEQ			R0, R0, .o218
+  20C:  SW			V0, 98 (S3)
+        .B_Button_GoBack
+  210:  ADDIU		V0, R0, FFFF
+  214:  SW			V0, 84 (S3)
+        .o218
+  218:  JAL			~Func:heap_free
+  21C:  LW			A0, 78 (S3)
+  220:  ADDIU		V0, R0, 2
+        .o224
+  224:  LW			RA, 34 (SP)
+  228:  LW			S8, 30 (SP)
+  22C:  LW			S7, 2C (SP)
+  230:  LW			S6, 28 (SP)
+  234:  LW			S5, 24 (SP)
+  238:  LW			S4, 20 (SP)
+  23C:  LW			S3, 1C (SP)
+  240:  LW			S2, 18 (SP)
+  244:  LW			S1, 14 (SP)
+  248:  LW			S0, 10 (SP)
+  24C:  JR			RA
+  250:  ADDIU		SP, SP, 38
+}
+  
+#new:Function $Function_WhichBelt
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S3, 1C (SP)
+    8:  DADDU     S3, A0, R0
+    C:  SW        S6, 28 (SP)
+   10:  LIA       S6, 8010F28D % This Line load the players coins (The Two LHU commands below do a offset to the coins address)
+   18:  SW        RA, 34 (SP)
+   1C:  SW        S8, 30 (SP)
+   20:  SW        S7, 2C (SP)
+   24:  SW        S5, 24 (SP)
+   28:  SW        S4, 20 (SP)
+   2C:  SW        S2, 18 (SP)
+   30:  SW        S1, 14 (SP)
+   34:  BEQ       A1, R0, .o130
+   38:  SW        S0, 10 (SP)
+   3C:  JAL       ~Func:heap_malloc
+   40:  ADDIU     A0, R0, 330
+   44:  SW        V0, 78 (S3)
+   48:  DADDU     S5, V0, R0
+   4C:  DADDU     S4, R0, R0
+   50:  DADDU     S2, S4, R0
+        CLEAR     S7
+   5C:  LIA       S8, 8008A680 % Load Elements Icons?
+		LIA    	  S1, $List_BadgesBelt % Elements to Show in the List
+		DADDU     S0, S5, R0
+        .o70
+   70:  DADDU     A0, R0, R0
+        CLEAR     V0
+   78:  ADDU      A1, S2, S7
+   7C:  BNEL      V0, R0, .o108
+   80:  ADDIU     S2, S2, 1
+   84:  LW        V0, 0 (S1)		% Load List_BadgesBelt on v0 to know what Names and Icons to print
+   88:  LIA       A2, 800878E0
+   90:  SLL       V0, V0, 5
+   94:  ADDU      V0, V0, A2
+   98:  LH        V1, 4 (V0)		% Print Icons from v0
+   9C:  SW        S2, 108 (S0)
+   A0:  LW        V0, 0 (V0)
+   A4:  SLL       V1, V1, 3
+   A8:  ADDU      A0, V1, S8
+   AC:  SW        V0, 84 (S0) % Load the Elements Names
+   B0:  LW        V0, 0 (A0)
+   B4:  SW        V0, 0 (S0) % Load the Elements Icons
+   B8:  LHU       V0, F (S6) % This line turn on the buyable items (Name)
+   BC:  LW        V1, 4 (S1)
+   C0:  SLT       V0, V0, V1
+   C4:  XORI      V0, V0, 1
+   C8:  SW        V0, 18C (S0)
+   CC:  LHU       V0, F (S6) % Related to track if player have enough coins?
+   D0:  LW        V1, 4 (S1)
+   D4:  SLT       V0, V0, V1
+   D8:  BEQ       V0, R0, .oEC
+   DC:  NOP
+   E0:  LW        V0, 4 (A0)
+   E4:  SW        R0, 18C (S0)
+   E8:  SW        V0, 0 (S0)
+        .oEC
+   EC:  LW        V0, 8 (S1) % Load Elements Descriptions
+   F0:  SW        V0, 294 (S0)
+   F4:  LW        V0, 4 (S1) % Load Elements Prices?
+   F8:  ADDIU     S4, S4, 1	 % A NOP make just a blank list
+   FC:  SW        V0, 210 (S0)
+  100:  ADDIU     S0, S0, 4
+  104:  ADDIU     S2, S2, 1
+        .o108
+  108:  SLTI      V0, S2, 3 % Maximum Amount of Elements in the List
+  10C:  BNE       V0, R0, .o70
+  110:  ADDIU     S1, S1, C
+  114:  DADDU     A0, S5, R0
+		ADDIU     V0, R0, B % Style List ID - B = Letters for Mario
+		%ADDIU     V0, R0, 6 % Style List ID - 6 = Checking Items (Use while choosing Save/Load/FX)
+		%ADDIU     V0, R0, 9 % Style List ID - 9 = Claiming Items - Treasure Chest (Use for FX)
+  11C:  SW        V0, 318 (A0)
+  120:  SW        S4, 324 (A0)
+  124:  JAL       800F4E40
+  128:  SW        R0, 328 (A0)
+  12C:  SW        R0, 70 (S3)
+        .o130
+  130:  LW        V0, 70 (S3)
+  134:  LW        S5, 78 (S3)
+  138:  BNE       V0, R0, .o15C
+  13C:  ADDIU     V0, V0, 1
+  140:  LH        V0, 32C (S5)
+		% The List is on screen?
+		ADDIU 	T0, R0, 43 % Check if the list is on screen, if not bypass checking the DPad
+		BNE		V1, T0, .DontCloseList
+		NOP
+		% The player pressed Up DPad while having the list visible?, used to close the list by pressing Up DPad again
+		LABU 	      T0, 80074036 % One frame Inputs
+		SLL	 	T0, T0, 28`
+		SRL    	T0, T0, 31` % Move all bits to just leave bit3
+		ADDIU 	T1, R0, 1
+		BNE		T0, T1, .DontCloseList % If the player didn't pressed D Pad Up, bypass adding FF
+		NOP
+		ADDIU 	A2, R0, 1
+		LIO   	A1, *VarF % Set *VarF as 1, to close everything
+		JAL         ~Func:set_variable
+		NOP
+		% Playing Closing Sound %
+		ADDIU	      A0, R0, 00CA % XX = Sound ID
+		CLEAR 	A1
+		COPY 	      A2, A1 % ADDIU	A2, R0, 18 % Volume
+		JAL 	      ~Func:sfx_adjust_env_sound_pos
+		COPY 	      A3, A1
+		%
+		ADDIU	V0, R0, FF % If the player pressed D Pad Up, save FF in v0 and close the list
+		.DontCloseList
+  144:  BEQ       V0, R0, .o16C
+  148:  SW        V0, 74 (S3) % save element choosen index (FF when cancel)
+      % Looks like everything above this line was about initialize the list,
+      % everything below looks like doesn't have anything to do with that.
+  14C:  JAL       800F13B0 % List - Close Animation
+  150:  NOP
+  154:  LW        V0, 70 (S3)
+  158:  ADDIU     V0, V0, 1
+        .o15C
+  15C:  SW        V0, 70 (S3)
+  160:  SLTI      V0, V0, 14
+  164:  BEQ       V0, R0, .o174
+  168:  NOP
+        .o16C
+  16C:  BEQ       R0, R0, .o224
+  170:  DADDU     V0, R0, R0
+        .o174
+  174:  JAL       800F1538
+  178:  NOP
+  17C:  LW        V1, 74 (S3)
+  180:  ADDIU     V0, R0, FF
+  184:  BEQ       V1, V0, .B_Button_GoBack
+  188:  ADDIU     V0, V1, FFFF
+        % Button A has been pressed
+  18C:  SLL       V0, V0, 2
+  190:  ADDU      V0, S5, V0
+  194:  LW        S2, 108 (V0)
+		LIA       V0, $List_BadgesBelt
+  1A0:  SLL       V1, S2, 1
+  1A4:  ADDU      V1, V1, S2
+  1A8:  SLL       V1, V1, 2
+  1AC:  ADDU      V1, V1, V0
+  1B0:  LW        V0, 0 (V1)
+  1B4:  SW        V0, 84 (S3) % save itemID from element choosen (-1 if B was pressed)
+  1B8:  LW        V0, 4 (V1)
+  1BC:  SW        S2, 8C (S3)
+  1C0:  SW        V0, 88 (S3)
+  1C4:  LW        V0, 0 (V1)
+  1C8:  SLL       V0, V0, 5
+  1CC:  LTW       V0, V0 (800878E0)
+  1D8:  SW        V0, 94 (S3)
+  1DC:  LW        V0, 0 (V1)
+  1E0:  SLL       V0, V0, 5
+  1E4:  LTBU      V1, V0 (800878FA)
+  1F0:  SLL       V0, V1, 2
+  1F4:  ADDU      V0, V0, V1
+  1F8:  SLL       V0, V0, 2
+  1FC:  LTB       V0, V0 (8008F072)
+  208:  BEQ       R0, R0, .o218
+  20C:  SW        V0, 98 (S3)
+        .B_Button_GoBack
+  210:  ADDIU     V0, R0, FFFF
+  214:  SW        V0, 84 (S3)
+        .o218
+  218:  JAL       ~Func:heap_free
+  21C:  LW        A0, 78 (S3)
+  220:  ADDIU     V0, R0, 2
+        .o224
+  224:  LW        RA, 34 (SP)
+  228:  LW        S8, 30 (SP)
+  22C:  LW        S7, 2C (SP)
+  230:  LW        S6, 28 (SP)
+  234:  LW        S5, 24 (SP)
+  238:  LW        S4, 20 (SP)
+  23C:  LW        S3, 1C (SP)
+  240:  LW        S2, 18 (SP)
+  244:  LW        S1, 14 (SP)
+  248:  LW        S0, 10 (SP)
+  24C:  JR        RA
+  250:  ADDIU     SP, SP, 38
+}
+  
+#new:Function $Function_SetFX
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S3, 1C (SP)
+    8:  DADDU     S3, A0, R0
+    C:  SW        S6, 28 (SP)
+   10:  LIA       S6, 8010F28D
+   18:  SW        RA, 34 (SP)
+   1C:  SW        S8, 30 (SP)
+   20:  SW        S7, 2C (SP)
+   24:  SW        S5, 24 (SP)
+   28:  SW        S4, 20 (SP)
+   2C:  SW        S2, 18 (SP)
+   30:  SW        S1, 14 (SP)
+   34:  BEQ       A1, R0, .o130
+   38:  SW        S0, 10 (SP)
+   3C:  JAL       ~Func:heap_malloc
+   40:  ADDIU     A0, R0, 330
+   44:  SW        V0, 78 (S3)
+   48:  DADDU     S5, V0, R0
+   4C:  DADDU     S4, R0, R0
+   50:  DADDU     S2, S4, R0
+        CLEAR     S7
+   5C:  LIA       S8, 8008A680 % Load Elements Icons?
+		LIA      S1, $List_FX % Elements to Show in the List
+		DADDU    S0, S5, R0
+        .o70
+   70:  DADDU     A0, R0, R0
+        CLEAR     V0
+   78:  ADDU      A1, S2, S7
+   7C:  BNEL      V0, R0, .o108
+   80:  ADDIU     S2, S2, 1
+   84:  LW        V0, 0 (S1)		% Load List_BadgesBelt on v0 to know what Names and Icons to print
+   88:  LIA       A2, 800878E0
+   90:  SLL       V0, V0, 5
+   94:  ADDU      V0, V0, A2
+   98:  LH        V1, 4 (V0)		% Print Icons from v0
+   9C:  SW        S2, 108 (S0)
+   A0:  LW        V0, 0 (V0)
+   A4:  SLL       V1, V1, 3
+   A8:  ADDU      A0, V1, S8
+   %AC:  SW        V0, 84 (S0) % Load Elements' Names % vanilla code
+   % Load different names for each element
+        COPY      V1, S5
+        LIO       V0, $ListNames_Star
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Attack3
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Heart
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Tornado
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Electricity
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Snowflakes
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Nice
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Peril
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Energy
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        LIO       V0, $ListNames_Music
+        SW        V0, 84 (V1)
+        ADDIU     V1, V1, 4
+        %
+   B0:  LW        V0, 0 (A0)
+   B4:  SW        V0, 0 (S0) % Load the Elements Icons
+   B8:  LHU       V0, F (S6) % This line turn on the buyable items (Name)
+   BC:  LW        V1, 4 (S1)
+   C0:  SLT       V0, V0, V1
+   C4:  XORI      V0, V0, 1
+   C8:  SW        V0, 18C (S0)
+   CC:  LHU       V0, F (S6) % Related to track if player have enough coins?
+   D0:  LW        V1, 4 (S1)
+   D4:  SLT       V0, V0, V1
+   D8:  BEQ       V0, R0, .oEC
+   DC:  NOP
+   E0:  LW        V0, 4 (A0)
+   E4:  SW        R0, 18C (S0)
+   E8:  SW        V0, 0 (S0)
+        .oEC
+   EC:  LW        V0, 8 (S1) % Load Elements Descriptions
+   F0:  SW        V0, 294 (S0)
+   F4:  LW        V0, 4 (S1) % Load Elements Prices?
+   F8:  ADDIU     S4, S4, 1	 % A NOP make just a blank list
+   FC:  SW        V0, 210 (S0)
+  100:  ADDIU     S0, S0, 4
+  104:  ADDIU     S2, S2, 1
+        .o108
+  108:  SLTI      V0, S2, A % Maximum Amount of Elements in the List
+  10C:  BNE       V0, R0, .o70
+  110:  ADDIU     S1, S1, C
+  114:  DADDU     A0, S5, R0
+		%ADDIU     V0, R0, B % Style List ID - B = Letters for Mario
+		%ADDIU     V0, R0, 6 % Style List ID - 6 = Checking Items (Use while choosing Save/Load/FX)
+		ADDIU     V0, R0, 9 % Style List ID - 9 = Claiming Items - Treasure Chest (Use for FX)
+  11C:  SW        V0, 318 (A0)
+  120:  SW        S4, 324 (A0)
+  124:  JAL       800F4E40
+  128:  SW        R0, 328 (A0)
+  12C:  SW        R0, 70 (S3)
+        .o130
+  130:  LW        V0, 70 (S3)
+  134:  LW        S5, 78 (S3)
+  138:  BNE       V0, R0, .o15C
+  13C:  ADDIU     V0, V0, 1
+  140:  LH        V0, 32C (S5)
+		% The List is on screen?
+		ADDIU		T0, R0, 43 % Check if the list is on screen, if not bypass checking the DPad
+		BNE		V1, T0, .DontCloseList
+		NOP
+		% The player pressed Up DPad while having the list visible?, used to close the list by pressing Up DPad again
+		LABU 	      T0, 80074036 % One frame Inputs
+		SLL	      T0, T0, 28`
+		SRL  	      T0, T0, 31` % Move all bits to just leave bit3
+		ADDIU       T1, R0, 1
+		BNE	      T0, T1, .DontCloseList % If the player didn't pressed D Pad Up, bypass adding FF
+		NOP
+		LIO 	      A1, *VarF % Set *VarF as 1, to close everything
+		JAL         ~Func:set_variable
+		ADDIU       A2, R0, 1
+		% Playing Closing Sound %
+		ADDIU	      A0, R0, CA % XX = Sound ID
+		CLEAR       A1
+		COPY 	      A2, A1 % ADDIU	A2, R0, 18 % Volume
+		JAL 	      ~Func:sfx_adjust_env_sound_pos
+		COPY 	      A3, A1
+		%
+		ADDIU	      V0, R0, FF % If the player pressed D Pad Up, save FF in v0 and close the list
+		.DontCloseList
+  144:  BEQ       V0, R0, .o16C
+  148:  SW        V0, 74 (S3)
+        .CloseList
+  14C:  JAL       800F13B0
+  150:  NOP
+  154:  LW        V0, 70 (S3)
+  158:  ADDIU     V0, V0, 1
+        .o15C
+  15C:  SW        V0, 70 (S3)
+  160:  SLTI      V0, V0, 14
+  164:  BEQ       V0, R0, .o174
+  168:  NOP
+        .o16C
+  16C:  BEQ       R0, R0, .o224
+  170:  DADDU     V0, R0, R0
+        .o174
+  174:  JAL       800F1538 % Looks like everything above this line was about initialize the list,
+%							 everything below looks like doesn't have anything to do with that.
+  178:  NOP
+  17C:  LW        V1, 74 (S3)
+  180:  ADDIU     V0, R0, FF
+  184:  BEQ       V1, V0, .B_Button_GoBack
+  188:  ADDIU     V0, V1, FFFF
+        % Button A has been pressed
+  18C:  SLL       V0, V0, 2
+  190:  ADDU      V0, S5, V0
+  194:  LW        S2, 108 (V0)
+		LIA       V0, $List_FX
+  1A0:  SLL       V1, S2, 1
+  1A4:  ADDU      V1, V1, S2
+  1A8:  SLL       V1, V1, 2
+  1AC:  ADDU      V1, V1, V0
+  1B0:  LW        V0, 0 (V1)
+  1B4:  SW        V0, 84 (S3)
+  1B8:  LW        V0, 4 (V1)
+  1BC:  SW        S2, 8C (S3)
+  1C0:  SW        V0, 88 (S3)
+  1C4:  LW        V0, 0 (V1)
+  1C8:  SLL       V0, V0, 5
+  1CC:  LTW       V0, V0 (800878E0)
+  1D8:  SW        V0, 94 (S3)
+  1DC:  LW        V0, 0 (V1)
+  1E0:  SLL       V0, V0, 5
+  1E4:  LTBU      V1, V0 (800878FA)
+  1F0:  SLL       V0, V1, 2
+  1F4:  ADDU      V0, V0, V1
+  1F8:  SLL       V0, V0, 2
+  1FC:  LTB       V0, V0 (8008F072)
+  208:  BEQ       R0, R0, .o218
+  20C:  SW        V0, 98 (S3)
+        .B_Button_GoBack
+  210:  ADDIU     V0, R0, FFFF
+  214:  SW        V0, 84 (S3)
+        .o218
+  218:  JAL       ~Func:heap_free
+  21C:  LW        A0, 78 (S3)
+  220:  ADDIU     V0, R0, 2
+        .o224
+  224:  LW        RA, 34 (SP)
+  228:  LW        S8, 30 (SP)
+  22C:  LW        S7, 2C (SP)
+  230:  LW        S6, 28 (SP)
+  234:  LW        S5, 24 (SP)
+  238:  LW        S4, 20 (SP)
+  23C:  LW        S3, 1C (SP)
+  240:  LW        S2, 18 (SP)
+  244:  LW        S1, 14 (SP)
+  248:  LW        S0, 10 (SP)
+  24C:  JR        RA
+  250:  ADDIU     SP, SP, 38
+}

@@ -1,0 +1,57 @@
+% Disable vertical movement when Mario is inside the SMW's Boo Mansion & tyd_07
+
+% Patch ~Func:collision_main_lateral
+@Function 7D6D8 % 800E4228
+{
+    J       $Function_UpdateVerticalMovement
+    LB	    V0, 0014 (S1)
+}
+
+#new:Function $Function_UpdateVerticalMovement {
+    % check if $Byte_DisableVerticalMovement is true
+    LABU    V0, $Byte_DisableVerticalMovement
+    BEQL    V0, R0, .End
+    SWC1	F2, 0030 (S1) % write Player's Z coords
+    .End
+    J       800E422C
+    NOP
+}
+
+% Don't update land animations when Mario is in 8bits, needed when you hit the switch.
+%
+% From Actions_Land.wscr
+@Hook 7C020 % 800E2B70
+{
+    % check if 8bitMario is true
+    LABU    V0, $Byte_8BitMario_Switch
+    BEQ     V0, R0, .UpdateLandAnim
+    NOP
+    J       800E2B80
+    NOP
+    .UpdateLandAnim
+    SAB     R0, $Byte_8BitMario_Switch
+    LIO     A0, 00010009 % Land animation
+    J       800E2B78
+    RESERVED
+}
+
+/% Don't update animation when you press a switch and Mario is in 8bit.
+@Hook E240AC % 802B606C
+{
+    % check if 8bitMario is true
+    LABU    V0, $Byte_8BitMario_Switch
+    BEQ     V0, R0, .UpdateAnims
+    NOP
+    J       802B6094
+    NOP
+    .UpdateAnims
+    SAB     R0, $Byte_8BitMario_Switch
+    J	    802B608C
+    ORI	    A0, A0, 0005
+}%/
+
+#export:Data $Byte_DisableVerticalMovement
+{ 00 }
+
+#export:Data $Byte_8BitMario_Switch % neccesary when you press a switch
+{ 00 }

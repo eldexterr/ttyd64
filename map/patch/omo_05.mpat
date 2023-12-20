@@ -1,0 +1,176 @@
+% Add exit to omo_19, also put Gourmet Guy can go away with a Mousse Cake
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000005
+    [Background]  80200000
+    [MapTattle]   001900DD
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 %  590.0    0.0  135.0  270.0
+	~Vec4f:Entry1 %  590.0   10.0 -140.0  270.0
+	~Vec4f:Entry2 % -600.0   10.0    0.0   90.0
+	~Vec4f:Entry3 %  600.0   10.0    0.0  270.0
+    ~Vec4f:Entry4
+}
+
+@ $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:ShyGuysToybox
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  MakeNpcs  ( .True $NpcGroupList_80245124 )
+   84:  ExecWait  $Script_MakeEntities
+   90:  ExecWait  $Script_80242E68
+   9C:  Exec  $Script_80242480
+   A8:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   BC:  Call  SetGroupEnabled   ( ~Model:popo 00000000 )
+   D0:  If  *GB_StoryProgress  >=  .Story:Ch4_GaveCakeToGourmetGuy % FFFFFFFE
+   E0:  	Call  RotateModel   ( ~Model:o331 00000069 00000000 00000001 00000000 )
+  100:  	Call  RotateModel   ( ~Model:o332 00000069 00000000 00000001 00000000 )
+  120:  	Call  RotateModel   ( ~Model:o333 00000069 00000000 00000001 00000000 )
+  140:  	Call  RotateModel   ( ~Model:o328 00000069 00000000 00000001 00000000 )
+  160:  	Call  RotateModel   ( ~Model:o329 00000069 00000000 00000001 00000000 )
+  180:  	Call  RotateModel   ( ~Model:o330 00000069 00000000 00000001 00000000 )
+  1A0:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:tt1 7FFFFE00 )
+  1B8:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:tt2 7FFFFE00 )
+  1D0:  EndIf
+        Exec    $Script_EnterMap
+  %1D8:  Set   *Var0  $Script_80242568
+  %1E8:  Exec  EnterWalk
+  %1F4:  Wait  1`
+  200:  Return
+  208:  End
+}
+
+#new:Script $Script_EnterMap
+{
+    Call    GetEntryID ( *Var0 )
+    Switch *Var0
+        Case == 4
+            Exec    $Script_EnterMap_Spring
+            Wait    8
+            Exec    $Script_80242568
+        Default
+            Set     *Var0  $Script_80242568
+            Exec    EnterWalk
+            Wait    1
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_EnterMap_Spring
+{
+    Set   *MapFlag[00] .True
+    Call  DisablePlayerInput    ( .True )
+    Call  SetPlayerActionState  ( .ActionState:Falling )
+    Call  802D2484
+    Call  SetPlayerActionState  ( .ActionState:Idle )
+    Call  SetPlayerAnimation    ( 00010002 )
+    Call  DisablePlayerInput    ( .False )
+    Set   *MapFlag[00] .False
+    Return
+    End
+}
+
+@ $Script_MakeEntities {
+    Call  MakeEntity        ( .Entity:YellowBlock ~Vec4d:Entity80245150 .Item:Coin 80000000 )
+    Call  AssignBlockFlag   ( *GF_OMO05_ItemBlock_CoinA )
+    Call  MakeEntity        ( .Entity:YellowBlock ~Vec4d:Entity80245188 .Item:Coin 80000000 )
+    Call  AssignBlockFlag   ( *GF_OMO05_ItemBlock_CoinB )
+    If  *GF_OMO05_Item_Cookbook  ==  .False
+        If  *GB_StoryProgress  >  .Story:Ch4_GotTayceTsCake % FFFFFFFD
+            Call  MakeItemEntity    ( .Item:Cookbook ~Vec3d:Item802451E0 00000000 *GF_OMO05_Item_Cookbook )
+        EndIf
+    EndIf
+    Call  MakeEntity        ( .Entity:HiddenYellowBlock ~Vec4d:Entity80245214 .Item:DizzyDial 80000000 )
+    Call  AssignBlockFlag   ( *GF_OMO05_HiddenItem_DizzyDial )
+    % === NEW ===
+    Call  MakeEntity        ( .Entity:StarBoxLaucher ~Vec4d:Entity8024524C 80000000 )
+    Call  AssignScript  ( $Script_ScriptedSpring_Entity8024524C )
+    %Call  AssignBlockFlag   ( *GF_OMO05_HiddenItem_SuperSoda )
+    Call  MakeItemEntity ( .Item:Coin ~Vec3d:Item_Coin1 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Call  MakeItemEntity ( .Item:Coin ~Vec3d:Item_Coin2 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Call  MakeItemEntity ( .Item:Coin ~Vec3d:Item_Coin3 .ItemSpawnMode:Fixed_NeverVanish .False )
+    Return
+    End
+}
+
+#new:Script $Script_ScriptedSpring_Entity8024524C
+{
+    If  *MapFlag[00]  ==  .True
+        Return
+    EndIf
+	Call  DisablePlayerInput    ( .True )
+	Call  DisablePlayerPhysics  ( .True )
+	Call  SetPlayerActionState  ( .ActionState:Launch )
+	Wait  1`
+	Call  SetPlayerJumpscale    ( *Fixed[0.7] )
+	Call  PlayerJump            ( ~Vec3d:JumpPos_Exit3 30` )
+    Thread
+        Wait  10`
+        Call  GotoMap   ( "omo_19" 0 )
+	EndThread
+	Return
+	End
+}
+
+%=====================
+% Gourmet Guy
+%=====================
+
+@ $Script_Interact_80243224
+{
+    [208]  Call  $Function_GetItemFlavor    ( *Var0 )
+}
+
+#delete $Function_802422A0
+
+#new:Function $Function_GetItemFlavor % Function_802422A0
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  SW        RA, 14 (SP)
+   10:  LW        V0, C (S0)
+   14:  JAL       ~Func:get_variable
+   18:  LW        A1, 0 (V0)
+   1C:  COPY      A0, V0
+   20:  LA        V1, 800878E0
+   28:  SLL       V0, A0, 5
+   2C:  ADDU      V1, V0, V1
+   30:  LI        V0, C1 % .Item:Cake
+   34:  BEQ       A0, V0, .o4C
+   38:  LI        V0, D2 % .Item:StrangeCake
+   3C:  BEQ       A0, V0, .o4C
+        LI        V0, 1B7 % .Item:MousseCake
+        BEQ       A0, V0, .o4C
+   40:  LI        V0, B7 % .Item:ShroomCake
+   44:  BNE       A0, V0, .o58
+   48:  NOP
+        .o4C
+   4C:  LI        V0, 2
+   50:  BEQ       R0, R0, .o74
+   54:  SW        V0, A8 (S0)
+        .o58
+   58:  LHU       V0, 18 (V1)
+   5C:  ANDI      V0, V0, 80
+   60:  BEQ       V0, R0, .o70
+   64:  LI        V0, 1
+   68:  BEQ       R0, R0, .o74
+   6C:  SW        V0, A8 (S0)
+        .o70
+   70:  SW        R0, A8 (S0)
+        .o74
+   74:  LW        RA, 14 (SP)
+   78:  LW        S0, 10 (SP)
+   7C:  LI        V0, 2
+   80:  JR        RA
+   84:  ADDIU     SP, SP, 18
+}

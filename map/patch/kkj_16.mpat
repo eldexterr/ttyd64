@@ -1,0 +1,99 @@
+% Add new item and new exit to kkj_30
+
+@ $EntryList
+{
+	~Vec4f:Entry0 %  435.0    0.0  -25.0  270.0
+    ~Vec4f:Entry1
+}
+
+@ $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  00000000
+	[MapTattle]   00190011
+}
+
+@ $Script_8024476C
+{
+    0:  Call  MakeItemEntity    ( .Item:LifeShroom ~Vec3d:Item8024476C .ItemSpawnMode:Fixed_NeverVanish *GF_KKJ16_Item_LifeShroom )
+   24:  Call  MakeItemEntity    ( .Item:PowerRush ~Vec3d:Item80244790 .ItemSpawnMode:Fixed_NeverVanish *GF_KKJ16_Item_PowerRush )
+        ExecWait $Script_NewStuff
+   48:  If  *GB_StoryProgress  <  .Story:Ch8_ReachedPeachsCastle % 5F
+   58:  	If  *GF_KKJ16_Item_PowerRush  ==  .False
+   68:  		Exec  $Script_80244700
+   74:  	EndIf
+   7C:  EndIf
+   84:  Return
+   8C:  End
+}
+
+#new:Script $Script_NewStuff
+{
+    Call  MakeItemEntity    ( .Item:StarPiece ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_KKJ16_NewItem )
+    If *GF_KKJ16_Passage == .True
+        Call    ModifyColliderFlags 	( .False ~Collider:bookShell 7FFFFE00 )
+        Call    TranslateModel ( ~Model:o183 0 0 -53` )
+        Call    TranslateModel ( ~Model:o184 0 0 -53` )
+        Call    TranslateModel ( ~Model:o185 0 0 -53` )
+        Call    TranslateModel ( ~Model:o186 0 0 -53` )
+        Call    TranslateModel ( ~Model:book 0 0 -5` )
+    Else
+        Bind  $Script_ShowPassage .Trigger:WallPressA ~Collider:bookTrigger 00000001 00000000
+    EndIf
+        Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_ShowPassage
+{
+    Call    DisablePlayerInput ( .True )
+    Call    PlaySound ( 0152 ) % switch
+    % Move book
+    Call    MakeLerp ( 0 -5 10` .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Call    TranslateGroup ( ~Model:book 0 0 *Var0 )
+        Wait    1
+        If *Var1 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Wait    10`
+    % Move bookcase
+    Call    PlaySound ( 0052 )
+    Call    MakeLerp ( 0 -53` 25` .Easing:Linear )
+    Thread
+        Call    ShakeCam ( .Cam:Default 0 25` *Fixed[0.2] )
+    EndThread
+    Loop
+        Call    UpdateLerp
+        Call    TranslateModel ( ~Model:o183 0 0 *Var0 )
+        Call    TranslateModel ( ~Model:o184 0 0 *Var0 )
+        Call    TranslateModel ( ~Model:o185 0 0 *Var0 )
+        Call    TranslateModel ( ~Model:o186 0 0 *Var0 )
+        Wait    1
+        If *Var1 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Unbind
+    Call    StopSound ( 0052 )
+    Call    ModifyColliderFlags 	( .False ~Collider:bookShell 7FFFFE00 )
+    Call    DisablePlayerInput ( .False )
+    Set     *GF_KKJ16_Passage .True
+    Return
+    End
+}
+
+#new:Script $Script_Exit1 {
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "kkj_30" 00000000 )
+    Wait  100`
+    Return
+    End
+}

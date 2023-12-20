@@ -1,0 +1,90 @@
+% Add new entrance to omo_18
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000002
+    [Background]  80200000
+    [MapTattle]   001900E1
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 % -980.0    0.0    0.0   90.0
+    ~Vec4f:Entry1
+}
+
+@ $Script_Main_EnterWalk {
+    [1B0]  ExecWait  $Script_SetMusicTrack % Script_80243740
+    [204]  Set   *Var0  $Script_MakeExits % $Script_8024380C
+}
+
+#delete $Script_80243740
+
+#new:Script $Script_SetMusicTrack % Script_80243740
+{
+    If  *GF_OMO09_SpawnedPeachChoice3  ==  .False
+        Call  SetMusicTrack ( 00000000 .Song:KammyKoopaTheme 00000000 00000008 )
+    Else
+        Call  SetMusicTrack ( 00000000 .Song:ShyGuyToybox 00000000 00000008 )
+    EndIf
+    Exec $Script_InitNewStuff
+    Return
+    End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    If *GF_OMO09_Entrance == .True
+        Exec    $Script_HideWall
+    Else
+        Bind    $Script_BlastWall .Trigger:PointBomb $TriggerCoord_Wall 00000001 00000000
+    EndIf
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Wall
+{
+	~BombPos:trigger_crack
+}
+
+#new:Script $Script_BlastWall
+{
+    Call    PlayEffect  	( 66` 0 ~Model:crack_wall ~Model:crack_wall 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Exec    $Script_HideWall
+    Set     *GF_OMO09_Entrance .True
+    Unbind
+    Return
+    End
+}
+
+#new:Script $Script_HideWall
+{
+    Call    EnableGroup ( ~Model:CrackGroup .False )
+    Call    ModifyColliderFlags 	( .False ~Collider:Crack 7FFFFE00 )
+    Return
+    End
+}
+
+% Bind Exit
+
+#delete $Script_8024380C
+
+#new:Script $Script_MakeExits % Script_8024380C
+{
+    Bind  $Script_ExitWalk_802437B0 .Trigger:FloorAbove ~Collider:deili1 00000001 00000000
+    Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "omo_18" 00000000 )
+    Wait  100`
+    Return
+    End
+}

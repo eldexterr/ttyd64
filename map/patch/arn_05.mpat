@@ -1,0 +1,105 @@
+% Add Exit2
+
+@ $EntryList {
+    ~Vec4f:Entry0 %  -77.0  135.0  150.0   90.0
+    ~Vec4f:Entry1 %  577.0  200.0  150.0  270.0
+    ~Vec4f:Entry2
+}
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  80200000
+    [MapTattle]   001900BD
+}
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:GustyGulch
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    If  *GB_StoryProgress  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+        Call  MakeNpcs  ( .False $NpcGroupList_80244FA4 )
+    Else
+        Call  MakeNpcs  ( .False $NpcGroupList_80244FC8 )
+    EndIf
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_802441FC
+    Exec  $Script_80241360
+    Exec  $Script_GetEntry
+    Return
+    End
+}
+
+#new:Script $Script_GetEntry % Script_EnterWalk_80241530
+{
+    Exec $Script_UpdateDoor
+    %
+    Call  GetLoadType   ( *Var1 )
+    If  *Var1  ==  00000001
+        Exec  EnterSavePoint
+        Exec  $Script_CreateExitTriggers
+        Return
+    EndIf
+    Call  GetEntryID ( *Var0 )
+    If  *Var0 == ~Entry:Entry2
+        Call DisablePlayerInput ( .True )
+        Call PlayerJump ( ~Vec3d:JumpPos_Entry2 20` )
+        Call DisablePlayerInput ( .False )
+        Exec $Script_CreateExitTriggers
+    Else
+        Set   *Var0  $Script_CreateExitTriggers
+        Exec  EnterWalk
+        Wait  1`
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_UpdateDoor {
+    If *GF_ARN05_Door == .False
+        Bind     $Script_BlastDoor .Trigger:PointBomb $TriggerCoord_Door 00000001 00000000
+    Else
+        Call     EnableModel 	( ~Model:1doa .False )
+        Call     EnableModel 	( ~Model:crack .False )
+        Call     ModifyColliderFlags 	( .False ~Collider:Door 7FFFFE00 )    
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_BlastDoor
+{
+    Call     PlayEffect  	( 66` 0 ~Model:1doa ~Model:1doa 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Call     EnableModel 	( ~Model:1doa .False )
+    Call     EnableModel 	( ~Model:crack .False )
+    Call     ModifyColliderFlags 	( .False ~Collider:Door 7FFFFE00 )
+    Set     *GF_ARN05_Door .True
+    Unbind
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Door
+{
+	~BombPos:bombPos
+}
+
+#new:Script $Script_CreateExitTriggers % Script_802414E8
+{
+    Bind  $Script_ExitWalk_80241430 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Bind  $Script_ExitWalk_8024148C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+    Bind  $Script_Exit2 .Trigger:FloorTouch ~Collider:Exit2 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit2 {
+    Call  DisablePlayerInput ( .True )
+    Call  GotoMap   ( "arn_21" 00000000 )
+    Wait  100`
+    Return
+    End
+}

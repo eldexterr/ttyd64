@@ -1,0 +1,48 @@
+% Add new block
+
+@ $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000003
+	[Background]  00000000
+	[MapTattle]   00000000
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 %  425.0    0.0   40.0    0.0
+	~Vec4f:Entry1 % -250.0   10.0    0.0    0.0
+    ~Vec4f:Entry2
+}
+
+@ $Script_Main
+{
+    [9C]  Exec  $Script_EnterMap
+}
+
+#delete $Script_EnterWalk_80240778
+
+#new:Script $Script_EnterMap % $Script_EnterWalk_80240778
+{
+    Call  GetEntryID    ( *Var0 )
+    Switch  *Var0
+        Case  ==  ~Entry:Entry0
+            Set   *Var0  $Script_8024074C
+            Exec  EnterWalk
+        Default
+            %
+    EndSwitch
+    Call    StopSound ( 00000093 )
+    Exec    $Script_InitNewStuff
+    Return
+    End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Call  MakeEntity    ( .Entity:RedBlock ~Vec4d:RedBlock .Item:SlowGo 80000000 )
+    Call  AssignBlockFlag   ( *GF_KKJ27_BadgeBlock )
+    Return
+    End
+}

@@ -1,0 +1,121 @@
+% Script File: kpa_101.mscr
+% Decoded from: 0 to 300 (kpa_101)
+
+
+#new:Function_Init $Function_Init
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LA        A0, 800D9230
+    C:  LA        A1, $ASCII_802402D0
+   14:  SW        RA, 10 (SP)
+   18:  JAL       ~Func:sprintf
+   1C:  NOP
+   20:  LA        A0, 800D91E0
+   28:  LA        A1, $ASCII_802402E0
+   2C:  JAL       ~Func:sprintf
+   30:  RESERVED
+   34:  LW        RA, 10 (SP)
+   38:  CLEAR     V0
+   3C:  JR        RA
+   40:  ADDIU     SP, SP, 18
+}
+
+PADDING: 80240044 to 80240050 (00000044 to 00000050)
+00000000 00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %    6.0    0.0  100.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000001
+	[Background]  00000000
+	[MapTattle]   0019017C
+}
+
+#new:Script $Script_802400A0
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000007 )
+   50:  EndThread
+   58:  Return
+   60:  End
+}
+
+PADDING: 80240108 to 80240110 (00000108 to 00000110)
+00000000 00000000
+
+#new:Script $Script_ExitWalk_80240110
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802402EC 00000000 ) % kpa_09
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_8024016C
+{
+    0:  Bind  $Script_ExitWalk_80240110 .Trigger:FloorAbove 0000000B 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  ExecWait  $Script_80240290
+   90:  Call  ModifyColliderFlags   ( 00000000 0000000D 7FFFFE00 )
+   A8:  Set   *Var0  $Script_8024016C
+   B8:  Exec  EnterWalk
+   C4:  Wait  1`
+   D0:  Exec  $Script_802400A0
+   DC:  Return
+   E4:  End
+}
+
+PADDING: 80240284 to 80240290 (00000284 to 00000290)
+00000000 00000000 00000000
+
+#new:Script $Script_80240290
+{
+    0:  Call  MakeItemEntity    ( .Item:UltraShroom ~Vec3d:Item80240290 .ItemSpawnMode:Fixed_NeverVanish *GF_KPA101_Item_UltraShroom )
+   24:  Return
+   2C:  End
+}
+
+PADDING: 802402C4 to 802402D0 (000002C4 to 000002D0)
+00000000 00000000 00000000
+
+#new:ASCII $ASCII_802402D0
+{
+	"kpa_119_shape"
+}
+
+#new:ASCII $ASCII_802402E0
+{
+	"kpa_119_hit"
+}
+
+#new:ASCII $ASCII_802402EC
+{
+	"kpa_09"
+}
+
+PADDING: 802402F4 to 80240300 (000002F4 to 00000300)
+00000000 00000000 00000000
+

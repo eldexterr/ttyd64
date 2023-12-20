@@ -1,0 +1,135 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:BoosMansion
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Exec  $Script_MakeEntities
+	Exec  $Script_UpdateSpikes
+    Set   *Var0  $Script_CreateExitTriggers
+    Exec  EnterWalk
+    Wait  1`
+	Return
+	End
+}
+
+#new:Script $Script_MakeEntities
+{
+    Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+    Set   *MapVar[0] *Var0
+    Call  AssignBlockFlag   ( *GF_OBK10_Shine )
+    Call  AssignScript 	    ( $Script_Entity_Shine1 )
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_OBK10_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+#new:LavaResetList $LaveReset_Pos
+{
+    ~Collider:entrance ~Vec3f:LaveResetPos_Start
+    ~Collider:itemPlatform ~Vec3f:LavaResetPos_End
+    FFFFFFFF 00000000 00000000 00000000
+}
+
+#new:Script $Script_UpdateSpikes
+{
+    SetGroup EF
+    % Set collider able to hurt Mario
+    Call    ModifyColliderFlags 	( 3 ~Collider:Spikes 00000002 )
+    % Position to set after getting hurt
+    Thread
+        Call    ResetFromLava 	( $LaveReset_Pos )
+    EndThread
+    Set *MapVar[2] 0 % Spikes Direction
+    Loop
+        Set *Var[6] ~Collider:Spikes
+        Set *Var[7] ~Model:Spikes
+        Wait    1
+        Call     TranslateModel ( *Var[7] 0 0 0 )
+        Call     ParentColliderToModel 	( *Var[6] *Var[7] )
+        % Spikes go up
+        Call     PlaySound ( 2093 )
+        Call     MakeLerp    	( 0 50` 4 0 )
+        Loop     
+            Call     UpdateLerp
+            Call     TranslateModel ( *Var[7] 0 *Var[0] 0 )
+            Call     UpdateColliderTransform 	( *Var[6] )
+            Wait     1
+            If  *Var[1]  ==  0
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait 10` % time spikes are up
+        % Spikes go down
+        Call     MakeLerp    	( 50` 0 F 0 )
+        Loop
+            Call     UpdateLerp
+            Call     TranslateModel ( *Var[7] 0 *Var[0] 0 )
+            Call     UpdateColliderTransform 	( *Var[6] )
+            Wait     1
+            If  *Var[1]  == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait 60` % time spikes are down
+    EndLoop
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry0 )
+	Exec     ExitWalk
+	Call  GotoMap   ( "obk_07" ~Entry:obk_07:Entry1 )
+	Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+	Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle]
+A hidden path inside the chimney?[br]
+Ew, there's a lot of dust around here,[br]
+I hope there is at least something[br]
+worthwhile...[br]
+[Wait][End]
+}

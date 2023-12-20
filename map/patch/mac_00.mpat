@@ -1,0 +1,88 @@
+% Add 2 new items hidden in the map
+
+@ $Script_80244CD4
+{
+    0:  Bind  $Script_ExitWalk_80244B68 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   1C:  Bind  $Script_80244C7C .Trigger:FloorAbove ~Collider:deilim 00000001 00000000
+   38:  If  *GB_StoryProgress  >=  .Story:Epilogue % 60
+   48:  	Return
+   50:  EndIf
+   58:  Bind  $Script_ExitWalk_80244B0C .Trigger:FloorAbove ~Collider:deilinw 00000001 00000000
+   74:  Bind  $Script_80244C24 .Trigger:FloorTouch ~Collider:deilit 00000001 00000000
+        Exec  $Script_InitNewStuff
+   90:  Return
+   98:  End
+}
+
+@ $Script_80245BF8
+{
+    0:  Call  MakeDoorAdvanced  ( 00000000 $Script_OpenDoor_80245330 $Script_MoveWalls_80245360 $Script_DropDoor_80245570 $Script_ToggleVis_802455A0 ~Collider:deilit3 ~Collider:deilit3u ~Model:intel_house $NpcList_80245BBC )
+   30:  Call  MakeDoorAdvanced  ( 00001002 $Script_OpenDoor_80245624 $Script_MoveWalls_80245654 00000000 $Script_ToggleVis_80245784 ~Collider:deilit5 ~Collider:deilit5u ~Model:omise $NpcList_80245BC4 )
+   60:  Call  MakeDoorAdvanced  ( 00000002 $Script_OpenDoor_8024581C $Script_MoveWalls_8024584C $Script_DropDoor_802458FC $Script_ToggleVis_8024592C ~Collider:deilit6 ~Collider:deilit6u ~Model:minka_1 $NpcList_80245BD4 )
+   90:  Call  MakeDoorAdvanced  ( 00000002 $Script_OpenDoor_802459C0 $Script_MoveWalls_802459F0 00000000 $Script_ToggleVis_80245B10 ~Collider:deilit4 ~Collider:deilit4u ~Model:minka2 $NpcList_80245BE4 )
+        Call  MakeDoorAdvanced  ( 00000007 $Script_OpenDoor_NewDoor $Script_MoveWalls_NewDoor 00000000 $Script_ToggleVis_NewDoor ~Collider:Fireplace_Exit ~Collider:Fireplace_Entrance ~Model:minka2 $NpcList_80245BE4 )
+   C0:  Set   *Var0  00000003
+   D0:  Exec  $Script_ToggleVis_802455A0
+   DC:  Exec  $Script_ToggleVis_80245B10
+   E8:  Exec  $Script_ToggleVis_80245784
+   F4:  Exec  $Script_ToggleVis_8024592C
+  100:  Return
+  108:  End
+}
+
+#new:Script $Script_OpenDoor_NewDoor
+{
+    Call  RotateModel   ( ~Model:gardenDoor *Var0 00000000 00000001 00000000 )
+    Return
+    End
+}
+
+#new:Script $Script_MoveWalls_NewDoor
+{
+    Return
+    End
+}
+
+#new:Script $Script_ToggleVis_NewDoor
+{
+    Switch *Var0
+        Case == 0 % Enter?
+            Call  PanToTarget   ( .Cam:Default 00000000 00000000 )
+        Case == 1 % Leave?
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Call  MakeItemEntity ( .Item:WEmblem ~Vec3d:NewItem  .ItemSpawnMode:Fixed_NeverVanish *GF_MAC00_Item1 )
+    Set   *MapVar[1] *Var0
+    Call  MakeItemEntity ( .Item:StarPiece ~Vec3d:NewItem2 .ItemSpawnMode:Fixed_NeverVanish *GF_MAC00_Item2 )
+    If *GF_MAC00_Item1 == .False
+        Bind  $Script_GetItem .Trigger:WallPressA ~Collider:gardenItemTrigger 00000001 00000000
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_GetItem
+{
+    Call    DisablePlayerInput ( .True )
+    Call    SetPlayerAnimation ( 00060006 )
+    Wait    5
+    Call    RemoveItemEntity ( *MapVar[1] )
+    Call    AddBadge ( .Item:WEmblem 00000000 )
+    Call    ShowGotItem ( .Item:WEmblem .True 00000000 )
+    Set     *GF_MAC00_Item1 .True
+    Unbind
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+@ $Function_8024076C
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_8024076C[1E4]
+}

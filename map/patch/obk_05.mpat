@@ -1,0 +1,76 @@
+% Add new exit
+
+@ $EntryList {
+    ~Vec4f:Entry0 %  -68.0    0.0  235.0    0.0
+    ~Vec4f:Entry1
+}
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000002
+    [Background]  80200000
+    [MapTattle]   001900B6
+}
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:BoosMansion
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  MakeNpcs  ( .False $NpcGroupList_802414E8 )
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_80240F10
+    Exec  $Script_80240F90
+    Exec  $Script_80240BD0
+    Exec  $Script_MakeExits
+    Exec  $TrackEntry
+    Call  ModifyColliderFlags   ( 00000000 ~Collider:hip1 7FFFFE00 )
+    Exec  $Script_80240A30
+    Exec  $Script_80240C84
+    Return
+    End
+}
+
+#new:Script $Script_MakeExits {
+    Call  $WriteAddress ( $Byte_DisableVerticalMovement 0 .False .False .False ) % clear byte
+    Bind  $Script_80240B1C .Trigger:WallPressA ~Collider:tt1 00000001 00000000 % exit0
+    Bind  $Script_Exit1  .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $TrackEntry % $Script_80240AA0
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Set   *Var2  ~Model:door1
+   38:  		Set   *Var4  ~Model:door1b
+   48:  		Set   *Var3  .DoorSwing:In % 1
+   58:  		ExecWait  EnterSplitSingleDoor
+            Case == ~Entry:Entry1
+                Set	 *Var0 $Script_MakeExits
+			    Exec EnterWalk
+   64:  EndSwitch
+   6C:  Return
+   74:  End
+}
+
+#new:Script $Script_Exit1 {
+	Call     UseExitHeading  	( 3C ~Entry:Entry1 )
+	Exec     ExitWalk
+    % check if mario is 8bit
+    Call     $ReadBitFlag ( 8010EFCC .False 2 6 *Var0 ) % PlayerFlags2
+    If *Var0 == .True
+        Call     $WriteAddress ( $Byte_DisableVerticalMovement 0 .True .False .False ) % disable vertical movement % needed by `World_8bitMario_DisableZMovement.patch`
+	    Call     GotoMap	( "obk_12" 0 )
+    Else
+        Call     GotoMap	( "obk_05" 1 )
+    EndIf
+	Wait     100`
+	Return
+	End
+}

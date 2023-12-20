@@ -1,0 +1,168 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList]  $EntryList
+	[EntryCount] 4
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+	~Vec4f:Entry2
+    ~Vec4f:Entry3
+}
+
+#new:Script $Script_ScriptedSpring_Entity80240488
+{
+    If  *MapFlag[00]  ==  .True
+        Return
+    EndIf
+	Call  DisablePlayerInput    ( .True )
+	Call  DisablePlayerPhysics  ( .True )
+	Call  SetPlayerActionState  ( .ActionState:Launch )
+	Wait  1`
+	Call  SetPlayerJumpscale    ( *Fixed[0.7] )
+	Call  PlayerJump            ( ~Vec3d:JumpDest_8024041C 30` )
+    Thread
+        Wait  10`
+        Call  GotoMap   ( "arn_05" 2 )
+	EndThread
+	Return
+	End
+}
+
+#new:Script_Main $Script_Main
+{
+    Set   *AreaByte[0] 0 % last entryID
+	Set   *GB_WorldLocation  .Location:WindyMill
+	Call  SetSpriteShading   ( .Shading:arn_09 )
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	ExecWait $Script_MakeEntities
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+    Call  GetEntryID ( *Var0 )
+    If *Var0 == ~Entry:Entry0
+        Wait    8
+    EndIf
+	Return
+	End
+}
+
+#new:Script $Script_MakeEntities
+{
+	Call  MakeEntity    ( .Entity:ScriptSpring ~Vec4d:Entity80240488 80000000 )
+	Call  AssignScript    ( $Script_ScriptedSpring_Entity80240488 )
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Switch  *GB_StoryProgress
+        /%Case  <  .Story:Ch3_HeartFledFirstTunnel % FFFFFFEA
+            Call  SetMusicTrack ( 00000000 .Song:TubbaEscape 00000000 00000008 )
+        Case  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+            Call  SetMusicTrack ( 00000000 .Song:TubbaBlubbaTheme 00000000 00000008 )%/
+        Default
+            Call  SetMusicTrack ( 00000000 .Song:GustyGulch 00000000 00000008 )
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_EnterMap
+{
+    Call    GetEntryID ( *Var0 )
+    Switch *Var0
+        Case == ~Entry:Entry0 % up
+            ExecWait $Script_EnterMap_Spring
+            Exec $Script_CreateExitTriggers
+        CaseOR == ~Entry:Entry1
+        CaseOR == ~Entry:Entry2
+            Set   *Var0  $Script_CreateExitTriggers
+            Exec  EnterWalk
+            Wait  1
+        EndCaseGroup
+        Case == ~Entry:Entry3 % restart
+            Call    DisablePlayerInput ( .True )
+            Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+            Add     *Var1 70` % y
+            Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+            Loop
+                Call    GetPlayerActionState ( *Var0 )
+                If *Var0 == .ActionState:Land
+                    Call    DisablePlayerInput ( .False )
+                    BreakLoop
+                EndIf
+                Wait    1
+            EndLoop
+            Exec $Script_CreateExitTriggers
+    EndSwitch
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap_Spring
+{
+    Set   *MapFlag[00] .True
+    Call  DisablePlayerInput    ( .True )
+    Call  SetPlayerActionState  ( .ActionState:Falling )
+    Call  802D2484
+    Call  SetPlayerActionState  ( .ActionState:Launch )
+    Call  SetPlayerJumpscale    ( *Fixed[1.5] )
+    Call  PlayerJump    ( ~Vec3d:JumpDest_8024054C  16` )
+    Call  SetPlayerAnimation    ( 00010002 )
+    Call  DisablePlayerInput    ( .False )
+    Set   *MapFlag[00] .False
+    Return
+    End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind     $Script_Exit1  .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Bind     $Script_Exit2  .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit1 {
+    Set      *AreaByte[0] 1 % last entryID
+	Call     UseExitHeading  	( 3C ~Entry:Entry1 )
+	Exec     ExitWalk
+    Call     GotoMap	( "arn_22" 1 )
+	Wait     100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit2 {
+    Set      *AreaByte[0] 2 % last entryID
+	Call     UseExitHeading  	( 3C ~Entry:Entry2 )
+	Exec     ExitWalk
+    Call     GotoMap	( "arn_22" 2 )
+	Wait     100`
+	Return
+	End
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Mario, here smells weird![BR]
+One of the reasons why[BR]
+I hate caves!
+[Wait][End]      
+}

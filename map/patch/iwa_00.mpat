@@ -1,0 +1,30 @@
+% Add new hidden item
+
+@ $Script_Main_EnterWalk {
+    [104]  Set   *Var0  $Script_BindExits % Script_8024049C
+}
+
+#delete $Script_8024049C
+
+#new:Script $Script_BindExits % Script_8024049C
+{
+    0:  Bind  $Script_ExitWalk_80240350 .Trigger:FloorAbove ~Collider:deili1 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802403AC .Trigger:FloorAbove ~Collider:deili2 00000001 00000000
+        % Init new stuff
+        Call  MakeItemEntity ( .Item:Coin ~Vec3d:Pos_newCoin .ItemSpawnMode:Fixed_NeverVanish *AreaFlag[003] )
+        Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+        Set   *MapVar[0] *Var0
+        Call  AssignBlockFlag   ( *GF_IWA00_Shine )
+        Call  AssignScript 	    ( $Script_Entity_Shine1 )
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_IWA00_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}

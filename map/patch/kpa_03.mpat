@@ -1,0 +1,54 @@
+% Add new exit to kpa_137 plus new hidden block
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  00000000
+    [MapTattle]   00190169
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 % 1888.0 -410.0  -93.0  270.0
+	~Vec4f:Entry1 % -1575.0 -105.0 -158.0   90.0
+    ~Vec4f:Entry2
+}
+
+@ $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+        Call  MakeEntity        ( .Entity:HiddenYellowBlock ~Vec4d:Entity_RedBlock .Item:PowerPunch 80000000 )
+        Call  AssignBlockFlag   ( *GF_KPA03_HiddenBlock )
+   70:  Call  MakeNpcs  ( .True $NpcGroupList_802435B8 )
+   84:  ExecWait  $Script_MakeEntities
+   90:  Exec  $Script_80241F60
+   9C:  Exec  $Script_EnterWalk_8024208C
+   A8:  Wait  1`
+   B4:  Exec  $Script_80241F20
+   C0:  Return
+   C8:  End
+}
+
+@ $Script_80242044
+{
+    0:  Bind  $Script_ExitWalk_80241F8C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_80241FE8 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+        Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_Exit2 {
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "kpa_137" 00000000 )
+    Wait  100`
+    Return
+    End
+}

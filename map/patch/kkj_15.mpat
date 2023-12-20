@@ -1,0 +1,107 @@
+% Add new exit to kkj_27
+
+@ $Script_80240680
+{
+    0:  Switch  *GB_StoryProgress
+    C:  	CaseOR  ==  .Story:Ch0_BeganPeachMission % FFFFFF97
+   18:  	CaseOR  ==  .Story:Ch1_BeganPeachMission % FFFFFFB4
+   24:  	CaseOR  ==  .Story:Ch3_BeganPeachMission % FFFFFFF2
+   30:  	CaseOR  ==  .Story:Ch7_BeganPeachMission % 58
+   3C:  		Call  SetMusicTrack ( 00000000 .Song:PrisonerPeachTheme 00000000 00000008 )
+   58:  	EndCaseGroup
+   60:  	CaseOR  ==  .Story:Ch2_BeganPeachMission % FFFFFFCA
+   6C:  	CaseOR  ==  .Story:Ch4_BeganPeachMission % 6
+   78:  	CaseOR  ==  .Story:Ch5_BeganPeachMission % 26
+   84:  	CaseOR  ==  .Story:Ch6_BeganPeachMission % 3A
+   90:  		Call  SetMusicTrack ( 00000000 .Song:PeachMission 00000000 00000008 )
+   AC:  	EndCaseGroup
+   B4:  EndSwitch
+        Exec    $Script_InitNewStuff
+   BC:  Return
+   C4:  End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    % Check if player isn't Peach
+    %Call 	$ReadAddress ( 800740A2 0 *Var1 .False .False ) % peach byte
+    Call    $ReadBitFlag ( 8010EFCC .False 2 4 *Var1 ) % get battleFlags2(0x02(bit4))
+    If *Var1 == .False
+        % Player is Mario
+        Call  ModifyColliderFlags   ( .True ~Collider:g25 7FFFFE00 )
+        Call  ModifyColliderFlags   ( .False ~Collider:g22 7FFFFE00 )
+        Bind  $Script_Exit3 .Trigger:WallPressA ~Collider:o95 00000001 00000000
+        Call  GetEntryID ( *Var0 )
+        If *Var0 != ~Entry:Entry1
+            Call  RotateGroup   ( ~Model:g28 -180` 00000000 00000001 00000000 )
+        EndIf
+    EndIf
+    Return
+    End
+}
+
+% Part of the coded grabbed from kkj_27
+#new:Script $Script_Exit3 % Script_80240B04
+{
+        Call  DisablePlayerInput    ( .True )
+        Call  DisablePlayerPhysics  ( .True )
+        Call  DisablePartnerAI  ( 00000000 )
+        Call  SetPlayerPos      (  50`  10`  -250` )
+        Call  PartnerIsFlying ( *Var0 )
+        If *Var0 == .False
+            Call  SetNpcPos ( .Npc:Partner  10`  30`  -250` )
+        Else
+            Call  SetNpcPos ( .Npc:Partner  10`  0  -250` )
+        EndIf
+        Call  SetNpcFlagBits    ( .Npc:Partner 00000200 .False )
+        Call  DisablePlayerInput ( .True )
+   30:  Thread
+            Call  PlaySoundAt   ( 00000093 00000000 ~Vec3d:Entry2 )
+            Call  GetPlayerPos  ( *Var7 *Var0 *Var8 )
+            Call  GetNpcPos ( .Npc:Partner *Var9 *Var0 *VarA )
+            Call  MakeLerp      ( 1800` 1550` 00000078 .Easing:Linear )
+   8C:  	Loop
+   98:  		Call  UpdateLerp ( )
+   A4:  		SetF  *Var2  *Var0
+   B4:  		DivF  *Var2  0000000A
+   C4:  		Call  RotateGroup   ( ~Model:g28 *Var2 00000000 00000001 00000000 )
+   E4:  		Call  $Function_80240340 ( )
+   F0:  		Wait  1`
+   FC:  		If  *Var1  ==  00000000
+  10C:  			BreakLoop
+  114:  		EndIf
+  11C:  	EndLoop
+  124:  EndThread
+  1F0:  Wait  80`
+  20C:  Call  GotoMap   ( "kkj_27" 00000002 )
+  220:  Wait  100`
+  22C:  Return
+  234:  End
+}
+
+@ $Script_80241550
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  DisablePlayerPhysics  ( .True )
+   20:  Call  DisablePartnerAI  ( 00000000 )
+   30:  Call  SetPlayerPos      (  50`  10`  -250` )
+        Call  PartnerIsFlying ( *Var0 )
+        If *Var0 == .False
+            Call  SetNpcPos ( .Npc:Partner  10`  30`  -250` )
+        Else
+            Call  SetNpcPos ( .Npc:Partner  10`  0  -250` )
+        EndIf
+   64:  Call  SetNpcFlagBits    ( .Npc:Partner 00000200 .False )
+   7C:  Call  InterpPlayerYaw   (  270`  0` )
+   90:  Switch  *GB_StoryProgress
+   9C:  	Case  ==  .Story:Ch1_BeganPeachMission % FFFFFFB4
+   A8:  		ExecWait  $Script_80241408
+   B4:  	Default
+   BC:  		ExecWait  $Script_8024135C
+   C8:  EndSwitch
+   D0:  Call  EnablePartnerAI ( )
+   DC:  Call  DisablePlayerPhysics  ( .False )
+   EC:  Call  DisablePlayerInput    ( .False )
+   FC:  Return
+  104:  End
+}

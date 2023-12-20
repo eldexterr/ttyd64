@@ -1,0 +1,2560 @@
+% This map was starting to run out of available memory, so that's why I made this .patch
+
+%===============
+% Rowf stuff
+%===============
+
+/% Useful addresses
+800DBC93=GF_MAC01_RowfBadgesChosen[bit7]
+800DBD9C=GB_MAC01_Rowf_NumBadges
+8035602E=GB_MAC01_Rowf_Badge0_1_New
+803570D3=GF_MAC01_Badge1
+803560FC=BadgeShopInventory_BadgeSold_1_1
+%/
+
+% The inventory it's the same as vanilla.
+#export:Data $Data_ShopInventory
+{
+  % itemID            story                        badge's flag         price
+  %
+  % After Chapter 1
+  .Item:SpeedySpin    .Story:Ch1_StarSpritDeparted *GF_MAC01_Badge1     50`
+  .Item:FirstAttack   .Story:Ch1_StarSpritDeparted *GF_MAC01_Badge2     100`
+  .Item:Multibounce   .Story:Ch1_StarSpritDeparted *GF_MAC01_Badge3     75`
+  .Item:SoftStomp     .Story:Ch1_StarSpritDeparted *GF_MAC01_Badge4     75`
+  % After Chapter 2
+  .Item:DodgeMaster   .Story:Ch2_StarSpritDeparted *GF_MAC01_Badge5     100`
+  .Item:SleepStomp    .Story:Ch2_StarSpritDeparted *GF_MAC01_Badge6     75`
+  .Item:DoubleDip     .Story:Ch2_StarSpritDeparted *GF_MAC01_Badge7     100`  
+  % After Chapter 3
+  .Item:Charge        .Story:Ch3_StarSpritDeparted *GF_MAC01_Badge8     50` % previously Jump Charge
+  .Item:SpinSmash     .Story:Ch3_StarSpritDeparted *GF_MAC01_Badge9     75`
+  .Item:IceSmash      .Story:Ch3_StarSpritDeparted *GF_MAC01_Badge10    100`
+  % After Chapter 4
+  .Item:AllorNothing  .Story:Ch4_StarSpritDeparted *GF_MAC01_Badge11    100`
+  .Item:HPPlusA       .Story:Ch4_StarSpritDeparted *GF_MAC01_Badge12    150`
+  .Item:FPPlusA       .Story:Ch4_StarSpritDeparted *GF_MAC01_Badge13    150`
+  .Item:HPPlusP       .Story:Ch4_StarSpritDeparted *GF_MAC01_Badge17    150`
+  % After Chapter 5
+  .Item:DizzyAttack   .Story:Ch5_StarSpritDeparted *GF_MAC01_Badge14    75` % previously Super Smash Charge
+  .Item:DamageDodgeA  .Story:Ch5_StarSpritDeparted *GF_MAC01_Badge15    150`
+  .Item:HeadRattle    .Story:Ch5_StarSpritDeparted *GF_MAC01_Badge18    100`
+  % After Chapter 6
+  .Item:QuakeHammer   .Story:Ch6_StarSpritDeparted *GF_MAC01_Badge16    100` % previously Mega Quake
+  FFFFFFFF
+}
+
+/% original PM TTYD's badge inventory - unused
+#export:Data $Data_ShopInventory_TTYD
+{
+  % itemID            story                           badge's flag        price
+  .Item:FPDrain       .Story:Intro                    *GF_MAC01_Badge1    100`
+  .Item:HappyFlowerA  .Story:Intro                    *GF_MAC01_Badge2    150`
+  .Item:LastStand     .Story:Intro                    *GF_MAC01_Badge3    50`
+  .Item:LastStandP    .Story:Intro                    *GF_MAC01_Badge4    50`
+  .Item:PiercingBlow  .Story:Intro                    *GF_MAC01_Badge5    75`
+  .Item:PowerJump     .Story:Intro                    *GF_MAC01_Badge6    50`
+  .Item:Simplifier    .Story:Intro                    *GF_MAC01_Badge7    50`
+  .Item:DeepFocus1    .Story:Intro                    *GF_MAC01_Badge8    50`
+  .Item:Unsimplifier  .Story:Intro                    *GF_MAC01_Badge9    50`
+  % After Chapter 1
+  .Item:CloseCall     .Story:Ch1_ReturnedToToadTown   *GF_MAC01_Badge10   100`
+  .Item:CloseCallP    .Story:Ch1_ReturnedToToadTown   *GF_MAC01_Badge11   100`
+  .Item:SleepStomp    .Story:Ch1_ReturnedToToadTown   *GF_MAC01_Badge12   100`
+  % After Chapter 2
+  .Item:FirstAttack   .Story:Ch2_StarSpritDeparted    *GF_MAC01_Badge13    100`
+  .Item:PowerRush     .Story:Ch2_StarSpritDeparted    *GF_MAC01_Badge14    50`
+  .Item:PrettyLuckyP  .Story:Ch2_StarSpritDeparted    *GF_MAC01_Badge15    150`
+  % After Chapter 3
+  .Item:IceSmash      .Story:Ch3_StarSpritDeparted    *GF_MAC01_Badge16    75`
+  .Item:PowerRushP    .Story:Ch3_StarSpritDeparted    *GF_MAC01_Badge17    50`
+  .Item:ShrinkStomp   .Story:Ch3_StarSpritDeparted    *GF_MAC01_Badge18    75`
+  % After Chapter 4
+  .Item:DamageDodgeA  .Story:Ch4_StarSpritDeparted    *GF_MAC01_Badge19    150`
+  .Item:HeadRattle    .Story:Ch4_StarSpritDeparted    *GF_MAC01_Badge20    100`
+  .Item:SoftStomp     .Story:Ch4_StarSpritDeparted    *GF_MAC01_Badge21    75`
+  % After Chapter 5
+  .Item:DamageDodgeP  .Story:Ch5_ReturnedToToadTown   *GF_MAC01_Badge22   150`
+  .Item:PoisonDrive   .Story:Ch5_ReturnedToToadTown   *GF_MAC01_Badge23   100`
+  .Item:DeepFocusP    .Story:Ch5_ReturnedToToadTown   *GF_MAC01_Badge24   50`
+  % After Chapter 6
+  .Item:AttackFXA     .Story:Ch6_ReturnedToToadTown   *GF_MAC01_Badge25   100`
+  FFFFFFFF
+}%/
+
+% Each page can have 30 items.
+#new:Data $Data_ShopInventory_CurrentPage
+{
+% itemID   story    flag     price
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+  00000000 00000000 00000000 00000000
+}
+
+% Clear all data from `$Data_ShopInventory_CurrentPage`
+#export:Function $Function_Inventory_ClearPageData
+{
+    PUSH    A0, A1, A2
+    LIO     A0, $Data_ShopInventory_CurrentPage
+    ADDIU   A1, R0, 1
+    .Loop
+    SW      R0, 0 (A0)
+    SW      R0, 4 (A0)
+    SW      R0, 8 (A0)
+    SW      R0, C (A0)
+    ADDIU   A0, A0, 10
+    ADDIU   A1, A1, 1
+    SLTIU   A2, A1, 30`
+    BNE     A2, R0, .Loop
+    NOP
+    .End
+    POP     A0, A1, A2
+    JR      RA
+    NOP
+}
+
+% Base code from hos_06
+#export:Function $Function_ShowInventory_Others % Function_80240AD0
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S3, 1C (SP)
+    8:  COPY      S3, A0
+    C:  SW        S6, 28 (SP)
+   18:  SW        RA, 34 (SP)
+   1C:  SW        S8, 30 (SP)
+   20:  SW        S7, 2C (SP)
+   24:  SW        S5, 24 (SP)
+   28:  SW        S4, 20 (SP)
+   2C:  SW        S2, 18 (SP)
+   30:  SW        S1, 14 (SP)
+   34:  BEQ       A1, R0, .StepMenu % A1 will always be 0x01 the 1st time the function run
+   38:  SW        S0, 10 (SP)
+        % update current page (if player moved the joystick)
+        LW        A0, 90 (S3) % get next page (var3)
+        BEQ       A0, R0, .GetHeap
+        NOP
+        % Next Page (page 1 starts with 0x01, 0x00 means isn't neccesary to change pages)
+        ADDI      A0, A0, -1
+        SW        A0, AC (S3) % current page (varA)
+        SW        R0, 90 (S3) % clear next page (var3)
+        .GetHeap
+        % Init popup menu
+   3C:  JAL       ~Func:heap_malloc
+   40:  LI        A0, 330
+   44:  SW        V0, 78 (S3) % write popUp data in functionTemp[2]
+   48:  COPY      S5, V0
+   4C:  CLEAR     S4
+   50:  COPY      S2, S4
+        LA        S8, $Global_ItemHudScripts
+        LI        S7, *GF_MAC01_Badge1
+        LA        S1, $Data_ShopInventory
+        LIO       S6, $Data_ShopInventory_CurrentPage
+   6C:  COPY      S0, S5
+        JAL       $get_others_badges_amount
+        NOP
+        ORI       A0, R0, 31` % each page can hold 30 items
+        DIV       V0, A0
+        MFLO      A0
+        SW        A0, B0 (S3) % save pages number (varB)
+        LW        A0, AC (S3) % get current page (varA)
+        BEQ       A0, R0, .WriteItemData
+        NOP
+        % current page isn't the first one, get which badge is the first one in this page
+        JAL       $Function_GetCurrentPage_StartData
+        NOP
+        BNE       V1, R0, .WriteItemData_SoldItems
+        NOP
+        .WriteItemData
+   70:  CLEAR     A0
+   74:  JAL       ~Func:get_variable
+   78:  ADDU      A1, S2, S7
+   7C:  BNEL      V0, R0, .GetNextItemData % skip if this item has been already bought
+   80:  ADDIU     S2, S2, 1 % increase itemInventoryIndex
+        % check storyProgress
+        CLEAR     A0
+        LIO       A1, *GB_StoryProgress
+        JAL       ~Func:get_variable
+        RESERVED
+        LW        A1, 4 (S1) % get itemStoryProgress
+        SLT       V0, V0, A1
+        BNEL      V0, R0, .GetNextItemData % skip if this item has been already bought
+        ADDIU     S2, S2, 1 % increase itemInventoryIndex
+        % check if this item is on sale
+        CLEAR     A0
+        LIO       A1, *MapVar[2]
+        JAL       ~Func:get_variable
+        RESERVED
+        % check if this badgeFlag is in the saleBadgesFlags table
+        ADDU      A1, S2, S7 % get badgeFlag
+        CLEAR     A3
+        .Loop_CheckSaleBadge_Inventory
+        LW        A2, 0 (V0)
+        ADDIU     A3, A3, 1
+        BEQL      A1, A2, .GetNextItemData % flag found, skip this item
+        ADDIU     S2, S2, 1 % increase itemInventoryIndex
+        SLTIU     V1, A3, 5 % because 5 badges can be on sale
+        BNE       V1, R0, .Loop_CheckSaleBadge_Inventory
+        ADDIU     V0, V0, 4
+        .UpdatePageData_Inventory
+        % copy item data to page data
+        LW        V0, 0 (S1)
+        SW        V0, 0 (S6) % itemID
+        LW        V0, 4 (S1)
+        SW        V0, 4 (S6) % story
+        LW        V0, 8 (S1)
+        SW        V0, 8 (S6) % flag
+        LW        V0, C (S1)
+        SW        V0, C (S6) % price
+        ADDIU     S6, S6, 10 % write in next item data ($ShopInventory_CurrentPage)
+        %
+   84:  LW        V0, 0 (S1) % get itemID
+   88:  LA        A2, 800878E0 % ItemTable
+        % get item data from ItemTable
+   90:  SLL       V0, V0, 5
+   94:  ADDU      V0, V0, A2
+   98:  LH        V1, 4 (V0) % get itemID
+   9C:  SW        S2, 108 (S0) % write itemInventoryIndex (popUp data)
+        LW        A0, 14 (V0) % get itemShortDescription
+        SW        A0, 294 (S0) % write itemDescription (popUp data)
+   A0:  LW        V0, 0 (V0) % get item name
+        % get item data from Global_ItemHudScripts
+   A4:  SLL       V1, V1, 3
+   A8:  ADDU      A0, V1, S8
+   AC:  SW        V0, 84 (S0) % write itemName (popUp data)
+   B0:  LW        V0, 0 (A0) % get item's iconScript
+   B4:  SW        V0, 0 (S0) % write itemScript (popUp data)
+        LAHU      V0, 8010F29C % get coins
+        LW        V1, C (S1) % get item price
+        % check if player has enough coins to buy it
+   C0:  SLT       V0, V0, V1
+   C4:  XORI      V0, V0, 1
+   C8:  SW        V0, 18C (S0) % write item bool (to toggle if you can buy it)(popUp data)
+        LAHU      V0, 8010F29C % get coins
+        LW        V1, C (S1) % get item price
+        % check if player has enough coins to buy it
+   D4:  SLT       V0, V0, V1
+   D8:  BEQ       V0, R0, .WriteItemLastData
+   DC:  NOP
+        % player didn't had enough coins
+   E0:  LW        V0, 4 (A0) % get item's b&w icon itemScript
+   E4:  SW        R0, 18C (S0) % clear item bool (popUp data)
+   E8:  SW        V0, 0 (S0) % write itemScript (popUp data)
+        .WriteItemLastData
+        LW        V0, C (S1) % get item price
+   F8:  ADDIU     S4, S4, 1 % increase itemIndex
+   FC:  SW        V0, 210 (S0) % write itemPrice (popUp data)
+  100:  ADDIU     S0, S0, 4 % write in next item data
+  104:  ADDIU     S2, S2, 1 % increase itemInventoryIndex
+        .GetNextItemData
+        % check if there's already 30 items loaded in the menu
+        SLTI      V0, S4, 30` % inventory size
+        BEQ       V0, R0, .CreateMenu
+        NOP
+        % check if is the last item from the inventory
+        ADDIU     S1, S1, 10 % read next item data ($ShopInventory)
+        LW        A0, 0 (S1)
+        ADDI      A1, R0, -1
+        BNE       A0, A1, .WriteItemData
+        NOP
+        %=================
+        % Sold Badges
+        %=================
+        %
+        % Add badges the player previously sold in to the inventory for double the price
+        LIO       GP, 803560FC % *BadgeShopInventory_BadgeSold_1_1
+        CLEAR     A1
+        .WriteItemData_SoldItems
+        LH        V1, 0 (GP) % get itemID
+        BEQ       V1, R0, .GetNextItemData_SoldItems
+        NOP
+        JAL       $Function_IsThisSoldBadgeOnSale_CheckByFlag
+        COPY      A0, V1
+        BNE       V0, R0, .GetNextItemData_SoldItems
+        COPY      V0, V1
+        LA        A2, 800878E0 % ItemTable
+        % get item data from ItemTable
+        SLL       V0, V0, 5
+        ADDU      A2, V0, A2
+        LH        V1, 4 (A2) % get itemID
+        SW        A1, 108 (S0) % write itemSoldIndex (popUp data)
+        LW        A0, 14 (A2) % get itemShortDescription
+        SW        A0, 294 (S0) % write itemDescription (popUp data)
+        LW        V0, 0 (A2) % get item name
+        % get item data from Global_ItemHudScripts
+        SLL       V1, V1, 3
+        ADDU      A0, V1, S8
+        SW        V0, 84 (S0) % write itemName (popUp data)
+        LW        V0, 0 (A0) % get item's iconScript
+        SW        V0, 0 (S0) % write itemScript (popUp data)
+        LHU       V1, C (A2) % get itemSellValue
+        ORI       A3, R0, 2
+        MULT      V1, A3
+        MFLO      V1 % itemPrice=sellValue*2
+        % copy item data to page data
+        COPY      A3, A0
+        LH        A0, 0 (GP) % get itemID
+        SW        A0, 0 (S6) % itemID
+        ADDI      V0, R0, -128` % .Story:Intro
+        SW        V0, 4 (S6) % story
+        % get global byte address
+        ORI       V0, R0, 2 % because each badge uses 2 bytes
+        MULT      A1, V0
+        MFLO      A0
+        LIO       V0, 803560FC
+        ADDU      V0, V0, A0
+        COPY      A0, A3
+        SW        V0, 8 (S6) % byteAddress
+        SW        V1, C (S6) % price
+        ADDIU     S6, S6, 10 % write in next item data ($ShopInventory_CurrentPage)
+        %
+        % check if player has enough coins to buy it
+        LAHU      V0, 8010F29C % get coins
+        SLT       V0, V0, V1
+        XORI      V0, V0, 1
+        SW        V0, 18C (S0) % write item bool (to toggle if you can buy it)(popUp data)
+        LAHU      V0, 8010F29C % get coins
+        % check if player has enough coins to buy it
+        SLT       V0, V0, V1
+        BEQ       V0, R0, .WriteItemLastData_SoldItems
+        NOP
+        % player didn't had enough coins
+        LW        V0, 4 (A0) % get item's b&w icon itemScript
+        SW        R0, 18C (S0) % clear item bool (popUp data)
+        SW        V0, 0 (S0) % write itemScript (popUp data)
+        .WriteItemLastData_SoldItems
+        ADDIU     S4, S4, 1 % increase itemIndex
+        SW        V1, 210 (S0) % write itemPrice (popUp data)
+        ADDIU     S0, S0, 4 % write in next item data
+        .GetNextItemData_SoldItems
+        % check if there's already 30 items loaded in the menu
+        SLTI      V0, S4, 30`
+        BEQ       V0, R0, .CreateMenu
+        NOP
+        ADDIU     A1, A1, 1
+        SLTI      V0, A1, 130` % amounts of items that can be sold
+        BNE       V0, R0, .WriteItemData_SoldItems
+        ADDIU     GP, GP, 2 % read next item data (Sold Items)
+        .CreateMenu
+  114:  COPY      A0, S5
+  118:  LI        V0, 5 % box style
+  11C:  SW        V0, 318 (A0) % write boxStyle (popUp data)
+  120:  SW        S4, 324 (A0) % write listSize (popUp data)
+  124:  JAL       ~Func:create_popup_menu
+  128:  SW        R0, 328 (A0) % write cursor's startPos (popUp data)
+  12C:  SW        R0, 70 (S3)  % clear popUp menuCooldownFrames
+        .StepMenu
+  130:  LW        V0, 70 (S3) % get menuCooldownFrames
+  134:  LW        S5, 78 (S3) % get popUp data from functionTemp[2]
+  138:  BNE       V0, R0, .UpdateFrameCounter
+  13C:  ADDIU     V0, V0, 1
+        % show current page
+        LW        A0, B0 (S3) % pages amount
+        BEQ       A0, R0, .TrackJoystick
+        NOP
+        LIO       A0, $Data_Shop_ExtraData
+        SW        S3, 0 (A0)
+        ORI       A1, R0, 1
+        SW        A1, 4 (A0) % show current page
+        .TrackJoystick
+        LAW       V0, 8010D640 % popUp menu state?
+        ORI       A0, R0, 1
+        BNE       V0, A0, .GetInputs
+        NOP
+        LAW       V0, 8010D644 % popUp animation timer2
+        BNE       V0, R0, .GetInputs
+        NOP
+        LABU      V0, 80159F2C % popUp animation timer
+        SLTIU     V0, V0, 9
+        BNE       V0, R0, .GetInputs
+        NOP
+        % check if there's more than 1 page
+        LW        V0, B0 (S3) % get total pages (varB)
+        BEQ       V0, R0, .GetInputs
+        NOP
+        LW        A0, AC (S3) % get current page (varA)
+        % check if the joystick was moved left or right
+        LABU      V1, 80074035 % inputs (joystick byte)
+        % check joystick left
+        BEQ       A0, R0, .Inputs_Joystick_Right
+        NOP
+        ANDI      A1, V1, 4 % bit2 (joystick left)
+        BEQ       A1, R0, .Inputs_Joystick_Right
+        NOP
+        SW        A0, 90 (S3) % save next page (var3)
+        ADDIU     A0, R0, FF
+        BEQ       R0, R0, .GetInputs
+        SH        A0, 32C (S5) % close menu
+        .Inputs_Joystick_Right
+        BEQ       A0, V0, .GetInputs
+        NOP
+        ANDI      A1, V1, 8 % bit3 (joystick right)
+        BEQ       A1, R0, .GetInputs
+        NOP
+        ADDIU     A0, A0, 2
+        SW        A0, 90 (S3) % save next page (var3)
+        ADDIU     A0, R0, FF
+        SH        A0, 32C (S5) % close menu
+        .GetInputs
+  140:  LH        V0, 32C (S5) % get inputs (0xFF=Cancel 0x01=Accept)
+  144:  BEQ       V0, R0, .DontStopFunction
+  148:  SW        V0, 74 (S3) % save inputs in Evt 0x74 too
+        % player pressed A or B, hide the menu
+  14C:  JAL       ~Func:hide_popup_menu
+  150:  NOP
+        LIO       V0, $Data_Shop_ExtraData
+        SW        R0, 4 (V0) % don't show current page
+        .ShowPages
+  154:  LW        V0, 70 (S3) % get menuCooldownFrames
+  158:  ADDIU     V0, V0, 1
+        .UpdateFrameCounter
+  15C:  SW        V0, 70 (S3) % write menuCooldownFrames
+  160:  SLTI      V0, V0, 20` % amount of frames to wait after the menu got closed to destroy the menu data
+  164:  BEQ       V0, R0, .DestroyMenu
+  168:  NOP
+        .DontStopFunction
+  16C:  BEQ       R0, R0, .End
+  170:  CLEAR     V0
+        .DestroyMenu
+  174:  JAL       ~Func:destroy_popup_menu
+  178:  NOP
+  17C:  LW        V1, 74 (S3) % get inputs
+  180:  LI        V0, FF % menu closed
+  184:  BEQ       V1, V0, .MenuClosed
+  188:  ADDIU     V0, V1, FFFF
+        %=============================
+        % player pressed the A button
+        %=============================
+        %
+        % get item data
+  18C:  SLL       V0, V0, 2
+  190:  ADDU      V0, S5, V0
+        LAW       S2, 8010D648 % get cursorPos
+        % get item data from $ShopInventory
+        LA        V1, $Data_ShopInventory_CurrentPage
+        ORI       V0, R0, 10 % because each item have 0x10 bytes of data
+        MULT      V0, S2
+        MFLO      V0
+        ADDU      V1, V1, V0
+  1B0:  LW        V0, 0 (V1) % get itemID
+  1B4:  SW        V0, 84 (S3) % save itemSelectedItemID
+        LW        V0, C (V1) % get itemPrice
+  1BC:  SW        S2, 8C (S3) % save itemSelectedInventoryIndex
+  1C0:  SW        V0, 88 (S3) % save itemSelectedPrice
+  1C4:  LW        V0, 0 (V1) % get itemID
+        % get itemData from ItemTable
+  1C8:  SLL       V0, V0, 5
+  1CC:  LTW       V0, V0 (800878E0) % ItemTable
+  1D8:  SW        V0, 94 (S3) % save itemSelectedItemTableData
+        % save global flag or byte
+        LW        V0, 8 (V1) % get flag
+        SW        V0, 9C (S3) % save flag (var6)
+        %
+  1DC:  LW        V0, 0 (V1) % get itemID
+        % get data for Evt(0x98)(purpose unknown)
+  1E0:  SLL       V0, V0, 5
+  1E4:  LTBU      V1, V0 (800878FA) % ?
+  1F0:  SLL       V0, V1, 2
+  1F4:  ADDU      V0, V0, V1
+  1F8:  SLL       V0, V0, 2
+  1FC:  LTB       V0, V0 (8008F072) % ?
+        %
+  208:  BEQ       R0, R0, .ClearMenuData
+  20C:  SW        V0, 98 (S3) % ? (this data isn't actually ever readen)
+        .MenuClosed
+  210:  LI        V0, FFFF
+  214:  SW        V0, 84 (S3) % set itemSelectedItemID as -1
+        .ClearMenuData
+  218:  JAL       ~Func:heap_free
+  21C:  LW        A0, 78 (S3)
+  220:  LI        V0, 2 % stop function
+        .End
+  224:  LW        RA, 34 (SP)
+  228:  LW        S8, 30 (SP)
+  22C:  LW        S7, 2C (SP)
+  230:  LW        S6, 28 (SP)
+  234:  LW        S5, 24 (SP)
+  238:  LW        S4, 20 (SP)
+  23C:  LW        S3, 1C (SP)
+  240:  LW        S2, 18 (SP)
+  244:  LW        S1, 14 (SP)
+  248:  LW        S0, 10 (SP)
+  24C:  JR        RA
+  250:  ADDIU     SP, SP, 38
+}
+
+% Uses `$Function_ShowInventory_Others` as the base code
+#export:Function $Function_ShowInventory_PlayerBadges
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S3, 1C (SP)
+    8:  COPY      S3, A0
+    C:  SW        S6, 28 (SP)
+   18:  SW        RA, 34 (SP)
+   1C:  SW        S8, 30 (SP)
+   20:  SW        S7, 2C (SP)
+   24:  SW        S5, 24 (SP)
+   28:  SW        S4, 20 (SP)
+   2C:  SW        S2, 18 (SP)
+   30:  SW        S1, 14 (SP)
+   34:  BEQ       A1, R0, .StepMenu % A1 will always be 0x01 the 1st time the function run
+   38:  SW        S0, 10 (SP)
+        % sort player badges
+        LIO       A0, 8010F344 % playerBadges
+        ORI       A1, R0, 128` % badge cap
+        LIO       A2, $pause_badges_comparator
+        JAL       $pause_sort_item_list
+        RESERVED
+        % update current page (if player moved the joystick)
+        LW        A0, 90 (S3) % get next page (var3)
+        BEQ       A0, R0, .GetHeap
+        NOP
+        % Next Page (page 1 starts with 0x01, 0x00 means isn't neccesary to change pages)
+        ADDI      A0, A0, -1
+        SW        A0, AC (S3) % current page (varA)
+        SW        R0, 90 (S3) % clear next page (var3)
+        .GetHeap
+        % Init popup menu
+   3C:  JAL       ~Func:heap_malloc
+   40:  LI        A0, 330
+   44:  SW        V0, 78 (S3) % write popUp data in functionTemp[2]
+   48:  COPY      S5, V0
+   4C:  CLEAR     S4
+   50:  COPY      S2, S4
+        LA        S8, $Global_ItemHudScripts
+        LA        S1, 8010F344 % playerBadges
+        LIO       S6, $Data_ShopInventory_CurrentPage
+   6C:  COPY      S0, S5
+        JAL       $get_player_badges_amount
+        NOP
+        ORI       A0, R0, 31` % each page can hold 30 items
+        DIV       V0, A0
+        MFLO      A0
+        SW        A0, B0 (S3) % save pages number (varB)
+        LW        A0, AC (S3) % get current page (varA)
+        BEQ       A0, R0, .WriteItemData
+        NOP
+        % current page isn't the first one, get which badge is the first one in this page
+        ORI       A1, R0, 30` % each page can hold 30 items
+        MULT      A0, A1
+        MFLO      A1
+        COPY      S2, A1
+        ORI       A0, R0, 2 % because each badgeID uses 2 bytes
+        MULT      A1, A0
+        MFLO      A1
+        ADDU      S1, S1, A1
+        .WriteItemData
+        % copy item data to page data
+        LH        V0, 0 (S1) % get itemID
+        BEQ       V0, R0, .GetNextItemData
+        NOP
+        LA        A2, 800878E0 % ItemTable
+        % get item data from ItemTable
+        SLL       V0, V0, 5
+        ADDU      A2, V0, A2
+        LH        V1, 4 (A2) % get itemID
+        SW        A1, 108 (S0) % write itemSoldIndex (popUp data)
+        LW        A0, 14 (A2) % get itemShortDescription
+        SW        A0, 294 (S0) % write itemDescription (popUp data)
+        LW        V0, 0 (A2) % get item name
+        % get item data from Global_ItemHudScripts
+        SLL       V1, V1, 3
+        ADDU      A0, V1, S8
+        SW        V0, 84 (S0) % write itemName (popUp data)
+        LW        V0, 0 (A0) % get item's iconScript
+        SW        V0, 0 (S0) % write itemScript (popUp data)
+        LHU       V1, C (A2) % get itemSellValue
+        % copy item data to page data
+        COPY      A3, A0
+        LH        A0, 0 (S1) % get itemID
+        SW        A0, 0 (S6) % itemID
+        ADDI      V0, R0, -128` % .Story:Intro
+        SW        V0, 4 (S6) % story
+        SW        R0, 8 (S6) % globalFlag/Byte
+        SW        V1, C (S6) % price
+        ADDIU     S6, S6, 10 % write in next item data ($ShopInventory_CurrentPage)
+        ORI       V0, R0, 1
+        SW        V0, 18C (S0) % write item bool (to toggle if you can buy it)(popUp data)
+        ADDIU     S4, S4, 1 % increase itemIndex
+        SW        V1, 210 (S0) % write itemPrice (popUp data)
+        ADDIU     S0, S0, 4 % write in next item data
+        .GetNextItemData
+        % check if there's already 30 items loaded in the menu
+        SLTI      V0, S4, 30` % inventory size
+        BEQ       V0, R0, .CreateMenu
+        NOP
+        % check if is the last badge from the player's badges
+        ADDIU     S2, S2, 1
+        ADDIU     S1, S1, 2 % read next item (player badges)
+        SLTIU     A0, S2, 128`
+        BNE       A0, R0, .WriteItemData
+        NOP
+        .CreateMenu
+  114:  COPY      A0, S5
+  118:  LI        V0, 5 % box style
+  11C:  SW        V0, 318 (A0) % write boxStyle (popUp data)
+  120:  SW        S4, 324 (A0) % write listSize (popUp data)
+  124:  JAL       ~Func:create_popup_menu
+  128:  SW        R0, 328 (A0) % write cursor's startPos (popUp data)
+  12C:  SW        R0, 70 (S3)  % clear popUp menuCooldownFrames
+        .StepMenu
+  130:  LW        V0, 70 (S3) % get menuCooldownFrames
+  134:  LW        S5, 78 (S3) % get popUp data from functionTemp[2]
+  138:  BNE       V0, R0, .UpdateFrameCounter
+  13C:  ADDIU     V0, V0, 1
+        % show current page
+        LW        A0, B0 (S3) % pages amount
+        BEQ       A0, R0, .TrackJoystick
+        NOP
+        LIO       A0, $Data_Shop_ExtraData
+        SW        S3, 0 (A0)
+        ORI       A1, R0, 1
+        SW        A1, 4 (A0) % show current page
+        .TrackJoystick
+        LAW       V0, 8010D640 % popUp menu state?
+        ORI       A0, R0, 1
+        BNE       V0, A0, .GetInputs
+        NOP
+        LAW       V0, 8010D644 % popUp animation timer2
+        BNE       V0, R0, .GetInputs
+        NOP
+        LABU      V0, 80159F2C % popUp animation timer
+        SLTIU     V0, V0, 9
+        BNE       V0, R0, .GetInputs
+        NOP
+        % check if there's more than 1 page
+        LW        V0, B0 (S3) % get total pages (varB)
+        BEQ       V0, R0, .GetInputs
+        NOP
+        LW        A0, AC (S3) % get current page (varA)
+        % check if the joystick was moved left or right
+        LABU      V1, 80074035 % inputs (joystick byte)
+        % check joystick left
+        BEQ       A0, R0, .Inputs_Joystick_Right
+        NOP
+        ANDI      A1, V1, 4 % bit2 (joystick left)
+        BEQ       A1, R0, .Inputs_Joystick_Right
+        NOP
+        SW        A0, 90 (S3) % save next page (var3)
+        ADDIU     A0, R0, FF
+        BEQ       R0, R0, .GetInputs
+        SH        A0, 32C (S5) % close menu
+        .Inputs_Joystick_Right
+        BEQ       A0, V0, .GetInputs
+        NOP
+        ANDI      A1, V1, 8 % bit3 (joystick right)
+        BEQ       A1, R0, .GetInputs
+        NOP
+        ADDIU     A0, A0, 2
+        SW        A0, 90 (S3) % save next page (var3)
+        ADDIU     A0, R0, FF
+        SH        A0, 32C (S5) % close menu
+        .GetInputs
+  140:  LH        V0, 32C (S5) % get inputs (0xFF=Cancel 0x01=Accept)
+  144:  BEQ       V0, R0, .DontStopFunction
+  148:  SW        V0, 74 (S3) % save inputs in Evt 0x74 too
+        % player pressed A or B, hide the menu
+  14C:  JAL       ~Func:hide_popup_menu
+  150:  NOP
+        LIO       V0, $Data_Shop_ExtraData
+        SW        R0, 4 (V0) % don't show current page
+        .ShowPages
+  154:  LW        V0, 70 (S3) % get menuCooldownFrames
+  158:  ADDIU     V0, V0, 1
+        .UpdateFrameCounter
+  15C:  SW        V0, 70 (S3) % write menuCooldownFrames
+  160:  SLTI      V0, V0, 20` % amount of frames to wait after the menu got closed to destroy the menu data
+  164:  BEQ       V0, R0, .DestroyMenu
+  168:  NOP
+        .DontStopFunction
+  16C:  BEQ       R0, R0, .End
+  170:  CLEAR     V0
+        .DestroyMenu
+  174:  JAL       ~Func:destroy_popup_menu
+  178:  NOP
+  17C:  LW        V1, 74 (S3) % get inputs
+  180:  LI        V0, FF % menu closed
+  184:  BEQ       V1, V0, .MenuClosed
+  188:  ADDIU     V0, V1, FFFF
+        %=============================
+        % player pressed the A button
+        %=============================
+        %
+        % get item data
+  18C:  SLL       V0, V0, 2
+  190:  ADDU      V0, S5, V0
+        LAW       S2, 8010D648 % get cursorPos
+        % get item data from $ShopInventory
+        LA        V1, $Data_ShopInventory_CurrentPage
+        ORI       V0, R0, 10 % because each item have 0x10 bytes of data
+        MULT      V0, S2
+        MFLO      V0
+        ADDU      V1, V1, V0
+  1B0:  LW        V0, 0 (V1) % get itemID
+  1B4:  SW        V0, 84 (S3) % save itemSelectedItemID
+        LW        V0, C (V1) % get itemPrice
+  1BC:  SW        S2, 8C (S3) % save itemSelectedInventoryIndex
+  1C0:  SW        V0, 88 (S3) % save itemSelectedPrice
+  1C4:  LW        V0, 0 (V1) % get itemID
+        % get itemData from ItemTable
+  1C8:  SLL       V0, V0, 5
+  1CC:  LTW       V0, V0 (800878E0) % ItemTable
+  1D8:  SW        V0, 94 (S3) % save itemSelectedItemTableData
+        % save global flag or byte
+        LW        V0, 8 (V1) % get flag
+        SW        V0, 9C (S3) % save flag (var6)
+        %
+  1DC:  LW        V0, 0 (V1) % get itemID
+        % get data for Evt(0x98)(purpose unknown)
+  1E0:  SLL       V0, V0, 5
+  1E4:  LTBU      V1, V0 (800878FA) % ?
+  1F0:  SLL       V0, V1, 2
+  1F4:  ADDU      V0, V0, V1
+  1F8:  SLL       V0, V0, 2
+  1FC:  LTB       V0, V0 (8008F072) % ?
+        %
+  208:  BEQ       R0, R0, .ClearMenuData
+  20C:  SW        V0, 98 (S3) % ? (this data isn't actually ever readen)
+        .MenuClosed
+  210:  LI        V0, FFFF
+  214:  SW        V0, 84 (S3) % set itemSelectedItemID as -1
+        .ClearMenuData
+  218:  JAL       ~Func:heap_free
+  21C:  LW        A0, 78 (S3)
+  220:  LI        V0, 2 % stop function
+        .End
+  224:  LW        RA, 34 (SP)
+  228:  LW        S8, 30 (SP)
+  22C:  LW        S7, 2C (SP)
+  230:  LW        S6, 28 (SP)
+  234:  LW        S5, 24 (SP)
+  238:  LW        S4, 20 (SP)
+  23C:  LW        S3, 1C (SP)
+  240:  LW        S2, 18 (SP)
+  244:  LW        S1, 14 (SP)
+  248:  LW        S0, 10 (SP)
+  24C:  JR        RA
+  250:  ADDIU     SP, SP, 38
+}
+
+% Remove any empty slots between badges in the sold badges data
+#export:Function $Function_SortSoldBadges
+{
+      PUSH        RA, A0, A1, A2, A3, V0, V1
+      JAL         $get_sold_badges_amount
+      NOP
+      BEQ         V0, R0, .End % there's zero sold badges
+      NOP
+      LIO         A0, 803560FC % BadgeShopInventory_BadgeSold_1_1
+      COPY        A1, A0
+      CLEAR       V0
+      CLEAR       V1
+      .Loop1
+      LHU         A2, 0 (A0) % get badgeID
+      BNE         A2, R0, .CheckNextBadge1
+      NOP
+      % an empty badge slot was found, find the next badgeID to move it to the left
+      COPY        A1, A0
+      COPY        V1, V0
+      .Loop2
+      LHU         A2, 0 (A1)
+      BEQ         A2, R0, .CheckNextBadge2
+      NOP
+      SH          R0, 0 (A1) % clear old possition
+      BEQ         R0, R0, .CheckNextBadge1
+      SH          A2, 0 (A0) % move badge to the left
+      .CheckNextBadge2
+      ADDIU       A1, A1, 2
+      ADDIU       V1, V1, 1
+      SLTIU       A3, V1, 130`
+      BNE         A3, R0, .Loop2
+      NOP
+      % there's no more badges left
+      BEQ         R0, R0, .End
+      NOP
+      .CheckNextBadge1
+      ADDIU       A0, A0, 2
+      ADDIU       V0, V0, 1
+      SLTIU       A3, V0, 130`
+      BNE         A3, R0, .Loop1
+      NOP
+      .End
+      POP         RA, A0, A1, A2, A3, V0, V1
+      JR          RA
+      NOP
+}
+
+% Call    $Function_GetTypeOfBadge ( globalFlag/byteAddress *out )
+%
+% Returns a `bool` in arg2.
+%
+% `.False` = Inventory Badge / `.True` = Sold Badge
+%
+#export:Function $Function_GetTypeOfBadge
+{
+  PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+  COPY    S0, A0
+  LW      A1, C (A0)
+  JAL     ~Func:get_variable
+  LW      A1, 0 (A1)
+  %
+  LIO     V1, 7F000000 % if flag data starts with `80`
+  AND     V0, V0, V1
+  BNEL    V0, R0, .SetVar
+  CLEAR   A2 % inventory badge
+  ORI     A2, R0, 1 % sold badge
+  .SetVar
+  COPY    A0, S0
+  LW      A1, C (A0)
+  JAL     ~Func:set_variable
+  LW      A1, 4 (A1)
+  POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+  JR      RA
+  ORI     V0, R0, 2
+}
+
+% Call  Function_GetOtherBadgesAmount ( *out )
+#export:Function $Function_GetOtherBadgesAmount
+{
+    PUSH      RA, A0, A1, A2, A3, V0, V1, S0
+    COPY      S0, A0
+    JAL       $get_others_badges_amount
+    NOP
+    COPY      A0, S0
+    LW        A1, C (A0)
+    LW        A1, 0 (A1)
+    JAL       ~Func:set_variable
+    COPY      A2, V0
+    POP       RA, A0, A1, A2, A3, V0, V1, S0
+    JR        RA
+    ORI       V0, R0, 2
+}
+
+% Call  Function_GetPlayerBadgesAmount ( *out )
+#export:Function $Function_GetPlayerBadgesAmount
+{
+    PUSH      RA, A0, A1, A2, A3, V0, V1, S0
+    COPY      S0, A0
+    JAL       $get_player_badges_amount
+    NOP
+    COPY      A0, S0
+    LW        A1, C (A0)
+    LW        A1, 0 (A1)
+    JAL       ~Func:set_variable
+    COPY      A2, V0
+    POP       RA, A0, A1, A2, A3, V0, V1, S0
+    JR        RA
+    ORI       V0, R0, 2
+}
+
+% Get total amount of available badges from the 'others badges' inventory.
+#new:Function $get_others_badges_amount
+{
+    PUSH      RA, A0, A1, A2, A3, V1, S0, S1, S2, S3
+    CLEAR     S2
+    CLEAR     S3
+    LI        S0, *GF_MAC01_Badge1
+    LIO       S1, $Data_ShopInventory
+    .GetBadge_Inventory
+    CLEAR     A0
+    JAL       ~Func:get_variable
+    ADDU      A1, S2, S0
+    BNEL      V0, R0, .GetNextItemData % skip if this item has been already bought
+    ADDIU     S2, S2, 1 % increase itemInventoryIndex
+    % check storyProgress
+    CLEAR     A0
+    LIO       A1, *GB_StoryProgress
+    JAL       ~Func:get_variable
+    RESERVED
+    LW        A1, 4 (S1) % get itemStoryProgress
+    SLT       V0, V0, A1
+    BNE       V0, R0, .GetNextItemData % skip if storyProgress isn't high enough
+    ADDIU     S2, S2, 1 % increase itemInventoryIndex
+    ADDIU     S3, S3, 1 % increase itemIndex
+    .GetNextItemData
+    % check if is the last item from the inventory
+    ADDIU     S1, S1, 10 % read next item data ($ShopInventory)
+    LW        A0, 0 (S1)
+    ADDI      A1, R0, -1
+    BNE       A0, A1, .GetBadge_Inventory
+    NOP
+    %=================
+    % Sold Badges
+    %=================
+    LIO       A0, 803560FC % *BadgeShopInventory_BadgeSold_1_1
+    CLEAR     A1
+    .GetBadge_Sold
+    LH        V0, 0 (A0) % get itemID
+    BEQ       V0, R0, .GetNextItemData_SoldItems
+    ADDIU     A1, A1, 1
+    ADDIU     S3, S3, 1
+    .GetNextItemData_SoldItems
+    SLTI      V0, A1, 130` % amounts of items that can be sold
+    BNE       V0, R0, .GetBadge_Sold
+    ADDIU     A0, A0, 2 % read next item data (Sold Items)
+    %==================
+    % check sale badges
+    %==================
+    CLEAR     A0
+    ORI       S1, R0, 5
+    LIO       A1, *GF_MAC01_RowfBadgeAvailableA_New
+    JAL       ~Func:get_variable
+    RESERVED
+    SUB       S1, S1, V0
+    LIO       A1, *GF_MAC01_RowfBadgeAvailableB_New
+    JAL       ~Func:get_variable
+    RESERVED
+    SUB       S1, S1, V0
+    LIO       A1, *GF_MAC01_RowfBadgeAvailableC_New
+    JAL       ~Func:get_variable
+    RESERVED
+    SUB       S1, S1, V0
+    LIO       A1, *GF_MAC01_RowfBadgeAvailableD_New
+    JAL       ~Func:get_variable
+    RESERVED
+    SUB       S1, S1, V0
+    LIO       A1, *GF_MAC01_RowfBadgeAvailableE_New
+    JAL       ~Func:get_variable
+    RESERVED
+    SUB       S1, S1, V0
+    SUB       V0, S3, S1
+    POP       RA, A0, A1, A2, A3, V1, S0, S1, S2, S3
+    JR        RA
+    NOP
+}
+
+% `A2`=globalFlag/Address
+#new:Function $Function_GetVar
+{
+      PUSH        RA, A0, A1, A2, A3, V1
+      CLEAR       A0
+      JAL         ~Func:get_variable
+      COPY        A1, A2
+      POP         RA, A0, A1, A2, A3, V1
+      JR          RA
+      NOP
+}
+
+% Get total amount of available badges from the sold inventory.
+#export:Function $get_sold_badges_amount
+{
+      PUSH      RA, A0, A1, A2, A3, V1, S0
+      CLEAR     S0
+      LIO       A0, 803560FC % *BadgeShopInventory_BadgeSold_1_1
+      CLEAR     A1
+      .GetBadge_Sold
+      LH        V0, 0 (A0) % get itemID
+      BEQ       V0, R0, .GetNextItemData_SoldItems
+      ADDIU     A1, A1, 1
+      ADDIU     S0, S0, 1
+      .GetNextItemData_SoldItems
+      SLTI      V0, A1, 130` % amounts of items that can be sold
+      BNE       V0, R0, .GetBadge_Sold
+      ADDIU     A0, A0, 2 % read next item data (Sold Items)
+      .End
+      COPY      V0, S0
+      POP       RA, A0, A1, A2, A3, V1, S0
+      JR        RA
+      NOP
+}
+
+#new:Function $get_player_badges_amount
+{
+    PUSH      RA, A0, A1, A2, A3, V1
+    LIO       A0, 8010F344 % playerBadges
+    CLEAR     V0
+    CLEAR     A2
+    .Loop
+    LHU       A1, 0 (A0) % get badge
+    ADDIU     A2, A2, 1
+    ADDIU     A0, A0, 2
+    BNEL      A1, R0, .CheckCap
+    ADDIU     V0, V0, 1
+    .CheckCap
+    SLTIU     A3, A2, 128` % player can hold 128 badges
+    BNE       A3, R0, .Loop
+    NOP
+    .End
+    POP       RA, A0, A1, A2, A3, V1
+    JR        RA
+    NOP
+}
+
+% Call $Function_GetSoldBadgesAmount ( *out )
+#export:Function $Function_GetSoldBadgesAmount
+{
+    PUSH      RA, A0, A1, A2, A3, V1
+    LIO       A3, 803560FC % *BadgeShopInventory_BadgeSold_1_1
+    CLEAR     A1
+    CLEAR     A2
+    .GetBadge_Sold
+    LH        V0, 0 (A3) % get itemID
+    BEQ       V0, R0, .GetNextItemData_SoldItems
+    ADDIU     A1, A1, 1
+    ADDIU     A2, A2, 1
+    .GetNextItemData_SoldItems
+    SLTI      V0, A1, 130` % amounts of items that can be sold
+    BNE       V0, R0, .GetBadge_Sold
+    ADDIU     A3, A3, 2 % read next item data (Sold Items)
+    .End
+    LW        A1, C (A0)
+    JAL       ~Func:set_variable
+    LW        A1, 0 (A1)
+    POP       RA, A0, A1, A2, A3, V1
+    JR        RA
+    ORI       V0, R0, 2
+}
+
+#export:Function $Function_AddBadgeToSoldInventory
+{
+    PUSH      RA, A0, A1, A2, A3, V1
+    LW        A1, C (A0)
+    JAL       ~Func:get_variable
+    LW        A1, 0 (A1)
+    JAL       $add_badge_to_sold_inventory
+    COPY      A0, V0
+    .End
+    POP       RA, A0, A1, A2, A3, V1
+    JR        RA
+    ORI       V0, R0, 2
+}
+
+% `A0` = badgeID
+%
+% Returns a -1 if couldn't be added.
+#export:Function $add_badge_to_sold_inventory
+{
+    PUSH      RA, A0, A1, A2, V1
+    JAL       $Function_FindSoldBadge
+    COPY      V1, A0
+    COPY      A1, V0
+    COPY      V0, V1
+    BNEL      A1, R0, .End % This badge is already in the inventory, don't add it once again
+    ADDI      V0, R0, -1
+    JAL       $Function_SortSoldBadges
+    NOP
+    LIO       A0, 803560FC % *BadgeShopInventory_BadgeSold_1_1
+    CLEAR     A1
+    .Loop
+    LH        A2, 0 (A0) % get itemID
+    ADDIU     A1, A1, 1
+    BEQL      A2, R0, .End
+    SH        V0, 0 (A0) % save sold badge
+    .GetNextBadge
+    SLTI      V1, A1, 130` % amounts of items that can be sold
+    BNE       V1, R0, .Loop
+    ADDIU     A0, A0, 2 % read next badge
+    ADDI      V0, R0, -1
+    .End
+    POP       RA, A0, A1, A2, V1
+    JR        RA
+    NOP
+}
+
+% `A0` = badgeID
+%
+% Returns a `bool` in V0
+#new:Function $Function_FindSoldBadge
+{
+    PUSH      RA, A0, A1, A2, A3, V1
+    LIO       A1, 803560FC % *BadgeShopInventory_BadgeSold_1_1
+    CLEAR     A2
+    .Loop
+    LHU       A3, 0 (A1) % get badgeID
+    BEQL      A0, A3, .End
+    ORI       V0, R0, 1
+    ADDIU     A2, A2, 1
+    SLTI      V1, A2, 130` % amounts of items that can be sold
+    BNE       V1, R0, .Loop
+    ADDIU     A1, A1, 2 % read next badge
+    CLEAR     V0
+    .End
+    POP       RA, A0, A1, A2, A3, V1
+    JR        RA
+    NOP
+}
+
+% Sets each neccesary argument to start reading from the first item in this page.
+%
+% If the first item it's from the inventory, will write in `S1` & `S2`
+%
+% If the first item it's from the sold ones, will write in `A1` & `GP`.
+%
+% `A0` = current page
+%
+% Returns a `bool` in `V1` (`00`=Inventory, `01`=Sold)
+#new:Function $Function_GetCurrentPage_StartData
+{
+    PUSH      RA, A0, A2, A3, V0, S0, S3, S4
+    CLEAR     S3
+    % get item trying to be found
+    ORI       A1, R0, 30` % because each page has 30 badges
+    MULT      A0, A1
+    MFLO      S4
+    ADDIU     S4, S4, 1
+    LI        S0, *GF_MAC01_Badge1
+    .GetBadge_Inventory
+    CLEAR     A0
+    JAL       ~Func:get_variable
+    ADDU      A1, S2, S0
+    BNEL      V0, R0, .GetNextItemData % skip if this item has been already bought
+    ADDIU     S2, S2, 1 % increase itemInventoryIndex
+    % check storyProgress
+    CLEAR     A0
+    LIO       A1, *GB_StoryProgress
+    JAL       ~Func:get_variable
+    RESERVED
+    LW        A1, 4 (S1) % get itemStoryProgress
+    SLT       V0, V0, A1
+    BNE       V0, R0, .GetNextItemData % skip if this item has been already bought
+    ADDIU     S2, S2, 1 % increase itemInventoryIndex
+    ADDIU     S3, S3, 1 % increase itemIndex
+    BEQ       S3, S4, .End
+    CLEAR     V1
+    .GetNextItemData
+    % check if is the last item from the inventory
+    ADDIU     S1, S1, 10 % read next item data ($ShopInventory)
+    LW        A0, 0 (S1)
+    ADDI      A1, R0, -1
+    BNE       A0, A1, .GetBadge_Inventory
+    NOP
+    %=================
+    % Sold Badges
+    %=================
+    LIO       GP, 803560FC % *BadgeShopInventory_BadgeSold_1_1
+    CLEAR     A1
+    .GetBadge_Sold
+    LH        V0, 0 (GP) % get itemID
+    BEQ       V0, R0, .GetNextItemData_SoldItems
+    NOP
+    ADDIU     S3, S3, 1
+    BEQ       S3, S4, .End
+    ORI       V1, R0, 1
+    .GetNextItemData_SoldItems
+    ADDIU     A1, A1, 1
+    SLTI      V0, A1, 130` % amounts of items that can be sold
+    BNE       V0, R0, .GetBadge_Sold
+    ADDIU     GP, GP, 2 % read next item data (Sold Items)
+    .End
+    POP       RA, A0, A2, A3, V0, S0, S3, S4
+    JR        RA
+    NOP
+}
+
+% A0=itemID
+%
+% Use `*GF_MAC01_RowfBadgeAvailableX` to know if the badge was previously on sale but got already bought.
+%
+% Returns a `bool` in `V0`
+#export:Function $Function_IsThisSoldBadgeOnSale_CheckByFlag
+{
+      PUSH        RA, A0, A1, A2, A3, V1, S0, S1, S2
+      BEQ         A0, R0, .End
+      CLEAR       V0
+      COPY        S0, A0
+      .CheckSaleBadges
+      % remove badges on sale
+      LAW         S2, 802DBCB0 % *MapVar[2], get saleBadgesFlags table
+      CLEAR       S1
+      .Loop
+      LW          A2, 0 (S2) % get globalFlag/itemID
+      ADDIU       S1, S1, 1
+      BEQ         A2, R0, .Loop_CheckCap
+      NOP
+      % badge found,check if data is a badgeID, means is a sold badge
+      SLTIU       A3, A2, BF % if itemID is >= E0
+      BNE         A3, R0, .Loop_CheckCap
+      NOP
+      % sold badge found, check if is the badge we're looking for
+      BNE         A2, S0, .Loop_CheckCap
+      NOP
+      % check if the badge has been already bought
+      CLEAR       A0
+      ADDI        A3, S1, -1
+      LIO         A1, *GF_MAC01_RowfBadgeAvailableA_New
+      ADDU        A1, A1, A3
+      JAL         ~Func:get_variable
+      NOP
+      BEQL        V0, R0, .End
+      ORI         V0, R0, 1 % badge is on sale
+      .Loop_CheckCap
+      SLTIU       A3, S1, 5 % because 5 badges can be on sale
+      BNE         A3, R0, .Loop
+      ADDIU       S2, S2, 4
+      CLEAR       V0 % badge isn't on sale
+      .End
+      POP         RA, A0, A1, A2, A3, V1, S0, S1, S2
+      JR          RA
+      NOP
+}
+
+% A0=itemID
+%
+% Use the itemID to know if the badge is on sale
+%
+% Returns a `bool` in `V0`
+#export:Function $Function_IsThisSoldBadgeOnSale
+{
+      PUSH        RA, A0, A1, A2, A3, V1, S0, S1, S2
+      BEQ         A0, R0, .End
+      CLEAR       V0
+      COPY        S0, A0
+      .CheckSaleBadges
+      % remove badges on sale
+      LAW         S2, 802DBCB0 % *MapVar[2], get saleBadgesFlags table
+      CLEAR       S1
+      .Loop
+      LW          A2, 0 (S2) % get globalFlag/itemID
+      ADDIU       S1, S1, 1
+      BEQ         A2, R0, .Loop_CheckCap
+      NOP
+      % badge found,check if data is a badgeID, means is a sold badge
+      SLTIU       A3, A2, BF % if itemID is >= E0
+      BNE         A3, R0, .Loop_CheckCap
+      NOP
+      % sold badge found, check if is the badge we're looking for
+      BEQL        A2, S0, .End
+      ORI         V0, R0, 1 % badge is on sale
+      .Loop_CheckCap
+      SLTIU       A3, S1, 5 % because 5 badges can be on sale
+      BNE         A3, R0, .Loop
+      ADDIU       S2, S2, 4
+      CLEAR       V0 % badge isn't on sale
+      .End
+      POP         RA, A0, A1, A2, A3, V1, S0, S1, S2
+      JR          RA
+      NOP
+}
+
+% Fuction ported to this `.mpat`, because is only loaded when the game is paused.
+%
+% `A0=itemList`
+%
+% `A1=listLength`
+%
+% `A2=code* comparator`
+#export:Function $pause_sort_item_list % `80244A4C`
+{
+      0:  ADDIU     SP, SP, FFC8
+      4:  SW        S6, 28 (SP)
+      8:  COPY      S6, A0
+      C:  SW        S7, 2C (SP)
+     10:  COPY      S7, A2
+     14:  SLTI      V0, A1, 2
+     18:  SW        RA, 30 (SP)
+     1C:  SW        S5, 24 (SP)
+     20:  SW        S4, 20 (SP)
+     24:  SW        S3, 1C (SP)
+     28:  SW        S2, 18 (SP)
+     2C:  SW        S1, 14 (SP)
+     30:  BNE       V0, R0, .o114
+     34:  SW        S0, 10 (SP)
+     38:  ADDIU     V0, R0, 2
+     3C:  BNE       A1, V0, .o68 %%
+     40:  ADDIU     S4, R0, 1
+     44:  JALR      S7, RA
+     48:  ADDU      A1, S6, V0
+     4C:  BLEZ      V0, .o114
+     50:  NOP
+     54:  LHU       V0, 2 (S6)
+     58:  LHU       V1, 0 (S6)
+     5C:  SH        V0, 0 (S6)
+     60:  BEQ       R0, R0, .o114
+     64:  SH        V1, 2 (S6)
+          .o68
+     68:  SLTU      V0, S4, A1
+     6C:  BEQL      V0, R0, .o8C
+     70:  SRL       S4, S4, 1
+     74:  SLL       V0, S4, 1
+          .o78
+     78:  ADDIU     S4, V0, 1
+     7C:  SLTU      V0, S4, A1
+     80:  BNE       V0, R0, .o78
+     84:  SLL       V0, S4, 1
+     88:  SRL       S4, S4, 1
+          .o8C
+     8C:  SLL       V0, A1, 1
+     90:  BEQ       S4, R0, .o114
+     94:  ADDU      S5, S6, V0
+          .o98
+     98:  SLL       V1, S4, 1
+     9C:  ADDU      S2, S6, V1
+     A0:  SLTU      V0, S2, S5
+     A4:  BEQ       V0, R0, .o10C
+     A8:  SRL       V0, S4, 1
+     AC:  COPY      S3, V1
+     B0:  SUBU      S0, S2, S3
+          .oB4
+     B4:  BEQ       R0, R0, .oE8
+     B8:  SLTU      V0, S0, S6
+          .oBC
+     BC:  ADDU      S1, S0, S3
+     C0:  JALR      S7, RA
+     C4:  COPY      A1, S1
+     C8:  BLEZL     V0, .oFC
+     CC:  ADDIU     S2, S2, 2
+     D0:  LHU       V0, 0 (S1)
+     D4:  LHU       V1, 0 (S0)
+     D8:  SH        V0, 0 (S0)
+     DC:  SUBU      S0, S0, S3
+     E0:  SLTU      V0, S0, S6
+     E4:  SH        V1, 0 (S1)
+          .oE8
+     E8:  BNE       V0, R0, .oF8
+     EC:  SLTU      V0, S0, S5
+     F0:  BNE       V0, R0, .oBC
+     F4:  COPY      A0, S0
+          .oF8
+     F8:  ADDIU     S2, S2, 2
+          .oFC
+     FC:  SLTU      V0, S2, S5
+    100:  BNEL      V0, R0, .oB4
+    104:  SUBU      S0, S2, S3
+    108:  SRL       V0, S4, 1
+          .o10C
+    10C:  BNE       V0, R0, .o98
+    110:  COPY      S4, V0
+          .o114
+    114:  LW        RA, 30 (SP)
+    118:  LW        S7, 2C (SP)
+    11C:  LW        S6, 28 (SP)
+    120:  LW        S5, 24 (SP)
+    124:  LW        S4, 20 (SP)
+    128:  LW        S3, 1C (SP)
+    12C:  LW        S2, 18 (SP)
+    130:  LW        S1, 14 (SP)
+    134:  LW        S0, 10 (SP)
+    138:  JR        RA
+    13C:  ADDIU     SP, SP, 38
+}
+
+#export:Function $pause_badges_comparator % `80246FE0`
+{
+     0:  LH        V0, 0 (A0)
+     4:  BNE       V0, R0, .o14
+     8:  SLL       V0, V0, 5
+     C:  BEQ       R0, R0, .o20
+    10:  ADDIU     V1, R0, 7FFF
+         .o14
+    14:  LTHU      V1, V0 (800878E6)
+         .o20
+    20:  LH        V0, 0 (A1)
+    24:  BNE       V0, R0, .o34
+    28:  SLL       V0, V0, 5
+    2C:  BEQ       R0, R0, .o40
+    30:  ADDIU     A0, R0, 7FFF
+         .o34
+    34:  LTHU      A0, V0 (800878E6)
+         .o40
+    40:  SLL       V0, V1, 10
+    44:  SRA       V1, V0, 10
+    48:  SLL       V0, A0, 10
+    4C:  SRA       A0, V0, 10
+    50:  BEQ       V1, A0, .o68
+    54:  SLT       V1, V1, A0
+    58:  BNE       V1, R0, .o6C
+    5C:  ADDIU     V0, R0, FFFF
+    60:  JR        RA
+    64:  ADDIU     V0, R0, 1
+         .o68
+    68:  CLEAR     V0
+         .o6C
+    6C:  JR        RA
+    70:  NOP
+}
+
+%=======================
+% Merlon stuff
+%=======================
+
+% Uses the super block's code as base.
+#export:Script $Script_UpgradePartners_Main
+{
+    Call     $ReadAddress ( 8010F2A8 0 *Var1 .False .False ) % get shine sprites
+    If *Var1 < 3
+            Call  ContinueSpeech     ( 00000000 00A50004 00A50001 00000000 $String_Merlon_NotEnoughShines )
+            Call  DisablePlayerInput ( .False )
+            Return
+    EndIf
+    Call     CloseMessage
+    Call     ModifyGlobalOverrideFlags ( .True 00200000 )
+    Call     DisablePartnerAI 	( 00000000 )
+    Call     SetNpcFlagBits   ( .Npc:Partner 00000100 .True ) % ignore NPCs & player collisions
+    Call     FindKeyItem 	( .Item:UltraStone *VarC )
+    Call     $Function_GetPartnersAbleToUpgrade
+    If  *Var0  ==  -1 
+        Call     SpeakToPlayer     ( 00000000 00A50004 00A50001 00000000 $String_Merlon_NoAvailablePartners )
+        Wait     10`
+        Call     DisablePlayerInput 	( .False )
+        Call     EnablePartnerAI
+        Call     ModifyGlobalOverrideFlags ( .False 00200000 )
+        Return
+    EndIf
+    % Show Shine Sprites counter
+    Call     $WriteAddress ( $ShowShrinesCounter 2 .True .False .False )
+    Call     $Function_OpenSuperBlockMenu
+    If  *Var0  ==  -1 
+        Call     DisablePlayerInput 	( .False )
+        Call     EnablePartnerAI
+        Call     ModifyGlobalOverrideFlags ( .False 00200000 )
+        Return
+    EndIf
+    Set     *VarA  *Var0 
+    Set     *VarB  *Var1 
+    Call    EnablePartnerAI
+    Call    GetCurrentPartnerID 	( *Var0 )
+    If  *Var0  !=  *VarB 
+        Call     $Function_SwitchToPartner ( *VarB )
+    Else
+        Call     802CF56C ( 00000002 )
+    EndIf
+    Wait     10`
+    Call     SpeakToPlayer     ( 00000000 00A50004 00A50001 00000000 $String_Merlon_AskConfirmation )
+    Call     ShowChoice  	( 001E000D ) % Yes No
+    Call     CloseMessage
+    If  *Var0  !=  0
+        Call     DisablePlayerInput	( .False )
+        Call     EnablePartnerAI
+        Call     ModifyGlobalOverrideFlags ( .False 00200000 )
+        Return
+    EndIf
+    % substract shine sprites
+    Thread
+      Call     $ReadAddress ( 8010F2A8 0 *Var1 .False .False ) % get shine sprites
+      Loop 3
+            Sub      *Var1 1
+            Call     $WriteAddress ( 8010F2A8 0 *Var1 .False .False ) % update shine sprites
+            Wait     8
+      EndLoop
+    EndThread
+    ExecWait      $Script_UpgradeAnimation
+    Call          $Function_UpgradePartner ( *VarB *VarD )
+    Call          $Function_SetMessageString_CurrentPartner
+    If  *VarD  ==  00000001
+        Call     SpeakToPlayer     ( 00000000 00A50004 00A50001 00000000 $String_Merlon_PartnerIsNow_SuperRank )
+    Else
+        Call     SpeakToPlayer     ( 00000000 00A50004 00A50001 00000000 $String_Merlon_PartnerIsNow_UltraRank )
+    EndIf
+    Call     $RaisePartnerMaxHP ( *VarB )
+    Call     DisablePlayerInput 	( .False )
+    Call     EnablePartnerAI
+    Call     ModifyGlobalOverrideFlags ( .False 00200000 )
+    Return
+    End
+}
+
+#new:Script $Script_UpgradeAnimation
+{
+      Exec        $Script_UpgradeAnimation_Sparkles
+      Call        GetNpcPos ( 00000000 *Var0 *Var1 *Var2 )
+      Add         *Var1  15` % y
+      Call        SetNpcAnimation ( 00000000 00A50008 ) % charge (slow)
+      Call        PlayEffect  	( ~FX:EnergyIn:Stars *Var0 *Var1 *Var2 *Fixed[1.0] 50` .False .False .False .False .False .False )
+      Wait        50`
+      Call        SetNpcAnimation ( 00000000 00A50009 ) % charge (fast)
+      Call        PlayEffect  	( ~FX:EnergyWaveIn:Blue *Var0 *Var1 *Var2 *Fixed[2.0] 30` .False .False .False .False .False .False )
+      Wait        70`
+      Call        SetNpcAnimation ( 00000000 00A5000A ) % arms raised
+      Call        PlayEffect  	( ~FX:EnergyWaveOut:Green *Var0 *Var1 *Var2 *Fixed[1.0] 30` .False .False .False .False .False .False )
+      Wait        10`
+      Call        SetNpcAnimation ( 00000000 00A50000 )
+      Call        SetNpcAnimation ( 00000000 00A5000A ) % arms raised
+      Call        PlayEffect  	( ~FX:EnergyWaveOut:Green *Var0 *Var1 *Var2 *Fixed[1.0] 30` .False .False .False .False .False .False )
+      Wait        30`
+      Call        SetNpcAnimation ( 00000000 00A50001 ) % idle
+      Return
+      End
+}
+
+#export:Script $Script_UpgradeAnimation_Sparkles
+{
+    0:  Wait      10`
+    C:  Call      PlaySound   	( 212D )
+   2C:  Wait      40`
+        Call      PlaySound   	( 212E )
+        Wait      10`
+   38:  Thread
+            Wait     10`
+   50:  	Call     $Function_ChangeScreenColorOverlay ( 70` 70` )
+        	Wait     30` 
+            Call     PlaySound   	( 208E )
+   80:  	Call     $Function_ChangeScreenColorOverlay ( 50` 50` )
+   94:  EndThread
+   9C:  Thread
+   A4:  	Wait     3
+   C0:  EndThread
+   C8:  Thread
+        	Wait     57`
+   DC:  	Call     $Function_PlayFX_33_RadialFlowOut
+   E8:  	Call     $Function_PlayFX_11_Sparkles_Random
+   F4:  	Wait     5
+  100:  	Call     $Function_PlayFX_11_Sparkles_Type4
+  10C:  	Wait     5
+  118:  	Call     $Function_PlayFX_11_Sparkles_Random
+  124:  EndThread
+  12C:  Wait     3
+  148:  Wait     30`
+  154:  Return
+  15C:  End
+}
+
+% Functions
+
+#new:Function $Function_ChangeScreenColorOverlay
+{
+    0:  ADDIU		SP, SP, FFE0
+    4:  SW			S1, 14 (SP)
+    8:  COPY		S1, A0
+    C:  SW			S2, 18 (SP)
+   10:  SW			RA, 1C (SP)
+   14:  SW			S0, 10 (SP)
+   18:  LW			S0, C (S1)
+   1C:  BEQ			A1, R0, .o60
+   20:  CLEAR		S2
+   24:  LW			A1, 0 (S0)
+   28:  JAL			~Func:get_variable
+   2C:  ADDIU		S0, S0, 4
+   30:  SW			V0, 84 (S1)
+   34:  LW			A1, 0 (S0)
+   38:  JAL			~Func:get_variable
+   3C:  COPY		A0, S1
+   40:  COPY		A0, S2
+   44:  ADDIU		A1, R0, D0
+   48:  COPY		A2, A1
+   4C:  COPY		A3, A1
+   50:  SW			V0, 88 (S1)
+   54:  SW			R0, 70 (S1)
+   58:  JAL			~Func:set_screen_overlay_color
+   5C:  SW			R0, 74 (S1)
+        .o60
+   60:  LW			V1, 70 (S1)
+   64:  ADDIU		A0, R0, 1
+   68:  BEQ			V1, A0, .oD0
+   6C:  SLTI		V0, V1, 2
+   70:  BEQ			V0, R0, .o88
+   74:  ADDIU		V0, R0, 2
+   78:  BEQ			V1, R0, .o98
+   7C:  ADDIU		A1, R0, FF
+   80:  BEQ			R0, R0, .o110
+   84:  NOP
+        .o88
+   88:  BEQ			V1, V0, .oF0
+   8C:  NOP
+   90:  BEQ			R0, R0, .o110
+   94:  NOP
+        .o98
+   98:  LW			V0, 74 (S1)
+   9C:  BNE			V0, A1, .oB0
+   A0:  NOP
+   A4:  SW			A0, 70 (S1)
+   A8:  SW			R0, 78 (S1)
+   AC:  LW			V0, 74 (S1)
+        .oB0
+   B0:  LW			V1, 84 (S1)
+   B4:  ADDU		V0, V0, V1
+   B8:  SW			V0, 74 (S1)
+   BC:  SLTI		V0, V0, 100
+   C0:  BEQL		V0, R0, .o110
+   C4:  SW			A1, 74 (S1)
+   C8:  BEQ			R0, R0, .o110
+   CC:  NOP
+        .oD0
+   D0:  LW			V0, 78 (S1)
+   D4:  ADDIU		V0, V0, 1
+   D8:  SW			V0, 78 (S1)
+   DC:  SLTI		V0, V0, 2
+   E0:  BNE			V0, R0, .o110
+   E4:  ADDIU		V0, R0, 2
+   E8:  BEQ			R0, R0, .o110
+   EC:  SW			V0, 70 (S1)
+        .oF0
+   F0:  LW			V1, 74 (S1)
+   F4:  BEQL		V1, R0, .oFC
+   F8:  ADDIU		S2, R0, 1
+        .oFC
+   FC:  LW			V0, 88 (S1)
+  100:  SUBU		V0, V1, V0
+  104:  BGEZ		V0, .o110
+  108:  SW			V0, 74 (S1)
+  10C:  SW			R0, 74 (S1)
+        .o110
+  110:  LWC1		F0, 74 (S1)
+  114:  CVT.S.W		F0, F0
+  118:  MFC1		A1, F0
+  11C:  JAL			~Func:set_screen_overlay_params_front
+  120:  ADDIU		A0, R0, 1
+  124:  COPY		V0, S2
+  128:  LW			RA, 1C (SP)
+  12C:  LW			S2, 18 (SP)
+  130:  LW			S1, 14 (SP)
+  134:  LW			S0, 10 (SP)
+  138:  JR			RA
+  13C:  ADDIU		SP, SP, 20
+}
+
+#new:Function $Function_PlayFX_33_RadialFlowOut
+{
+    0:  ADDIU		SP, SP, FFE0
+    4:  SW			RA, 18 (SP)
+    8:  JAL			~Func:get_npc_safe
+    C:  ADDIU		A0, R0, FFFC
+   10:  LWC1		F4, 3C (V0)
+   14:  LIF			F2, 12.5
+   1C:  LIF			F0, 1.000000
+   24:  ADDIU		V1, R0, 1E
+   28:  SW			V1, 14 (SP)
+   2C:  ADD.S		F4, F4, F2
+   30:  SWC1		F0, 10 (SP)
+   34:  LW			A1, 38 (V0)
+   38:  LW			A3, 40 (V0)
+   3C:  MFC1		A2, F4
+   40:  JAL			~Func:playFX_33
+   44:  ADDIU		A0, R0, 9
+   48:  LW			RA, 18 (SP)
+   4C:  ADDIU		V0, R0, 2
+   50:  JR			RA
+   54:  ADDIU		SP, SP, 20
+}
+
+#new:Function $Function_PlayFX_11_Sparkles_Random
+{
+    0:  ADDIU		SP, SP, FFE0
+    4:  SW			RA, 18 (SP)
+    8:  JAL			~Func:get_npc_safe
+    C:  ADDIU		A0, R0, FFFC
+   10:  LIF			F0, 30.000000
+   18:  LWC1		F2, 3C (V0)
+   1C:  ADD.S		F2, F2, F0
+   20:  SWC1		F0, 10 (SP)
+   24:  LW			A1, 38 (V0)
+   28:  LW			A3, 40 (V0)
+   2C:  MFC1		A2, F2
+   30:  JAL			~Func:playFX_11
+   34:  ADDIU		A0, R0, 2
+   38:  LW			RA, 18 (SP)
+   3C:  ADDIU		V0, R0, 2
+   40:  JR			RA
+   44:  ADDIU		SP, SP, 20
+}
+
+#new:Function $Function_PlayFX_11_Sparkles_Type4
+{
+    0:  ADDIU		SP, SP, FFE0
+    4:  SW			RA, 18 (SP)
+    8:  JAL			~Func:get_npc_safe
+    C:  ADDIU		A0, R0, FFFC
+   10:  LIF			F0, 30.000000
+   18:  LWC1		F2, 3C (V0)
+   1C:  ADD.S		F2, F2, F0
+   20:  SWC1		F0, 10 (SP)
+   24:  LW			A1, 38 (V0)
+   28:  LW			A3, 40 (V0)
+   2C:  MFC1		A2, F2
+   30:  JAL			~Func:playFX_11
+   34:  ADDIU		A0, R0, 4
+   38:  LW			RA, 18 (SP)
+   3C:  ADDIU		V0, R0, 2
+   40:  JR			RA
+   44:  ADDIU		SP, SP, 20
+}
+
+#new:Data $StringTable_PartnersUpgrades
+{
+001D00E0 001D00E1 001D00E2 001D00E3 001D00E4 001D00E5 001D00E6 001D00E7 
+001D00E8 001D00E9 001D00EA 001D00EB 001D00EC 001D00ED 001D00EE 001D00EF 
+}
+
+%========================================================
+
+#export:Function $Function_UpgradePartner
+{
+    0:  ADDIU		SP, SP, FFE0
+    4:  SW			S0, 10 (SP)
+    8:  COPY		S0, A0
+    C:  SW			RA, 18 (SP)
+   10:  SW			S1, 14 (SP)
+   14:  LW			S1, C (S0)
+   18:  LW			A1, 0 (S1)
+   1C:  JAL			~Func:get_variable
+   20:  ADDIU		S1, S1, 4
+   24:  COPY		A0, S0
+   28:  LIA			V1, 8010F290
+   30:  SLL			V0, V0, 3
+   34:  ADDU		V0, V0, V1
+   38:  LBU			A2, 15 (V0)
+   3C:  LW			A1, 0 (S1)
+   40:  ADDIU		A2, A2, 1
+   44:  SB			A2, 15 (V0)
+   48:  SLL			A2, A2, 18
+   4C:  JAL			~Func:set_variable
+   50:  SRA			A2, A2, 18
+   54:  LW			RA, 18 (SP)
+   58:  LW			S1, 14 (SP)
+   5C:  LW			S0, 10 (SP)
+   60:  ADDIU		V0, R0, 2
+   64:  JR			RA
+   68:  ADDIU		SP, SP, 20
+}
+
+#export:Function $Function_SetMessageString_CurrentPartner
+{
+    0:  LAB			V0, 8010F2A2
+    8:  ADDIU		SP, SP, FFE8
+    C:  SW			RA, 10 (SP)
+   10:  SLL			V0, V0, 4
+   14:  LTW			A0, V0 (8008EF20)
+   20:  JAL			~Func:set_message_string
+   24:  CLEAR		A1
+   28:  LW			RA, 10 (SP)
+   2C:  ADDIU		V0, R0, 2
+   30:  JR			RA
+   34:  ADDIU		SP, SP, 18
+}
+
+#export:Function $Function_GetPartnersAbleToUpgrade
+{
+   0:  ADDIU		SP, SP, FFD0
+   4:  SW			S3, 1C (SP)
+   8:  COPY		      S3, A0
+   C:  SW			S0, 10 (SP)
+  10:  ADDIU		S0, R0, 1
+  14:  SW			S4, 20 (SP)
+  18:  ADDIU		S4, R0, FFFF
+  1C:  SW			S5, 24 (SP)
+  20:  COPY		      S5, S0
+  24:  SW			S1, 14 (SP)
+  28:  LIA			S1, 8010F298
+  30:  SW			RA, 28 (SP)
+  34:  SW			S2, 18 (SP)
+  38:  LW			V0, B4 (S3)
+  3C:  COPY		      V1, S4
+  40:  SW			V1, 84 (S3)
+  44:  NOR			V0, R0, V0
+  48:  SRL			V0, V0, 1F
+  4C:  SLL			S2, V0, 10
+       .o50
+  50:  LBU			V0, 14 (S1)
+  54:  BEQL		      V0, R0, .o78
+  58:  ADDIU		S0, S0, 1
+  5C:  COPY		      A0, S0
+  60:  JAL			$Function_802424A4_UpgradePartner
+  64:  SRA			A1, S2, 10
+  68:  BEQ			V0, S4, .o78
+  6C:  ADDIU		S0, S0, 1
+  70:  BEQ			R0, R0, .o84
+  74:  SW			S5, 84 (S3)
+       .o78
+  78:  SLTI		      V0, S0, C
+  7C:  BNE			V0, R0, .o50
+  80:  ADDIU		S1, S1, 8
+       .o84
+  84:  LW			RA, 28 (SP)
+  88:  LW			S5, 24 (SP)
+  8C:  LW			S4, 20 (SP)
+  90:  LW			S3, 1C (SP)
+  94:  LW			S2, 18 (SP)
+  98:  LW			S1, 14 (SP)
+  9C:  LW			S0, 10 (SP)
+  A0:  ADDIU		V0, R0, 2
+  A4:  JR			RA
+  A8:  ADDIU		SP, SP, 30
+}
+   
+#new:Function $Function_802424A4_UpgradePartner
+{
+    LIA			V0, 8010F290
+    SLL			A0, A0, 3
+    ADDU		      A0, A0, V0
+    LBU			V0, 14 (A0)
+    BEQ			V0, R0, .o3C
+    NOP
+    LBU			V0, 15 (A0)
+    SLL			A0, V0, 18
+    SRA			V1, A0, 18
+    SLL			V0, A1, 10
+    SRA			V0, V0, 10
+    SLT			V0, V0, V1
+    BEQ			V0, R0, .o44
+    NOP
+    .o3C
+    JR			RA
+    ADDIU		      V0, R0, FFFF
+    .o44
+    JR			RA
+    SRA			V0, A0, 18
+}
+
+#export:Function $Function_OpenSuperBlockMenu
+{
+    0:  ADDIU		SP, SP, FFC0
+    4:  SW			S5, 2C (SP)
+    8:  COPY		S5, A0
+    C:  SW			S8, 38 (SP)
+   10:  LIA			S8, 8010F290
+   18:  SW			RA, 3C (SP)
+   1C:  SW			S7, 34 (SP)
+   20:  SW			S6, 30 (SP)
+   24:  SW			S4, 28 (SP)
+   28:  SW			S3, 24 (SP)
+   2C:  SW			S2, 20 (SP)
+   30:  SW			S1, 1C (SP)
+   34:  BEQ			A1, R0, .o174
+   38:  SW			S0, 18 (SP)
+   3C:  JAL			~Func:heap_malloc
+   40:  ADDIU		A0, R0, 330
+   44:  COPY		S3, V0
+   48:  CLEAR		S6
+   4C:  COPY		S2, S6
+   50:  LIA			S4, $Data_80243D38
+   58:  COPY		S1, S3
+   5C:  LW			V0, B4 (S5)
+   60:  LIA			V1, $StringsTable_AlreadyRanked
+   68:  SW			S3, 78 (S5)
+   6C:  NOR			V0, R0, V0
+   70:  SRL			S7, V0, 1F
+   74:  SLL			V0, S7, 2
+   78:  ADDU		V0, V0, V1
+   7C:  SW			V0, 10 (SP)
+        .o80
+   80:  LH			S0, 0 (S4)
+   84:  SLL			V0, S0, 3
+   88:  ADDU		V0, S8, V0
+   8C:  LBU			V0, 14 (V0)
+   90:  BEQL		V0, R0, .o14C
+   94:  ADDIU		S2, S2, 1
+   98:  SLL			V0, S0, 4
+   9C:  LIA			A2, 8008EF20
+   A4:  ADDU		V0, V0, A2
+   A8:  COPY		A0, S0
+   AC:  SW			S0, 108 (S1)
+   B0:  LW			V0, 0 (V0)
+   B4:  COPY		A1, S7
+   B8:  JAL			$Function_802424A4_UpgradePartner
+   BC:  SW			V0, 84 (S1)
+   C0:  COPY		A0, V0
+   C4:  BLTZ		A0, .o10C
+   C8:  SLL			V0, S0, 2
+   CC:  LIA			A2, 800F7F00
+   D4:  ADDU		V0, V0, A2
+   D8:  LW			V1, 0 (V0)
+   DC:  ADDIU		V0, R0, 1
+   E0:  SW			V0, 18C (S1)
+   E4:  SLL			V0, A0, 2
+   E8:  LIA			A2, $StringTable_PartnersUpgrades
+   F0:  SW			V1, 0 (S1)
+   F4:  SLL			V1, S2, 3
+   F8:  ADDU		V0, V0, V1
+   FC:  ADDU		V0, V0, A2
+  100:  LW			V0, 0 (V0)
+  104:  BEQ			R0, R0, .o130
+  108:  SW			V0, 294 (S1)
+        .o10C
+  10C:  LIA			A2, 800F7F40
+  114:  ADDU		V0, V0, A2
+  118:  LW			V0, 0 (V0)
+  11C:  SW			R0, 18C (S1)
+  120:  SW			V0, 0 (S1)
+  124:  LW			A2, 10 (SP)
+  128:  LW			V0, 0 (A2)
+  12C:  SW			V0, 294 (S1)
+        .o130
+  130:  SLL			V0, S0, 3
+  134:  ADDU		V0, S8, V0
+  138:  LB			V0, 15 (V0)
+  13C:  ADDIU		S6, S6, 1
+  140:  SW			V0, 210 (S1)
+  144:  ADDIU		S1, S1, 4
+  148:  ADDIU		S2, S2, 1
+        .o14C
+  14C:  SLTI		V0, S2, 8
+  150:  BNE			V0, R0, .o80
+  154:  ADDIU		S4, S4, 2
+  158:  COPY		A0, S3
+  15C:  ADDIU		V0, R0, 4
+  160:  SW			V0, 318 (A0)
+  164:  SW			S6, 324 (A0)
+  168:  JAL			~Func:create_popup_menu
+  16C:  SW			R0, 328 (A0)
+  170:  SW			R0, 70 (S5)
+        .o174
+  174:  LW			V0, 70 (S5)
+  178:  LW			S3, 78 (S5)
+  17C:  BNE			V0, R0, .o1A0
+  180:  ADDIU		V0, V0, 1
+  184:  LH			V0, 32C (S3)
+  188:  BEQ			V0, R0, .o1B0
+  18C:  SW			V0, 74 (S5)
+        % close shine sprites
+        ORI             A0, R0, 2
+        SAW             A0, $BoxAnimation_State
+        ORI             A0, R0, 7
+        SAW             A0, $BoxAnimation_Offset
+  190:  JAL			~Func:hide_popup_menu
+  194:  NOP
+  198:  LW			V0, 70 (S5)
+  19C:  ADDIU		V0, V0, 1
+        .o1A0
+  1A0:  SW			V0, 70 (S5)
+  1A4:  SLTI		V0, V0, F
+  1A8:  BEQ			V0, R0, .o1B8
+  1AC:  NOP
+        .o1B0
+  1B0:  BEQ			R0, R0, .o220
+  1B4:  CLEAR		V0
+        .o1B8
+  1B8:  JAL			~Func:destroy_popup_menu
+  1BC:  NOP
+  1C0:  LW			V1, 74 (S5)
+  1C4:  ADDIU		V0, R0, FF
+  1C8:  BEQ			V1, V0, .o20C
+  1CC:  ADDIU		V0, V1, FFFF
+  1D0:  SLL			V0, V0, 2
+  1D4:  ADDU		V0, S3, V0
+  1D8:  LW			V0, 108 (V0)
+  1DC:  SLL			V0, V0, 4
+  1E0:  LTW			V1, V0 (8008EF20)
+  1EC:  LW			V0, 74 (S5)
+  1F0:  ADDIU		V0, V0, FFFF
+  1F4:  SLL			V0, V0, 2
+  1F8:  ADDU		V0, S3, V0
+  1FC:  SW			V1, 84 (S5)
+  200:  LW			V0, 108 (V0)
+  204:  BEQ			R0, R0, .o214
+  208:  SW			V0, 88 (S5)
+        .o20C
+  20C:  ADDIU		V0, R0, FFFF
+  210:  SW			V0, 84 (S5)
+        .o214
+  214:  JAL			~Func:heap_free
+  218:  LW			A0, 78 (S5)
+  21C:  ADDIU		V0, R0, 2
+        .o220
+  220:  LW			RA, 3C (SP)
+  224:  LW			S8, 38 (SP)
+  228:  LW			S7, 34 (SP)
+  22C:  LW			S6, 30 (SP)
+  230:  LW			S5, 2C (SP)
+  234:  LW			S4, 28 (SP)
+  238:  LW			S3, 24 (SP)
+  23C:  LW			S2, 20 (SP)
+  240:  LW			S1, 1C (SP)
+  244:  LW			S0, 18 (SP)
+  248:  JR			RA
+  24C:  ADDIU		SP, SP, 40
+}
+
+#new:Data $StringsTable_AlreadyRanked
+{
+001D00F0 001D00F1 
+}
+
+#new:Data $Data_80243D38
+{
+00010002 00030004 00090006 00070008 
+}
+
+#export:Function $Function_SwitchToPartner
+{
+    0:  ADDIU		SP, SP, FFE8
+    4:  SW			RA, 10 (SP)
+    8:  LW			V0, C (A0)
+    C:  JAL			~Func:get_variable
+   10:  LW			A1, 0 (V0)
+   14:  JAL			~Func:switch_to_partner
+   18:  COPY		A0, V0
+   1C:  LW			RA, 10 (SP)
+   20:  ADDIU		V0, R0, 2
+   24:  JR			RA
+   28:  ADDIU		SP, SP, 18
+}
+
+% strings
+
+#string $String_Merlon_NotEnoughShines
+{
+[Next]
+Sorry Mario, but looks like you[BR]
+don't have enough Shine Sprites.[BR]
+[Wait][Next]
+You need at least 3 to being able[BR]
+to upgrade a partner.
+[Wait][End]
+}
+
+#string $String_Merlon_NoAvailablePartners
+{
+[Style Right]
+I'm sorry Mario, but looks like[BR]
+you have no member you can[BR]
+upgrade right now.
+[Wait][End]
+}
+
+#string $String_Merlon_AskConfirmation
+{
+[Style Right]
+Do you want me to upgrade this[BR]
+partner?[BR]
+[Yield][End]
+}
+
+#string $String_Merlon_PartnerIsNow_SuperRank
+{
+[Style Right]
+[Var 0] is now upgraded to[BR]
+Super-rank!
+[Wait][End]
+}
+
+#string $String_Merlon_PartnerIsNow_UltraRank
+{
+[Style Right]
+[Var 0] is now upgraded to[BR]
+Ultra-rank!
+[Wait][End]
+}
+
+%===============
+% New Game Plus
+%===============
+
+#export:Script $Script_Init_NPC_NGPlus
+{
+      If *GB_StoryProgress != .Story:Ch8_ReachedPeachsCastle % 5F
+            Call  SetNpcPos ( .Npc:Self 0 -1000` 0 )
+      EndIf
+      Call    BindNpcInteract ( .Npc:Self $Script_Interact_NPC_NGPlus )
+      Return
+      End
+}
+
+#new:Script $Script_Interact_NPC_NGPlus
+{
+      Call  SpeakToPlayer ( .Npc:Self 00120008 00120001 00000000 $String_NGPlus_Hi )
+      Call  ShowChoice    ( 001E000D ) % Yes No
+      If *Var0 != 0 % No
+            Call  CloseMessage
+            Call  SpeakToPlayer ( .Npc:Self 00120008 00120001 00000000 $String_NGPlus_Cancel )
+            Return
+      EndIf
+      Call  CloseMessage
+      Call  SpeakToPlayer ( .Npc:Self 00120008 00120001 00000000 $String_NGPlus_AskConfirm )
+      Call  ShowChoice    ( 001E000D ) % Yes No
+      If *Var0 != 0 % No
+            Call  CloseMessage
+            Call  SpeakToPlayer ( .Npc:Self 00120008 00120001 00000000 $String_NGPlus_Cancel )
+            Return
+      EndIf
+      Call  CloseMessage
+      Call  SpeakToPlayer ( .Npc:Self 00120008 00120001 00000000 $String_NGPlus_Alright )
+      ExecWait $Script_Eldstar_UpgradeAnimation
+      Set   *Flag_NewGamePlus_Available .True
+      If *NewGamePlus < FF
+            Add *NewGamePlus 1
+      EndIf
+      Call  $Function_InitNewGamePlusData
+      Call  GotoMapSpecial ( "kmr_31" 0 B )
+      Wait  2000`
+      Return
+      End
+}
+
+% grabbed from `trd_00.mscr` ($Script_80241DA4)
+#new:Script $Script_Eldstar_UpgradeAnimation
+{
+      Call  SetNpcAnimation   ( .Npc:Self 00120003 )
+      Wait  20`
+      Call  PlaySoundAtPlayer ( 00000139 00000000 )
+      Call  SetPlayerAnimation    ( .PlayerAnim:GotItem )
+      Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+      Set   *Var3  *Var1
+      Add   *Var0  00000005
+      Add   *Var1  00000032
+      Add   *Var2  0000000A
+      Add   *Var3  0000001E
+      Loop  00000006
+            Call  PlayEffect    ( 00000011 00000003 *Var0 *Var1 *Var2 00000014 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+            Wait  6`
+            Call  PlayEffect    ( ~FX:Sparkles:Random *Var0 *Var3 *Var2 00000014 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+            Wait  6`
+      EndLoop
+      Wait  20`
+      Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+      Add   *Var1  00000014
+      Call  PlaySoundAtPlayer ( 00000188 00000000 )
+      Call  PlayEffect        ( ~FX:EnergyWaveOut:Grey *Var0 *Var1 *Var2 00000001 0000001E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+      Wait  40`
+      Call  SetPlayerAnimation        ( 00010002 )
+      Call  SetNpcAnimation   ( .Npc:Self 00120001 )
+      Return
+      End
+}
+
+#string $String_NGPlus_Hi
+{
+[Style Right]
+Hi Mario, hey thank you so much[BR]
+for everything you have done for[BR]
+us.[BR]
+[Wait][Next]
+I know this adventure has been[BR]
+like no other, so I was thinking[BR]
+if you would like to relive all this[BR]
+one more time?[BR]
+[Wait][Next]
+You will start from the beginning[BR]
+but most of your stats will carry[BR]
+over along with all your badges,[BR]
+and items.[BR]
+[Wait][Next]
+Also you can start this next[BR]
+adventure with some different[BR]
+twists, so what do you think?[BR]
+[Yield][End]
+}
+
+#string $String_NGPlus_Cancel
+{
+[Style Right]
+I see, maybe later, I'll be here if[BR]
+you need me Mario.
+[Wait][End]
+}
+
+#string $String_NGPlus_AskConfirm
+{
+[Style Right]
+All your progress will be lost,[BR]
+except for this.[BR]
+[Wait][Next]
+HP, FP, BP, coins, items, stored[BR]
+items, badges, recipes and[BR]
+tattles.[BR]
+[Wait][Next]
+And also the badges in Rowf's[BR]
+shop that got added by selling or[BR]
+lost badges.[BR]
+[Wait][Next]
+So, I will ask one more time, are[BR]
+you sure about this?[BR]
+[Yield][End]
+}
+
+#string $String_NGPlus_Alright
+{
+[Style Right]
+Okay, are you ready?[BR]
+Time to relive this great[BR]
+adventure!
+[Wait][End]
+}
+
+#new:Function $Function_InitNewGamePlusData
+{
+      PUSH        RA, A0, A1, A2, A3, V0, V1, S0, S1
+      LIO         S0, 8010F290 % playerStatus
+      LABU        S1, 8035600A % NewGamePlus byte
+      % restore player stats
+      ORI         A0, R0, 10`
+      SB          A0, 2 (S0) % curHP
+      SB          A0, 3 (S0) % maxHP
+      SB          A0, 5 (S0) % curFP
+      SB          A0, 6 (S0) % maxFP
+      ORI         A0, R0, 3
+      SB          A0, 8 (S0) % BP
+      % clear player data
+      ORI         A0, R0, FF
+      SH          A0, 0 (S0) % clear boots & hammer
+      ORI         A0, R0, 1
+      SB          A0, 9 (S0) % level
+      SB          R0, F (S0) % star pieces
+      SB          R0, 10 (S0) % star points
+      SB          R0, 12 (S0) % current partner
+      SB          R0, 18 (S0) % shine sprites
+      SB          R0, 28E (S0) % star spirits
+      SH          R0, 290 (S0) % star power
+      % remove key items
+      ADDIU       A0, S0, 74
+      JAL         ~Func:mem_clear
+      ORI         A1, R0, 64`
+      % clear partners' data
+      ADDIU       A0, S0, 1C
+      JAL         ~Func:mem_clear
+      ORI         A1, R0, 48
+      % don't make status menu appear
+      JAL         ~Func:sync_status_menu
+      NOP
+      JAL         ~Func:close_status_menu
+      NOP
+      %============================
+      % clear global flags & bytes
+      %============================
+      %
+      % clear push tables
+      LIO         A0, $Data_PushTable_TattleFlags
+      JAL         ~Func:mem_clear
+      ORI         A1, R0, 20
+      LIO         A0, $Data_PushTable_ModFlags
+      JAL         ~Func:mem_clear
+      ORI         A1, R0, 14
+      LIO         A0, $Data_PushTable_ModBytes
+      JAL         ~Func:mem_clear
+      ORI         A1, R0, 10D
+      %===============
+      % push a few mod flags
+      %===============
+      % tattles
+      LIO         A0, 800DBEDC % tattles flags
+      LIO         A1, $Data_PushTable_TattleFlags
+      JAL         ~Func:snd_copy_words
+      ORI         A2, R0, 20
+      % recipes
+      LW          A2, E4 (A0)
+      SW          A2, 4 (A1)
+      LW          A2, E8 (A0)
+      SW          A2, 8 (A1)
+      LW          A2, EC (A0)
+      SW          A2, C (A1)
+      LW          A2, F0 (A0)
+      SW          A2, 10 (A1)
+      % push a few mod bytes
+      LIO         A0, 80356000 % modbytes
+      LIO         A1, $Data_PushTable_ModBytes
+      LW          A2, 0 (A0)
+      SW          A2, 0 (A1)
+      LW          A2, 4 (A0)
+      SW          A2, 4 (A1)
+      LW          A2, 8 (A0)
+      SW          A2, 8 (A1)
+      % push sold inventory
+      ADDIU       A0, A0, FC
+      ADDIU       A1, A1, C
+      CLEAR       A3
+      .Loop_Push_ModBytes
+      LW          A2, 0 (A0)
+      SW          A2, 0 (A1)
+      ADDIU       A0, A0, 4
+      ADDIU       A1, A1, 4
+      ADDIU       A3, A3, 1
+      SLTIU       V0, A3, 64`
+      BNE         V0, R0, .Loop_Push_ModBytes
+      NOP
+      JAL         ~Func:clear_saved_variables
+      NOP
+      %===============
+      % pop mod flags
+      %===============
+      % tattles
+      LIO         A0, $Data_PushTable_TattleFlags
+      LIO         A1, 800DBEDC % tattles flags
+      JAL         ~Func:snd_copy_words
+      ORI         A2, R0, 20
+      LIO         A0, 80357000 % modflags
+      LIO         A1, $Data_PushTable_ModFlags
+      LW          A2, 0 (A1)
+      SW          A2, 0 (A0)
+      % recipes
+      LW          A2, 4 (A1)
+      SW          A2, E4 (A0)
+      LW          A2, 8 (A1)
+      SW          A2, E8 (A0)
+      LW          A2, C (A1)
+      SW          A2, EC (A0)
+      LW          A2, 10 (A1)
+      SW          A2, F0 (A0)
+      % pop mod bytes
+      LIO         A0, 80356000 % modbytes
+      LIO         A1, $Data_PushTable_ModBytes
+      LW          A2, 0 (A1)
+      SW          A2, 0 (A0)
+      LW          A2, 4 (A1)
+      SW          A2, 4 (A0)
+      LW          A2, 8 (A1)
+      SW          A2, 8 (A0)
+      % pop sold inventory
+      ADDIU       A0, A0, FC
+      ADDIU       A1, A1, C
+      CLEAR       A3
+      .Loop_Pop_ModBytes
+      LW          A2, 0 (A1)
+      SW          A2, 0 (A0)
+      ADDIU       A0, A0, 4
+      ADDIU       A1, A1, 4
+      ADDIU       A3, A3, 1
+      SLTIU       V0, A3, 64`
+      BNE         V0, R0, .Loop_Pop_ModBytes
+      NOP
+      % rename file name
+      LABU        A0, 8007418A % current save slot
+      LIO         A2, 800779C8 % slot 1 file name
+      BEQ         A1, R0, .UpdateFileName
+      RESERVED
+      ORI         A1, R0, 1
+      LIO         A2, 800779E0 % slot 2 file name
+      BEQ         A0, A1, .UpdateFileName
+      RESERVED
+      ORI         A1, R0, 2
+      LIO         A2, 800779F8 % slot 3 file name
+      BEQ         A0, A1, .UpdateFileName
+      RESERVED
+      LIO         A2, 80077A10 % slot 4 file name
+      .UpdateFileName
+      COPY        A1, S1
+      SLL         S1, S1, 8
+      LIO         A0, 270B1000 % G+0
+      SLTIU       A3, A1, 10`
+      BNEL        A3, R0, .UpdateName
+      OR          A0, A0, S1
+      % If NG+ run is above 9, just use NG+9 instead
+      LIO         A0, 270B1900 % G+9
+      .UpdateName
+      ORI         A1, R0, 2E
+      SB          A1, 3 (A2) % add "N"
+      SW          A0, 4 (A2) % add "G+X" to the file name
+      POP         RA, A0, A1, A2, A3, V0, V1, S0, S1
+      ORI         V0, R0, 2
+}
+
+% Restore these ModFlags:
+% 0x00 - 0x1F & 0x720 - 0x79F
+
+% Restore these ModBytes:
+% 0x00 & 0x0B & 0xFC - 0x1FF
+
+% Push tattles' flags
+#new:Data $Data_PushTable_TattleFlags
+{
+      00000000 00000000 00000000 00000000
+      00000000 00000000 00000000 00000000
+      FFFFFFFF
+}
+
+% Push settings, miscellaneous & recipes flags
+#new:Data $Data_PushTable_ModFlags
+{
+      00000000 00000000 00000000 00000000 
+      00000000 FFFFFFFF
+}
+
+% Push settings, miscellaneous & Rowf's sold inventory bytes
+#new:Data $Data_PushTable_ModBytes
+{
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00000000 
+      00000000 00000000 00000000 00FFFFFF
+}
+
+%===============
+% Settings NPC
+%===============
+
+#export:Script $Script_Init_NPC_Settings
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Interact_NPC_Settings )
+    Return
+    End
+}
+
+#new:Script $Script_Interact_NPC_Settings
+{
+    Call    SpeakToPlayer ( .Npc:Self 008C0404 008C0401 00000000 $String_Settings_Start )
+    Call    ShowChoice ( $String_Choice_Settings_Start )
+    Set     *Var1 *Var0
+    Call    CloseMessage
+    Switch *Var1
+        Case == 0 % Difficulty
+            Switch *Byte_Settings_Difficulty
+                Case == 0
+                    Set *Var0 $String_Easy
+                Case == 1
+                    Set *Var0 $String_Normal
+                Case == 2
+                    Set *Var0 $String_Hard
+                Case == 3
+                    Set *Var0 $String_VeryHard
+            EndSwitch
+            Call    SetMessageString ( *Var0 0 )
+            Call    SpeakToPlayer ( .Npc:Self 008C0404 008C0401 00000000 $String_Settings_Difficulty )
+            Call    ShowChoice ( $String_Choice_Settings_Difficulty )
+            If *Var0 != 4 % Cancel
+                Set     *Byte_Settings_Difficulty *Var0
+            EndIf
+            Call    CloseMessage
+            Jump    $Script_Interact_NPC_Settings
+            Return
+        Case == 1 % Music
+            Switch *Byte_Settings_BGM
+                Case == 0
+                    Set *Var0 $String_TTYD64
+                Case == 1
+                    Set *Var0 $String_Original
+            EndSwitch
+            Call    SetMessageString ( *Var0 0 )
+            Call    SpeakToPlayer ( .Npc:Self 008C0404 008C0401 00000000 $String_Settings_Music )
+            Call    ShowChoice    ( $String_Choice_Settings_YesNo )
+            If *Var0 != 2 % Cancel
+                If *Var0 == 1
+                    Set *Var0 .False
+                Else
+                    Set *Var0 .True
+                EndIf
+                Set     *Byte_Settings_BGM *Var0
+            EndIf
+            Call    CloseMessage
+            Jump    $Script_Interact_NPC_Settings
+            Return
+      Case == 2 % FFWD
+            Call    SpeakToPlayer ( .Npc:Self 008C0404 008C0401 00000000 $String_Settings_FFWD )
+            Call    ShowChoice    ( $String_Choice_Settings_YesNo )
+            If *Var0 != 2 % Cancel
+                If *Var0 == 1
+                    Set *Var0 .False
+                Else
+                    Set *Var0 .True
+                EndIf
+                Set     *Flag_Settings_FFWD *Var0
+            EndIf
+            Call    CloseMessage
+            Jump    $Script_Interact_NPC_Settings
+            Return
+    EndSwitch
+    Return
+    End
+}
+
+#string $String_Settings_Start
+{
+[Style Right]
+Which setting do you want to[BR]
+change?
+[Yield][End]
+}
+
+#string $String_Settings_Difficulty
+{
+[Style Right]
+The higher, the more HP and[BR]
+damage enemies will deal.[BR]
+[BR]
+Current Difficulty: [SaveColor][Color:07][Var 0][RestoreColor]
+[Yield][End]
+}
+
+#string $String_Settings_Music
+{
+[Style Right]
+Do you want the battle music[BR]
+from the original game?[BR]
+[BR]
+Current Music: [SaveColor][Color:07][Var 0][RestoreColor]
+[Yield][End]
+}
+
+#string $String_Settings_FFWD
+{
+[Style Right]
+FFWD memory:
+[Yield][End]
+}
+
+#string $String_Choice_Settings_Start
+{
+[Style Choice pos=101,90 size=102,60]
+[StartChoice]
+[Option 0]Difficulty[BR]
+[Option 1]Music[BR]
+[Option 2]FFWD[BR]
+[EndChoice cancel=3][End]
+}
+
+#string $String_Choice_Settings_Difficulty
+{
+[Style Choice pos=101,90 size=110,77]
+[StartChoice]
+[Option 0]Easy[BR]
+[Option 1]Normal[BR]
+[Option 2]Hard[BR]
+[Option 3][SaveColor][Color:07]Very Hard[RestoreColor][BR]
+[EndChoice cancel=4][End]
+}
+
+#string $String_Choice_Settings_YesNo
+{
+[Style Choice pos=120,90 size=75,46]
+[StartChoice]
+[Option 0]Yes[BR]
+[Option 1]No[BR]
+[EndChoice cancel=2][End]
+
+}
+
+#string $String_TTYD64
+{
+TTYD64[End]
+}
+
+#string $String_Original
+{
+Original[End]
+}
+
+#string $String_Easy
+{
+Easy[End]
+}
+
+#string $String_Normal
+{
+Normal[End]
+}
+
+#string $String_Hard
+{
+Hard[End]
+}
+
+#string $String_VeryHard
+{
+Very Hard[End]
+}
+%/

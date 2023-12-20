@@ -1,0 +1,3380 @@
+% Delete all original data and declare
+% everything once again to being able to
+% edit everything whatever way I want without
+% worring about causing an overflow.
+
+#delete $Script_Init_8023A320
+%#delete $Script_Idle_8023A380
+#delete $Script_HandleEvent_8023A390
+#delete $Script_TakeTurn_8023A6FC
+#delete $Script_8023A790
+#delete $Script_8023A7EC
+#delete $Script_8023A828
+%#delete $Script_NextTurn_8023A8DC
+#delete $Script_8023A8EC
+#delete $Script_8023AA70
+#delete $Script_8023AAF8
+#delete $Script_8023AB84
+#delete $Script_8023B45C
+#delete $Script_8023BD7C
+#delete $Script_8023C588
+#delete $Script_8023CC64
+#delete $Script_8023CCC4
+
+#delete $Function_80238000
+#delete $Function_8023803C
+#delete $Function_80238A6C
+#delete $Function_80238B50
+#delete $Function_80238C14
+#delete $Function_80238C58
+#delete $Function_80238D48
+#delete $Function_80238D8C
+#delete $Function_8023906C
+#delete $Function_80239140
+#delete $Function_80239F84
+#delete $Function_8023A1B0
+#delete $Function_8023A19C
+
+#delete $???_8023AB80
+#delete $???_8023CCC0
+#delete $ConstDouble_8023D1B0
+#delete $ConstDouble_8023D1B8
+#delete $ConstDouble_8023D1C0
+#delete $ConstDouble_8023D1C8
+#delete $ConstDouble_8023D1D0
+
+#delete $IdleAnimations_8023A1D0
+#delete $IdleAnimations_8023A1EC
+#delete $DefenseTable_8023A1F8
+#delete $StatusTable_8023A204
+#delete $PartsTable_8023A2B0
+
+
+#new:Function $Function_Laki_80238000
+{
+	ADDIU     SP, SP, FFE8
+	BEQ       A1, R0, .o14
+	SW        RA, 10 (SP)
+	SAW       R0, $End2[E8]
+	.o14
+	LAW       V0, $End2[E8]
+	BNE       V0, R0, .o30
+	ADDIU     V0, R0, 2
+	JAL       ~Func:btl_set_popup_duration
+	ADDIU     A0, R0, 63
+	CLEAR     V0
+	.o30
+	LW        RA, 10 (SP)
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_SpinyFlip_Cursor
+{
+	ADDIU     SP, SP, FF98
+	SW        S0, 30 (SP)
+	LIA       S0, 800DC070
+	SW        RA, 54 (SP)
+	SW        S8, 50 (SP)
+	SW        S7, 4C (SP)
+	SW        S6, 48 (SP)
+	SW        S5, 44 (SP)
+	SW        S4, 40 (SP)
+	SW        S3, 3C (SP)
+	SW        S2, 38 (SP)
+	SW        S1, 34 (SP)
+	SDC1      F22, 60 (SP)
+	SDC1      F20, 58 (SP)
+	SW        A0, 68 (SP)
+	LW        S7, DC (S0)
+	LW        V0, D8 (S0)
+	ADDIU     S6, S7, C
+	BEQ       A1, R0, .o58
+	ADDIU     S8, V0, C
+	SW        R0, 70 (A0)
+	.o58
+	LW        T0, 68 (SP)
+	LW        V1, 70 (T0)
+	ADDIU     V0, R0, 1
+	BEQ       V1, V0, .o338
+	SLTI      V0, V1, 2
+	BEQ       V0, R0, .o84
+	ADDIU     V0, R0, 2
+	BEQ       V1, R0, .o94
+	NOP
+	BEQ       R0, R0, .o838
+	NOP
+	.o84
+	BEQ       V1, V0, .o3BC
+	NOP
+	BEQ       R0, R0, .o838
+	NOP
+	.o94
+	LIA       A0, 8029369C
+	JAL       ~Func:create_hud_element
+	CLEAR     S2
+	COPY      A0, V0
+	SAW       A0, $End2[A8]
+	JAL       801449DC
+	ADDIU     A1, R0, A
+	LIA       A0, 802936D4
+	JAL       ~Func:create_hud_element
+	NOP
+	COPY      A0, V0
+	ADDIU     A1, R0, A
+	LIA       S0, $End2[AC]
+	JAL       801449DC
+	SW        A0, 0 (S0)
+	LIA       S4, $End2[D8]
+	LW        A0, 0 (S0)
+	LIA       S3, $???_Laki_8023AB80
+	JAL       80144F28
+	RESERVED
+	LIA       A0, 80108E1C
+	LIA       S1, $End2[E0]
+	ADDIU     V0, R0, FFD0
+	LIA       S0, $End2[E4]
+	SW        V0, 0 (S1)
+	ADDIU     V0, R0, 46
+	JAL       ~Func:create_hud_element
+	SW        V0, 0 (S0)
+	COPY      S5, V0
+	LW        A1, 0 (S1)
+	LW        A2, 0 (S0)
+	SAW       S5, $End2[DC]
+	JAL       ~Func:set_hud_element_render_pos
+	COPY      A0, S5
+	COPY      A0, S5
+	JAL       801449DC
+	COPY      A1, S2
+	.o14C
+	LW        A0, 0 (S3)
+	ADDIU     S3, S3, 4
+	JAL       ~Func:create_hud_element
+	ADDIU     S2, S2, 1
+	COPY      A0, V0
+	ADDIU     A1, R0, A
+	JAL       801449DC
+	SW        A0, 0 (S4)
+	BLEZ      S2, .o14C
+	ADDIU     S4, S4, 4
+	LWC1      F0, 144 (S7)
+	LIF       F6, 33.0
+	NOP
+	ADD.S     F0, F0, F6
+	LIF       F4, 34.0
+	SWC1      F0, 0 (S6)
+	LWC1      F0, 148 (S7)
+	ADD.S     F0, F0, F4
+	LIF       F2, 15.0
+	SWC1      F0, 4 (S6)
+	LWC1      F0, 14C (S7)
+	ADD.S     F0, F0, F2
+	SWC1      F0, 8 (S6)
+	LWC1      F0, 144 (S7)
+	ADD.S     F0, F0, F6
+	SWC1      F0, 18 (S6)
+	LWC1      F0, 148 (S7)
+	ADD.S     F0, F0, F4
+	SWC1      F0, 1C (S6)
+	LWC1      F0, 14C (S7)
+	ADD.S     F0, F0, F2
+	SWC1      F0, 20 (S6)
+	LH        A1, 428 (S7)
+	LB        A2, 426 (S7)
+	JAL       ~Func:set_goal_pos_to_part
+	COPY      A0, S6
+	LH        A0, 428 (S7)
+	JAL       ~Func:get_actor
+	NOP
+	COPY      S1, V0
+	LB        A1, 426 (S7)
+	JAL       ~Func:get_actor_part
+	COPY      A0, S1
+	COPY      S0, V0
+	LWC1      F12, 0 (S6)
+	LB        V0, 75 (S0)
+	LWC1      F0, C (S6)
+	MTC1      V0, F2
+	NOP
+	CVT.S.W   F2, F2
+	ADD.S     F0, F0, F2
+	LWC1      F14, 4 (S6)
+	SWC1      F0, C (S6)
+	LB        V0, 76 (S0)
+	LWC1      F0, 10 (S6)
+	MTC1      V0, F2
+	NOP
+	CVT.S.W   F2, F2
+	ADD.S     F0, F0, F2
+	LW        A2, C (S6)
+	SWC1      F0, 10 (S6)
+	MFC1      A3, F0
+	JAL       ~Func:dist2D
+	LWC1      F0, 14 (S6)
+	SWC1      F0, 4C (S6)
+	LIF       F0, 3.0
+	LIF       F2, -1.0
+	ADDIU     V0, R0, 1E
+	SW        R0, 40 (S6)
+	SW        R0, 30 (S6)
+	SW        R0, 34 (S6)
+	SAW       R0, $End2[B0]
+	SAW       R0, $End2[B4]
+	SAW       V0, $End2[B8]
+	SAW       R0, $End2[C0]
+	SAW       R0, $End2[C4]
+	SAW       R0, $End2[C8]
+	SAW       R0, $End2[CC]
+	SAW       R0, $End2[BC]
+	SAF       F0, $End2[D0]
+	SAF       F2, $End2[D4]
+	LBU       V0, 73 (S0)
+	LBU       V1, 72 (S0)
+	LIF       F3, 2.875
+	MTC1      R0, F2
+	ADDU      V0, V0, V1
+	SRA       V0, V0, 1
+	MTC1      V0, F0
+	NOP
+	CVT.D.W   F0, F0
+	DIV.D     F0, F0, F2
+	CVT.S.D   F0, F0
+	SWC1      F0, 24 (S6)
+	LWC1      F2, 188 (S1)
+	MUL.S     F0, F0, F2
+	NOP
+	LAW       A0, $End2[AC]
+	MFC1      A1, F0
+	JAL       80144C20
+	NOP
+	LW        T1, 68 (SP)
+	ADDIU     V0, R0, 1
+	SAW       V0, $End2[E8]
+	BEQ       R0, R0, .o838
+	SW        V0, 70 (T1)
+	.o338
+	LW        V0, 21C (S0)
+	BNE       V0, R0, .o350
+	NOP
+	LW        V0, 220 (S0)
+	BEQ       V0, R0, .o358
+	NOP
+	.o350
+	SAW       R0, $End2[B8]
+	.o358
+	LIA       V1, $End2[B8]
+	LW        V0, 0 (V1)
+	BEQ       V0, R0, .o374
+	ADDIU     V0, V0, FFFF
+	BEQ       R0, R0, .o838
+	SW        V0, 0 (V1)
+	.o374
+	LIA       A1, 801091E4
+	LAW       A0, $End2[DC]
+	ADDIU     V0, R0, 50
+	JAL       ~Func:set_hud_element_script
+	SW        V0, 0 (V1)
+	MTC1      R0, F0
+	ADDIU     A0, R0, 312
+	MFC1      A2, F0
+	CLEAR     A1
+	COPY      A3, A2
+	JAL       ~Func:sfx_play_sound_at_position
+	SW        A2, 10 (SP)
+	LW        T0, 68 (SP)
+	ADDIU     V0, R0, 2
+	BEQ       R0, R0, .o838
+	SW        V0, 70 (T0)
+	.o3BC
+	LW        A1, 22C (S0)
+	SLTI      V0, A1, 51
+	BEQL      V0, R0, .o3CC
+	ADDIU     A1, R0, 50
+	.o3CC
+	LWC1      F22, 228 (S0)
+	CVT.S.W   F22, F22
+	SLTI      V0, A1, 23
+	BEQ       V0, R0, .o42C
+	SLL       V0, A1, 1
+	LIO       AT, 40C90FD0
+	MTC1      AT, F0
+	MTC1      V0, F12
+	NOP
+	CVT.S.W   F12, F12
+	MUL.S     F12, F12, F0
+	NOP
+	LIF       F0, 360.0
+	MTC1      A1, F20
+	NOP
+	CVT.S.W   F20, F20
+	JAL       ~Func:sin_rad
+	DIV.S     F12, F12, F0
+	MUL.S     F20, F20, F0
+	NOP
+	TRUNC.W.S F10, F20
+	MFC1      A1, F10
+	.o42C
+	LIA       V1, $End2[C0]
+	LIA       A0, $End2[C4]
+	LWC1      F8, 0 (V1)
+	LWC1      F6, 0 (A0)
+	LIA       V0, $End2[C8]
+	ADD.S     F2, F8, F6
+	LWC1      F0, 0 (V0)
+	LIF       F4, 3.0
+	ADD.S     F2, F2, F0
+	MTC1      A1, F0
+	NOP
+	CVT.S.W   F0, F0
+	SWC1      F0, 0 (V1)
+	DIV.S     F2, F2, F4
+	SUB.S     F0, F0, F2
+	SWC1      F6, 0 (V0)
+	TRUNC.W.S F10, F0
+	MFC1      V0, F10
+	NOP
+	BLEZ      V0, .o538
+	SWC1      F8, 0 (A0)
+	LWC1      F6, 4C (S7)
+	MTC1      R0, F0
+	MTC1      V0, F4
+	NOP
+	CVT.S.W   F4, F4
+	SAF       F4, $End2[CC]
+	C.EQ.S    F6, F0
+	NOP
+	BC1TL     .o4F4
+	CVT.D.S   F2, F4
+	CVT.D.S   F2, F6
+	CVT.D.S   F0, F4
+	LIF       F5, 2.515625
+	MTC1      R0, F4
+	LIF       F7, 2.125
+	MTC1      R0, F6
+	DIV.D     F0, F0, F4
+	DIV.D     F0, F0, F6
+	ADD.D     F2, F2, F0
+	CVT.S.D   F2, F2
+	BEQ       R0, R0, .o528
+	SWC1      F2, 4C (S7)
+	.o4F4
+	LIF       F1, 2.515625
+	MTC1      R0, F0
+	LIF       F5, 1.75
+	MTC1      R0, F4
+	DIV.D     F2, F2, F0
+	MUL.D     F2, F2, F4
+	NOP
+	CVT.D.S   F0, F6
+	ADD.D     F0, F0, F2
+	CVT.S.D   F0, F0
+	SWC1      F0, 4C (S7)
+	.o528
+	SAF       F22, $End2[D4]
+	BEQ       R0, R0, .o550
+	SLTI      V0, A1, 1F
+	.o538
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	SAF       F0, $End2[CC]
+	SLTI      V0, A1, 1F
+	.o550
+	BNE       V0, R0, .o560
+	NOP
+	SAF       F22, $End2[D4]
+	.o560
+	LWC1      F0, 40 (S6)
+	LAD       F2, $ConstDouble_Laki_8023D1B0
+	CVT.D.S   F0, F0
+	C.LT.D    F2, F0
+	NOP
+	BC1F      .o594
+	ADDIU     V0, R0, 28
+	LIO       AT, 40D66666
+	MTC1      AT, F0
+	NOP
+	SWC1      F0, 40 (S6)
+	.o594
+	SUBU      V0, V0, A1
+	MTC1      V0, F0
+	NOP
+	CVT.D.W   F0, F0
+	ADD.D     F0, F0, F0
+	LIF       F3, 3.0625
+	MTC1      R0, F2
+	NOP
+	DIV.D     F0, F0, F2
+	LWC1      F2, 40 (S6)
+	CVT.S.D   F0, F0
+	SUB.S     F2, F2, F0
+	MTC1      R0, F22
+	NOP
+	C.LE.S    F2, F22
+	NOP
+	BC1F      .o5EC
+	SWC1      F2, 40 (S6)
+	SWC1      F22, 40 (S6)
+	SAF       F22, $End2[CC]
+	.o5EC
+	LAF       F0, $End2[D4]
+	C.LE.S    F22, F0
+	NOP
+	BC1F      .o66C
+	NOP
+	LIO       AT, 40C90FD0
+	MTC1      AT, F20
+	NOP
+	MUL.S     F20, F0, F20
+	NOP
+	LIF       F0, 360.0
+	NOP
+	DIV.S     F20, F20, F0
+	JAL       ~Func:sin_rad
+	MOV.S     F12, F20
+	MOV.S     F12, F20
+	JAL       ~Func:cos_rad
+	MOV.S     F20, F0
+	LWC1      F4, 40 (S6)
+	MUL.S     F20, F4, F20
+	NOP
+	MUL.S     F4, F4, F0
+	NOP
+	LWC1      F2, 0 (S6)
+	ADD.S     F2, F2, F20
+	LWC1      F0, 4 (S6)
+	ADD.S     F0, F0, F4
+	SWC1      F2, 0 (S6)
+	SWC1      F0, 4 (S6)
+	.o66C
+	LWC1      F0, 0 (S6)
+	LIF       F2, -30.0
+	NOP
+	C.LT.S    F0, F2
+	NOP
+	BC1TL     .o68C
+	SWC1      F2, 0 (S6)
+	.o68C
+	LWC1      F0, 0 (S6)
+	LIF       F2, 170.0
+	NOP
+	C.LT.S    F2, F0
+	NOP
+	BC1TL     .o6AC
+	SWC1      F2, 0 (S6)
+	.o6AC
+	LWC1      F0, 4 (S6)
+	LIF       F2, 130.0
+	NOP
+	C.LT.S    F2, F0
+	NOP
+	BC1TL     .o6CC
+	SWC1      F2, 4 (S6)
+	.o6CC
+	LWC1      F0, 4 (S6)
+	C.LT.S    F0, F22
+	NOP
+	BC1TL     .o6E0
+	SWC1      F22, 4 (S6)
+	.o6E0
+	LW        V0, 214 (S0)
+	ANDI      V0, V0, 8000
+	BEQ       V0, R0, .o6F8
+	NOP
+	SAW       R0, $End2[B8]
+	.o6F8
+	LIA       S0, $End2[B8]
+	LW        V1, 0 (S0)
+	ADDIU     V0, R0, 3C
+	BNE       V1, V0, .o72C
+	ADDIU     V0, R0, 1E
+	ADDIU     A0, R0, 100
+	CLEAR     A1
+	LIO       A2, 00100010
+	JAL       ~Func:set_animation
+	RESERVED
+	LW        V1, 0 (S0)
+	ADDIU     V0, R0, 1E
+	.o72C
+	BNE       V1, V0, .o744
+	ADDIU     A0, R0, 100
+	CLEAR     A1
+	LIO       A2, 00100011
+	JAL       ~Func:set_animation
+	RESERVED
+	.o744
+	LW        V0, 0 (S0)
+	BEQ       V0, R0, .o758
+	ADDIU     V0, V0, FFFF
+	BEQ       R0, R0, .o838
+	SW        V0, 0 (S0)
+	.o758
+	LW        T1, 68 (SP)
+	SW        R0, BC (T1)
+	SW        R0, C0 (T1)
+	LWC1      F0, 0 (S6)
+	TRUNC.W.S F10, F0
+	SWC1      F10, A0 (T1)
+	LWC1      F0, 4 (S6)
+	TRUNC.W.S F10, F0
+	SWC1      F10, A4 (T1)
+	LWC1      F0, 8 (S6)
+	TRUNC.W.S F10, F0
+	SWC1      F10, A8 (T1)
+	LWC1      F12, 0 (S6)
+	LWC1      F14, 4 (S6)
+	LW        A2, C (S6)
+	JAL       ~Func:dist2D
+	LW        A3, 10 (S6)
+	LWC1      F2, 24 (S6)
+	LIF       F5, 2.625
+	MTC1      R0, F4
+	DIV.S     F0, F0, F2
+	CVT.D.S   F2, F0
+	C.LE.D    F2, F4
+	NOP
+	BC1F      .o7D0
+	SWC1      F0, 4C (S6)
+	LW        T1, 68 (SP)
+	ADDIU     V0, R0, 1
+	SW        V0, C0 (T1)
+	.o7D0
+	LAW       A0, $End2[AC]
+	JAL       ~Func:free_hud_element
+	CLEAR     S2
+	LAW       A0, $End2[A8]
+	JAL       ~Func:free_hud_element
+	NOP
+	LAW       A0, $End2[DC]
+	LIA       S0, $End2[D8]
+	JAL       ~Func:free_hud_element
+	NOP
+	.o808
+	LW        A0, 0 (S0)
+	ADDIU     S0, S0, 4
+	JAL       ~Func:free_hud_element
+	ADDIU     S2, S2, 1
+	BLEZ      S2, .o808
+	NOP
+	JAL       ~Func:btl_set_popup_duration
+	CLEAR     A0
+	JAL       ~Func:sfx_stop_sound
+	ADDIU     A0, R0, 312
+	BEQ       R0, R0, .o9F8
+	ADDIU     V0, R0, 2
+	.o838
+	LIA       S4, 80077410
+	ADDIU     S3, SP, 20
+	ADDIU     S2, SP, 24
+	LW        A0, 0 (S4)
+	ADDIU     S1, SP, 28
+	SW        S3, 10 (SP)
+	SW        S2, 14 (SP)
+	SW        S1, 18 (SP)
+	LW        A1, C (S6)
+	LW        A2, 10 (S6)
+	JAL       ~Func:get_screen_coords
+	LW        A3, 14 (S6)
+	LAW       S5, $End2[AC]
+	LW        A1, 20 (SP)
+	LW        A2, 24 (SP)
+	JAL       ~Func:set_hud_element_render_pos
+	COPY      A0, S5
+	COPY      A0, S5
+	LIA       S0, $End2[B0]
+	MTC1      R0, F0
+	LWC1      F10, 0 (S0)
+	CVT.S.W   F10, F10
+	MFC1      A1, F0
+	MFC1      A3, F10
+	JAL       80145224
+	COPY      A2, A1
+	LW        V0, 0 (S0)
+	ADDIU     V0, V0, FFF6
+	MTC1      V0, F12
+	NOP
+	CVT.S.W   F12, F12
+	JAL       ~Func:clamp_angle
+	SW        V0, 0 (S0)
+	LW        A0, 0 (S4)
+	SW        S3, 10 (SP)
+	SW        S2, 14 (SP)
+	SW        S1, 18 (SP)
+	LW        A1, 0 (S6)
+	LW        A2, 4 (S6)
+	LW        A3, 8 (S6)
+	TRUNC.W.S F10, F0
+	JAL       ~Func:get_screen_coords
+	SWC1      F10, 0 (S0)
+	LAW       A0, $End2[A8]
+	LW        A1, 20 (SP)
+	JAL       ~Func:set_hud_element_render_pos
+	LW        A2, 24 (SP)
+	LW        T1, 68 (SP)
+	LW        V1, 70 (T1)
+	SLTI      V0, V1, 3
+	BEQ       V0, R0, .o960
+	NOP
+	BLEZ      V1, .o960
+	NOP
+	LIA       A1, $End2[E0]
+	LW        V0, 0 (A1)
+	ADDIU     V0, V0, 14
+	SW        V0, 0 (A1)
+	SLTI      V0, V0, 33
+	BNE       V0, R0, .o944
+	ADDIU     V0, R0, 32
+	SW        V0, 0 (A1)
+	.o944
+	LAW       A0, $End2[DC]
+	LW        A1, 0 (A1)
+	LAW       A2, $End2[E4]
+	JAL       ~Func:set_hud_element_render_pos
+	NOP
+	.o960
+	LW        T0, 68 (SP)
+	LW        A0, 70 (T0)
+	SLTI      V0, A0, 3
+	BEQ       V0, R0, .o9EC
+	NOP
+	BLEZ      A0, .o9EC
+	CLEAR     S2
+	ADDIU     S4, SP, 20
+	LWC1      F0, 0 (S6)
+	ADDIU     S3, SP, 24
+	SWC1      F0, 0 (S8)
+	LWC1      F0, 4 (S6)
+	ADDIU     S1, SP, 28
+	SWC1      F0, 4 (S8)
+	LWC1      F0, 8 (S6)
+	LIA       S0, $End2[D8]
+	SWC1      F0, 8 (S8)
+	.o9A8
+	LAW       A0, 80077410
+	SW        S4, 10 (SP)
+	SW        S3, 14 (SP)
+	SW        S1, 18 (SP)
+	LW        A1, 0 (S8)
+	LW        A2, 4 (S8)
+	LW        A3, 8 (S8)
+	JAL       ~Func:get_screen_coords
+	ADDIU     S2, S2, 1
+	LW        A0, 0 (S0)
+	LW        A1, 20 (SP)
+	LW        A2, 24 (SP)
+	JAL       ~Func:set_hud_element_render_pos
+	ADDIU     S0, S0, 4
+	BLEZ      S2, .o9A8
+	NOP
+	.o9EC
+	JAL       ~Func:btl_set_popup_duration
+	ADDIU     A0, R0, 63
+	CLEAR     V0
+	.o9F8
+	LW        RA, 54 (SP)
+	LW        S8, 50 (SP)
+	LW        S7, 4C (SP)
+	LW        S6, 48 (SP)
+	LW        S5, 44 (SP)
+	LW        S4, 40 (SP)
+	LW        S3, 3C (SP)
+	LW        S2, 38 (SP)
+	LW        S1, 34 (SP)
+	LW        S0, 30 (SP)
+	LDC1      F22, 60 (SP)
+	LDC1      F20, 58 (SP)
+	JR        RA
+	ADDIU     SP, SP, 68
+}
+
+#new:Function $Function_Laki_80238A6C
+{
+	ADDIU     SP, SP, FFA8
+	LAW       V1, 800DC14C
+	LIF       F0, 5.0
+	ADDIU     A0, R0, 8C
+	SW        RA, 28 (SP)
+	SDC1      F28, 50 (SP)
+	SDC1      F26, 48 (SP)
+	SDC1      F24, 40 (SP)
+	SDC1      F22, 38 (SP)
+	SDC1      F20, 30 (SP)
+	LWC1      F24, 144 (V1)
+	LBU       V0, 191 (V1)
+	ADD.S     F24, F24, F0
+	LWC1      F22, 148 (V1)
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	ADD.S     F22, F22, F0
+	LIF       F26, 20.0
+	LWC1      F28, 14C (V1)
+	JAL       ~Func:rand_int
+	ADD.S     F22, F22, F26
+	ADDIU     V0, V0, A
+	MTC1      V0, F20
+	NOP
+	CVT.S.W   F20, F20
+	JAL       ~Func:rand_int
+	ADDIU     A0, R0, 50
+	CLEAR     A0
+	ADDIU     V0, V0, A
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	SWC1      F0, 14 (SP)
+	LIF       F0, 1.5
+	MFC1      A1, F24
+	MFC1      A3, F28
+	MFC1      A2, F22
+	ADDIU     V0, R0, 1E
+	SWC1      F20, 10 (SP)
+	SWC1      F26, 18 (SP)
+	SW        V0, 20 (SP)
+	JAL       80071E10
+	SWC1      F0, 1C (SP)
+	LW        RA, 28 (SP)
+	LDC1      F28, 50 (SP)
+	LDC1      F26, 48 (SP)
+	LDC1      F24, 40 (SP)
+	LDC1      F22, 38 (SP)
+	LDC1      F20, 30 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 58
+}
+
+#new:Function $Function_Laki_80238B50
+{
+	LAW       V0, 800DC14C
+	LW        V0, 8 (V0)
+	ADDIU     V1, R0, 1
+	LBU       A1, 6 (V0)
+	LW        A3, AC (A0)
+	BEQ       A1, V1, .o5C
+	CLEAR     A2
+	SLTI      V0, A1, 2
+	BEQ       V0, R0, .o3C
+	ADDIU     V0, R0, 2
+	BEQ       A1, R0, .o4C
+	SLTI      V0, A3, 64
+	BEQ       R0, R0, .oA8
+	NOP
+	.o3C
+	BEQ       A1, V0, .o7C
+	SLTI      V0, A3, 64
+	BEQ       R0, R0, .oA8
+	NOP
+	.o4C
+	BEQ       V0, R0, .oA4
+	ADDIU     A2, R0, 2
+	BEQ       R0, R0, .oA4
+	ADDIU     A2, R0, 1
+	.o5C
+	SLTI      V0, A3, 47
+	BNE       V0, R0, .oA4
+	ADDIU     A2, R0, 1
+	SLTI      V0, A3, 64
+	BEQ       V0, R0, .oA8
+	ADDIU     A2, R0, 3
+	BEQ       R0, R0, .oA8
+	ADDIU     A2, R0, 2
+	.o7C
+	SLTI      V0, A3, 29
+	BNE       V0, R0, .oA4
+	ADDIU     A2, R0, 1
+	SLTI      V0, A3, 47
+	BNE       V0, R0, .oA4
+	ADDIU     A2, R0, 2
+	SLTI      V0, A3, 64
+	BEQ       V0, R0, .oA8
+	ADDIU     A2, R0, 4
+	ADDIU     A2, R0, 3
+	.oA4
+	SLTI      V0, A3, 64
+	.oA8
+	BNEL      V0, R0, .oB8
+	SW        R0, 84 (A0)
+	ADDIU     V0, R0, 1
+	SW        V0, 84 (A0)
+	.oB8
+	SW        A2, C0 (A0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Laki_80238C14
+{
+	ADDIU     SP, SP, FFE8
+	SW        S0, 10 (SP)
+	LIA       S0, 800DC070
+	SW        RA, 14 (SP)
+	LW        A0, A8 (S0)
+	BEQ       A0, R0, .o34
+	ADDIU     V0, R0, 2
+	JAL       ~Func:remove_effect
+	NOP
+	ADDIU     V0, R0, 2
+	SW        R0, A8 (S0)
+	SB        R0, A4 (S0)
+	.o34
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Laki_80238C58
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S0, 18 (SP)
+    8:  COPY      S0, A0
+    C:  LA        A2, 800DC070
+   14:  SW        RA, 1C (SP)
+   18:  LW        A0, D8 (A2)
+   1C:  BNEL      A1, R0, .o24
+   20:  SW        R0, 70 (S0)
+        .o24
+   24:  LW        V1, 70 (S0)
+   28:  BEQ       V1, R0, .o40
+   2C:  LI        V0, 1
+   30:  BEQ       V1, V0, .o80
+   34:  CLEAR     V0
+   38:  BEQ       R0, R0, .oE0
+   3C:  NOP
+        .o40
+   40:  LIF       F0, 0.09951172
+   4C:  ADDIU     V0, A2, A8
+   50:  SW        V0, 14 (SP)
+   54:  SWC1      F0, 10 (SP)
+   58:  LW        A1, 144 (A0)
+   5C:  LW        A2, 148 (A0)
+   60:  LW        A3, 14C (A0)
+   64:  SAF       F0, $End2[0]
+   6C:  JAL       80070C10
+   70:  CLEAR     A0
+   74:  LI        V0, 1
+   78:  BEQ       R0, R0, .oDC
+   7C:  SW        V0, 70 (S0)
+        .o80
+   80:  LA        V1, $End2[0]
+   88:  LWC1      F2, 0 (V1)
+   8C:  LIF       F1, 1.875
+   94:  MTC1      R0, F0
+   98:  CVT.D.S   F2, F2
+   9C:  C.LE.D    F0, F2
+   A0:  NOP
+   A4:  BC1T      .oE0
+   A8:  LI        V0, 2
+   AC:  LW        V0, A8 (A2)
+   B0:  LAD       F4, $ConstDouble_Laki_8023D1B8
+   B8:  LW        V0, C (V0)
+   BC:  ADD.D     F2, F2, F4
+   C0:  LWC1      F0, 10 (V0)
+   C4:  CVT.D.S   F0, F0
+   C8:  ADD.D     F0, F0, F4
+   CC:  CVT.S.D   F2, F2
+   D0:  SWC1      F2, 0 (V1)
+   D4:  CVT.S.D   F0, F0
+   D8:  SWC1      F0, 10 (V0)
+        .oDC
+   DC:  CLEAR     V0
+        .oE0
+   E0:  LW        RA, 1C (SP)
+   E4:  LW        S0, 18 (SP)
+   E8:  JR        RA
+   EC:  ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_Laki_80238D48
+{
+	LIA       A1, 800DC070
+	LB        V0, A4 (A1)
+	LW        V1, AC (A0)
+	SLT       V0, V0, V1
+	BEQ       V0, R0, .o3C
+	ADDIU     V0, R0, 32
+	LBU       V1, AF (A0)
+	SB        V0, A5 (A1)
+	LW        V0, 43C (A1)
+	SB        V1, A4 (A1)
+	SLL       V1, V1, 18
+	LW        V0, C (V0)
+	SRA       V1, V1, 18
+	SH        V1, 1A (V0)
+	.o3C
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Laki_80238D8C
+{
+	ADDIU     SP, SP, FFC8
+	SW        S5, 24 (SP)
+	LAW       S5, 800DC14C
+	SW        RA, 34 (SP)
+	SW        S8, 30 (SP)
+	SW        S7, 2C (SP)
+	SW        S6, 28 (SP)
+	SW        S4, 20 (SP)
+	SW        S3, 1C (SP)
+	SW        S2, 18 (SP)
+	SW        S1, 14 (SP)
+	SW        S0, 10 (SP)
+	SW        A0, 38 (SP)
+	SAW       R0, $End2[150]
+	SAW       R0, $End2[154]
+	LB        V0, 40C (S5)
+	BLEZ      V0, .o74
+	CLEAR     S3
+	LIA       V1, $End2[F0]
+	.o5C
+	SW        R0, 0 (V1)
+	LB        V0, 40C (S5)
+	ADDIU     S3, S3, 1
+	SLT       V0, S3, V0
+	BNE       V0, R0, .o5C
+	ADDIU     V1, V1, 4
+	.o74
+	CLEAR     S6
+	COPY      S2, S6
+	LB        V0, 40C (S5)
+	BLEZ      V0, .o1DC
+	COPY      S3, S6
+	LIO       S7, 51EB851F
+	LIA       S8, $End2[F0]
+	.o98
+	ADDU      V0, S5, S3
+	LB        S4, 40D (V0)
+	SLL       V0, S4, 2
+	ADDU      V0, V0, S4
+	SLL       V0, V0, 2
+	ADDIU     V0, V0, 22C
+	ADDU      S0, S5, V0
+	JAL       ~Func:get_actor
+	LH        A0, 0 (S0)
+	COPY      S1, V0
+	LH        A1, 2 (S0)
+	JAL       ~Func:get_actor_part
+	COPY      A0, S1
+	LB        A0, 1B8 (S1)
+	SLL       V1, A0, 1
+	ADDU      V1, V1, A0
+	SLL       V1, V1, 3
+	ADDU      V1, V1, A0
+	LB        A0, 1B9 (S1)
+	SLL       V1, V1, 2
+	BNE       A0, R0, .oF4
+	DIV       V1, A0
+	BREAK     1C00
+	.oF4
+	ADDIU     AT, R0, FFFF
+	BNE       A0, AT, .o10C
+	LUI       AT, 8000
+	BNE       V1, AT, .o10C
+	NOP
+	BREAK     1800
+	.o10C
+	MFLO      V1
+	COPY      A1, V0
+	LW        A0, 8 (S1)
+	ADDIU     V0, R0, 64
+	LBU       A0, 1A (A0)
+	BLEZ      A0, .o1BC
+	SUBU      V0, V0, V1
+	MULT      A0, V0
+	MFLO      V1
+	NOP
+	NOP
+	MULT      V1, S7
+	SRA       V1, V1, 1F
+	MFHI      A3
+	SRA       V0, A3, 5
+	SUBU      V0, V0, V1
+	ADDU      A0, A0, V0
+	SLTI      V0, A0, 65
+	BEQL      V0, R0, .o15C
+	ADDIU     A0, R0, 64
+	.o15C
+	LB        V0, 210 (S1)
+	BEQ       V0, R0, .o198
+	SLL       V1, A0, 2
+	ADDU      V1, V1, A0
+	SLL       V0, V1, 4
+	SUBU      V0, V0, V1
+	SLL       V0, V0, 1
+	MULT      V0, S7
+	SRA       V0, V0, 1F
+	MFHI      A2
+	SRA       V1, A2, 5
+	SUBU      A0, V1, V0
+	SLTI      V0, A0, 97
+	BEQL      V0, R0, .o198
+	ADDIU     A0, R0, 96
+	.o198
+	LB        V1, 218 (S1)
+	ADDIU     V0, R0, E
+	BEQL      V1, V0, .o1A8
+	CLEAR     A0
+	.o1A8
+	LW        V0, 7C (A1)
+	ANDI      V0, V0, 20
+	BNEL      V0, R0, .o1B8
+	CLEAR     A0
+	.o1B8
+	ADDIU     S2, S2, 1
+	.o1BC
+	SLL       V0, S4, 2
+	ADDU      V0, V0, S8
+	SW        A0, 0 (V0)
+	LB        V0, 40C (S5)
+	ADDIU     S3, S3, 1
+	SLT       V0, S3, V0
+	BNE       V0, R0, .o98
+	ADDU      S6, S6, A0
+	.o1DC
+	BEQL      S2, R0, .o20C
+	CLEAR     S6
+	BNE       S2, R0, .o1F0
+	DIV       S6, S2
+	BREAK     1C00
+	.o1F0
+	ADDIU     AT, R0, FFFF
+	BNE       S2, AT, .o208
+	LUI       AT, 8000
+	BNE       S6, AT, .o208
+	NOP
+	BREAK     1800
+	.o208
+	MFLO      S6
+	.o20C
+	LW        A2, 38 (SP)
+	SW        S6, 84 (A2)
+	LB        V0, 40C (S5)
+	BLEZ      V0, .o2AC
+	CLEAR     S3
+	LIA       S7, $End2[F0]
+	ADDIU     S8, R0, FFFF
+	ADDU      V0, S5, S3
+	.o230
+	LB        S4, 40D (V0)
+	SLL       S2, S4, 2
+	ADDU      V0, S2, S4
+	SLL       V0, V0, 2
+	ADDIU     V0, V0, 22C
+	ADDU      S0, S5, V0
+	JAL       ~Func:get_actor
+	LH        A0, 0 (S0)
+	COPY      S1, V0
+	LH        A1, 2 (S0)
+	JAL       ~Func:get_actor_part
+	COPY      A0, S1
+	LB        V1, 218 (S1)
+	ADDIU     A2, R0, E
+	BEQ       V1, A2, .o280
+	COPY      A1, V0
+	LW        V0, 7C (A1)
+	ANDI      V0, V0, 20
+	BEQ       V0, R0, .o28C
+	ADDU      V1, S2, S7
+	.o280
+	ADDU      V0, S2, S7
+	BEQ       R0, R0, .o298
+	SW        S8, 0 (V0)
+	.o28C
+	LW        V0, 0 (V1)
+	BNEL      V0, R0, .o298
+	SW        S6, 0 (V1)
+	.o298
+	LB        V0, 40C (S5)
+	ADDIU     S3, S3, 1
+	SLT       V0, S3, V0
+	BNE       V0, R0, .o230
+	ADDU      V0, S5, S3
+	.o2AC
+	LW        RA, 34 (SP)
+	LW        S8, 30 (SP)
+	LW        S7, 2C (SP)
+	LW        S6, 28 (SP)
+	LW        S5, 24 (SP)
+	LW        S4, 20 (SP)
+	LW        S3, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 38
+}
+
+#new:Function $Function_Laki_8023906C
+{
+	ADDIU     SP, SP, FFD8
+	SW        S3, 1C (SP)
+	COPY      S3, A0
+	LIA       A2, 800DC070
+	SW        RA, 24 (SP)
+	SW        S4, 20 (SP)
+	SW        S2, 18 (SP)
+	SW        S1, 14 (SP)
+	SW        S0, 10 (SP)
+	LW        A0, DC (A2)
+	LB        V0, 425 (A0)
+	LIA       V1, $End2[F0]
+	ADDU      V0, A0, V0
+	LB        A1, 40D (V0)
+	SLL       V0, A1, 2
+	ADDU      S0, V0, V1
+	ADDU      V0, V0, A1
+	SLL       V0, V0, 2
+	ADDIU     V0, V0, 22C
+	LW        V1, 0 (S0)
+	ADDU      S1, A0, V0
+	SW        V1, 84 (S3)
+	LW        V0, 0 (S0)
+	ADDIU     S2, R0, FFFF
+	BEQ       V0, S2, .oB0
+	COPY      S4, A2
+	BEQ       V0, R0, .oB4
+	ADDIU     V0, R0, 2
+	LH        A0, 0 (S1)
+	JAL       ~Func:get_actor
+	NOP
+	JAL       ~Func:rand_int
+	ADDIU     A0, R0, 63
+	LB        V1, 81 (S4)
+	SLT       V0, V0, V1
+	BEQL      V0, R0, .oAC
+	SW        R0, 0 (S0)
+	SW        S2, 0 (S0)
+	LH        V0, 0 (S1)
+	BEQ       R0, R0, .oB0
+	SW        V0, 84 (S3)
+	.oAC
+	SW        R0, 84 (S3)
+	.oB0
+	ADDIU     V0, R0, 2
+	.oB4
+	LW        RA, 24 (SP)
+	LW        S4, 20 (SP)
+	LW        S3, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	JR        RA
+	ADDIU     SP, SP, 28
+}
+
+#new:Function $Function_Laki_80239140
+{
+	ADDIU     SP, SP, FF90
+	SW        S2, 38 (SP)
+	LAW       S2, 800DC14C
+	SW        S3, 3C (SP)
+	COPY      S3, A0
+	SW        RA, 4C (SP)
+	SW        S6, 48 (SP)
+	SW        S5, 44 (SP)
+	SW        S4, 40 (SP)
+	SW        S1, 34 (SP)
+	SW        S0, 30 (SP)
+	SDC1      F26, 68 (SP)
+	SDC1      F24, 60 (SP)
+	SDC1      F22, 58 (SP)
+	SDC1      F20, 50 (SP)
+	BEQ       A1, R0, .o4C
+	ADDIU     S6, S2, C
+	SW        R0, 70 (S3)
+	.o4C
+	LW        V1, 70 (S3)
+	BEQ       V1, R0, .o68
+	ADDIU     V0, R0, 1
+	BEQ       V1, V0, .o230
+	LUI       A0, 51EB
+	BEQ       R0, R0, .o3AC
+	NOP
+	.o68
+	CLEAR     A0
+	ADDIU     V0, R0, A5
+	ADDIU     S1, R0, 1
+	LUI       A2, C47A
+	MTC1      R0, F0
+	LIO       AT, 3F19999A
+	MTC1      AT, F2
+	MFC1      A1, F0
+	LIF       F0, -2.0
+	ADDIU     S0, R0, FF
+	SW        R0, 54 (S2)
+	SH        V0, 70 (S2)
+	SH        R0, 72 (S2)
+	SAW       S1, $End2[154]
+	SAW       S0, $End2[158]
+	SW        R0, 1C (SP)
+	SWC1      F2, 18 (SP)
+	COPY      A3, A1
+	SW        A1, 10 (SP)
+	JAL       800721D0
+	SWC1      F0, 14 (SP)
+	LW        A0, C (V0)
+	ADDIU     V1, R0, 14
+	SW        V1, 18 (A0)
+	LW        A0, C (V0)
+	ADDIU     V1, R0, 50
+	SW        V1, 1C (A0)
+	LW        V1, C (V0)
+	ADDIU     A1, R0, F0
+	SW        S0, 20 (V1)
+	LW        A0, C (V0)
+	ADDIU     V1, R0, C8
+	SW        V1, 28 (A0)
+	LW        V1, C (V0)
+	LIA       A2, $???_Laki_8023CCC0
+	SW        A1, 2C (V1)
+	LW        A0, C (V0)
+	LW        V1, 0 (A2)
+	SAW       V0, $End2[4]
+	SW        A1, 30 (A0)
+	SB        R0, 5C (V1)
+	LW        A0, 0 (A2)
+	ADDIU     V0, R0, B1
+	SH        V0, 54 (V1)
+	SH        R0, 44 (V1)
+	SH        R0, 46 (V1)
+	SH        R0, 70 (A0)
+	LH        V0, 70 (A0)
+	LIO       AT, 40490FD0
+	MTC1      AT, F0
+	MTC1      V0, F12
+	NOP
+	CVT.S.W   F12, F12
+	MUL.S     F12, F12, F0
+	NOP
+	SAW       R0, $End2[9C]
+	LIF       F0, 0.5
+	ADDIU     V0, R0, 1388
+	MUL.S     F12, F12, F0
+	NOP
+	SH        V0, 72 (A0)
+	LIO       AT, 443B8000
+	MTC1      AT, F0
+	ADDIU     V0, R0, FFFF
+	SH        V0, 5A (A0)
+	JAL       ~Func:sin_rad
+	DIV.S     F12, F12, F0
+	LIF       F3, 1.875
+	MTC1      R0, F2
+	CVT.D.S   F0, F0
+	SUB.D     F2, F2, F0
+	LIF       F1, 2.5
+	MTC1      R0, F0
+	NOP
+	MUL.D     F2, F2, F0
+	NOP
+	ADDIU     V0, R0, FFFF
+	SAW       V0, $End2[94]
+	LIF       F1, 2.65625
+	MTC1      R0, F0
+	ADDIU     V0, R0, 7D0
+	SAW       R0, $End2[8C]
+	SAW       R0, $End2[90]
+	ADD.D     F2, F2, F0
+	SAW       R0, $End2[A0]
+	SAW       V0, $End2[A4]
+	TRUNC.W.D F8, F2
+	SAF       F8, $End2[98]
+	JAL       ~Func:rand_int
+	ADDIU     A0, R0, A
+	ADDIU     V0, V0, B
+	SW        V0, 74 (S3)
+	SW        R0, 78 (S3)
+	BEQ       R0, R0, .o3AC
+	SW        S1, 70 (S3)
+	.o230
+	LAW       V0, $End2[8C]
+	ORI       A0, A0, 851F
+	SLL       V1, V0, 2
+	ADDU      V1, V1, V0
+	SLL       V0, V1, 4
+	SUBU      V0, V0, V1
+	SLL       V0, V0, 1
+	MULT      V0, A0
+	CLEAR     S1
+	SRA       V0, V0, 1F
+	MFHI      T1
+	SRA       V1, T1, 5
+	SUBU      V1, V1, V0
+	ADDIU     V1, V1, FFB5
+	LB        V0, 40C (S2)
+	MTC1      V1, F0
+	NOP
+	CVT.S.W   F0, F0
+	BLEZ      V0, .o310
+	SWC1      F0, 54 (S2)
+	LIA       S5, $End2[F0]
+	ADDIU     S4, R0, FFFF
+	LIF       F20, 13.0
+	ADDU      V0, S2, S1
+	.o29C
+	LB        V1, 40D (V0)
+	SLL       A0, V1, 2
+	ADDU      V0, A0, S5
+	LW        V0, 0 (V0)
+	BEQ       V0, S4, .o2FC
+	NOP
+	BEQ       V0, R0, .o2FC
+	ADDU      V0, A0, V1
+	SLL       V0, V0, 2
+	ADDU      V0, V0, S2
+	JAL       ~Func:get_actor
+	LH        A0, 22C (V0)
+	COPY      S0, V0
+	LWC1      F0, 18C (S0)
+	LAW       V0, $End2[90]
+	ADD.S     F0, F0, F20
+	SLL       V0, V0, 2
+	MTC1      V0, F12
+	NOP
+	CVT.S.W   F12, F12
+	JAL       ~Func:clamp_angle
+	ADD.S     F12, F0, F12
+	SWC1      F0, 18C (S0)
+	.o2FC
+	LB        V0, 40C (S2)
+	ADDIU     S1, S1, 1
+	SLT       V0, S1, V0
+	BNE       V0, R0, .o29C
+	ADDU      V0, S2, S1
+	.o310
+	LH        V0, 64 (S6)
+	LHU       V1, 64 (S6)
+	BEQ       V0, R0, .o328
+	ADDIU     V0, V1, FFFF
+	BEQ       R0, R0, .o3AC
+	SH        V0, 64 (S6)
+	.o328
+	LB        V0, 40C (S2)
+	BLEZ      V0, .o38C
+	CLEAR     S1
+	LIA       S3, $End2[F0]
+	ADDIU     S0, R0, FFFF
+	ADDU      V0, S2, S1
+	.o344
+	LB        V1, 40D (V0)
+	SLL       A0, V1, 2
+	ADDU      V0, A0, S3
+	LW        V0, 0 (V0)
+	BEQ       V0, S0, .o378
+	NOP
+	BEQ       V0, R0, .o378
+	ADDU      V0, A0, V1
+	SLL       V0, V0, 2
+	ADDU      V0, V0, S2
+	JAL       ~Func:get_actor
+	LH        A0, 22C (V0)
+	SW        R0, 18C (V0)
+	.o378
+	LB        V0, 40C (S2)
+	ADDIU     S1, S1, 1
+	SLT       V0, S1, V0
+	BNE       V0, R0, .o344
+	ADDU      V0, S2, S1
+	.o38C
+	LAW       A0, $End2[4]
+	SAW       R0, $End2[154]
+	JAL       ~Func:remove_effect
+	NOP
+	BEQ       R0, R0, .oE0C
+	ADDIU     V0, R0, 2
+	.o3AC
+	LIA       S1, $End2[4]
+	LAF       F0, $End2[A0]
+	CVT.D.W   F0, F0
+	LIF       F3, 3.140625
+	MTC1      R0, F2
+	LIF       F5, 1.875
+	MTC1      R0, F4
+	LW        V0, 0 (S1)
+	DIV.D     F0, F0, F2
+	ADD.D     F0, F0, F4
+	LW        V0, C (V0)
+	CVT.S.D   F0, F0
+	SWC1      F0, 4C (V0)
+	LWC1      F0, 144 (S2)
+	LWC1      F2, 148 (S2)
+	ADDIU     A0, R0, 3E8
+	SWC1      F0, 28 (SP)
+	JAL       ~Func:rand_int
+	SWC1      F2, 2C (SP)
+	LAW       S0, $End2[94]
+	LIF       F20, 5.0
+	BEQ       S0, R0, .o514
+	NOP
+	BGTZ      S0, .o43C
+	ADDIU     V0, R0, 1
+	ADDIU     V0, R0, FFFF
+	BEQ       S0, V0, .o44C
+	ADDIU     A0, SP, 28
+	BEQ       R0, R0, .o5F8
+	NOP
+	.o43C
+	BEQ       S0, V0, .o53C
+	ADDIU     A0, SP, 28
+	BEQ       R0, R0, .o5F8
+	NOP
+	.o44C
+	LUI       A2, 4140
+	LWC1      F0, 148 (S2)
+	LIF       F2, 15.0
+	LUI       A3, 42B4
+	LWC1      F4, 144 (S2)
+	ADD.S     F0, F0, F2
+	LWC1      F2, 14C (S2)
+	ADDIU     A1, SP, 2C
+	SWC1      F4, 28 (SP)
+	ADD.S     F24, F2, F20
+	JAL       ~Func:add_vec2D_polar
+	SWC1      F0, 2C (SP)
+	LW        V1, 0 (S1)
+	LWC1      F0, 28 (SP)
+	LW        V0, C (V1)
+	SWC1      F0, 4 (V0)
+	LW        V0, C (V1)
+	LWC1      F0, 2C (SP)
+	SWC1      F0, 8 (V0)
+	LW        V0, C (V1)
+	LIF       F0, -2.0
+	SWC1      F24, C (V0)
+	LW        V0, C (V1)
+	SWC1      F0, 3C (V0)
+	LW        V0, C (V1)
+	LIF       F0, -1000.0
+	SW        R0, 4 (V0)
+	LW        V0, C (V1)
+	SWC1      F0, 8 (V0)
+	LW        V0, C (V1)
+	SW        R0, C (V0)
+	LW        V0, 78 (S3)
+	BEQ       V0, R0, .o4F8
+	ADDIU     A0, R0, 201E
+	LWC1      F0, 14C (S2)
+	SWC1      F0, 10 (SP)
+	LW        A2, 144 (S2)
+	LW        A3, 148 (S2)
+	JAL       ~Func:sfx_play_sound_at_position
+	CLEAR     A1
+	.o4F8
+	ADDIU     A0, R0, 100
+	ADDIU     A1, R0, FFFF
+	LIO       A2, 00100016
+	SW        R0, 78 (S3)
+	BEQ       R0, R0, .o5F0
+	SH        R0, 66 (S6)
+	.o514
+	LW        V1, 0 (S1)
+	LIF       F0, -1000.0
+	LW        V0, C (V1)
+	SW        R0, 4 (V0)
+	LW        V0, C (V1)
+	SWC1      F0, 8 (V0)
+	LW        V0, C (V1)
+	BEQ       R0, R0, .o5F8
+	SW        R0, C (V0)
+	.o53C
+	LUI       A2, 4140
+	LWC1      F0, 148 (S2)
+	LIF       F2, 15.0
+	LUI       A3, 42B4
+	LWC1      F4, 144 (S2)
+	ADD.S     F0, F0, F2
+	LWC1      F2, 14C (S2)
+	ADDIU     A1, SP, 2C
+	SWC1      F4, 28 (SP)
+	ADD.S     F24, F2, F20
+	JAL       ~Func:add_vec2D_polar
+	SWC1      F0, 2C (SP)
+	LW        V1, 0 (S1)
+	LWC1      F0, 28 (SP)
+	LW        V0, C (V1)
+	SWC1      F0, 4 (V0)
+	LW        V0, C (V1)
+	LWC1      F0, 2C (SP)
+	SWC1      F0, 8 (V0)
+	LW        V0, C (V1)
+	LIF       F0, 2.0
+	SWC1      F24, C (V0)
+	LW        V0, C (V1)
+	SWC1      F0, 3C (V0)
+	LW        V0, 78 (S3)
+	BNEL      V0, R0, .o5D0
+	SW        S0, 78 (S3)
+	LWC1      F0, 14C (S2)
+	ADDIU     A0, R0, 201F
+	SWC1      F0, 10 (SP)
+	LW        A2, 144 (S2)
+	LW        A3, 148 (S2)
+	JAL       ~Func:sfx_play_sound_at_position
+	CLEAR     A1
+	SW        S0, 78 (S3)
+	.o5D0
+	LH        V0, 66 (S6)
+	BEQL      V0, R0, .o5DC
+	SW        S0, 74 (S3)
+	.o5DC
+	SH        S0, 66 (S6)
+	ADDIU     A0, R0, 100
+	ADDIU     A1, R0, FFFF
+	LIO       A2, 00100017
+	.o5F0
+	JAL       ~Func:set_animation
+	NOP
+	.o5F8
+	LIA       S0, $End2[90]
+	LIA       S2, 8007419C
+	LW        V0, 0 (S0)
+	ADDIU     S1, R0, 7
+	SRL       V1, V0, 1F
+	ADDU      V0, V0, V1
+	LW        V1, 0 (S2)
+	SRA       V0, V0, 1
+	LHU       V1, 134 (V1)
+	SUBU      V0, S1, V0
+	BNE       V0, R0, .o634
+	DIV       V1, V0
+	BREAK     1C00
+	.o634
+	ADDIU     AT, R0, FFFF
+	BNE       V0, AT, .o64C
+	LUI       AT, 8000
+	BNE       V1, AT, .o64C
+	NOP
+	BREAK     1800
+	.o64C
+	MFHI      V0
+	BNE       V0, R0, .o760
+	ADDIU     A0, R0, 64
+	LIF       F24, 50.0
+	LIF       F0, -220.0
+	JAL       ~Func:rand_int
+	SWC1      F0, 28 (SP)
+	ADDIU     A0, R0, 64
+	ADDIU     V1, R0, B0
+	SUBU      V1, V1, V0
+	MTC1      V1, F0
+	NOP
+	CVT.S.W   F0, F0
+	JAL       ~Func:rand_int
+	SWC1      F0, 2C (SP)
+	ADDIU     A0, R0, 3E8
+	ADDIU     V0, V0, 64
+	LWC1      F2, 2C (SP)
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	JAL       ~Func:rand_int
+	SUB.S     F26, F2, F0
+	MTC1      V0, F20
+	NOP
+	CVT.S.W   F20, F20
+	LIO       AT, 453B8000
+	MTC1      AT, F0
+	LIF       F3, 1.75
+	MTC1      R0, F2
+	DIV.S     F0, F20, F0
+	CVT.D.S   F0, F0
+	ADD.D     F0, F0, F2
+	ADDIU     A0, R0, 3E8
+	LIF       F22, 220.0
+	JAL       ~Func:rand_int
+	CVT.S.D   F20, F0
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A3, F24
+	LIF       F2, 300.0
+	LWC1      F4, 28 (SP)
+	LWC1      F6, 2C (SP)
+	ADDIU     A0, R0, 1
+	SWC1      F22, 10 (SP)
+	SWC1      F26, 14 (SP)
+	SWC1      F20, 20 (SP)
+	DIV.S     F2, F0, F2
+	LIF       F1, 2.359375
+	MTC1      R0, F0
+	CVT.D.S   F2, F2
+	ADD.D     F2, F2, F0
+	SW        A3, 18 (SP)
+	LWC1      F0, 0 (S0)
+	CVT.D.W   F0, F0
+	ADD.D     F2, F2, F0
+	MFC1      A1, F4
+	MFC1      A2, F6
+	CVT.S.D   F0, F2
+	JAL       80072410
+	SWC1      F0, 1C (SP)
+	.o760
+	LW        V0, 0 (S0)
+	SRL       V1, V0, 1F
+	ADDU      V0, V0, V1
+	LW        V1, 0 (S2)
+	SRA       V0, V0, 1
+	LHU       V1, 134 (V1)
+	SUBU      V0, S1, V0
+	BNE       V0, R0, .o788
+	DIV       V1, V0
+	BREAK     1C00
+	.o788
+	ADDIU     AT, R0, FFFF
+	BNE       V0, AT, .o7A0
+	LUI       AT, 8000
+	BNE       V1, AT, .o7A0
+	NOP
+	BREAK     1800
+	.o7A0
+	MFHI      V0
+	BNE       V0, R0, .o8C0
+	ADDIU     A0, R0, 64
+	LIF       F24, -50.0
+	LIF       F0, -220.0
+	JAL       ~Func:rand_int
+	SWC1      F0, 28 (SP)
+	ADDIU     A0, R0, 64
+	ADDIU     V1, R0, B0
+	SUBU      V1, V1, V0
+	MTC1      V1, F0
+	NOP
+	CVT.S.W   F0, F0
+	JAL       ~Func:rand_int
+	SWC1      F0, 2C (SP)
+	ADDIU     A0, R0, 3E8
+	ADDIU     V0, V0, 64
+	LWC1      F2, 2C (SP)
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	JAL       ~Func:rand_int
+	SUB.S     F26, F2, F0
+	MTC1      V0, F20
+	NOP
+	CVT.S.W   F20, F20
+	LIF       F0, 4000.0
+	LAD       F2, $ConstDouble_Laki_8023D1C0
+	DIV.S     F0, F20, F0
+	CVT.D.S   F0, F0
+	ADD.D     F0, F0, F2
+	ADDIU     A0, R0, 3E8
+	LIF       F22, 220.0
+	JAL       ~Func:rand_int
+	CVT.S.D   F20, F0
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	MFC1      A3, F24
+	LIF       F2, 300.0
+	LWC1      F4, 28 (SP)
+	LWC1      F6, 2C (SP)
+	ADDIU     A0, R0, 1
+	SWC1      F22, 10 (SP)
+	SWC1      F26, 14 (SP)
+	SWC1      F20, 20 (SP)
+	DIV.S     F2, F0, F2
+	CVT.D.S   F2, F2
+	SW        A3, 18 (SP)
+	LW        V0, 0 (S0)
+	LIF       F1, 2.09375
+	MTC1      R0, F0
+	SRL       V1, V0, 1F
+	ADDU      V0, V0, V1
+	ADD.D     F2, F2, F0
+	SRAV      V0, V0, A0
+	MTC1      V0, F0
+	NOP
+	CVT.D.W   F0, F0
+	ADD.D     F2, F2, F0
+	MFC1      A1, F4
+	MFC1      A2, F6
+	CVT.S.D   F0, F2
+	JAL       80072410
+	SWC1      F0, 1C (SP)
+	.o8C0
+	LIA       S1, $???_Laki_8023CCC0
+	LW        V1, 0 (S1)
+	LB        A0, 5C (V1)
+	BEQ       A0, R0, .o8E8
+	ADDIU     V0, R0, 1
+	BEQ       A0, V0, .oAF4
+	ADDIU     V0, R0, A
+	BEQ       R0, R0, .oB00
+	NOP
+	.o8E8
+	LH        V0, 5A (V1)
+	ADDIU     S2, R0, 1
+	SAW       S2, $End2[94]
+	BGEZ      V0, .o904
+	RESERVED
+	LHU       V0, 72 (V1)
+	SH        V0, 5A (V1)
+	.o904
+	LW        V0, 0 (S1)
+	LH        V0, 72 (V0)
+	LIO       AT, 459C4000
+	MTC1      AT, F2
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	C.LT.S    F2, F0
+	NOP
+	BC1TL     .o934
+	MOV.S     F0, F2
+	.o934
+	LIO       AT, 40490FD0
+	MTC1      AT, F12
+	NOP
+	MUL.S     F12, F0, F12
+	NOP
+	LIF       F0, 0.5
+	NOP
+	MUL.S     F12, F12, F0
+	NOP
+	LIO       AT, 3FC90FD0
+	MTC1      AT, F0
+	DIV.S     F12, F12, F2
+	LIA       S0, $End2[98]
+	LWC1      F20, 0 (S0)
+	CVT.D.W   F20, F20
+	JAL       ~Func:sin_rad
+	ADD.S     F12, F12, F0
+	LIF       F3, 1.875
+	MTC1      R0, F2
+	CVT.D.S   F0, F0
+	SUB.D     F2, F2, F0
+	MUL.D     F2, F20, F2
+	NOP
+	LIF       F1, 1.9375
+	MTC1      R0, F0
+	NOP
+	MUL.D     F2, F2, F0
+	NOP
+	LIA       A2, $End2[9C]
+	LW        A1, 0 (S1)
+	LW        V0, 0 (A2)
+	LW        V1, 0 (S0)
+	LH        A0, 70 (A1)
+	ADDU      V0, V0, V1
+	SW        V0, 0 (A2)
+	ADD.D     F20, F20, F2
+	LH        V0, 72 (A1)
+	MTC1      A0, F0
+	NOP
+	CVT.S.W   F0, F0
+	CVT.S.D   F20, F20
+	ADD.S     F0, F0, F20
+	SLTI      V0, V0, 2329
+	TRUNC.W.S F8, F0
+	MFC1      V1, F8
+	BNE       V0, R0, .oA2C
+	SH        V1, 70 (A1)
+	COPY      V0, V1
+	SLL       V1, V0, 10
+	SRA       A0, V1, 10
+	SRL       V1, V1, 1F
+	ADDU      A0, A0, V1
+	SRA       A0, A0, 1
+	SUBU      V0, V0, A0
+	SH        V0, 70 (A1)
+	.oA2C
+	LW        V1, 0 (S1)
+	LH        V0, 70 (V1)
+	BLTZL     V0, .oA3C
+	SH        R0, 70 (V1)
+	.oA3C
+	LW        V1, 0 (S1)
+	LH        V0, 70 (V1)
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	ADD.S     F0, F0, F20
+	TRUNC.W.S F8, F0
+	MFC1      V0, F8
+	NOP
+	SH        V0, 70 (V1)
+	SLL       V0, V0, 10
+	SRA       V0, V0, 10
+	SLTI      V0, V0, 2EF
+	BNE       V0, R0, .oA7C
+	ADDIU     V0, R0, 2EE
+	SH        V0, 70 (V1)
+	.oA7C
+	LW        V0, 0 (A2)
+	SLTI      V0, V0, 3E9
+	BNE       V0, R0, .oA90
+	ADDIU     V0, R0, 3E8
+	SW        V0, 0 (A2)
+	.oA90
+	LW        A0, 0 (S1)
+	LHU       V0, 72 (A0)
+	LHU       V1, 70 (A0)
+	LIA       A1, $End2[A4]
+	ADDU      V0, V0, V1
+	SH        V0, 72 (A0)
+	SLL       V0, V0, 10
+	LW        V1, 0 (A1)
+	SRA       V0, V0, 10
+	ADDIU     V1, V1, 1388
+	SLT       V1, V1, V0
+	BEQ       V1, R0, .oB00
+	NOP
+	LHU       V0, 2 (A1)
+	SB        S2, 5C (A0)
+	ADDIU     V0, V0, 1388
+	SH        V0, 72 (A0)
+	LW        V1, 0 (S1)
+	ADDIU     V0, R0, 5
+	SB        V0, 5D (V1)
+	LW        V1, 0 (S1)
+	LHU       V0, 2 (A2)
+	BEQ       R0, R0, .oB00
+	SH        V0, 70 (V1)
+	.oAF4
+	SAW       R0, $End2[94]
+	SB        V0, 5C (V1)
+	.oB00
+	LIA       A3, $???_Laki_8023CCC0
+	LW        A1, 0 (A3)
+	LB        V1, 5C (A1)
+	ADDIU     V0, R0, A
+	BEQ       V1, V0, .oB2C
+	ADDIU     V0, R0, B
+	BEQ       V1, V0, .oC1C
+	NOP
+	BEQ       R0, R0, .oD08
+	NOP
+	.oB2C
+	LUI       A0, 5555
+	LHU       V0, 70 (A1)
+	ORI       A0, A0, 5556
+	SLL       V0, V0, 10
+	SRA       V1, V0, 10
+	MULT      V1, A0
+	LIF       F0, 200.0
+	ADDIU     T0, R0, FFFF
+	SAW       T0, $End2[94]
+	SRA       V0, V0, 1F
+	MFHI      T1
+	SUBU      V0, T1, V0
+	SLL       V0, V0, 10
+	SRA       V0, V0, 10
+	ADDU      V1, V1, V0
+	MTC1      V1, F20
+	NOP
+	CVT.S.W   F20, F20
+	C.LT.S    F20, F0
+	NOP
+	BC1TL     .oB8C
+	MOV.S     F20, F0
+	.oB8C
+	LH        V0, 72 (A1)
+	MTC1      V0, F0
+	NOP
+	CVT.S.W   F0, F0
+	SUB.S     F0, F0, F20
+	LIA       A0, $End2[A4]
+	ADDIU     A2, R0, 1388
+	TRUNC.W.S F8, F0
+	MFC1      V0, F8
+	NOP
+	SH        V0, 72 (A1)
+	SLL       V0, V0, 10
+	LW        V1, 0 (A0)
+	SRA       V0, V0, 10
+	SUBU      V1, A2, V1
+	SLT       V0, V0, V1
+	BEQ       V0, R0, .oD08
+	ADDIU     V1, R0, B
+	LHU       V0, 2 (A0)
+	SB        V1, 5C (A1)
+	SUBU      V0, A2, V0
+	SH        V0, 72 (A1)
+	LW        V1, 0 (A3)
+	ADDIU     V0, R0, 5
+	SB        V0, 5D (V1)
+	LW        V0, 0 (A0)
+	LW        V1, 0 (A3)
+	ADDIU     V0, V0, 3E8
+	SH        T0, 5A (V1)
+	SW        V0, 0 (A0)
+	SLTI      V0, V0, 1389
+	BEQL      V0, R0, .oD08
+	SW        A2, 0 (A0)
+	BEQ       R0, R0, .oD08
+	NOP
+	.oC1C
+	SAW       R0, $End2[94]
+	SB        R0, 5C (A1)
+	LW        V1, 0 (A3)
+	LH        V0, 70 (V1)
+	LAD       F2, $ConstDouble_Laki_8023D1C8
+	MTC1      V0, F0
+	NOP
+	CVT.D.W   F0, F0
+	DIV.D     F2, F0, F2
+	SUB.D     F0, F0, F2
+	TRUNC.W.D F8, F0
+	MFC1      V0, F8
+	NOP
+	SH        V0, 70 (V1)
+	LH        V1, 70 (V1)
+	LIO       AT, 40490FD0
+	MTC1      AT, F0
+	MTC1      V1, F12
+	NOP
+	CVT.S.W   F12, F12
+	MUL.S     F12, F12, F0
+	NOP
+	LIF       F0, 0.5
+	NOP
+	MUL.S     F12, F12, F0
+	NOP
+	SLL       V0, V0, 10
+	LIO       AT, 443B8000
+	MTC1      AT, F0
+	SRA       V0, V0, 10
+	SAW       V0, $End2[9C]
+	JAL       ~Func:sin_rad
+	DIV.S     F12, F12, F0
+	LIF       F3, 1.875
+	MTC1      R0, F2
+	CVT.D.S   F0, F0
+	SUB.D     F2, F2, F0
+	LIF       F1, 2.5
+	MTC1      R0, F0
+	NOP
+	MUL.D     F2, F2, F0
+	NOP
+	LIF       F1, 2.65625
+	MTC1      R0, F0
+	NOP
+	ADD.D     F2, F2, F0
+	TRUNC.W.D F8, F2
+	SAF       F8, $End2[98]
+	BEQ       R0, R0, .o8C0
+	RESERVED
+	.oD08
+	LAW       A0, $???_Laki_8023CCC0
+	LB        V0, 5C (A0)
+	BNE       V0, R0, .oD38
+	NOP
+	LH        V1, 70 (A0)
+	BLTZL     V1, .oD28
+	ADDIU     V1, V1, 3
+	.oD28
+	LHU       V0, 44 (A0)
+	SRA       V1, V1, 2
+	ADDU      V0, V0, V1
+	SH        V0, 44 (A0)
+	.oD38
+	LIA       A0, $???_Laki_8023CCC0
+	LW        V1, 0 (A0)
+	LH        V0, 44 (V1)
+	SLTI      V0, V0, 2711
+	BNE       V0, R0, .oD58
+	ADDIU     V0, R0, 2710
+	SH        V0, 44 (V1)
+	.oD58
+	LW        A1, 0 (A0)
+	LUI       A2, 51EB
+	LHU       V1, 72 (A1)
+	ORI       A2, A2, 851F
+	SLL       V1, V1, 10
+	SRA       V0, V1, 10
+	MULT      V0, A2
+	LHU       A0, 70 (A1)
+	SRA       V1, V1, 1F
+	SLL       A0, A0, 10
+	MFHI      T1
+	SRA       V0, T1, 5
+	SUBU      V0, V0, V1
+	SRA       V1, A0, 10
+	SLL       V0, V0, 10
+	MULT      V1, A2
+	SRA       V0, V0, 10
+	LIA       V1, $End2[90]
+	SRA       A0, A0, 1F
+	SAW       V0, $End2[8C]
+	MFHI      T1
+	SRA       V0, T1, 5
+	SUBU      V0, V0, A0
+	SLL       V0, V0, 10
+	SRA       V0, V0, 10
+	SW        V0, 0 (V1)
+	SLTI      V0, V0, B
+	BNE       V0, R0, .oDD8
+	ADDIU     V0, R0, A
+	SW        V0, 0 (V1)
+	.oDD8
+	LHU       A0, 44 (A1)
+	SLL       A0, A0, 10
+	SRA       V0, A0, 10
+	MULT      V0, A2
+	CLEAR     V0
+	SRA       A0, A0, 1F
+	MFHI      T1
+	SRA       V1, T1, 5
+	SUBU      V1, V1, A0
+	SLL       V1, V1, 10
+	SRA       V1, V1, 10
+	SAW       V1, $End2[A0]
+	.oE0C
+	LW        RA, 4C (SP)
+	LW        S6, 48 (SP)
+	LW        S5, 44 (SP)
+	LW        S4, 40 (SP)
+	LW        S3, 3C (SP)
+	LW        S2, 38 (SP)
+	LW        S1, 34 (SP)
+	LW        S0, 30 (SP)
+	LDC1      F26, 68 (SP)
+	LDC1      F24, 60 (SP)
+	LDC1      F22, 58 (SP)
+	LDC1      F20, 50 (SP)
+	JR        RA
+	ADDIU     SP, SP, 70
+}%/
+
+#new:Function $Function_Laki_80239F84
+{
+	ADDIU     SP, SP, FFD8
+	SW        S1, 14 (SP)
+	SW        RA, 1C (SP)
+	SW        S2, 18 (SP)
+	SW        S0, 10 (SP)
+	SDC1      F20, 20 (SP)
+	BEQ       A1, R0, .o34
+	COPY      S1, A0
+	LW        A0, AC (S1)
+	JAL       ~Func:get_actor
+	NOP
+	SW        V0, 74 (S1)
+	SW        R0, 70 (S1)
+	.o34
+	LW        S0, 74 (S1)
+	LW        V1, 70 (S1)
+	BEQ       V1, R0, .o58
+	ADDIU     S2, S0, C
+	ADDIU     V0, R0, 1
+	BEQ       V1, V0, .oB8
+	NOP
+	BEQ       R0, R0, .o1E0
+	NOP
+	.o58
+	LIA       V1, $End2[150]
+	COPY      A0, S0
+	LWC1      F0, 144 (S0)
+	LWC1      F2, 148 (S0)
+	LWC1      F4, 14C (S0)
+	LIF       F6, 5.5
+	LW        V0, 0 (V1)
+	ADDIU     A1, R0, 16
+	SH        R0, 70 (S0)
+	ADDIU     V0, V0, 1
+	SWC1      F0, C (S0)
+	SWC1      F2, 10 (S0)
+	SWC1      F4, 14 (S0)
+	SWC1      F6, 4C (S0)
+	SW        V0, 0 (V1)
+	LIA       V0, 800DC070
+	JAL       ~Func:dispatch_event_actor
+	SW        R0, 188 (V0)
+	ADDIU     V0, R0, 1
+	BEQ       R0, R0, .o1E0
+	SW        V0, 70 (S1)
+	.oB8
+	LWC1      F2, C (S0)
+	LWC1      F0, 4C (S0)
+	LH        V0, 70 (S0)
+	ADD.S     F2, F2, F0
+	LIO       AT, 40C90FD0
+	MTC1      AT, F0
+	MTC1      V0, F12
+	NOP
+	CVT.S.W   F12, F12
+	MUL.S     F12, F12, F0
+	NOP
+	LWC1      F20, 10 (S0)
+	LIF       F0, 360.0
+	CVT.D.S   F20, F20
+	SWC1      F2, C (S0)
+	JAL       ~Func:sin_rad
+	DIV.S     F12, F12, F0
+	ADD.S     F0, F0, F0
+	LIO       AT, 40490FD0
+	MTC1      AT, F12
+	NOP
+	MUL.S     F12, F0, F12
+	JAL       ~Func:sin_rad
+	NOP
+	LAD       F2, $ConstDouble_Laki_8023D1D0
+	CVT.D.S   F0, F0
+	MUL.D     F0, F0, F2
+	NOP
+	LHU       V1, 70 (S0)
+	LIF       F3, 1.75
+	MTC1      R0, F2
+	ADDIU     V1, V1, 6
+	ADD.D     F0, F0, F2
+	SLL       V0, V1, 10
+	SRA       V0, V0, 10
+	ADD.D     F20, F20, F0
+	MTC1      V0, F12
+	NOP
+	CVT.S.W   F12, F12
+	SH        V1, 70 (S0)
+	CVT.S.D   F20, F20
+	JAL       ~Func:clamp_angle
+	SWC1      F20, 10 (S0)
+	LWC1      F12, 18C (S0)
+	LIF       F2, 33.0
+	NOP
+	ADD.S     F12, F12, F2
+	TRUNC.W.S F8, F0
+	MFC1      V0, F8
+	NOP
+	SH        V0, 70 (S0)
+	JAL       ~Func:clamp_angle
+	SWC1      F12, 18C (S0)
+	LWC1      F4, C (S0)
+	LIF       F2, 240.0
+	NOP
+	C.LT.S    F2, F4
+	NOP
+	BC1F      .o1E0
+	SWC1      F0, 18C (S0)
+	LIA       A0, $End2[150]
+	LW        V1, 0 (A0)
+	ADDIU     V0, R0, 2
+	ADDIU     V1, V1, FFFF
+	BEQ       R0, R0, .o1FC
+	SW        V1, 0 (A0)
+	.o1E0
+	LWC1      F0, 0 (S2)
+	SWC1      F0, 144 (S0)
+	LWC1      F0, 4 (S2)
+	SWC1      F0, 148 (S0)
+	LWC1      F0, 8 (S2)
+	CLEAR     V0
+	SWC1      F0, 14C (S0)
+	.o1FC
+	LW        RA, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	LDC1      F20, 20 (SP)
+	JR        RA
+	ADDIU     SP, SP, 28
+}
+
+#new:Function $Function_Laki_8023A1B0
+{
+	LAW       V0, $End2[154]
+	SW        V0, 84 (A0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Laki_8023A19C
+{
+	LAW       V0, $End2[150]
+	SLTIU     V0, V0, 1
+	JR        RA
+	SLL       V0, V0, 1
+}
+
+#new:Unknown $???_Laki_8023AB80
+{
+    8029370C
+}
+
+#new:Unknown $???_Laki_8023CCC0
+{
+    $End2[8]
+}
+
+#new:ConstDouble $ConstDouble_Laki_8023D1B0
+{
+    6.700000d
+}
+
+#new:ConstDouble $ConstDouble_Laki_8023D1B8
+{
+    0.200000d
+}
+
+#new:ConstDouble $ConstDouble_Laki_8023D1C0
+{
+    0.100000d
+}
+
+#new:ConstDouble $ConstDouble_Laki_8023D1C8
+{
+    2.800000d
+}
+
+#new:ConstDouble $ConstDouble_Laki_8023D1D0
+{
+    1.400000d
+}
+
+@ $Lakilester
+{
+    % stats
+    [Index]        76b
+    [Level]         0`b
+    [MaxHP]        99`b
+    [Coins]         0`b
+    [Flags]       00000200
+    [StatusTable] $StatusTable_Lakilester_8023A204
+    % ai
+    [PartsCount]    2`s
+    [PartsTable]  $PartsTable_Lakilester_8023A2B0
+    [Script]      $Script_Laki_Init_8023A320
+    % move effectiveness
+    [Escape]        0`b
+    [Item]          0`b
+    [AirLift]       0`b
+    [Hurricane]     0`b % Bow's "Spook" as well
+    [UpAndAway]     0`b
+    [PowerBounce]  80`b
+    [SpinSmash]     4`b % weight (0-4)
+    % ui positions
+    [Size]         44`b  40`b % width height
+    [HealthBar]     0`b   0`b % dx dy
+    [StatusTurn]  -10`b  30`b % dx dy
+    [StatusIcon]   13`b  31`b % dx dy
+}
+
+#new:IdleAnimations $IdleAnimations_Lakilester_8023A1D0
+{
+	.Status:Normal    00100002
+	.Status:Stone     00100000
+	.Status:Sleep     0010001B
+	.Status:Poison    0010001C
+	.Status:Stop   	  00100000
+	.Status:Dizzy     00100008
+	.Status:Daze      00100008
+	.Status:TurnDone  00100000
+	.Status:Danger    0010001C
+	.Status:Frozen	  00100000
+	00000030    	  0010001A % Defense
+	.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_Lakilester_8023A1EC
+{
+	.Status:Normal    00100014
+	.Status:End
+}
+
+#new:DefenseTable $DefenseTable_Lakilester_8023A1F8
+{
+	.Element:Normal 00000000
+	.Element:End
+}
+
+#new:StatusTable $StatusTable_Lakilester_8023A204
+{
+	.Status:Normal    100`
+	.Status:Default   100`
+	.Status:Sleep     100`
+	.Status:Poison    100`
+	.Status:Frozen    100`
+	.Status:Dizzy     100`
+	.Status:Fear      100`
+	.Status:Static    100`
+	.Status:Paralyze  100`
+	.Status:Shrink    100`
+	.Status:Stop      100`
+	.Status:DefaultTurnMod    0`
+	.Status:SleepTurnMod      0`
+	.Status:PoisonTurnMod     0`
+	.Status:FrozenTurnMod     0`
+	.Status:DizzyTurnMod      0`
+	.Status:FearTurnMod       0`
+	.Status:StaticTurnMod     0`
+	.Status:ParalyzeTurnMod   0`
+	.Status:ShrinkTurnMod     0`
+	.Status:StopTurnMod       0`
+	.Status:End
+}
+
+#new:PartsTable $PartsTable_Lakilester_8023A2B0
+{
+	00000000 01000000 0C1E00FF $IdleAnimations_Lakilester_8023A1D0 $DefenseTable_Lakilester_8023A1F8 00000000 00000000 00000000 00000000
+	00100001 02000000 000000FF $IdleAnimations_Lakilester_8023A1EC $DefenseTable_Lakilester_8023A1F8 00000000 00000000 00000000 00000000
+}
+
+#new:Script $Script_Laki_Init_8023A320
+{
+    Call  BindTakeTurn  ( .Actor:Self $Script_Laki_TakeTurn_8023A6FC )
+    Call  BindIdle      ( .Actor:Self $Script_Idle_8023A380 )
+    Call  BindHandleEvent   ( .Actor:Self $Script_Laki_HandleEvent_8023A390 )
+    Call  BindNextTurn  ( .Actor:Self $Script_NextTurn_8023A8DC )
+    Return
+    End
+}
+
+
+
+#new:Script $Script_Laki_HandleEvent_8023A390
+{
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  CloseActionCommandInfo
+    Call  GetLastEvent      ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        CaseOR  ==  .Event:HitCombo % 9
+        CaseOR  ==  .Event:Hit % A
+            SetConst  *Var0  FFFFFFFF 
+            Set  	  *Var1  0010000A
+            ExecWait  DoNormalHit 
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100002 )
+        EndCaseGroup
+        CaseOR  ==  00000017 % 17
+        CaseOR  ==  .Event:Immune % 19
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            % Check if Partner used the defend command
+			Call $GetPartnerExtraBattleData_API ( E *Var0 )
+			If *Var0 == .False
+				  SetConst  *Var0  00000001
+				  SetConst  *Var1  00100000
+			Else % Defend
+				  SetConst  *Var0  00000001
+				  SetConst  *Var1  0010001A
+			EndIf
+            ExecWait  DoImmune
+        EndCaseGroup
+        Case  ==  .Event:SpikeContact % 2A
+            SetConst  *Var1  0010000A
+            SetConst  *Var2  00000014
+            ExecWait  80294FE4
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnContact % 2C
+            SetConst  *Var1  0010000C
+            Set   *Var2  00000014
+            SetConst  *Var3  0010000D
+            ExecWait  80294C68
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnHit % E
+            SetConst  *Var1  0010000C
+            SetConst  *Var2  0010000D
+            ExecWait  8029621C
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:ShockHit % 2F
+            SetConst  *Var1  0010000A
+            Set   *Var2  00000014
+            ExecWait  80295744
+        Case  ==  00000033 % 33
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  00000034 % 34 % Recover
+            SetConst  *Var0  00000001
+            SetConst  *Var1  00100002
+            SetConst  *Var2  00100003
+            Set   *Var3  00000004 % Height
+            ExecWait  80295EC4
+        CaseOR  ==  00000018 % 18
+        CaseOR  ==  .Event:Block % 1A
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            SetConst  *Var0  00000001
+            SetConst  *Var1  0010001A
+            ExecWait  DoImmune
+            Wait  10`
+		Case  ==  .Event:Death % 20 % NEW!
+            Set *Var0 FFFFFFFF
+			Set *Var1 0010000A
+            ExecWait $PartnerDies
+            Return
+		Case  ==  43 % NEW! % .Event:Superguard
+            Set *Var0 FFFFFFFF
+			Set *Var1 00100016
+            ExecWait $DoSuperguard
+        EndCaseGroup
+        Default
+    EndSwitch
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Return
+    End
+}
+
+#new:Script $Script_Laki_TakeTurn_8023A6FC
+{
+    Call  GetBattlePhase    ( *Var0 )
+    Switch  *Var0
+        Case  ==  .Phase:ExecuteAction
+            ExecWait  $Script_Laki_8023A8EC
+        Case  ==  00000005
+            ExecWait  $Script_Laki_8023A790
+        Case  ==  .Phase:RunAwayStart
+            ExecWait  $Script_Laki_RunAwayStart
+        Case  ==  .Phase:RunAwayFail
+            ExecWait  $Script_Laki_RunAwayFail
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Laki_8023A790
+{
+    SetConst  *Var0  00000001
+    SetConst  *Var1  00100007
+    SetConst  *Var2  00100002
+    SetConst  *Var3  00100002
+    ExecWait  80294720
+    Return
+    End
+}
+
+#new:Script $Script_Laki_RunAwayStart
+{
+    SetConst  *Var0  00000001
+    SetConst  *Var1  00100003
+    ExecWait  80294AFC
+    Return
+    End
+}
+
+#new:Script $Script_Laki_RunAwayFail
+{
+	Call  $GetPartnerHP_API ( *Var0 )
+	If *Var0 == .False
+		% Don't do anything if partner is dead
+		Return
+	EndIf
+    Call  UseIdleAnimation  ( .Actor:Partner .False )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100003 )
+    Call  SetActorYaw   ( .Actor:Partner 00000000 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100002 )
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Return
+    End
+}
+
+
+
+#new:Script $Script_Laki_8023A8EC
+{
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Call  802694A4  ( 00000001 )
+    Switch  *Var0
+        Case  ==  00000008
+            Call  LoadStarPowerScript
+            ExecWait *Var0
+            Return
+		Case  ==  00000002 
+			Call  LoadItemScript
+			ExecWait *Var0
+			Return
+    EndSwitch
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000AD % Spiny Flip
+            Call  SetBattleFlagBits ( 00004000 .False )
+            ExecWait  $Script_Init_SpinyFlip
+        Case  ==  000000AE % Spiny Flip - Super Rank
+            Call  SetBattleFlagBits ( 00004000 .False )
+            ExecWait  $Script_Init_SpinyFlip
+        Case  ==  000000AF % Spiny Flip - Ultra Rank
+            Call  SetBattleFlagBits ( 00004000 .False )
+            ExecWait  $Script_Init_SpinyFlip
+        Case  ==  000000B0 % Spiny Surge
+            ExecWait  $Script_Init_SpinySurge
+        Case  ==  000000B1 % Cloud Nine
+            Call  SetBattleFlagBits ( 00004000 .False )
+            ExecWait  $Script_Init_CloudNine
+        Case  ==  000000B2 % Hurricane
+            ExecWait  $Script_Init_Hurricane
+    EndSwitch
+    Return
+    End
+}
+
+% Used in Spiny Flip and Spiny Surge
+#new:Script $Script_GoBackToHome_Succeed
+{
+	Call  GetMenuSelection ( .False .False *Var0 )
+	If *Var0 == B0 % Spiny Surge
+		% Spiny Surge - Stylish Move
+		Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .False % The A button wasn't still pressed
+            Loop 4 % 4 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                % Set *Var0 .True % testing
+                If *Var0 == .True
+                    Set   *TrackInput .False % turn off tracker
+                    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                    % Add 1 to the stylish counter (last move only)
+                    Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                    Add *Var0 1
+                    Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                    Set *VarA .False % this move doesn't have an SP cap
+                    ExecWait $Script_DoStylishFX
+                    % happy :D
+                    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100007 )
+					Wait  25`
+					BreakLoop
+                EndIf
+                Wait 1
+            EndLoop
+        EndIf
+	EndIf
+	Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  80280818
+    Call  UseBattleCamPreset  ( 00000004 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000000F 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100002 )
+    Return
+    End
+}
+
+% Used in Spiny Flip, Spiny Surge and Hurricane
+#new:Script $Script_GoBackToHome_Failed
+{
+    Call  80280818
+    Call  UseBattleCamPreset  ( 00000033 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000000F 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100002 )
+    Return
+    End
+}
+
+#new:Script $Script_Init_SpinyFlip
+{
+    Exec  $Script_NukeTracker
+    Thread
+        Call  $Function_Laki_80238000
+    EndThread
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100003 )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  00000028
+    Add   *Var1  00000014
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100001 )
+    Call  InitTargetIterator
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Call  UseBattleCamPreset  ( 00000013 )
+    Call  SetBattleCamTarget    ( 0000002F 0000002E 0000000C )
+    Call  SetBattleCamOffsetZ   ( 00000007 )
+    Call  SetBattleCamZoom  ( 000001A0 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  00000003
+    Add   *Var1  0000000A
+    Add   *Var2  00000005
+    Call  SetPartPos    ( .Actor:Partner 00000002 *Var0 *Var1 *Var2 )
+    Wait  1`
+    Call  SetPartFlagBits   ( .Actor:Partner 00000002 00000001 .False )
+    Call  SetAnimation  ( .Actor:Self 00000002 00100014 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 0010000F )
+    Loop  00000004
+        Add   *Var1  00000006
+        Call  SetPartPos    ( .Actor:Partner 00000002 *Var0 *Var1 *Var2 )
+        Wait  1`
+    EndLoop
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  00000008
+    Add   *Var1  00000028
+    Add   *Var2  00000005
+    Call  PlayEffect    ( ~FX:EnergyIn:ShortStreaks *Var0 *Var1 *Var2 *Fixed[1.0] 00000050 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Call  SetActorVar   ( .Actor:Partner 00000000 00000001 )
+    Thread
+        Loop  00000028
+            Call  SetActorDispOffset    ( .Actor:Partner 00000001 00000000 00000000 )
+            Call  SetPartDispOffset     ( .Actor:Partner 00000002 00000001 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Partner FFFFFFFF 00000000 00000000 )
+            Call  SetPartDispOffset     ( .Actor:Partner 00000002 FFFFFFFF 00000000 00000000 )
+            Wait  1`
+            Call  GetActorVar   ( .Actor:Partner 00000000 *Var0 )
+            If  *Var0  ==  00000000
+                BreakLoop
+            EndIf
+        EndLoop
+        Call  SetActorDispOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+        Call  SetPartDispOffset     ( .Actor:Partner 00000002 00000000 00000000 00000000 )
+    EndThread
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Thread % 1st Stylish Move
+        Wait  30` % wait until the player can press A to throw the spiny (yeah this is actually a thing, i never knew it lol)
+		Exec  $Script_InitTracker
+		Wait  40` % wait for the last frames of the action command
+		Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+		If *Var0 == .False % A button hasn't still been pressed
+			Loop 8 % Input window
+				% The action command has already end?
+				Call	GetActorVar ( .Actor:Self 0 *Var0 )
+				If *Var0 == .False
+					BreakLoop
+				EndIf
+				% Timing Tutor Badge
+				ExecWait $Script_TimingTutor % writes in var0,1,2
+				Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+				If *Var0 == .True
+					% Add 1 to the stylish counter (last move only)
+					Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+					Add *Var0 1
+					Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+					Set *VarA .False % this move doesn't have an SP cap
+					ExecWait $Script_DoStylishFX
+					BreakLoop
+				EndIf
+				Wait 1
+			EndLoop
+		Else % A button was pressed to soon
+			Set   *TrackInput .False % turn off tracker
+        	Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+		EndIf
+    EndThread
+    Call  $Function_SpinyFlip_Cursor % Run until the Action Command ends
+	Call  SetActorVar       ( .Actor:Partner 00000000 00000000 )
+    % Throw Spiny
+	% DoStylish Animation
+	Wait 5
+	Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False ) % read amount of stylishs made on this move
+    If *Var0 > 0
+        % Stylish Move
+		Exec  $Script_SpinyFlip_DoStylish1 *Var1
+		Loop
+			DoesScriptExist ( *Var1 *Var0 )
+			If *Var0 == .False
+				BreakLoop
+			EndIf
+			Wait 1
+		EndLoop
+	EndIf
+    Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100012 )
+    Wait  3`
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000002 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Set   *VarF  FFFFFFFF
+	EndIf
+	Exec  $Script_InitTracker
+    Call  PlaySoundAtActor  ( .Actor:Partner 0000201B )
+    Switch  *VarF
+        Case  ==  FFFFFFFF
+            Call  SetAnimation  ( .Actor:Self 00000002 00100015 )
+            Call  SetPartJumpGravity    ( .Actor:Partner 00000002 *Fixed[1.5] )
+            Set   *Var0  *Var7
+            Set   *Var1  *Var8
+            Set   *Var2  *Var9
+            Call  JumpPartTo    ( .Actor:Partner 00000002 *Var7 *Var8 *Var9 00000014 )
+            Call  LandJumpPart  ( .Actor:Partner 00000002 )
+        Case  ==  00000000
+            Call  SetAnimation  ( .Actor:Self 00000002 00100015 )
+            Call  SetPartJumpGravity    ( .Actor:Partner 00000002 *Fixed[1.5] )
+            Set   *Var0  *Var7
+            Set   *Var1  *Var8
+            Set   *Var2  *Var9
+            Call  JumpPartTo    ( .Actor:Partner 00000002 *Var7 *Var8 *Var9 00000014 )
+            Call  LandJumpPart  ( .Actor:Partner 00000002 )
+        Default
+            Call  SetAnimation  ( .Actor:Self 00000002 00100015 )
+            Call  GetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+            Call  SetPartJumpGravity    ( .Actor:Partner 00000002 *Fixed[1.5] )
+            Call  JumpPartTo    ( .Actor:Partner 00000002 *Var0 *Var1 *Var2 00000014 )
+	EndSwitch
+    Thread % Throw Spiny - Spiny's trajectory
+        Add   *Var0  00000032
+        Set   *Var1  00000000
+        Call  SetPartJumpGravity    ( .Actor:Partner 00000002 *Fixed[1.5] )
+        Call  JumpPartTo    ( .Actor:Partner 00000002 *Var0 *Var1 *Var2 0000000F )
+        Call  SetPartFlagBits       ( .Actor:Partner 00000002 00000001 .True )
+    EndThread
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000AD
+            Set   *VarE  00000003
+        Case  ==  000000AE
+            Set   *VarE  00000004
+        Case  ==  000000AF
+            Set   *VarE  00000005
+    EndSwitch
+    Switch  *VarF
+        Case  >  00000000
+			Call  PartnerDamageEnemy    ( *Var0 10010000 00000000 00000000 *VarE 00000070 )
+			% Spiny Flip - 2nd Stylish Move
+			% PUSH Var0
+			Set *VarB *Var0
+			Call $ReadAddress ( $Data_Inputs 0 *Var1 .False .False )
+			If *Var1 == .False % The A button wasn't still pressed
+				Loop 4 % 4 frames
+					% Timing Tutor Badge
+					ExecWait $Script_TimingTutor % writes in var0,1,2
+					Call $ReadAddress ( $Data_Inputs 0 *Var1 .False .False )
+					% Set *Var1 .True % testing
+					If *Var1 == .True
+						Set   *TrackInput .False % turn off tracker
+						Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+						% Add 1 to the stylish counter (last move only)
+						Call $ReadAddress  ( $Data_Inputs 0 *Var1 2 .False )
+						Add *Var1 1
+						Call $WriteAddress ( $Data_Inputs 0 *Var1 2 .False )
+						Set *VarA .False % this move doesn't have an SP cap
+						ExecWait $Script_DoStylishFX
+						% happy :D
+						Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100007 )
+						Wait  25`
+						BreakLoop
+					EndIf
+					Wait 1
+				EndLoop
+			EndIf
+			% POP Var0
+			Set *Var0 *VarB
+			Set   *TrackInput .False % turn off tracker
+        	Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Default
+            Set   *Var0  00000002
+    EndSwitch
+    Switch  *VarF
+        Case  ==  00000001
+            Call  UseBattleCamPreset  ( 00000004 )
+        Default
+            Call  UseBattleCamPreset  ( 00000033 )
+    EndSwitch
+    Wait  15`
+    Switch  *Var0
+        CaseOR  ==  00000001
+        CaseOR  ==  00000003
+            ExecWait  $Script_GoBackToHome_Succeed
+        EndCaseGroup
+        CaseOR  ==  00000000
+        CaseOR  ==  00000002
+            ExecWait  $Script_GoBackToHome_Failed
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_SpinyFlip_DoStylish1
+{
+	% Flip Lakilester
+	Call    PlaySoundAtActor ( .Actor:Self 226F )
+	SetTimescale *Fixed[3.0]
+	Loop 1
+		% 1
+		Call    MakeLerp    	( 0 -180` 12` .Easing:Linear )
+		Loop     
+			Call     UpdateLerp
+			Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+			Call     SetPartRotation   ( .Actor:Self 2 0 *Var0 0 )
+			Wait     1
+			If  *Var1  ==  .False
+				BreakLoop
+			EndIf
+		EndLoop
+		% 2
+		Call    MakeLerp    	( -180` 0 12` .Easing:Linear )
+		Loop     
+			Call     UpdateLerp
+			Call     SetActorRotation  ( .Actor:Self 0 *Var0 0 )
+			Call     SetPartRotation   ( .Actor:Self 2 0 *Var0 0 )
+			Wait     1
+			If  *Var1  ==  .False
+				BreakLoop
+			EndIf
+		EndLoop
+	EndLoop
+	SetTimescale *Fixed[1.0]
+	Call    SetActorRotation  ( .Actor:Self 0 0 0 )
+	Call    SetPartRotation   ( .Actor:Self 2 0 0 0 )
+	Return
+	End
+}
+
+#new:Script $Script_Init_SpinySurge
+{
+    Exec  $Script_NukeTracker
+    Call  LoadActionCommand ( 00000013 )
+    Call  802A9000
+    Call  GetActorLevel     ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        Case  ==  00000000
+            Call  SetupMashMeter  ( 00000002 00000063 00000064 00000000 00000000 00000000 )
+        Case  ==  00000001
+            Call  SetupMashMeter  ( 00000003 00000046 00000063 00000064 00000000 00000000 )
+        Case  ==  00000002
+            Call  SetupMashMeter  ( 00000004 00000028 00000046 00000063 00000064 00000000 )
+    EndSwitch
+    Call  80269344      ( 0000000A )
+    Call  UseBattleCamPreset  ( 00000013 )
+    Call  SetBattleCamTarget    ( 0000002D 0000003C 00000000 )
+    Call  SetBattleCamOffsetZ   ( 00000000 )
+    Call  SetBattleCamZoom      ( 00000190 )
+    Call  MoveBattleCamOver     ( 0000001E )
+    Call  InitTargetIterator
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100003 )
+    Call  AddGoalPos    ( .Actor:Partner 0000003C 00000014 00000000 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100001 )
+	Wait  10`
+	Exec  $Script_InitTracker
+    Call  GetActorLevel ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        Case  ==  00000000
+            Set   *VarA  0000003C
+        Case  ==  00000001
+            Set   *VarA  0000003C
+        Case  ==  00000002
+            Set   *VarA  0000003C
+    EndSwitch
+    Set   *VarB  *VarA
+    Add   *VarB  FFFFFFFD
+    Call  802A916C  ( 00000000 *VarB 00000003 )
+    Call  SetBattleFlagBits ( 00004000 .False )
+    Call  InitTargetIterator
+    Call  SetActorVar       ( .Actor:Partner 00000000 00000000 )
+    Set   *Var9  00000000
+    Set   *Flag[02]  .False
+    Set   *Flag[03]  .False
+    Loop  *VarA
+        Call  802695A8  ( *Var0 )
+        If  *Var9  ==  00000002
+            Set   *Var0  00000003
+        EndIf
+        Switch  *Var0
+            Case  ==  FFFFFFFF
+                Set   *Var9  00000000
+                Call  SetPartFlagBits   ( .Actor:Partner 00000002 00000001 .True )
+                Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100001 )
+            Case  ==  00000001
+                If  *Var9  ==  00000001
+                    BreakCase
+                EndIf
+                Call  SetPartFlagBits   ( .Actor:Partner 00000002 00000001 .False )
+                Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+                Add   *Var0  00000003
+                Add   *Var1  00000022
+                Add   *Var2  00000005
+                Call  SetPartPos    ( .Actor:Partner 00000002 *Var0 *Var1 *Var2 )
+                Call  SetAnimation  ( .Actor:Partner FFFFFFFF 0010000F )
+                Set   *Var9  00000001
+            Case  ==  00000002
+                If  *Var9  ==  00000000
+                    BreakCase
+                EndIf
+                If  *Flag[02]  ==  .False
+                    Call  PlaySoundAtActor  ( .Actor:Partner 0000201B )
+                    Set   *Flag[02]  .True
+                Else
+                    Call  PlaySoundAtActor  ( .Actor:Partner 0000201C )
+                    Set   *Flag[02]  .False
+                EndIf
+                Call  $Function_Laki_80238A6C
+                Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100013 )
+                Call  SetPartFlagBits   ( .Actor:Partner 00000002 00000001 .True )
+                ChildThread
+                    Call  GetActorVar   ( .Actor:Partner 00000000 *Var0 )
+                    Add   *Var0  00000001
+                    Call  SetActorVar   ( .Actor:Partner 00000000 *Var0 )
+                    Wait  15`
+                    Call  GetActorVar   ( .Actor:Partner 00000000 *Var0 )
+                    Sub   *Var0  00000001
+                    Call  SetActorVar   ( .Actor:Partner 00000000 *Var0 )
+                EndChildThread
+                Set   *Flag[03]  .True
+                Set   *Var9  00000000
+        EndSwitch
+        Wait  1`
+    EndLoop
+    Call  SetPartFlagBits   ( .Actor:Partner 00000002 00000001 .True )
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100001 )
+    Loop
+        Call  GetActorVar   ( .Actor:Partner 00000000 *Var0 )
+        If  *Var0  ==  00000000
+            BreakLoop
+        EndIf
+        Wait  1`
+    EndLoop
+    Wait  10`
+    If  *Flag[03]  ==  .False
+        Set   *Var0  00000000
+        Set   *VarF  00000000
+        Wait  15`
+        Goto  D
+    EndIf
+    Call  InitTargetIterator
+    Label  0
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000002 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Goto  C
+    EndIf
+    Call  GetActionCommandResult  ( *VarA )
+    Call  $Function_Laki_80238B50
+    Switch  *Var0
+        Case  >  .HitResult:Hit % 0
+            Call  PartnerDamageEnemy    ( *Var0 30010000 00000000 00000000 *VarF 00000070 )
+        Default
+            Call  PartnerDamageEnemy    ( *Var0 30010000 00000000 00000000 *VarF 00000030 )
+    EndSwitch
+    Switch  *Var0
+        Case  >  .HitResult:Hit % 0
+            Call  UseBattleCamPreset  ( 00000004 )
+        Default
+            Call  UseBattleCamPreset  ( 00000033 )
+    EndSwitch
+    Wait  6`
+    Label  C
+    Call  ChooseNextTarget  ( .Iter:Next *Var1 )
+    If  *Var1  !=  FFFFFFFF
+        Goto  0
+    EndIf
+    Wait  30`
+    Label  D
+    Switch  *Var0
+        CaseOR  ==  00000001 % 1
+        CaseOR  ==  00000003 % 3
+            ExecWait  $Script_GoBackToHome_Succeed
+        EndCaseGroup
+        CaseOR  ==  .HitResult:Hit % 0
+        CaseOR  ==  00000002 % 2
+            ExecWait  $Script_GoBackToHome_Failed
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_CloudNine_Main
+{
+    Call  UseIdleAnimation  ( .Actor:Player .False )
+    Call  SetBattleFlagBits ( 00000008 .False )
+    Call  SetActorFlagBits  ( .Actor:Player 20000000 .True )
+    Call  LoadActionCommand ( 00000016 )
+    Call  802A9000  ( 00000002 )
+    Call  80269344  ( 00000032 )
+    Call  InitTargetIterator
+    Call  SetGoalToHome     ( .Actor:Partner )
+    Call  UseBattleCamPreset      ( 0000000A )
+    Call  BattleCamTargetActor  ( .Actor:Self )
+    Call  SetBattleCamOffsetZ   ( 00000011 )
+    Call  SetBattleCamZoom  ( 0000012C )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  8024EDA4
+    Wait  10`
+    Thread
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Add   *Var1  00000028
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    EndThread
+    Wait  15`
+    Set   *Var0  00000000
+    Loop  0000000A
+        Add   *Var0  00000012
+        Call  SetActorYaw   ( .Actor:Partner *Var0 )
+        Wait  1`
+    EndLoop
+    Wait  10`
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100005 )
+    Wait  5`
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100004 )
+    Wait  15`
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  FFFFFFF4
+    Add   *Var1  0000000D
+    Add   *Var2  FFFFFFFB
+    Call  SetActorSpeed ( .Actor:Player *Fixed[4.0] )
+    Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.0] )
+    Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010020 )
+    Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+    Call  80273444      ( 00000012 00000000 00000000 )
+    Call  SetAnimation  ( .Actor:Player 00000000 00010020 )
+    Wait  3`
+    Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+    Call  802A9398      ( 00000000 00000061 00000003 )
+    Call  AddBattleCamZoom  ( FFFFFFB5 )
+    Call  MoveBattleCamOver ( 00000064 )
+    Call  8024ECF8      ( 00000000 00000000 00000001 )
+	Wait  100`
+	Exec  $Script_InitTracker
+    Wait  3`
+    Call  AddBattleCamZoom  ( 00000032 )
+    Call  MoveBattleCamOver ( 00000005 )
+    Call  GetActionCommandResult      ( *VarA )
+    If  *VarA  >  00000000
+        Call  $Function_Laki_80238C14
+        Call  PlaySoundAtActor  ( .Actor:Partner 0000201D )
+        Call  $Function_Laki_80238C58
+        Call  $Function_Laki_80238D48
+        Call  SetActorFlagBits  ( .Actor:Player 08000000 .True )
+    EndIf
+    Call  UseIdleAnimation  ( .Actor:Player .True )
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100006 )
+    Thread % Mario fall off
+        Call  GetActorPos   ( .Actor:Player *Var3 *Var4 *Var5 )
+        Loop  0000000A
+            Set   *Var0  *Var3
+            Set   *Var1  *Var4
+            Set   *Var2  *Var5
+            Call  RandInt       ( 00000028 *Var6 )
+            Sub   *Var6  00000014
+            Add   *Var0  *Var6
+            Call  RandInt       ( 0000001E *Var6 )
+            Sub   *Var6  0000000F
+            Add   *Var1  *Var6
+            Call  PlayEffect    ( ~FX:FloatingCloudPuff *Var0 *Var1 *Var2 *Fixed[1.0] 00000014 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010020 )
+    Set   *Var1  00000000
+    Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+    Call  PlayerFallToGoal  ( 0000000A )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100002 )
+	Call  SetAnimation  ( .Actor:Player 00000000 00010020 )
+	% Cloud Nine - Stylish Move
+	Exec  $Script_CloudNine_DoStylish *Var9
+    Loop
+        DoesScriptExist ( *Var9 *Var0 )
+        If *Var0 == .False
+            BreakLoop
+        EndIf
+        Wait 1
+    EndLoop
+    Wait  7`
+    Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+    Thread
+        Call  SetGoalToHome ( .Actor:Player )
+        Call  SetActorSpeed ( .Actor:Player *Fixed[8.0] )
+        Call  SetAnimation  ( .Actor:Player 00000000 00010005 )
+        Call  PlayerRunToGoal   ( 00000000 )
+        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+        Call  SetActorFlagBits  ( .Actor:Player 20000000 .False )
+    EndThread
+    Thread
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Sub   *Var1  00000028
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    EndThread
+    Wait  15`
+    Set   *Var0  000000B4
+    Loop  0000000A
+        Sub   *Var0  00000012
+        Call  SetActorYaw   ( .Actor:Partner *Var0 )
+        Wait  1`
+    EndLoop
+    Call  UseBattleCamPreset      ( 00000002 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Wait  10`
+    If  *VarA  >  00000000
+        Call  ShowMessageBox    ( 00000028 0000003C )
+        Call  WaitForMessageBoxDone
+    EndIf
+    Call  SetBattleFlagBits ( 00000008 .True )
+    Return
+    End
+}
+
+% I don't know when this one is used, I added the stylish
+% move on both anyways :)
+#new:Script $Script_CloudNine_Main_Alt
+{
+    Call  UseIdleAnimation  ( .Actor:Player .False )
+    Call  LoadActionCommand ( 00000016 )
+    Call  802A9000  ( 00000002 )
+    Call  80269344  ( 00000032 )
+    Call  $Function_Laki_80238C14
+    Call  InitTargetIterator
+    Call  SetGoalToHome     ( .Actor:Partner )
+    Call  UseBattleCamPreset      ( 0000000A )
+    Call  BattleCamTargetActor  ( .Actor:Self )
+    Call  SetBattleCamOffsetZ   ( 00000000 )
+    Call  SetBattleCamZoom  ( 0000012C )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  8024EDA4
+    Wait  10`
+    Set   *Var0  00000000
+    Loop  0000000A
+        Add   *Var0  00000012
+        Call  SetActorYaw   ( .Actor:Partner *Var0 )
+        Wait  1`
+    EndLoop
+    Wait  10`
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100005 )
+    Wait  20`
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var0  0000000C
+    Add   *Var1  FFFFFFF9
+    Add   *Var2  00000005
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 FFFFFFF6 .Easing:CosInOut )
+    Thread
+        Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+        Add   *Var1  00000028
+        Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+        Call  FlyToGoal     ( .Actor:Player 00000014 00000000 .Easing:CosInOut )
+    EndThread
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  00000028
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 00000000 .Easing:CosInOut )
+    Call  802A9398      ( 00000000 00000061 00000003 )
+    Call  AddBattleCamZoom  ( FFFFFFB5 )
+    Call  MoveBattleCamOver ( 00000064 )
+    Call  8024ECF8      ( 00000000 00000000 00000001 )
+	Wait  100`
+	Exec  $Script_InitTracker
+    Wait  3`
+    Call  AddBattleCamZoom  ( 00000032 )
+    Call  MoveBattleCamOver ( 00000005 )
+    Call  GetActionCommandResult      ( *VarA )
+    If  *VarA  >  00000000
+        Call  PlaySoundAtActor  ( .Actor:Partner 0000201D )
+        Call  $Function_Laki_80238C58
+        Call  $Function_Laki_80238D48
+    EndIf
+    Call  UseIdleAnimation  ( .Actor:Player .True )
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100006 )
+    Thread
+        Call  GetActorPos   ( .Actor:Player *Var3 *Var4 *Var5 )
+        Loop  0000000A
+            Set   *Var0  *Var3
+            Set   *Var1  *Var4
+            Set   *Var2  *Var5
+            Call  RandInt       ( 00000028 *Var6 )
+            Sub   *Var6  00000014
+            Add   *Var0  *Var6
+            Call  RandInt       ( 0000001E *Var6 )
+            Sub   *Var6  0000000F
+            Add   *Var1  *Var6
+            Call  PlayEffect    ( ~FX:FloatingCloudPuff *Var0 *Var1 *Var2 *Fixed[1.0] 00000014 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+    Set   *Var1  00000000
+    Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+    Call  FallToGoal    ( .Actor:Player 0000000A )
+	Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100002 )
+	% Cloud Nine - Stylish Move
+	Exec  $Script_CloudNine_DoStylish *Var9
+    Loop
+        DoesScriptExist ( *Var9 *Var0 )
+        If *Var0 == .False
+            BreakLoop
+        EndIf
+        Wait 1
+	EndLoop
+	Wait 7
+    Thread
+        Call  SetGoalToHome ( .Actor:Player )
+        Call  SetActorSpeed ( .Actor:Player *Fixed[8.0] )
+        Call  SetAnimation  ( .Actor:Player 00000000 00010005 )
+        Call  PlayerRunToGoal   ( 00000000 )
+        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+    EndThread
+    Thread
+        Call  SetGoalToHome ( .Actor:Partner )
+        Call  FlyToGoal     ( .Actor:Partner 00000014 00000000 .Easing:CosInOut )
+    EndThread
+    Set   *Var0  000000B4
+    Loop  0000000A
+        Sub   *Var0  00000012
+        Call  SetActorYaw   ( .Actor:Partner *Var0 )
+        Wait  1`
+    EndLoop
+    Call  80280818
+    Call  UseBattleCamPreset      ( 00000002 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Wait  10`
+    If  *VarA  >  00000000
+        Call  ShowMessageBox    ( 00000028 0000003C )
+        Call  WaitForMessageBoxDone
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_CloudNine_DoStylish
+{
+	Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+	If *Var0 == .False % The A button wasn't still pressed
+		Loop 4 % 4 frames
+			% Timing Tutor Badge
+			ExecWait $Script_TimingTutor % writes in var0,1,2
+			Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+			% Set *Var0 .True % testing
+			If *Var0 == .True
+				Set   *TrackInput .False % turn off tracker
+				Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+				% Add 1 to the stylish counter (last move only)
+				Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+				Add *Var0 1
+				Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+				Set *VarA .False % this move doesn't have an SP cap
+				ExecWait $Script_DoStylishFX
+				% happy :D
+				Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100007 )
+				Wait  25`
+				BreakLoop
+			EndIf
+			Wait 1
+		EndLoop
+	EndIf
+	Return
+	End
+}
+
+#new:Script $Script_Init_CloudNine
+{
+    Exec  $Script_NukeTracker
+    Call  GetStatusFlags    ( .Actor:Player *Var0 )
+    If  *Var0  &  0035D000
+        ExecWait  $Script_CloudNine_Main_Alt % ?
+    Else
+        ExecWait  $Script_CloudNine_Main
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_Init_Hurricane
+{
+    Exec  $Script_NukeTracker
+    Call  LoadActionCommand ( 00000014 )
+    Call  802A9000
+    Call  SetupMashMeter  ( 00000001 00000064 00000000 00000000 00000000 00000000 )
+    Call  80269344  ( 0000000F )
+    Call  80269EAC  ( 00000014 )
+    Call  UseBattleCamPreset      ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFFD3 00000036 00000000 )
+    Call  SetBattleCamOffsetZ   ( 00000000 )
+    Call  SetBattleCamZoom  ( 00000118 )
+    Call  MoveBattleCamOver ( 00000028 )
+    Call  InitTargetIterator
+    Call  SetGoalToHome     ( .Actor:Partner )
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100003 )
+    Call  AddGoalPos        ( .Actor:Partner 00000028 00000014 00000000 )
+    Call  FlyToGoal ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation      ( .Actor:Partner FFFFFFFF 00100001 )
+    Wait  15`
+    Call  $Function_Laki_80238D8C
+    Call  802A91A0  ( 00000000 00000093 00000003 *Var0 )
+    Call  SetBattleFlagBits ( 00004000 .False )
+    Call  SetActorRotationOffset    ( .Actor:Partner 00000000 00000014 00000000 )
+    Call  UseBattleCamPreset      ( 00000013 )
+    Call  SetBattleCamTarget    ( 00000023 00000036 00000000 )
+    Call  SetBattleCamOffsetZ   ( 00000000 )
+    Call  SetBattleCamZoom  ( 000001AE )
+    Call  MoveBattleCamOver ( 00000096 )
+    Call  8024ECF8  ( 00000000 00000000 00000001 )
+    Call  PlaySoundAtActor  ( .Actor:Partner 00000288 )
+    Thread
+        Call  $Function_Laki_80239140
+    EndThread
+    Wait  2`
+    Loop  00000096
+        Call  $Function_Laki_8023A1B0
+        If  *Var0  ==  00000000
+            BreakLoop
+        EndIf
+        Call  GetActionSuccessCopy  ( *Var0 )
+        If  *Var0  ==  00000064
+            BreakLoop
+        EndIf
+        Wait  1`
+    EndLoop
+    Wait  15`
+    Call  GetActionSuccessCopy  ( *Var0 )
+    Switch  *Var0
+        Case  >  00000063
+            Call  UseBattleCamPreset  ( 00000004 )
+        Default
+            Call  UseBattleCamPreset  ( 00000033 )
+    EndSwitch
+    Call  InitTargetIterator
+    Label  A
+    Call  SetGoalToTarget   ( .Actor:Self )
+    Call  $Function_Laki_8023906C
+    If  *Var0  >  00000000
+        Set   *VarA  *Var0
+        Thread
+            Call  $Function_Laki_80239F84
+            Call  SetBattleFlagBits ( 01000000 .True )
+            Call  RemoveActor       ( *VarA )
+        EndThread
+    Else
+        If  *Var0  ==  00000000
+            Call  PartnerDamageEnemy    ( *Var2 ~Flags:DamageType:NoContact 00000000 00000000 00000000 00000820 )
+        EndIf
+    EndIf
+    Label  B
+    Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+    If  *Var0  !=  FFFFFFFF
+        Goto  A
+	EndIf
+	Exec  $Script_InitTracker
+	Wait  5
+	% Hurricane - Stylish Move
+	Call  GetActionCommandResult  ( *Var0 )
+    %Set *Var0 100` % testing
+    If *Var0 >= 100` % If Action command was 100%
+		Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+		If *Var0 == .False % The A button wasn't still pressed
+			Loop 4 % 4 frames
+				% Timing Tutor Badge
+				ExecWait $Script_TimingTutor % writes in var0,1,2
+				Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+				% Set *Var0 .True % testing
+				If *Var0 == .True
+					Set   *TrackInput .False % turn off tracker
+					Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+					% Add 1 to the stylish counter (last move only)
+					Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+					Add *Var0 1
+					Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+					Set *VarA .False % this move doesn't have an SP cap
+					ExecWait $Script_DoStylishFX
+					% happy :D
+					Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100007 )
+					Wait  25`
+					BreakLoop
+				EndIf
+				Wait 1
+			EndLoop
+		EndIf
+	EndIf
+	Set   *TrackInput .False % turn off tracker
+    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+	Wait  25`
+    Call  SetActorRotation  ( .Actor:Partner 00000000 00000000 00000000 )
+	Call  SetActorRotationOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+    ExecWait  $Script_GoBackToHome_Failed
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 00100002 )
+    Call  $Function_Laki_8023A19C
+    Call  80280818
+    Return
+    End
+}

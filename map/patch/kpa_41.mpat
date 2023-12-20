@@ -1,0 +1,109 @@
+% Add support for the new secret exit
+
+#delete $Script_ExitWalk_8024014C
+#delete $Script_ExitWalk_80240294
+
+@ $Script_8024039C
+{
+   [1C]  Bind  $Script_ExitWalk_Down .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   [54]  Bind  $Script_ExitWalk_Up .Trigger:FloorAbove ~Collider:deili4 00000001 00000000
+}
+
+#new:Script $Script_ExitWalk_Down % Script_ExitWalk_8024014C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+        If *AreaByte[F] == .False % Player is following the normal route
+   2C:    Switch  *AreaByte[B]
+   38:    	CaseOR  ==  00000001
+   44:    	CaseOR  ==  00000002
+   50:    	CaseOR  ==  00000004
+   5C:    		Add   *AreaByte[B]  00000001
+   6C:    		Call  GotoMap   ( $ASCII_80240548 00000000 ) % kpa_41
+   80:    	EndCaseGroup
+   88:    	CaseOR  ==  00000000
+   94:    	CaseOR  ==  00000003
+   A0:    	CaseOR  ==  00000005
+   AC:    		Call  GotoMap   ( $ASCII_80240540 00000003 ) % kpa_40
+   C0:    	EndCaseGroup
+   C8:    EndSwitch
+        Else % Secret route
+          Switch  *AreaByte[F]
+            Case  ==  00000005
+              Set   *AreaByte[B]  00000000
+              Set   *AreaByte[F]  00000000
+              Call  GotoMap   ( "kpa_140" 00000000 )
+            Case  ==  00000003
+              Add   *AreaByte[F]  00000001
+              Call  GotoMap   ( $ASCII_80240548 00000000 ) % kpa_41
+            CaseOR  ==  00000000
+            CaseOR  ==  00000001
+            CaseOR  ==  00000002
+            CaseOR  ==  00000004
+              Call  GotoMap   ( $ASCII_80240540 00000003 ) % kpa_40
+            EndCaseGroup
+          EndSwitch
+        EndIf
+   D0:  Wait  100`
+   DC:  Return
+   E4:  End
+}
+
+#new:Script $Script_ExitWalk_Up % Script_ExitWalk_80240294
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+   20:  Exec  ExitWalk
+        If *AreaByte[F] == .False % Player is following the normal route
+   2C:    Switch  *AreaByte[B]
+   38:    	Case  ==  00000005
+   44:    		Set   *AreaByte[B]  00000000
+              Set   *AreaByte[F]  00000000
+   54:    		Call  GotoMap   ( $ASCII_80240550 00000000 ) % kpa_102
+   68:    	Case  ==  00000003
+   74:    		Add   *AreaByte[B]  00000001
+   84:    		Call  GotoMap   ( $ASCII_80240548 00000003 ) % kpa_41
+   98:    	CaseOR  ==  00000000
+   A4:    	CaseOR  ==  00000001
+   B0:    	CaseOR  ==  00000002
+   BC:    	CaseOR  ==  00000004
+   C8:    		Call  GotoMap   ( $ASCII_80240540 00000003 ) % kpa_40
+   DC:    	EndCaseGroup
+   E4:    EndSwitch
+        Else % Secret route
+          Switch  *AreaByte[F]
+            CaseOR  ==  00000001
+            CaseOR  ==  00000002
+            CaseOR  ==  00000004
+              Add   *AreaByte[F]  00000001
+              Call  GotoMap   ( $ASCII_80240548 00000003 ) % kpa_41
+            EndCaseGroup
+            CaseOR  ==  00000000
+            CaseOR  ==  00000003
+            CaseOR  ==  00000005
+              Call  GotoMap   ( $ASCII_80240540 00000003 ) % kpa_40
+            EndCaseGroup
+          EndSwitch
+        EndIf
+   EC:  Wait  100`
+   F8:  Return
+  100:  End
+}
+
+@ $Script_EnterWalk_8024041C
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+          Case  ==  ~Entry:Entry1
+	          Set   *AreaByte[F]  00000005
+   1C:  	Case  ==  ~Entry:Entry2
+   28:  		Set   *AreaByte[B]  00000005
+   38:  	Default
+   40:  EndSwitch
+   48:  Set   *Var0  $Script_8024039C
+   58:  Exec  EnterWalk
+   64:  Wait  1`
+   70:  Return
+   78:  End
+}

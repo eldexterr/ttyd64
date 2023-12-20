@@ -1,0 +1,358 @@
+% Get actor data from /formation/import
+% to make easier to grab the enemies code from this mod to future projects
+
+#import enemy/23_UnusedBowser.bpat
+#import enemy/23_IntroBowser.bpat
+#import enemy/23_Bowser1.bpat
+#import enemy/23_Bowser2.bpat
+#import enemy/23_Bowser3.bpat
+
+#new:Function $Function_8021D290
+{
+    0:  LW        A0, C0 (A0)
+    4:  LW        V1, C (A0)
+    8:  LI        V0, 55
+    C:  SW        V0, 30 (V1)
+   10:  LW        V1, C (A0)
+   14:  LI        V0, 2A
+   18:  SW        V0, 34 (V1)
+   1C:  LW        V0, C (A0)
+   20:  LI        V1, FF
+   24:  SW        V1, 38 (V0)
+   28:  LW        V0, C (A0)
+   2C:  SW        V1, 40 (V0)
+   30:  LW        V1, C (A0)
+   34:  LI        V0, AF
+   38:  SW        V0, 44 (V1)
+   3C:  LW        V1, C (A0)
+   40:  LI        V0, EF
+   44:  SW        V0, 48 (V1)
+   48:  JR        RA
+   4C:  LI        V0, 2
+}
+
+#new:Script $Script_80234100
+{
+    0:  Set   *VarA  *Var0
+   10:  Call  SetTexPanner  ( *VarA 00000001 )
+   24:  Set   *Var0  00000000
+   34:  Set   *Var1  00000000
+   44:  Loop
+   50:  	Call  SetTexPanOffset   ( 00000001 00000000 *Var0 *Var1 )
+   6C:  	Add   *Var0  00008000
+   7C:  	Add   *Var1  00000000
+   8C:  	Wait  5`
+   98:  EndLoop
+   A0:  Return
+   A8:  End
+}
+
+#new:Script $Script_BeforeBattle_802341B0
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Call  SetCamBGColor     ( .Cam:Battle 00000000 00000000 00000000 )
+   2C:  Call  SetGroupEnabled   ( ~Model:kpa_bt01:switch 00000000 )
+   40:  Thread
+   48:  	Set   *Var0  00000025
+   58:  	Exec  $Script_80234100
+   64:  	Wait  5`
+   70:  	Set   *Var0  00000027
+   80:  	Exec  $Script_80234100
+   8C:  EndThread
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_AfterBattle_80234254
+{
+    0:  Return
+    8:  End
+}
+
+#new:ForegroundModelList $ForegroundModelList_80234264
+{
+	~Model:kpa_bt01:o383
+	~Model:kpa_bt01:o382
+	~Model:kpa_bt01:o381
+	00000000
+}
+
+#new:Stage $Stage_80234274
+{
+	$ASCII_802348A0  % kpa_tex
+	$ASCII_80234890  % kpa_bt01_shape
+	$ASCII_80234880  % kpa_bt01_hit
+	$Script_BeforeBattle_802341B0
+	$Script_AfterBattle_80234254
+	00000000
+	$ForegroundModelList_80234264
+	00000000
+	00000000
+	00000000
+}
+
+
+
+#new:Script $Script_BeforeBattle_802342A0
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Return
+   18:  End
+}
+
+#new:Script $Script_AfterBattle_802342C0
+{
+    0:  Return
+    8:  End
+}
+
+#new:ForegroundModelList $ForegroundModelList_802342D0
+{
+	~Model:kkj_bt01:hana
+	~Model:kkj_bt01:ha1
+	~Model:kkj_bt01:ha2
+	00000000
+}
+
+#new:Stage $Stage_802342E0
+{
+	$ASCII_802348D0  % kkj_tex
+	$ASCII_802348C0  % kkj_bt01_shape
+	$ASCII_802348B0  % kkj_bt01_hit
+	$Script_BeforeBattle_802342A0
+	$Script_AfterBattle_802342C0
+	$ASCII_802348A8  % kpa_bg
+	$ForegroundModelList_802342D0
+	00000000
+	00000000
+	00000000
+}
+
+
+
+#new:IntTable $IntTable_80234310
+{
+	FFFFFFEA 000000BE FFFFFFA5 FFFFFFA8 00000015 FFFFFFA5 0000003C FFFFFFFF
+	000000BE FFFFFFA5 00000058 00000018 FFFFFFA5 0000000A FFFFFFBD 000000BE
+	FFFFFFA5 FFFFFF86 0000000A FFFFFFA5 0000005A 00000039 000000BE FFFFFFA5
+	FFFFFFFC 00000011 FFFFFFA5 0000003C
+}
+
+#new:Script $Script_80234380
+{
+    0:  Label  0
+    C:  UseIntBuffer  $IntTable_80234310
+   18:  Loop  00000004
+   24:  	Get3Int  *Var0 *Var1 *Var2
+   38:  	Get3Int  *Var3 *Var4 *Var5
+   4C:  	Call  PlayEffect    ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 00000001 00000008 00000000 00000000 00000000 00000000 )
+   90:  	Call  $Function_8021D290 ( )
+   9C:  	Get1Int  *Var0
+   A8:  	Wait  *Var0
+   B4:  EndLoop
+   BC:  Goto  0
+   C8:  Return
+   D0:  End
+}
+
+#new:IntTable $IntTable_80234458
+{
+	FFFFFF87 00000021 FFFFFF98 FFFFFFE8 00000029 FFFFFF98 00000005 00000024
+	00000029 FFFFFF98 00000080 00000022 FFFFFF98 0000001E 00000092 00000001
+	00000071 00000026 FFFFFFF1 00000079 00000005 FFFFFFBE FFFFFFF6 00000073
+	FFFFFF65 00000001 00000061 0000005A
+}
+
+#new:Script $Script_802344C8
+{
+    0:  Label  0
+    C:  UseIntBuffer  $IntTable_80234458
+   18:  Loop  00000004
+   24:  	Get3Int  *Var0 *Var1 *Var2
+   38:  	Get3Int  *Var3 *Var4 *Var5
+   4C:  	Call  PlayEffect    ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 00000001 00000005 00000000 00000000 00000000 00000000 )
+   90:  	Call  $Function_8021D290 ( )
+   9C:  	Get1Int  *Var0
+   A8:  	Wait  *Var0
+   B4:  EndLoop
+   BC:  Goto  0
+   C8:  Return
+   D0:  End
+}
+
+#new:Script $Script_BeforeBattle_802345A0
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Exec  $Script_80234380
+   1C:  Exec  $Script_802344C8
+   28:  Return
+   30:  End
+}
+
+#new:Script $Script_AfterBattle_802345D8
+{
+    0:  Return
+    8:  End
+}
+
+#new:Stage $Stage_802345E8
+{
+	$ASCII_80234900  % kkj_tex
+	$ASCII_802348F0  % kkj_bt02_shape
+	$ASCII_802348E0  % kkj_bt02_hit
+	$Script_BeforeBattle_802345A0
+	$Script_AfterBattle_802345D8
+	$ASCII_802348D8  % kpa_bg
+	00000000
+	00000000
+	00000000
+	00000000
+}
+
+#new:Vector3D $Vector3D_80234610
+{
+	80` 0` -10`
+}
+
+#new:Formation $Formation_00
+{
+	$23_UnusedBowser 00000002 0000000A 00000000 00000000 00000000 00000000
+}
+
+#new:Formation $Formation_01
+{
+	$23_IntroBowser 00000002 0000000A 00000000 00000000 00000000 00000000
+}
+
+#new:Formation $Formation_02
+{
+	$23_Bowser1 00000002 0000000A 00000000 00000000 00000000 00000000
+}
+
+#new:Formation $Formation_03
+{
+	$23_Bowser2 $Vector3D_80234610 0000000A 00000000 00000000 00000000 00000000
+}
+
+#new:Formation $Formation_04
+{
+	$23_Bowser3 $Vector3D_80234610 0000000A 00000000 00000000 00000000 00000000
+}
+
+#new:FormationTable $FormationTable
+{
+	$SJIS_80234968 00000001 $Formation_00 $Stage_80234274 00000000
+	$SJIS_80234950 00000001 $Formation_01 $Stage_802342E0 00000000
+	$SJIS_80234938 00000001 $Formation_02 $Stage_802342E0 00000000
+	$SJIS_80234920 00000001 $Formation_03 $Stage_802345E8 00000000
+	$SJIS_80234908 00000001 $Formation_04 $Stage_802345E8 00000000
+	00000000 00000000 00000000 00000000 00000000
+}
+
+#new:StageTable $StageTable
+{
+	$ASCII_80234980 $Stage_80234274
+	$ASCII_80234978 $Stage_802342E0
+	$ASCII_80234970 $Stage_802345E8
+	00000000 00000000
+}
+
+
+
+#new:ASCII $ASCII_80234880
+{
+	"kpa_bt01_hit"
+}
+
+#new:ASCII $ASCII_80234890
+{
+	"kpa_bt01_shape"
+}
+
+#new:ASCII $ASCII_802348A0
+{
+	"kpa_tex"
+}
+
+#new:ASCII $ASCII_802348A8
+{
+	"kpa_bg"
+}
+
+#new:ASCII $ASCII_802348B0
+{
+	"kkj_bt01_hit"
+}
+
+#new:ASCII $ASCII_802348C0
+{
+	"kkj_bt01_shape"
+}
+
+#new:ASCII $ASCII_802348D0
+{
+	"kkj_tex"
+}
+
+#new:ASCII $ASCII_802348D8
+{
+	"kpa_bg"
+}
+
+#new:ASCII $ASCII_802348E0
+{
+	"kkj_bt02_hit"
+}
+
+#new:ASCII $ASCII_802348F0
+{
+	"kkj_bt02_shape"
+}
+
+#new:ASCII $ASCII_80234900
+{
+	"kkj_tex"
+}
+
+#new:SJIS $SJIS_80234908
+{
+	クッパ(ラストバトル３) % kuppa(rasutobatoru3)
+}
+
+#new:SJIS $SJIS_80234920
+{
+	クッパ(ラストバトル２) % kuppa(rasutobatoru2)
+}
+
+#new:SJIS $SJIS_80234938
+{
+	クッパ(ラストバトル１) % kuppa(rasutobatoru1)
+}
+
+#new:SJIS $SJIS_80234950
+{
+	クッパ(オープニング) % kuppa(o-puningu)
+}
+
+#new:SJIS $SJIS_80234968
+{
+	クッパ % kuppa
+}
+
+#new:ASCII $ASCII_80234970
+{
+	"kpa_03"
+}
+
+#new:ASCII $ASCII_80234978
+{
+	"kpa_02"
+}
+
+#new:ASCII $ASCII_80234980
+{
+	"kpa_01"
+}
+
+
+

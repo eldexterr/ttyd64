@@ -1,0 +1,1431 @@
+#import Pit/Mover.mpat
+
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 3
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+	~Vec4f:Entry2
+}
+
+#new:Function_Init $Function_Init
+{
+	PUSH    RA
+	LIA     A0, 800B0CF0
+	LIA     A1, "tik_tex"
+	JAL     800654F0 % sprintf
+	RESERVED
+	CLEAR  V0
+	JPOP   RA
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:ToadTownTunnels
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Call  ClearDefeatedEnemies
+    Call  MakeNpcs ( .False $NpcGroupList_pit11 )
+	Exec  $Script_MakeEntities
+	Exec  $Script_SetupMusic
+	Exec  $Script_SetupTexturePan
+	Exec  $Script_EnterMap
+	Return
+	End
+}
+
+#new:Script $Script_MakeEntities
+{
+	Call  MakeEntity    ( .Entity:Signpost ~Vec4d:Entity_Sign 80000000 )
+	Call  AssignScript    ( $Script_ReadSign_Entity_Sign )
+    Call  MakeEntity  	( .Entity:BlueSwitch ~Vec4d:Entity_Switch 80000000 )
+    Call  AssignScript 	( $Script_ShowPipe )
+    Call  MakeEntity 	( .Entity:GiantChest ~Vec4d:Entity_GiantChest 80000000 )
+    ExecWait $Script_AssignFlag_GiantChest
+	Call  AssignScript 	( $Script_OpenChest )
+    Call  MakeEntity    ( .Entity:BlueWarpPipe ~Vec4d:Entity_BluePipe .False .False FFFFFFFF 80000000 )
+	Return
+	End
+}
+
+#new:Script $Script_AssignFlag_GiantChest
+{
+    Switch *AreaByte[0]
+        Case == 10`
+            Set *MapVar[0] .Item:SleepStomp
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest1 )
+        Case == 20`
+            Set *MapVar[0] .Item:PoisonDrive
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest2 )
+        Case == 30`
+            Set *MapVar[0] .Item:ZapTap
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest3 )
+        Case == 40`
+            Set *MapVar[0] .Item:PityFlower
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest4 )
+        Case == 50`
+            Set *MapVar[0] .Item:StrangeSack
+            Set *MapVar[1] 00000001 % key item
+            Call  AssignFlag ( *GF_PIT11_Chest5 )
+        Case == 60`
+            Set *MapVar[0] .Item:DeepFocus1
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest6 )
+        Case == 70`
+            Set *MapVar[0] .Item:DeepFocusP
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest7 )
+        Case == 80`
+            Set *MapVar[0] .Item:BumpAttack
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest8 )
+        Case == 90`
+            Set *MapVar[0] .Item:LuckyDay
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest9 )
+        Case == 100`
+            Set *MapVar[0] .Item:ReturnPostage
+            Set *MapVar[1] 00000002 % Badge
+            Call  AssignFlag ( *GF_PIT11_Chest10 )
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_ShowGotItem
+{
+    0:  SetGroup  00000000
+    C:  Call  SetTimeFreezeMode ( 00000002 )
+   28:  Call  ShowGotItem       ( *Var0 .True 00000000 )
+   40:  Call  SetTimeFreezeMode ( 00000000 )
+   50:  Return
+   58:  Return
+   60:  End
+}
+
+#new:Script $Script_GiveItem
+{
+   10:  Set   *Var0  *VarA
+   20:  If  *VarA  !=  00000000
+   30:  	ExecWait  $Script_ShowGotItem
+   3C:  EndIf
+   44:  Switch  *VarB
+   50:  	Case  ==  00000000
+   5C:  		Call  AddItem   ( *VarA *Var0 )
+   70:  	Case  ==  00000001
+   7C:  		Call  AddKeyItem    ( *VarA )
+   8C:  	Case  ==  00000002
+   98:  		Call  AddBadge  ( *VarA *Var0 )
+   AC:  EndSwitch
+   B4:  Wait  15`
+   C0:  Call  DisablePlayerInput    ( .False )
+   D0:  Return
+   D8:  End
+}
+
+#new:Script $Script_OpenChest
+{
+        Set	  *Flag_LockInputs_GiantChest .False
+    0:  Set   *VarA  *MapVar[0]
+   10:  Set   *VarB  *MapVar[1]
+   30:  ExecWait  $Script_GiveItem
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_ShowPipe
+{
+    SetGroup 0
+    SuspendAll 2
+    Call    DisablePlayerInput ( .True )
+    Call 	PlaySound ( 208E )
+    Call    MakeLerp ( -40` 0 25` .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Call    TranslateGroup ( ~Model:pipe 0 *Var0 .Easing:CosInOut )
+        Call    UpdateColliderTransform ( ~Collider:pipe )
+        Call    UpdateColliderTransform ( ~Collider:Exit0 )
+        Wait    1
+        If *Var1 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    ResumeAll 2
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:ToadTownTunnels 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+    Set     *VarA ~Entry:Entry0
+ 	Set     *VarB ~Collider:topPipe
+	Set		*VarC $Script_CreateExitTriggers
+	Exec    $Script_EnterTopPipe
+    % Hide pipe
+    Call    ParentColliderToModel ( ~Collider:Exit0 ~Model:pipe )
+    Call    ParentColliderToModel ( ~Collider:pipe ~Model:pipe )
+    Call    TranslateModel ( ~Model:pipe 0 -40` 0 )
+    Call    UpdateColliderTransform ( ~Collider:Exit0 )
+    Call    UpdateColliderTransform ( ~Collider:pipe )
+    %
+	Exec 	$Script_UpdateFloorTheme
+    % Spawn mover?
+    Call  RandInt ( 100` *Var0 )
+    If *Var0 > 5`
+		Call    SetNpcPos ( 00000000 0 -1000` 0 )
+    EndIf
+    % Spawn Rowf?
+    Call  RandInt ( 100` *Var0 )
+    If *Var0 > 30`
+		Call    SetNpcPos ( 00000001 0 -1000` 0 )
+    EndIf
+    Set	  *Flag_LockInputs_GiantChest .True
+	Return
+	End
+}
+
+#new:Script $Script_UpdateFloorTheme
+{
+    Call    EnableGroup ( ~Model:themes .False )
+    Switch *AreaByte[0]
+        Case >= 80`
+            Call    EnableGroup ( ~Model:theme3 .True )
+        Case >= 50`
+            Call    EnableGroup ( ~Model:theme2 .True )
+        Default
+            Call    EnableGroup ( ~Model:theme1 .True )
+    EndSwitch
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorTouch ~Collider:Exit0 00000001 00000000
+    Bind  $Script_Exit1 .Trigger:WallPush ~Collider:Exit1 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+	SetGroup 0000001B
+	Set   *Var[A] ~Entry:Entry1
+	Set   *Var[B] ~Collider:Exit0
+	Set   *Var[C] $Script_GotoMap_Exit0
+	ExecWait  $Script_ExitVerticalPipe
+	Return
+	End
+}
+
+#new:Script $Script_Exit1
+{
+	SetGroup 0000001B
+	Set   *Var[A] ~Entry:Entry2
+	Set   *Var[B] ~Collider:Exit1
+	Set   *Var[C] $Script_GotoMap_Exit1
+	ExecWait  $Script_ExitHorizontalPipe
+	Return
+	End
+}
+
+#new:Script $Script_GotoMap_Exit0
+{
+    Set   *Var0 *AreaByte[0]
+    Add   *Var0 1
+    ExecWait $Script_GoToNextMap
+	Return
+	End
+}
+
+#new:Script $Script_GotoMap_Exit1
+{
+    Call    GotoMap ( "pit_00" 00000002 )
+    Return
+    End
+}
+
+% Var0 = next floor ID
+#new:Script $Script_GoToNextMap
+{
+    Set *Var5 *Var0
+    If *Var0 >= 100`
+        Call  GotoMap   ( $ASCII_pit12 00000000 )
+    Else
+		% Check if is time to go the chest floor
+		Call  $Function_GetReminderFromDiv ( *Var5 10` *Var1 )
+		If *Var1 == 0 % The reminder is zero
+			% go to the chest floor write a 1 in both digits (pit_11)
+			Call  $WriteAddress ( $ASCII_NextFloor 0 31 4 .False )
+			Call  $WriteAddress ( $ASCII_NextFloor 0 31 5 .False )
+		Else
+			% Isn't a chest floor
+			Set	  *Var1 *Var0
+			Div	  *Var1 10`
+			Set   *Var0 31 % 30-39(ASCII) = 00-09(Actual Value)
+			If *Var1 != 9` % 90s, because the 90s is "pit_10"
+				Add   *Var0 *Var1
+				Call  $WriteAddress ( $ASCII_NextFloor 0 *Var0 5 .False ) % 2nd digit
+			Else
+				Call  $WriteAddress ( $ASCII_NextFloor 0 *Var0 4 .False ) % 1st digit
+			EndIf
+		EndIf
+        Call  GotoMap   ( $ASCII_NextFloor 00000000 )
+    EndIf
+    Set   *AreaByte[0] *Var5
+    Wait  100`
+    Return
+    End
+}
+
+% Call  $Function_GetReminderFromDiv ( amount div *out_reminder )
+#new:Function $Function_GetReminderFromDiv
+{
+	PUSH	RA, A0, A1, A2, A3, V1, S0, S1
+	COPY	S0, A0
+	LW		A1, C (A0)
+	JAL		~Func:get_variable
+	LW		A1, 0 (A1)
+	COPY	S1, V0
+	COPY	S0, A0
+	LW		A1, C (A0)
+	JAL		~Func:get_variable
+	LW		A1, 4 (A1)
+	DIV		S1, V0
+	COPY	A0, S0
+	LW		A1, C (A0)
+	LW		A1, 8 (A1)
+	JAL		~Func:set_variable
+	MFHI	A2
+	POP		RA, A0, A1, A2, A3, V1, S0, S1
+	JR		RA
+	ORI		V0, R0, 2
+}
+
+#new:ASCII $ASCII_NextFloor
+{
+    "pit_00"
+}
+
+#new:ASCII $ASCII_pit12
+{
+    "pit_12"
+}
+
+#new:Script $Script_ReadSign_Entity_Sign
+{
+	Call  DisablePlayerInput        ( .True )
+    Call  SetMessageValue ( *AreaByte[0] 00000000 )
+	Call  ShowMessageAtScreenPos    ( $String_ReadSign_Entity_Sign 000000A0 00000028 )
+	Call  DisablePlayerInput        ( .False )
+	Return
+	End
+}
+
+#new:String $String_ReadSign_Entity_Sign
+{
+	[DelayOff][STYLE:SIGN]
+	[CenterX:FF]
+	[Down:10]Floor [Var 0]
+	[DelayOn][WAIT][END]
+}
+
+% NPCs
+
+#new:NpcGroupList $NpcGroupList_pit11
+{
+    00000001 $NpcGroup_Mover 00000000
+	00000001 $NpcGroup_Rowf 00000000
+	00000000 00000000 00000000
+}
+
+#new:Npc $NpcGroup_Rowf
+{
+	00000001 $NpcSettings_Rowf ~Vec3f:NPC_Rowf
+	00112D09 $Script_Init_Rowf 00000000 00000000 0000010E
+	~NoDrops
+	~NoMovement
+	~AnimationTable:NPC_Rowf
+	00000000 00000000 00000000 $Tattle_Rowf
+}
+
+#new:NpcSettings $NpcSettings_Rowf
+{
+	00000000 00220020 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_Init_Rowf
+{
+    Call    BindNpcInteract ( .Npc:Self $Script_Rowf_Interact )
+    Exec    $Script_UpdateInventoryPrices
+    Return
+    End
+}
+
+#new:Script $Script_Rowf_Interact
+{
+    Call    SpeakToPlayer ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_Hi )
+    Call    ShowChoice ( 001E000D ) % yes no
+    If  *Var0 != 0 % No
+        Call    CloseMessage
+        Call    SpeakToPlayer ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_Bye )
+        Return
+    EndIf
+    Call    CloseMessage
+    Label   Start
+    Call    ShowCoinCounter ( .True )
+    Call    $WriteAddress ( $PopUpMenu_Style05_BuyVersion 2 .True .False .False )
+    Call    $Function_ShowShopInventory
+    Call    $WriteAddress ( $PopUpMenu_Style05_BuyVersion 2 .False .False .False )
+    Call    ShowCoinCounter ( .False )
+    If *Var0 == -1
+        Call    SpeakToPlayer ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_Bye )
+        Return
+    EndIf
+    Set     *Var6 *Var0
+    Call    AddCoin ( 0 )
+    If *Var0 < *Var1
+        Call    SpeakToPlayer ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_NoCoins )
+        Wait    1
+        Goto    Start
+    EndIf
+    Call    SetMessageString 	( *Var4 00000000 ) % badge name
+	Call    SetMessageValue 	( *Var1 00000001 ) % price
+    Call    SpeakToPlayer ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_AskConfirmation )
+    Set     *Var3  *Var6
+    Call    ShowChoice  ( 001E000D ) % Yes No
+    If *Var0 != 0 % Cancel
+        Call    ContinueSpeech ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_RelookInventory )
+        Wait    1
+        Goto    Start
+    EndIf
+    Call    $Function_GetFreeItemSlots
+    If *Var0 == .False
+        Call    ContinueSpeech ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_NoInventory )
+        Return
+    EndIf
+    Call    CloseMessage
+    Mul     *Var1 -1
+    Call    AddCoin ( *Var1 ) % substract coins
+    Set     *Var0 *Var3
+    Call    ShowGotItem 	( *Var0 00000001 00000000 )
+    Call    AddItem ( *Var0 .False )
+    Call    SpeakToPlayer ( .Npc:Self 00A7000C 00A70009 00000000 $String_Rowf_ThankYou )
+    Return
+    End
+}
+
+#new:Script $Script_UpdateInventoryPrices
+{
+    Set *Var5 *AreaByte[0]
+    Div *Var5 10`
+    Sub *Var5 1
+    Set *Var0 $Shop_Inventory
+    Set *Var1 $Shop_Inventory_Updated
+    Loop
+        Call    $ReadAddress ( *Var0 2 *Var2 4 .False )
+        Call    $ReadAddress ( *Var1 2 *Var3 4 .False )
+        If *Var2 == -1
+            BreakLoop
+        EndIf
+        % Increment price by 50% of the original price every 10 floors
+        Div     *Var2 2
+        Mul     *Var2 *Var5
+        Add     *Var3 *Var2
+        Call    $WriteAddress ( *Var1 2 *Var3 4 .False ) % update price
+        Add     *Var0 C % read next item
+        Add     *Var1 C
+        Wait    1
+    EndLoop
+    Return
+    End
+}
+
+#new:BadgeShopInventory $Shop_Inventory
+{
+.Item:Mushroom      10`    00230009
+.Item:SuperShroom   30`    0023000A
+.Item:HoneySyrup    10`    00230016
+.Item:MapleSyrup    40`    00230017
+.Item:FireFlower 	20`    00230000
+.Item:ThunderRage	40`    00230002
+FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:BadgeShopInventory $Shop_Inventory_Updated
+{
+.Item:Mushroom      10`    00230009
+.Item:SuperShroom   30`    0023000A
+.Item:HoneySyrup    10`    00230016
+.Item:MapleSyrup    40`    00230017
+.Item:FireFlower 	20`    00230000
+.Item:ThunderRage	40`    00230002
+FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+% Base code from hos_06
+#new:Function $Function_ShowShopInventory % Function_80240AD0
+{
+    0:  ADDIU     SP, SP, FFC8
+    4:  SW        S3, 1C (SP)
+    8:  COPY      S3, A0
+    C:  SW        S6, 28 (SP)
+        LA        S6, 8010F28D % get coins instead of star pieces
+   18:  SW        RA, 34 (SP)
+   1C:  SW        S8, 30 (SP)
+   20:  SW        S7, 2C (SP)
+   24:  SW        S5, 24 (SP)
+   28:  SW        S4, 20 (SP)
+   2C:  SW        S2, 18 (SP)
+   30:  SW        S1, 14 (SP)
+   34:  BEQ       A1, R0, .o130
+   38:  SW        S0, 10 (SP)
+   3C:  JAL       ~Func:heap_malloc
+   40:  LI        A0, 330
+   44:  SW        V0, 78 (S3)
+   48:  COPY      S5, V0
+   4C:  CLEAR     S4
+   50:  COPY      S2, S4
+        LA        S8, $Global_ItemHudScripts
+        LA        S1, $Shop_Inventory_Updated
+   6C:  COPY      S0, S5
+        .o70
+   70:  CLEAR     A0
+   84:  LW        V0, 0 (S1)
+   88:  LA        A2, 800878E0
+   90:  SLL       V0, V0, 5
+   94:  ADDU      V0, V0, A2
+   98:  LH        V1, 4 (V0)
+   9C:  SW        S2, 108 (S0)
+   A0:  LW        V0, 0 (V0)
+   A4:  SLL       V1, V1, 3
+   A8:  ADDU      A0, V1, S8
+   AC:  SW        V0, 84 (S0)
+   B0:  LW        V0, 0 (A0)
+   B4:  SW        V0, 0 (S0)
+        LHU       V0, F (S6)
+   BC:  LW        V1, 4 (S1)
+   C0:  SLT       V0, V0, V1
+   C4:  XORI      V0, V0, 1
+   C8:  SW        V0, 18C (S0)
+        LHU       V0, F (S6)
+   D0:  LW        V1, 4 (S1)
+   D4:  SLT       V0, V0, V1
+   D8:  BEQ       V0, R0, .oEC
+   DC:  NOP
+   E0:  LW        V0, 4 (A0)
+   E4:  SW        R0, 18C (S0)
+   E8:  SW        V0, 0 (S0)
+        .oEC
+   EC:  LW        V0, 8 (S1)
+   F0:  SW        V0, 294 (S0)
+   F4:  LW        V0, 4 (S1)
+   F8:  ADDIU     S4, S4, 1
+   FC:  SW        V0, 210 (S0)
+  100:  ADDIU     S0, S0, 4
+  104:  ADDIU     S2, S2, 1
+        .o108
+  108:  SLTI      V0, S2, 6 % inventory size
+  10C:  BNE       V0, R0, .o70
+  110:  ADDIU     S1, S1, C
+  114:  COPY      A0, S5
+  118:  LI        V0, 5 % box style
+  11C:  SW        V0, 318 (A0)
+  120:  SW        S4, 324 (A0)
+  124:  JAL       ~Func:create_popup_menu
+  128:  SW        R0, 328 (A0)
+  12C:  SW        R0, 70 (S3)
+        .o130
+  130:  LW        V0, 70 (S3)
+  134:  LW        S5, 78 (S3)
+  138:  BNE       V0, R0, .o15C
+  13C:  ADDIU     V0, V0, 1
+  140:  LH        V0, 32C (S5)
+  144:  BEQ       V0, R0, .o16C
+  148:  SW        V0, 74 (S3)
+  14C:  JAL       ~Func:hide_popup_menu
+  150:  NOP
+  154:  LW        V0, 70 (S3)
+  158:  ADDIU     V0, V0, 1
+        .o15C
+  15C:  SW        V0, 70 (S3)
+  160:  SLTI      V0, V0, 14
+  164:  BEQ       V0, R0, .o174
+  168:  NOP
+        .o16C
+  16C:  BEQ       R0, R0, .o224
+  170:  CLEAR     V0
+        .o174
+  174:  JAL       ~Func:destroy_popup_menu
+  178:  NOP
+  17C:  LW        V1, 74 (S3)
+  180:  LI        V0, FF
+  184:  BEQ       V1, V0, .o210
+  188:  ADDIU     V0, V1, FFFF
+  18C:  SLL       V0, V0, 2
+  190:  ADDU      V0, S5, V0
+  194:  LW        S2, 108 (V0)
+        LA        V0, $Shop_Inventory_Updated
+  1A0:  SLL       V1, S2, 1
+  1A4:  ADDU      V1, V1, S2
+  1A8:  SLL       V1, V1, 2
+  1AC:  ADDU      V1, V1, V0
+  1B0:  LW        V0, 0 (V1)
+  1B4:  SW        V0, 84 (S3)
+  1B8:  LW        V0, 4 (V1)
+  1BC:  SW        S2, 8C (S3)
+  1C0:  SW        V0, 88 (S3)
+  1C4:  LW        V0, 0 (V1)
+  1C8:  SLL       V0, V0, 5
+  1CC:  LTW       V0, V0 (800878E0)
+  1D8:  SW        V0, 94 (S3)
+  1DC:  LW        V0, 0 (V1)
+  1E0:  SLL       V0, V0, 5
+  1E4:  LTBU      V1, V0 (800878FA)
+  1F0:  SLL       V0, V1, 2
+  1F4:  ADDU      V0, V0, V1
+  1F8:  SLL       V0, V0, 2
+  1FC:  LTB       V0, V0 (8008F072)
+  208:  BEQ       R0, R0, .o218
+  20C:  SW        V0, 98 (S3)
+        .o210
+  210:  LI        V0, FFFF
+  214:  SW        V0, 84 (S3)
+        .o218
+  218:  JAL       ~Func:heap_free
+  21C:  LW        A0, 78 (S3)
+  220:  LI        V0, 2
+        .o224
+  224:  LW        RA, 34 (SP)
+  228:  LW        S8, 30 (SP)
+  22C:  LW        S7, 2C (SP)
+  230:  LW        S6, 28 (SP)
+  234:  LW        S5, 24 (SP)
+  238:  LW        S4, 20 (SP)
+  23C:  LW        S3, 1C (SP)
+  240:  LW        S2, 18 (SP)
+  244:  LW        S1, 14 (SP)
+  248:  LW        S0, 10 (SP)
+  24C:  JR        RA
+  250:  ADDIU     SP, SP, 38
+}
+
+% returns in var0
+#new:Function $Function_GetFreeItemSlots
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  SW        RA, 14 (SP)
+    C:  JAL       ~Func:get_item_empty_count
+   10:  DADDU     S0, A0, R0
+   14:  SW        V0, 84 (S0)
+   18:  LW        RA, 14 (SP)
+   1C:  LW        S0, 10 (SP)
+   20:  ADDIU     V0, R0, 2
+   24:  JR        RA
+   28:  ADDIU     SP, SP, 18
+}
+
+% Pipes
+
+#new:Script $Script_EnterTopPipe
+{
+	Call    DisablePlayerInput   ( .True )
+	Call    DisablePlayerPhysics 	( .True )
+	Call    HidePlayerShadow 	( .True )
+	Call    GetCurrentPartnerID 	( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Call    DisablePartnerAI 	( 0 )
+		Call    EnableNpcShadow 	( .Npc:Partner .False )
+		Call    SetNpcFlagBits ( .Npc:Partner 00000002 .True )
+		Call    SetNpcPos   	( .Npc:Partner 0 *VarA 0 )
+	EndIf
+	Set     *Var0  *VarA 
+	Call    $Function_Pipe_GetEntryCoords
+	Call    PlayerMoveTo 	( *Var1 *Var3 3 )
+	Set  	  *Var0  *VarA 
+	Call    $Function_Pipe_GetEntryCoords
+	Call    SetPlayerPos 	( *Var1 *Var2 *Var3 )
+	Call    SetPlayerFlagBits 	( 00200000 .True )
+	Call    $Function_Pipe_GetCameraYaw
+	Call    InterpPlayerYaw 	( *Var0 0 )
+	Wait    2
+	Call    SetPlayerFlagBits 	( 00200000 .False )
+	Call    GetPlayerPos 	( *Var0 *Var1 *Var2 )
+	Call    802D286C ( 00000100 )
+	Call    802D2520 ( 00010000 5 2 1 1 0 )
+	Wait	  4
+	Call PlaySound	( 163 )
+	Loop 40` 
+		Sub  	  *Var1  1`
+		Call    SetPlayerPos 	( *Var0 *Var1 *Var2 )
+		Wait	  1 
+	EndLoop
+	Wait	  1
+	Call     802D2520 ( 00010000 0 0 0 0 0 )
+	Call     SetPlayerAnimation 	( 00010002 )
+	Call     DisablePlayerPhysics 	( .False )
+	Call     DisablePlayerInput 	( .False )
+	Call     HidePlayerShadow 	( .False )
+	Call     GetCurrentPartnerID 	( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Wait	 4`
+		Call    GetPlayerPos    ( *Var4 *Var5 *Var6 )
+		Call    SetNpcPos   	  ( .Npc:Partner *Var4 *Var5 *Var6 )
+		Call    SetNpcFlagBits  ( .Npc:Partner 00000002 .False )
+		Call    EnablePartnerAI
+		Call    EnableNpcShadow ( .Npc:Partner .True )
+    EndIf
+	Exec *VarC
+    Return
+    End
+}
+
+/%
+	ARGS:
+	*VarA  entryID
+	*VarB  colliderID
+	*VarC  $Script_GotoMap
+%/
+#new:Script $Script_ExitVerticalPipe
+{
+	Call  $Function_Pipe_CheckDownInput
+	If  *Var0  ==  00000000
+		Return
+	EndIf
+	Call  GetCurrentPartner ( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Call  GetCurrentPartnerID   ( *Var1 )
+		If  *Var1  !=  .Partner:Watt % 6
+			Return
+		Else
+			Call  802D2B6C
+			Call  DisablePlayerInput    ( .True )
+		EndIf
+	Else
+		Call  DisablePlayerInput    ( .True )
+	EndIf
+	SetGroup  0000001B
+	Call  $Function_Pipe_SetAnimFlag
+	Call  DisablePlayerPhysics  ( .True )
+	Call  HidePlayerShadow  ( .True )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  PlayerMoveTo      ( *Var1 *Var3 00000003 )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  SetPlayerPos      ( *Var1 *Var2 *Var3 )
+	Call  SetPlayerFlagBits ( 00200000 .True )
+	Call  $Function_Pipe_GetCameraYaw
+	Call  InterpPlayerYaw   ( *Var0 00000000 )
+	Wait  2`
+	Call  SetPlayerFlagBits ( 00200000 .False )
+	Call  PlaySound ( 00000163 )
+	Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+	Thread
+		Wait  4`
+		Loop  40`
+			Sub   *Var1  00000001
+			Call  SetPlayerPos  ( *Var0 *Var1 *Var2 )
+			Wait  1`
+		EndLoop
+	EndThread
+	Call  802D286C  ( 00000800 )
+	Call  802D2520  ( 00010002 00000005 00000002 00000001 00000001 00000000 )
+	Wait  25`
+	ExecWait  *VarC
+	Return
+	End
+}
+
+/%
+	ARGS:
+	*Var[A]  entryID
+	*Var[B]  colliderID
+	*Var[C]  $Script_GotoMap
+%/
+#new:Script $Script_ExitHorizontalPipe
+{
+	Call  IsPlayerOnValidFloor  ( *Var[0] )
+	If  *Var[0]  ==  00000000
+		Return
+	EndIf
+	Call  GetPlayerActionState  ( *Var[0] )
+	If  *Var[0]  ==  .ActionState:Spin % 1A
+		Return
+	EndIf
+	Call  GetCurrentPartner ( *Var[0] )
+	If  *Var[0]  !=  .ActionState:Idle % 0
+		Call  GetCurrentPartnerID   ( *Var[1] )
+		If  *Var[1]  !=  .Partner:Watt % 6
+			Return
+		Else
+			Call  802D2B6C ( )
+			Call  DisablePlayerInput    ( .True )
+		EndIf
+	Else
+		Call  DisablePlayerInput    ( .True )
+	EndIf
+	SetGroup  0000001B
+	Call  $Function_Pipe_SetAnimFlag ( )
+	Call  DisablePlayerPhysics  ( .True )
+	Call  ModifyColliderFlags   ( 00000000 *Var[B] 7FFFFE00 )
+	Set   *Var[0]  *Var[A]
+	Call  $Function_Pipe_GetEntryCoords ( )
+	Set   *Var[5]  *Var[1]
+	Set   *Var[6]  *Var[2]
+	Add   *Var[6]  2`
+	Set   *Var[7]  *Var[3]
+	Set   *Var[8]  *Var[4]
+	Add   *Var[8]  180`
+	If  *Var[4]  >=  360`
+		Sub   *Var[4]  360`
+	EndIf
+	Call  InterpPlayerYaw       ( *Var[8] 00000001 )
+	Wait  1`
+	Call  PlaySound     ( 00000163 )
+	Call  GetPlayerPos  ( *Var[0] *Var[1] *Var[2] )
+	Call  SetPlayerPos  ( *Var[0] *Var[6] *Var[7] )
+	Call  SetPlayerAnimation    ( .PlayerAnim:StandStill )
+	Call  802D286C      ( 00000800 )
+	Call  802D2520      ( 00010000 00000005 00000003 00000001 00000001 00000000 )
+	Thread
+		Wait  8`
+		Call  HidePlayerShadow  ( .True )
+	EndThread
+	Thread
+		Wait  3`
+		Loop  40`
+			Call  $Function_Pipe_GetPointInFrontOfPlayer ( *Fixed[1.0] )
+			Call  SetPlayerPos  ( *Var[0] *Var[1] *Var[2] )
+			Wait  1`
+		EndLoop
+	EndThread
+	Wait  25`
+	ExecWait  *Var[C]
+	Return
+	End
+}
+
+#new:Function $Function_Pipe_SetAnimFlag
+{
+	LAW       V0, 800F7B30
+	LW        V1, 4 (V0)
+	LUI       A0, 10
+	OR        V1, V1, A0
+	SW        V1, 4 (V0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_GetCurrentFloor
+{
+	LAH       V0, 8015A552
+	SW        V0, 84 (A0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_CheckDownInput
+{
+	LAH       V1, 8015A552
+	ADDIU     SP, SP, FFE8
+	SW        S0, 10 (SP)
+	COPY      S0, A0
+	SW        RA, 14 (SP)
+	LW        V0, B0 (S0)
+	BEQ       V1, V0, .o2C
+	ADDIU     V0, R0, 2
+	BEQ       R0, R0, .oAC
+	SW        R0, 84 (S0)
+	.o2C
+	LAW       V1, 8007419C
+	LB        V0, 40 (V1)
+	LB        A3, 44 (V1)
+	BLTZL     V0, .o44
+	SUBU      V0, R0, V0
+	.o44
+	BNE       V0, R0, .o54
+	NOP
+	BEQL      A3, R0, .oAC
+	CLEAR     V0
+	.o54
+	MTC1      V0, F4
+	NOP
+	CVT.S.W   F4, F4
+	MFC1      A2, F4
+	MTC1      A3, F4
+	NOP
+	CVT.S.W   F4, F4
+	MTC1      R0, F12
+	MFC1      A3, F4
+	JAL       ~Func:atan2
+	MOV.S     F14, F12
+	LIF       F2, 60.0
+	NOP
+	C.LT.S    F0, F2
+	NOP
+	BC1F      .oA8
+	ADDIU     V0, R0, 1
+	SW        V0, 84 (S0)
+	BEQ       R0, R0, .oAC
+	ADDIU     V0, R0, 2
+	.oA8
+	CLEAR     V0
+	.oAC
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetEntryCoords
+{
+	ADDIU     SP, SP, FFE0
+	SW        S1, 14 (SP)
+	COPY      S1, A0
+	SW        RA, 1C (SP)
+	SW        S2, 18 (SP)
+	JAL       ~Func:get_current_map_header
+	SW        S0, 10 (SP)
+	COPY      A0, S1
+	LIO       A1, *Var0
+	JAL       ~Func:get_variable
+	COPY      S2, V0
+	COPY      A0, S1
+	LUI       A1, FE36
+	LW        V1, 14 (S2)
+	SLL       S0, V0, 4
+	ADDU      V1, S0, V1
+	LWC1      F0, 0 (V1)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 4 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C82 % Var2
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 8 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C83 % Var3
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      S0, S0, V0
+	LWC1      F0, C (S0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C84 % Var4
+	LW        RA, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_Pipe_GetCameraYaw
+{
+	LAW       V1, 80077410
+	LIF       F12, 180.0
+	ADDIU     SP, SP, FFE8
+	SW        RA, 14 (SP)
+	SW        S0, 10 (SP)
+	SLL       V0, V1, 2
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 2
+	SUBU      V0, V0, V1
+	SLL       V1, V0, 3
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 3
+	LTF       F0, V0 (800B1DEC)
+	ADD.S     F12, F0, F12
+	JAL       ~Func:clamp_angle
+	COPY      S0, A0
+	TRUNC.W.S F2, F0
+	SWC1      F2, 84 (S0)
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetPointInFrontOfPlayer
+{
+	ADDIU     SP, SP, FFD8
+	SW        S0, 18 (SP)
+	COPY      S0, A0
+	SW        RA, 1C (SP)
+	SDC1      F20, 20 (SP)
+	LW        V0, C (S0)
+	JAL       ~Func:get_float_variable
+	LW        A1, 0 (V0)
+	ADDIU     A0, SP, 10
+	LIA       V0, 8010EFC8
+	MFC1      A2, F0
+	LWC1      F0, 28 (V0) % player X
+	LWC1      F2, 30 (V0) % player Z
+	SWC1      F0, 10 (SP) % arg0 for add_vec2D_polar
+	SWC1      F2, 14 (SP) % arg1 for add_vec2D_polar
+	LW        A3, 80 (V0)
+	LWC1      F20, 2C (V0)
+	JAL       ~Func:add_vec2D_polar
+	ADDIU     A1, SP, 14
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 10 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C80 % Var0
+	COPY      A0, S0
+	LUI       A1, FE36
+	MFC1      A2, F20
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 14 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C82 % Var2
+	LW        RA, 1C (SP)
+	LW        S0, 18 (SP)
+	LDC1      F20, 20 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 28
+}
+
+% Panners
+
+#new:Script $Script_SetupTexturePan
+{
+	Call     802C9000 	( ~Model:mizu 1 )
+	Thread
+		Set  *Var[0] 0
+		Set  *Var[1] 32
+		Set  *Var[2] C8
+		Set  *Var[3] 6E
+		Set  *Var[4] 1F4
+		Set  *Var[5] 1
+		Set  *Var[6] 1
+		Set  *Var[7] 1
+		Set  *Var[8] 1
+		Set  *Var[9] 0
+		Set  *Var[A] 0
+		Set  *Var[B] 0
+		Set  *Var[C] 0
+		Exec $Script_TexturePan_Update
+	EndThread
+	Thread
+		Set  *Var[0] 1
+		Set  *Var[1] 0
+		Set  *Var[2] FFFFFF38
+		Set  *Var[3] FFFFFF9C
+		Set  *Var[4] FFFFFE0C
+		Set  *Var[5] 1
+		Set  *Var[6] 1
+		Set  *Var[7] 1
+		Set  *Var[8] 1
+		Set  *Var[9] 0
+		Set  *Var[A] 0
+		Set  *Var[B] 0
+		Set  *Var[C] 0
+		Exec $Script_TexturePan_Update
+	EndThread
+	Return
+	End
+}
+
+#new:Script $Script_TexturePan_Update
+{
+    SetGroup  00000000
+    If  *Var[5]  ==  00000001
+        If  *Var[6]  ==  00000001
+            If  *Var[7]  ==  00000001
+                If  *Var[8]  ==  00000001
+                    Call  $Function_TexturePan_Simple ( )
+                    Return
+                EndIf
+            EndIf
+        EndIf
+    EndIf
+    Call  $Function_TexturePan_Complex ( )
+    Return
+    End
+}
+
+#new:Function $Function_TexturePan_Simple
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    SW          RA, 14 (SP)
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o30
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o40
+    ADDU        V0, V1, V0
+    .o30
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o44
+    SUBU        V0, V1, A0
+    .o40
+    SW          V0, A8 (S0)
+    .o44
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o64
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o74
+    ADDU        V0, V1, V0
+    .o64
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o78
+    SUBU        V0, V1, A0
+    .o74
+    SW          V0, AC (S0)
+    .o78
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o98
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA8
+    ADDU        V0, V1, V0
+    .o98
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oAC
+    SUBU        V0, V1, A0
+    .oA8
+    SW          V0, B0 (S0)
+    .oAC
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oCC
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oDC
+    ADDU        V0, V1, V0
+    .oCC
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE0
+    SUBU        V0, V1, A0
+    .oDC
+    SW          V0, B4 (S0)
+    .oE0
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+#new:Function $Function_TexturePan_Complex
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    BEQ         A1, R0, .o24
+    SW          RA, 14 (SP)
+    SW          R0, 70 (S0)
+    SW          R0, 74 (S0)
+    SW          R0, 78 (S0)
+    SW          R0, 7C (S0)
+    .o24
+    LW          V0, 70 (S0)
+    BNE         V0, R0, .o64
+    NOP
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o50
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o60
+    ADDU        V0, V1, V0
+    .o50
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o64
+    SUBU        V0, V1, A0
+    .o60
+    SW          V0, A8 (S0)
+    .o64
+    LW          V0, 74 (S0)
+    BNE         V0, R0, .oA4
+    NOP
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o90
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA0
+    ADDU        V0, V1, V0
+    .o90
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oA4
+    SUBU        V0, V1, A0
+    .oA0
+    SW          V0, AC (S0)
+    .oA4
+    LW          V0, 78 (S0)
+    BNE         V0, R0, .oE4
+    NOP
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oD0
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oE0
+    ADDU        V0, V1, V0
+    .oD0
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE4
+    SUBU        V0, V1, A0
+    .oE0
+    SW          V0, B0 (S0)
+    .oE4
+    LW          V0, 7C (S0)
+    BNE         V0, R0, .o124
+    NOP
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o110
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o120
+    ADDU        V0, V1, V0
+    .o110
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o124
+    SUBU        V0, V1, A0
+    .o120
+    SW          V0, B4 (S0)
+    .o124
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          V0, 70 (S0)
+    LW          V1, 78 (S0)
+    LW          A0, 98 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 70 (S0)
+    LW          V0, 74 (S0)
+    ADDIU       V1, V1, 1
+    SW          V1, 78 (S0)
+    LW          V1, 70 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 74 (S0)
+    LW          V0, 7C (S0)
+    SLT         V1, V1, A0
+    ADDIU       V0, V0, 1
+    BNE         V1, R0, .o198
+    SW          V0, 7C (S0)
+    SW          R0, 70 (S0)
+    .o198
+    LW          V0, 74 (S0)
+    LW          V1, 9C (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1AC
+    SW          R0, 74 (S0)
+    .o1AC
+    LW          V0, 78 (S0)
+    LW          V1, A0 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1C0
+    SW          R0, 78 (S0)
+    .o1C0
+    LW          V0, 7C (S0)
+    LW          V1, A4 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1D4
+    SW          R0, 7C (S0)
+    .o1D4
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+% Strings
+
+#new:Function $Function_GetTattle
+{
+    LIO       V0, $String_Tattle
+    JR        RA
+    RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+This is the intermediate floor of[BR]
+the pit, sometimes Rowf can appear[BR]
+here to sell us items.[BR]
+[Wait][Next]
+Also we can use the tube on the left[BR]
+to go back to the entrance of the[BR]
+pit[BR]
+[Wait][Next]
+Just keep in mind that we will have[BR]
+to go through all the floors once[BR]
+again.
+[Wait][End]
+}
+
+%
+
+#string $String_Rowf_Hi {
+[Style Right]
+Hey what's up buddy![BR]
+are you also looking for[BR]
+some treasures around here?[BR]
+[Wait][Next]
+By the way, I have a few things[BR]
+in my backpack that you might be[BR]
+interested, do you want to take[BR]
+a look at them?[BR]
+[Yield][End]
+}
+
+#string $String_Rowf_Bye {
+[Style Right]
+Understood, remember that[BR]
+there are many dangers below,[BR]
+the best of luck buddy!
+[Wait][End]
+}
+
+#string $String_Rowf_NoCoins {
+[Style Right]
+Sorry... bud, it seems you don't[BR]
+have enough coins and I have a[BR]
+family to feed, you know what I[BR]
+mean?
+[Wait][End]
+}
+
+#string $String_Rowf_RelookInventory {
+[Next]
+Oh, aren't you completely sure?[BR]
+there is no problem bud.
+[Wait][End]
+}
+
+#string $String_Rowf_NoInventory {
+[Next]
+Wait a little bit buddy, I'm sorry[BR]
+but it seems that you don't have[BR]
+more space in your pockets.
+[Wait][End]
+}
+
+#string $String_Rowf_AskConfirmation {
+[Style Right]
+That's my man, right there![BR]
+You've got an eye for quality![BR]
+[Wait][Next]
+That [SaveColor][Color:20][Var 0][RestoreColor] has a price[BR]
+of [SaveColor][Color:20][Var 1][RestoreColor] coins![BR][BR]
+Do you wanna buy it?[BR]
+[Yield][End]
+}
+
+#string $String_Rowf_ThankYou {
+[Style Right]
+Thank you very much, the best[BR]
+of luck out there buddy!
+[Wait][End]
+}
+
+#string $Tattle_Rowf {
+[Style Tattle][EnableCDownNext]
+He is Rowf, we can buy a few items[BR]
+for some coins, just keep in mind[BR]
+that prices increase depending on[BR]
+how deep we are in the pit.[BR]
+[Wait][Next]
+By the way, did he come from[BR]
+Toad Town to here? Wow, I didn't[BR]
+know he was that strong[BR]
+[Wait][Next]
+Mario, maybe he could help us defeat[BR]
+Bowser!
+[Wait][End]
+}

@@ -1,0 +1,81 @@
+#import enemy/FakeBowser2.bpat
+
+#new:FormationTable $FormationTable
+{
+% Floor 100
+00000000 00000001 $Formation_Bowser $Stage_Pit2 00000000  % 0
+00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Formation $Formation_Bowser
+{
+    $FakeBowser2 00000003 00000006 00000000 00000000 00000000 00000000
+}
+
+% ====================================================
+% Stages
+% ====================================================
+
+#new:StageTable $StageTable 
+{
+    "pit_01"  $Stage_Pit1
+    "pit_12"  $Stage_Pit2
+    00000000 00000000 
+}
+
+#new:Stage $Stage_Pit1
+{
+    "tik_tex"
+    "pit_bt01_shape"
+    "pit_bt01_hit"
+    $Script_BeforeBattle_Pit
+    $Script_AfterBattle
+    00000000 % Stage Background
+    00000000 
+    00000000 
+    00000000 
+}
+
+#new:Stage $Stage_Pit2
+{
+    "tik_tex"
+    "pit_bt02_shape"
+    "pit_bt02_hit"
+    $Script_BeforeBattle
+    $Script_AfterBattle
+    00000000 % Stage Background
+    00000000 
+    00000000 
+    00000000 
+}
+
+#new:Script $Script_BeforeBattle_Pit
+{
+    Call    EnableGroup ( ~Model:pit_bt01:themes .False )
+    Switch *AreaByte[0]
+        Case >= 80`
+            Call    EnableGroup ( ~Model:pit_bt01:theme3 .True )
+        Case >= 50`
+            Call    EnableGroup ( ~Model:pit_bt01:theme2 .True )
+        Default
+            Call    EnableGroup ( ~Model:pit_bt01:theme1 .True )
+    EndSwitch
+	Call    SetSpriteShading	( .Shading:None )
+	Call	SetCamBGColor		( 00000001 00000000 00000000 00000000 )
+	Return
+	End
+}
+
+#new:Script $Script_BeforeBattle
+{
+    Call    SetSpriteShading	( .Shading:None )
+	Call	SetCamBGColor		( 00000001 00000000 00000000 00000000 )
+	Return
+	End
+}
+
+#new:Script $Script_AfterBattle
+{
+	Return
+	End
+}

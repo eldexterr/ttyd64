@@ -1,0 +1,692 @@
+% This patch adds Glitz Pit's battle conditions for tyd_03
+
+% 0x00= u8 challengeID / 0xFF=ignore challenge
+%
+% 0x01= u8 challenge status
+%
+% 0x02= u8 challenge var
+%
+% 0x03= u8 unused
+#export:Data $Data_GlitzChallenge
+{ 00b 00b 00b 00b  }
+
+% Show warning at the start of the battle.
+%
+% Hook grabbed from Black Pit.
+%
+% ~From ~Func:btl_state_update_normal_start
+@Hook 16FF50 % 80241670
+{
+    PUSH	RA, V0, V1, A0, A1, A2, A3
+    LIO     A1, FF000000
+    SAW     A1, $Data_GlitzChallenge
+    % check if player is in the Glitz Pit.
+    LABU    A1, 800740AB % areaID
+    ORI     A2, R0, 1D % tyd
+    BNE     A1, A2, .End
+    NOP
+    LABU    A1, 800740B1 % mapID
+    ORI     A2, R0, 3 % tyd_03
+    BNE     A1, A2, .End
+    NOP
+    CLEAR	A2 % flags
+    LIA		A0, $Script_Init_BattleCondition
+    JAL		~Func:start_script
+    ADDIU	A1, R0, 1 % priority
+    % ============================
+    % vanilla code
+    % ============================
+    % check if the player used Dizzy Attack
+    % Isn't used by this hook but I just wanted to document it :p
+    .End
+    POP		RA, V0, V1, A0, A1, A2, A3
+    LBU	    V0, 0010 (FP) 
+    SB	    V0, 0208 (S0)
+    % Load Status to Set against the enemy in V1
+    % 800B0FB0 = Status
+    % 800B0FB3 = Amount of Turns
+    LB	    V1, 00A0 (FP)
+    J       80241680
+    % Status to Set at the Start of the battle
+    % If V1 and V0 are equal daze the enemy at the start of the battle
+    ADDIU	V0, R0, 0004 % 04 = Dizzy
+}
+
+% Kill Mario if he failed the challenge
+%
+% Check if Challenge 0x0E was completed
+%
+% ~Func:btl_check_player_defeated
+@Hook:Battle 80263464
+{
+    PUSH    RA
+    LIO     V0, $Data_GlitzChallenge
+    LB      V0, 0 (V0) % challengeID
+    BLTZ    V0, .End % there's no challenge active
+    NOP
+    JAL     ~Func:btl_are_all_enemies_defeated
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    % battle has ended
+    JAL     $Function_GlitzPit_CheckChallenge_E
+    NOP
+    % check if player failed the challenge
+    LIO     V0, $Data_GlitzChallenge
+    LB      V0, 1 (V0) % challengeStatus
+    BGEZ    V0, .End
+    NOP
+    % challenge failed
+    JAL     $Function_RemoveLifeShrooms
+    NOP
+    SAB     R0, 8010F292 % playerHP
+    .End
+    POP     RA
+    % restore code
+    LABU    V0, 8010F292 % get HP
+    J       8026346C
+    RESERVED
+}
+
+#new:Function $Function_RemoveLifeShrooms
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    LIO     A0, 8010F444 % items
+    ORI     A1, R0, 0095 % .Item:LifeShroom
+    CLEAR   A2
+    .Loop
+    LHU     A3, 0 (A0) % get item
+    BEQL    A1, A3, .ReadNextSlot
+    SH      R0, 0 (A0)
+    .ReadNextSlot
+    ADDIU   A0, A0, 2
+    ADDIU   A2, A2, 1
+    SLTIU   A3, A2, 20`
+    BNE     A3, R0, .Loop
+    NOP
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+#new:Script:Battle $Script_Init_BattleCondition
+{
+    Exec    $Script_BattleCondition_ShowWarning
+    Return
+    End
+}
+
+#new:Script:Battle $Script_BattleCondition_ShowWarning
+{
+    Loop % wait until player can use his turn
+        Call GetBattlePhase ( *Var0 )
+        If *Var0 == .Phase:PlayerBegin
+            BreakLoop
+        EndIf
+        Wait 1
+    EndLoop
+    Call    RandInt ( 15` *Var0 )
+    %Call    AddCoin ( 0 ) % testing
+    Call    $WriteAddress ( $Data_GlitzChallenge 0 *Var0 0 .False ) % update challengeID
+    Switch *Var0
+        Case == 0
+            Set     *Var4 0000010B % Use a Star Power move at least once.
+            Set     *Var5 -1
+        Case == 1
+            Set     *Var4 0000010C % Don't use any Star Power moves.
+            Set     *Var5 .True
+        Case == 2
+            Set     *Var4 0000010D % Don't jump.
+            Set     *Var5 .True
+        Case == 3
+            Set     *Var4 0000010E % Don't use the hammer.
+            Set     *Var5 .True
+        Case == 4
+            Set     *Var4 0000010F % Don't use items.
+            Set     *Var5 .True
+        Case == 5
+            Set     *Var4 00000110 % Use Focus at least once.
+            Set     *Var5 -1
+        Case == 6
+            Set     *Var4 00000111 % Use Focus at least 3 times.
+            Set     *Var5 -1
+        Case == 7
+            Set     *Var4 00000112 % Only Mario can attack.
+            Set     *Var5 .True
+        Case == 8
+            Set     *Var4 00000113 % Only Partner can attack.
+            Set     *Var5 .True
+        Case == 9
+            Set     *Var4 00000114 % Take damage at least three times.
+            Set     *Var5 -1
+        Case == A
+            Set     *Var4 00000115 % Take damage at least five times.
+            Set     *Var5 -1
+        Case == B
+            Set     *Var4 00000116 % Wait three turns before attacking.
+            Set     *Var5 .True
+        Case == C
+            Set     *Var4 00000117 % Don't swap partners.
+            Set     *Var5 .True
+        Case == D
+            Set     *Var4 00000118 % Defeat your foe in 5 turns or less.
+            Set     *Var5 .True
+        Case == E
+            Set     *Var4 00000119 % Win before taking 20 HP of damage.
+            Set     *Var5 .True
+        Case == F  
+            Set     *Var4 0000011A % Don't use FP.
+            Set     *Var5 .True
+    EndSwitch
+    Call WaitForState  ( .BattleState:PlayerMenu )
+    Call ShowMessageBox        ( *Var4 0000003C )
+    Call WaitForMessageBoxDone
+    Call WaitForState  ( .BattleState:None )
+    Call $WriteAddress ( $Data_GlitzChallenge 0 *Var5 1 .False ) % update challengeStatus
+    Return
+    End
+}
+
+%=====================
+% track challenges
+%=====================
+
+% Challenges 0/1/5/6 (The Star Power ones)
+%
+% LoadStarPowerScript(API)
+@Hook:Battle 802809B4
+{
+    LAB     A1, $Data_GlitzChallenge
+    BLTZ    A1, .End % skip if a challenge isn't active
+    LW	    A0, 0000 (S0)
+    % player is inside the Glitz Pit, check current challenge
+    BEQ     A1, R0, .StarPowerChallenge
+    ORI     A2, R0, 1
+    BEQ     A1, A2, .StarPowerChallenge
+    ORI     A2, R0, 5
+    BEQ     A1, A2, .FocusChallenge
+    ORI     A2, R0, 6
+    BEQ     A1, A2, .FocusChallenge
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .StarPowerChallenge
+    % check if player tried focus
+    LIO     A2, 00789E60 % focus's script address (ROM)
+    BEQ     A0, A2, .End
+    NOP
+    BNE     A1, R0, .Challenge1
+    NOP
+    % current challenge is 0x00 - Use a star power move
+    %
+    % set challenge as completed
+    LIO     A1, $Data_GlitzChallenge
+    ORI     A2, R0, 1
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .Challenge1 % Don't use any star power move
+    % set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    SB      A2, 1 (A1) % challengeStatus
+    BEQ     R0, R0, .End
+    NOP
+    .FocusChallenge
+    % check if player tried focus
+    LIO     A2, 00789E60 % focus's script address (ROM)
+    BNE     A0, A2, .End
+    NOP
+    % increase amount of time focus has been used
+    LIO     V1, $Data_GlitzChallenge
+    LBU     V0, 2 (V1) % challenge var
+    ADDIU   V0, V0, 1
+    SB      V0, 2 (V1) % challenge var
+    % check if challenge is 0x06
+    ORI     A2, R0, 6
+    BEQ     A1, A2, .Challenge6
+    NOP
+    % set challenge as completed
+    LIO     A1, $Data_GlitzChallenge
+    ORI     A2, R0, 1
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    BEQ     R0, R0, .End
+    NOP
+    .Challenge6
+    % check if player has used focus at least 3 times
+    SLTIU   V1, V0, 3
+    BNE     V1, R0, .End
+    NOP
+    % set challenge as completed
+    LIO     A1, $Data_GlitzChallenge
+    ORI     A2, R0, 1
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .End
+    J       802809BC
+    LW	    A1, 0004 (S0)
+}
+
+% Challenges 2/3 (Don't use Jump/Hammer)
+%
+% LoadMoveScript(API)
+@Hook:Battle 8026819C
+{
+    PUSH    A0, A1, A2, A3
+    LAB     A1, $Data_GlitzChallenge
+    BLTZ    A1, .End % skip if a challenge isn't active
+    NOP
+    % player is inside the Glitz Pit, check current challenge
+    ORI     A2, R0, 2 % Jump
+    BEQ     A1, A2, .MarioChallenge
+    ORI     A2, R0, 3 % Hammer
+    BEQ     A1, A2, .MarioChallenge
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .MarioChallenge
+    % check if current turn is Mario
+    LABU    A0, 800DC071 % BattleFlagBits(0x01)
+    LABU    A3, 800DC0B8 % Mario current command
+    ANDI    A0, A0, 10 % bit4 = Current turn is partner
+    BNE     A0, R0, .End
+    ORI     A2, R0, 3 % Hammer
+    BEQ     A1, A2, .CheckHammer
+    NOP
+    % check if current command is Jump (0x00)
+    BNE     A3, R0, .End
+    NOP
+    % it is Jump, set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .CheckHammer
+    % check if current command is Hammer (0x01)
+    ORI     A1, R0, 1
+    BNE     A3, A1, .End
+    NOP
+    % it is Hammer, set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3
+    LW	    RA, 001C (SP)
+    J       802681A4
+    LW	    S2, 0018 (SP)
+}
+
+
+% Challenge 4 (Don't use Items)
+%
+% LoadItemScript(API)
+@Hook:Battle 80268008
+{
+    PUSH    A0, A1, A2, A3
+    LAB     A1, $Data_GlitzChallenge
+    BLTZ    A1, .End % skip if a challenge isn't active
+    NOP
+    % player is inside the Glitz Pit, check current challenge
+    ORI     A2, R0, 4
+    BEQ     A1, A2, .Challenge
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Challenge
+    % set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    SB      A2, 1 (A1) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3
+    LW	    S1, 0014 (SP)
+    J       80268010
+    LW	    S0, 0010 (SP)
+}
+
+% Challenge 7 & B (Only Mario can attack / Wait 3 turns)
+%
+% PartnerDamageEnemy(API)
+@Hook:Battle 8027FFE4
+{
+    PUSH    A0, A1, A2, A3
+    LAB     A1, $Data_GlitzChallenge
+    BLTZ    A1, .End % skip if a challenge isn't active
+    NOP
+    % player is inside the Glitz Pit, check current challenge
+    ORI     A2, R0, 7
+    BEQ     A1, A2, .Challenge_7
+    ORI     A2, R0, B
+    BEQ     A1, A2, .Challenge_B
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Challenge_7
+    % set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .Challenge_B
+    LIO     A1, $Data_GlitzChallenge
+    LBU     A2, 2 (A1) % challengeVar
+    SLTIU   A3, A2, 4
+    ADDI    A2, R0, FF
+    BNEL    A3, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3
+    LW	    RA, 0024 (SP)
+    J       8027FFEC
+    LW	    S4, 0020 (SP)
+}
+
+% Challenge 8 & B (Only partner can attack / Wait 3 turns)
+%
+% PlayerDamageEnemy(API)
+@Hook:Battle 80274484
+{
+    PUSH    A0, A1, A2, A3
+    LAB     A1, $Data_GlitzChallenge
+    BLTZ    A1, .End % skip if a challenge isn't active
+    NOP
+    % player is inside the Glitz Pit, check current challenge
+    ORI     A2, R0, 8
+    BEQ     A1, A2, .Challenge_8
+    ORI     A2, R0, B
+    BEQ     A1, A2, .Challenge_B
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Challenge_8
+    % set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .Challenge_B
+    LIO     A1, $Data_GlitzChallenge
+    LBU     A2, 2 (A1) % challengeVar
+    SLTIU   A3, A2, 4
+    ADDI    A2, R0, FF
+    BNEL    A3, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3
+    LW	    RA, 0020 (SP)
+    J       8027448C
+    LW	    S3, 001C (SP)
+}
+
+% Challenge 7/8/B (Only Mario can attack / Only partner / Wait 3 turns)
+%
+% ItemDamageEnemy(API)
+@Hook:Battle 80252908
+{
+    PUSH    A0, A1, A2, A3
+    LAB     A1, $Data_GlitzChallenge
+    BLTZ    A1, .End % skip if a challenge isn't active
+    NOP
+    LABU    A3, 800DC071 % BattleFlagBits(0x01)
+    % player is inside the Glitz Pit, check current challenge
+    ORI     A2, R0, 7
+    BEQ     A1, A2, .Challenge_OnlyMario
+    ORI     A2, R0, 8
+    BEQ     A1, A2, .Challenge_OnlyPartner
+    ORI     A2, R0, B
+    BEQ     A1, A2, .Challenge_WaitTurns
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Challenge_OnlyMario
+    % check if current turn is partner
+    ANDI    A3, A3, 10 % bit4 = Current turn is partner
+    BEQ     A3, R0, .End
+    NOP
+    % set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .Challenge_OnlyPartner
+    % check if current turn is player
+    ANDI    A3, A3, 10 % bit4 = Current turn is partner
+    BNE     A3, R0, .End
+    NOP
+    % set challenge as failed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, FF
+    BEQ     R0, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .Challenge_WaitTurns
+    LIO     A1, $Data_GlitzChallenge
+    LBU     A2, 2 (A1) % challengeVar
+    SLTIU   A3, A2, 4
+    ADDI    A2, R0, FF
+    BNEL    A3, R0, .End
+    SB      A2, 1 (A1) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3
+    LW	    RA, 0020 (SP)
+    J       80252910
+    LW	    S3, 001C (SP)
+}
+
+% Challenge 9 & A (Take damage x amount of times)
+%
+% Called in `TTYDBadges.patch` / @Hook 1A6444 % 80277B64
+%
+% ~Func:calc_enemy_damage_target
+#export:Function $Function_GlitzPit_DamageChallenge
+{
+    PUSH    A0, A1, A2, A3, V0
+    LIO     A3, $Data_GlitzChallenge
+    LBU     A1, 0 (A3)
+    BLTZ    A1, .End % skip if a challenge isn't active
+    NOP
+    % player is inside the Glitz Pit, check current challenge
+    ORI     A2, R0, 9
+    BEQ     A1, A2, .Challenge
+    ORI     A0, R0, 3
+    ORI     A2, R0, A
+    BEQ     A1, A2, .Challenge
+    ORI     A0, R0, 5
+    BEQ     R0, R0, .End
+    NOP
+    .Challenge
+    % increase challenge var
+    LBU     A1, 2 (A3) % challenge var / amount of times hurt
+    ADDIU   V0, A1, 1
+    SB      V0, 2 (A3)
+    SLTU    A0, V0, A0
+    BNE     A0, R0, .End
+    NOP
+    % set challenge as completed
+    LIO     A1, $Data_GlitzChallenge
+    ADDI    A2, R0, 1
+    SB      A2, 1 (A1) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3, V0
+    JR      RA
+    NOP
+}
+
+% Challenge B/D - Wait 3 turns / Win in 5 turns or less
+%
+% ~Func:btl_state_update_begin_player_turn
+@Hook:Battle 802425E0
+{
+    PUSH 	A0, A1, A2, A3, V0, V1
+    LIO     A3, $Data_GlitzChallenge
+    LBU     A1, 0 (A3)
+    BLTZ    A1, .End % skip if a challenge isn't active
+    NOP
+    ORI     A2, R0, B % wait 3 turns
+    BEQ     A1, A2, .Challenge_B
+    ORI     A2, R0, D % win in 5 turns or less
+    BEQ     A1, A2, .Challenge_D
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Challenge_B
+    % increase challenge var
+    LBU     A0, 2 (A3) % challenge var / amount of turns
+    ADDIU   A0, A0, 1
+    BEQ     R0, R0, .End
+    SB      A0, 2 (A3)
+    .Challenge_D
+    % increase challenge var
+    LBU     A0, 2 (A3) % challenge var / amount of turns
+    ADDIU   A0, A0, 1
+    SB      A0, 2 (A3)
+    %
+    SLTIU   A1, A0, 6
+    ADDI    A0, R0, FF
+    BEQL    A1, R0, .End
+    % set challenge as failed
+    SB      A0, 1 (A3) % challengeStatus
+    .End
+    POP 	A0, A1, A2, A3, V0, V1
+    % restore vanilla code
+    LAW     V1, 800DC4DC
+    J       802425E8
+    RESERVED
+}
+
+% Challenge C - Don't swap partners
+%
+% Called in `Battle_StatusEffects.patch` / Hook 17402C (8024574C)
+%
+% From ~Func:btl_state_update_change_partner
+#export:Function $Function_GlitzPit_DontSwapChallenge
+{
+    PUSH    A0, A1, A2, A3, V0
+    LIO     A3, $Data_GlitzChallenge
+    LBU     A1, 0 (A3)
+    BLTZ    A1, .End % skip if a challenge isn't active
+    ORI     A2, R0, C
+    ADDI    A0, R0, FF
+    BEQL    A1, A2, .End
+    % set challenge as failed
+    SB      A0, 1 (A3) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3, V0
+    JR      RA
+    NOP
+}
+
+% Challenge D - Win in 5 turns or less
+%
+% Called in `Battle_StatusEffects.patch` / Hook 17402C (8024574C)
+%
+% From ~Func:btl_state_update_change_partner
+#export:Function $Function_GlitzPit_WinInXTurns
+{
+    PUSH    A0, A1, A2, A3, V0
+    LIO     A3, $Data_GlitzChallenge
+    LBU     A1, 0 (A3)
+    BLTZ    A1, .End % skip if a challenge isn't active
+    ORI     A2, R0, D
+    BNE     A1, A2, .End
+    NOP
+    ADDI    A0, R0, FF
+    LBU     A2, 2 (A3) % challengeVar
+    SLTIU   A1, A2, 6
+    % set challenge as failed
+    BEQL    A1, R0, .End
+    SB      A0, 1 (A3) % challengeStatus
+    .End
+    POP     A0, A1, A2, A3, V0
+    JR      RA
+    NOP
+}
+
+%==================
+% Challenge 0x0E
+%==================
+
+% Update battleStatus(0x07B)(damageTaken) when partner takes damage too, instead of only Mario.
+%
+% Don't skip if actor is partner.
+%
+% ~Func:calc_enemy_damage_target
+@Hook:Battle 80277B6C
+{
+    SLTIU   V0, S6, 201 % skip if actor is an enemy
+    BEQ     V0, R0, .Skip
+    SH	    R0, 01FA (S3)
+    J       80277B74
+    NOP
+    .Skip
+    J       80277B8C
+    NOP
+}
+
+% Update battleStatus(0x07B)(damageTaken) when partner takes damage too, instead of only Mario.
+%
+% Don't update player HP if actor wasn't Mario.
+%
+% ~Func:calc_enemy_damage_target
+@Hook:Battle 80277B80
+{
+    BNE     S6, R0, .Skip
+    NOP
+    .End
+    LBU	    V0, 01B8 (S3)
+    J       80277B88
+    LUI	    AT, 8011
+    .Skip
+    J       80277B8C
+    NOP
+}
+
+% Called in this patch, Hook:Battle 80263464
+%
+% ~Func:btl_check_player_defeated
+#new:Function $Function_GlitzPit_CheckChallenge_E
+{
+    PUSH    A0, A1, A2 ,A3
+    LIO     A3, $Data_GlitzChallenge
+    LBU     A1, 0 (A3)
+    BLTZ    A1, .End % skip if a challenge isn't active
+    ORI     A2, R0, E
+    BNE     A1, A2, .End
+    NOP
+    % check if challenge was completed
+    LIO     A0, 800DC070 % battleStatus
+    LBU     A1, 7B (A0) % get damageTaken
+    SLTIU   A0, A1, 20`
+    ADDI    A1, R0, FF
+    BEQL    A0, R0, .End
+    SB      A1, 1 (A3) % set challenge as failed
+    .End
+    POP     A0, A1, A2 ,A3
+    JR      RA
+    NOP
+}
+
+% Challenge 0x0F - Don't use FP
+%
+% Called in `TTYD_BadgeSystem.patch`, Hook:Battle 80263C04
+%
+% ~Func:deduct_current_move_fp
+#export:Function $Function_GlitzPit_NoFPChallenge
+{
+    PUSH    A0, A1, A2, A3
+    LIO     A3, $Data_GlitzChallenge
+    LBU     A1, 0 (A3)
+    BLTZ    A1, .End % skip if a challenge isn't active
+    ORI     A2, R0, F
+    BNE     A1, A2, .End
+    NOP
+    BEQ     S0, R0, .End % skip if move cost zero FP
+    NOP
+    ADDI    A1, R0, FF
+    SB      A1, 1 (A3) % set challenge as failed
+    .End
+    POP     A0, A1, A2, A3
+    JR      RA
+    NOP
+}

@@ -1,0 +1,97 @@
+% Script File: jan_18.mscr
+% Decoded from: 0 to 2D0 (jan_18)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %   25.0  180.0  205.0  172.0
+	~Vec4f:Entry1 %   20.0  345.0 -210.0    6.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  80200000
+	[MapTattle]   00190100
+}
+
+#new:Script $Script_80240060
+{
+    0:  Call  PlayAmbientSounds ( .AmbientSounds:Jungle )
+   10:  Return
+   18:  End
+}
+
+#new:Script $Script_ExitWalk_80240080
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802402C0 00000001 ) % jan_17
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_802400DC
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802402C8 00000000 ) % jan_19
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240138
+{
+    0:  Bind  $Script_ExitWalk_80240080 .Trigger:FloorAbove ~Collider:deilis 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_802400DC .Trigger:FloorAbove ~Collider:deilin 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:JadeJungle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   34:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   54:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  ExecWait  $Script_80240280
+   90:  Call  ModifyColliderFlags   ( 00000000 ~Collider:deilitse 7FFFFE00 )
+   A8:  Call  ModifyColliderFlags   ( 00000000 ~Collider:deilitn 7FFFFE00 )
+   C0:  Set   *Var0  $Script_80240138
+   D0:  Exec  EnterWalk
+   DC:  ExecWait  $Script_80240060
+   E8:  Return
+   F0:  End
+}
+
+PADDING: 80240278 to 80240280 (00000278 to 00000280)
+00000000 00000000
+
+#new:Script $Script_80240280
+{
+    0:  Call  MakeItemEntity    ( .Item:HappyHeartB ~Vec3d:Item80240280 .ItemSpawnMode:Fixed_NeverVanish *GF_JAN18_Item_HappyHeartB )
+   24:  Return
+   2C:  End
+}
+
+PADDING: 802402B4 to 802402C0 (000002B4 to 000002C0)
+00000000 00000000 00000000
+
+#new:ASCII $ASCII_802402C0
+{
+	"jan_17"
+}
+
+#new:ASCII $ASCII_802402C8
+{
+	"jan_19"
+}
+

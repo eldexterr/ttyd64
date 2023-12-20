@@ -1,0 +1,439 @@
+% Get actor data from /formation/import
+% to make easier to grab the enemies code from this mod to future projects
+
+#import enemy/0A_Pokey.bpat
+#import enemy/0A_BanditA.bpat
+
+#new:Function $Function_802180D0
+{
+    0:  ADDIU     SP, SP, FF78
+    4:  SW        S1, 54 (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 60 (SP)
+   10:  SW        S3, 5C (SP)
+   14:  SW        S2, 58 (SP)
+   18:  SW        S0, 50 (SP)
+   1C:  SDC1      F26, 80 (SP)
+   20:  SDC1      F24, 78 (SP)
+   24:  SDC1      F22, 70 (SP)
+   28:  SDC1      F20, 68 (SP)
+   2C:  LW        S0, C (S1)
+   30:  LW        A1, 0 (S0)
+   34:  JAL       ~Func:get_variable
+   38:  ADDIU     S0, S0, 4
+   3C:  MTC1      V0, F20
+   40:  NOP
+   44:  CVT.D.W   F20, F20
+   48:  LIF       F1, 2.5625
+   50:  MTC1      R0, F0
+   54:  LW        S2, 0 (S0)
+   58:  ADDIU     S0, S0, 4
+   5C:  DIV.D     F20, F20, F0
+   60:  LIF       F0, 6.28318
+   6C:  CVT.S.D   F20, F20
+   70:  MUL.S     F20, F20, F0
+   74:  NOP
+   78:  LW        S3, 0 (S0)
+   7C:  LW        S0, 4 (S0)
+   80:  LIF       F0, 360.0
+   88:  LIF       F24, 150.0
+   90:  DIV.S     F20, F20, F0
+   94:  JAL       ~Func:sin_rad
+   98:  MOV.S     F12, F20
+   9C:  MUL.S     F22, F0, F24
+   A0:  NOP
+   A4:  MTC1      R0, F26
+   A8:  NOP
+   AC:  ADD.S     F22, F22, F26
+   B0:  JAL       ~Func:cos_rad
+   B4:  MOV.S     F12, F20
+   B8:  MUL.S     F20, F0, F24
+   BC:  NOP
+   C0:  LIF       F24, -252.0
+   C8:  LWC1      F0, B8 (S1)
+   CC:  CVT.S.W   F0, F0
+   D0:  SUB.S     F24, F24, F0
+   D4:  LWC1      F0, B0 (S1)
+   D8:  CVT.S.W   F0, F0
+   DC:  SUB.S     F22, F22, F0
+   E0:  COPY      A0, S1
+   E4:  COPY      A1, S2
+   E8:  ADD.S     F20, F20, F26
+   EC:  LWC1      F0, B4 (S1)
+   F0:  CVT.S.W   F0, F0
+   F4:  MFC1      A2, F22
+   F8:  JAL       ~Func:set_float_variable
+   FC:  SUB.S     F20, F20, F0
+  100:  COPY      A0, S1
+  104:  MFC1      A2, F20
+  108:  JAL       ~Func:set_float_variable
+  10C:  COPY      A1, S3
+  110:  COPY      A0, S1
+  114:  MFC1      A2, F24
+  118:  JAL       ~Func:set_float_variable
+  11C:  COPY      A1, S0
+  120:  LW        RA, 60 (SP)
+  124:  LW        S3, 5C (SP)
+  128:  LW        S2, 58 (SP)
+  12C:  LW        S1, 54 (SP)
+  130:  LW        S0, 50 (SP)
+  134:  LDC1      F26, 80 (SP)
+  138:  LDC1      F24, 78 (SP)
+  13C:  LDC1      F22, 70 (SP)
+  140:  LDC1      F20, 68 (SP)
+  144:  LI        V0, 2
+  148:  JR        RA
+  14C:  ADDIU     SP, SP, 88
+}
+
+#new:Function $Function_80218220
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  SW        RA, 14 (SP)
+   10:  JAL       ~Func:get_model_list_index_from_tree_index
+   14:  LW        A0, AC (S0)
+   18:  JAL       ~Func:get_model_from_list_index
+   1C:  COPY      A0, V0
+   20:  LWC1      F0, 98 (V0)
+   24:  TRUNC.W.S F2, F0
+   28:  SWC1      F2, B0 (S0)
+   2C:  LWC1      F0, 9C (V0)
+   30:  TRUNC.W.S F2, F0
+   34:  SWC1      F2, B4 (S0)
+   38:  LWC1      F0, A0 (V0)
+   3C:  TRUNC.W.S F2, F0
+   40:  SWC1      F2, B8 (S0)
+   44:  LW        RA, 14 (SP)
+   48:  LW        S0, 10 (SP)
+   4C:  LI        V0, 2
+   50:  JR        RA
+   54:  ADDIU     SP, SP, 18
+}
+
+#new:Script $Script_8021F720
+{
+    0:  Set   *VarA  *Var0
+   10:  Set   *Var7  *Var1
+   20:  Mul   *Var7  0000000A
+   30:  Call  $Function_80218220 ( )
+   3C:  Label  0
+   48:  Add   *Var7  00000001
+   58:  If  *Var7  >  00000E0F
+   68:  	Sub   *Var7  00000E10
+   78:  EndIf
+   80:  Call  $Function_802180D0    ( *Var7 *Var0 *Var1 *Var2 )
+   9C:  Call  TranslateModel        ( *VarA *Var0 *Var1 *Var2 )
+   B8:  Wait  1`
+   C4:  Goto  0
+   D0:  Return
+   D8:  End
+}
+
+#new:Script $Script_BeforeBattle_8021F800
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Set   *Var0  00000001
+   20:  Set   *Var1  00000000
+   30:  Exec  $Script_8021F720
+   3C:  Set   *Var0  00000003
+   4C:  Set   *Var1  00000078
+   5C:  Exec  $Script_8021F720
+   68:  Set   *Var0  00000005
+   78:  Set   *Var1  000000F0
+   88:  Exec  $Script_8021F720
+   94:  Call  PlayEffect        ( ~FX:SunRays:RightCorner 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+   D8:  Return
+   E0:  End
+}
+
+#new:Script $Script_AfterBattle_8021F8E8
+{
+    0:  Return
+    8:  End
+}
+
+#new:ForegroundModelList $ForegroundModelList_8021F8F8
+{
+	~Model:sbk_bt02:o322
+	~Model:sbk_bt02:o321
+	~Model:sbk_bt02:o320
+	~Model:sbk_bt02:o319
+	00000000
+}
+
+#new:Stage $Stage_8021F90C
+{
+	$ASCII_80220028  % sbk_tex
+	$ASCII_80220018  % sbk_bt02_shape
+	$ASCII_80220008  % sbk_bt02_hit
+	$Script_BeforeBattle_8021F800
+	$Script_AfterBattle_8021F8E8
+	$ASCII_80220000  % sbk_bg
+	$ForegroundModelList_8021F8F8
+	00000000
+	00000000
+	00000000
+}
+
+
+
+#new:Formation $Formation_00
+{
+	$0A_Pokey 00000001 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_01
+{
+	$0A_Pokey 00000001 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000002 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_02
+{
+	$0A_Pokey 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_03
+{
+	$0A_Pokey 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000003 00000007 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_04
+{
+	$0A_Pokey 00000001 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_BanditA 00000002 00000009 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:Formation $Formation_05
+{
+	$0A_Pokey 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_BanditA 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:Formation $Formation_06
+{
+	$0A_Pokey 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_BanditA 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000003 00000007 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:Formation $Formation_07
+{
+	$0A_Pokey 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_BanditA 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_Pokey 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_08
+{
+	$0A_Pokey 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_BanditA 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_Pokey 00000003 00000007 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_09
+{
+	$0A_BanditA 00000001 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:Formation $Formation_0A
+{
+	$0A_BanditA 00000001 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000002 00000009 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:Formation $Formation_0B
+{
+	$0A_BanditA 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:Formation $Formation_0C
+{
+	$0A_BanditA 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000003 00000007 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:Formation $Formation_0D
+{
+	$0A_BanditA 00000001 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_Pokey 00000002 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_0E
+{
+	$0A_BanditA 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_Pokey 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_0F
+{
+	$0A_BanditA 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_BanditA 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_Pokey 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_Pokey 00000003 00000007 00000000 00000000 00000000 $ItemDropTable_Pokey
+}
+
+#new:Formation $Formation_10
+{
+	$0A_BanditA 00000000 0000000A 00000000 00000000 00000000 $ItemDropTable_Bandit
+	$0A_Pokey 00000001 00000009 00000000 00000000 00000000 $ItemDropTable_Pokey
+	$0A_BanditA 00000002 00000008 00000000 00000000 00000000 $ItemDropTable_Bandit
+}
+
+#new:FormationTable $FormationTable
+{
+	$SJIS_80220148 00000001 $Formation_00 $Stage_8021F90C 00000000
+	$SJIS_8022013C 00000002 $Formation_01 $Stage_8021F90C 00000000
+	$SJIS_80220130 00000003 $Formation_02 $Stage_8021F90C 00000000
+	$SJIS_80220120 00000004 $Formation_03 $Stage_8021F90C 00000000
+	$SJIS_80220110 00000002 $Formation_04 $Stage_8021F90C 00000000
+	$SJIS_802200FC 00000003 $Formation_05 $Stage_8021F90C 00000000
+	$SJIS_802200E8 00000004 $Formation_06 $Stage_8021F90C 00000000
+	$SJIS_802200D0 00000003 $Formation_07 $Stage_8021F90C 00000000
+	$SJIS_802200B4 00000004 $Formation_08 $Stage_8021F90C 00000000
+	$SJIS_802200A8 00000001 $Formation_09 $Stage_8021F90C 00000000
+	$SJIS_8022009C 00000002 $Formation_0A $Stage_8021F90C 00000000
+	$SJIS_80220090 00000003 $Formation_0B $Stage_8021F90C 00000000
+	$SJIS_80220084 00000004 $Formation_0C $Stage_8021F90C 00000000
+	$SJIS_80220074 00000002 $Formation_0D $Stage_8021F90C 00000000
+	$SJIS_80220060 00000003 $Formation_0E $Stage_8021F90C 00000000
+	$SJIS_8022004C 00000004 $Formation_0F $Stage_8021F90C 00000000
+	$SJIS_80220030 00000003 $Formation_10 $Stage_8021F90C 00000000
+	00000000 00000000 00000000 00000000 00000000
+}
+
+#new:StageTable $StageTable
+{
+	$ASCII_80220150 $Stage_8021F90C
+	00000000 00000000
+}
+
+
+
+#new:ASCII $ASCII_80220000
+{
+	"sbk_bg"
+}
+
+#new:ASCII $ASCII_80220008
+{
+	"sbk_bt02_hit"
+}
+
+#new:ASCII $ASCII_80220018
+{
+	"sbk_bt02_shape"
+}
+
+#new:ASCII $ASCII_80220028
+{
+	"sbk_tex"
+}
+
+#new:SJIS $SJIS_80220030
+{
+	ボロドー,サンボ,ボロドー % borodo-,sanbo,borodo-
+}
+
+#new:SJIS $SJIS_8022004C
+{
+	ボロドーx2,サンボx2 % borodo-x2,sanbox2
+}
+
+#new:SJIS $SJIS_80220060
+{
+	ボロドーx2,サンボ % borodo-x2,sanbo
+}
+
+#new:SJIS $SJIS_80220074
+{
+	ボロドー,サンボ % borodo-,sanbo
+}
+
+#new:SJIS $SJIS_80220084
+{
+	ボロドーx4 % borodo-x4
+}
+
+#new:SJIS $SJIS_80220090
+{
+	ボロドーx3 % borodo-x3
+}
+
+#new:SJIS $SJIS_8022009C
+{
+	ボロドーx2 % borodo-x2
+}
+
+#new:SJIS $SJIS_802200A8
+{
+	ボロドー % borodo-
+}
+
+#new:SJIS $SJIS_802200B4
+{
+	サンボx2,ボロドー,サンボ % sanbox2,borodo-,sanbo
+}
+
+#new:SJIS $SJIS_802200D0
+{
+	サンボ,ボロドー,サンボ % sanbo,borodo-,sanbo
+}
+
+#new:SJIS $SJIS_802200E8
+{
+	サンボx2,ボロドーx2 % sanbox2,borodo-x2
+}
+
+#new:SJIS $SJIS_802200FC
+{
+	サンボx2,ボロドー % sanbox2,borodo-
+}
+
+#new:SJIS $SJIS_80220110
+{
+	サンボ,ボロドー % sanbo,borodo-
+}
+
+#new:SJIS $SJIS_80220120
+{
+	きいろサンボx4 % kiirosanbox4
+}
+
+#new:SJIS $SJIS_80220130
+{
+	サンボx3 % sanbox3
+}
+
+#new:SJIS $SJIS_8022013C
+{
+	サンボx2 % sanbox2
+}
+
+#new:SJIS $SJIS_80220148
+{
+	サンボ % sanbo
+}
+
+#new:ASCII $ASCII_80220150
+{
+	"sbk_01"
+}
+
+
+

@@ -1,0 +1,1761 @@
+% Automatically dumped from section 11
+
+#new:Actor $11_GeneralGuy {
+% stats
+[Index]        A9b 
+[Level]        73`b 
+[MaxHP]        10`b 
+[Coins]         0`b 
+[Flags]       00040000 
+[StatusTable] $StatusTable_8021833C_11 
+% ai
+[PartsCount]    2`s 
+[PartsTable]  $PartsTable_802183E8_11 
+[Script]      $Script_Init_8021858C_11 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]       0`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]     0`b 
+[PowerBounce]  75`b 
+[SpinSmash]     4`b % weight (0-4)
+% ui positions
+[Size]         30`b  30`b % width height
+[HealthBar]    20`b  -3`b % dx dy
+[StatusTurn]  -10`b  20`b % dx dy
+[StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:Function $Function_80218000_11 {
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  BEQ       A1, R0, .o48
+   10:  SW        RA, 14 (SP)
+   14:  JAL       8011D82C
+   18:  LI        A0, 1
+   1C:  CLEAR     A0
+   20:  COPY      A1, A0
+   24:  COPY      A2, A0
+   28:  COPY      A3, A0
+   2C:  LAW       V0, 801512F0
+   34:  LI        V1, 1
+   38:  JAL       ~Func:set_background_color_blend
+   3C:  SB        V1, 0 (V0)
+   40:  LI        V0, 14
+   44:  SW        V0, 70 (S0)
+        .o48
+   48:  CLEAR     A0
+   4C:  COPY      A1, A0
+   50:  COPY      A2, A0
+   54:  LW        V1, 70 (S0)
+   58:  LI        V0, 14
+   5C:  SUBU      V0, V0, V1
+   60:  SLL       A3, V0, 2
+   64:  ADDU      A3, A3, V0
+   68:  SLL       A3, A3, 1
+   6C:  JAL       ~Func:set_background_color_blend
+   70:  ANDI      A3, A3, FE
+   74:  LW        V0, 70 (S0)
+   78:  ADDIU     V0, V0, FFFF
+   7C:  SW        V0, 70 (S0)
+   80:  SLTIU     V0, V0, 1
+   84:  LW        RA, 14 (SP)
+   88:  LW        S0, 10 (SP)
+   8C:  SLL       V0, V0, 1
+   90:  JR        RA
+   94:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_80218098_11 {
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        S0, 10 (SP)
+    8:  COPY      S0, A0
+    C:  BEQ       A1, R0, .o1C
+   10:  SW        RA, 14 (SP)
+   14:  LI        V0, 14
+   18:  SW        V0, 70 (S0)
+        .o1C
+   1C:  CLEAR     A0
+   20:  COPY      A1, A0
+   24:  LW        V0, 70 (S0)
+   28:  COPY      A2, A0
+   2C:  SLL       A3, V0, 2
+   30:  ADDU      A3, A3, V0
+   34:  SLL       A3, A3, 1
+   38:  JAL       ~Func:set_background_color_blend
+   3C:  ANDI      A3, A3, FE
+   40:  LW        V0, 70 (S0)
+   44:  ADDIU     V0, V0, FFFF
+   48:  BEQ       V0, R0, .o58
+   4C:  SW        V0, 70 (S0)
+   50:  BEQ       R0, R0, .o70
+   54:  CLEAR     V0
+        .o58
+   58:  CLEAR     A0
+   5C:  COPY      A1, A0
+   60:  COPY      A2, A0
+   64:  JAL       ~Func:set_background_color_blend
+   68:  COPY      A3, A0
+   6C:  LI        V0, 2
+        .o70
+   70:  LW        RA, 14 (SP)
+   74:  LW        S0, 10 (SP)
+   78:  JR        RA
+   7C:  ADDIU     SP, SP, 18
+}
+
+#new:DefenseTable $DefenseTable_80218330_11 {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:StatusTable $StatusTable_8021833C_11 {
+.Status:Normal      0`
+.Status:Default     0`
+.Status:Sleep       0`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy       0`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze    0`
+.Status:Shrink      0`
+.Status:Stop        0`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod     -1`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod     -1`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod    -1`
+.Status:StopTurnMod      -2`
+.Status:End
+}
+
+#new:PartsTable $PartsTable_802183E8_11 {
+20820000 01000000 001E00FF $IdleAnimations_80218458_11 $DefenseTable_80218330_11 00000000 00000000 FFF60000 00000000 
+20120001 02000000 000000FF $IdleAnimations_802184B4_11 $DefenseTable_80218330_11 00000000 00000000 FFF60000 00000000 
+}
+
+#new:IdleAnimations $IdleAnimations_80218458_11 {
+.Status:Normal    00760002
+.Status:Frozen    00760000
+.Status:Sleep     00760000
+.Status:Poison    00760002
+.Status:Stop      00760000
+.Status:Static    00760000
+.Status:Paralyze  00760000
+.Status:Paralyze  00760000
+.Status:Dizzy     00760000
+.Status:Dizzy     00760000
+.Status:Fear      00760000
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_802184B4_11 {
+.Status:Normal    00770000
+.Status:End
+}
+
+#new:Script $Script_NextTurn_802184FC_11 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  GetBattlePhase    ( *Var0 )
+   38:  Switch  *Var0 
+   44:  	Case  ==  0000000A 
+   50:  EndSwitch
+   58:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+   6C:  Call  UseIdleAnimation  ( .Actor:Self .True )
+   80:  Return
+   88:  End
+}
+
+#new:Script $Script_Init_8021858C_11 {
+    0:  Call  SetActorPos   ( .Actor:Self 000000C8 00000000 00000000 )
+   1C:  Call  ForceHomePos  ( .Actor:Self 000000C8 00000000 00000000 )
+   38:  Call  HPBarToHome   ( .Actor:Self )
+   48:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_80218BA0_11 )
+   5C:  Call  BindIdle      ( .Actor:Self $Script_Idle_802186B8_11 )
+   70:  Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_802186EC_11 )
+   84:  Call  BindNextTurn  ( .Actor:Self $Script_NextTurn_802184FC_11 )
+   98:  Call  SetAnimation  ( .Actor:Self 00000001 00760002 )
+   B0:  Call  SetActorVar   ( .Actor:Self 00000000 00000000 )
+   C8:  Call  SetActorVar   ( .Actor:Self 00000001 00000000 )
+   E0:  Call  SetActorVar   ( .Actor:Self 00000002 00000000 )
+   F8:  Call  LoadBattleSection ( 00000029 )
+  108:  Call  SummonEnemy   ( $SpecialFormation_8021A284_11 00000001 )
+  11C:  Return
+  124:  End
+}
+
+#new:Script $Script_Idle_802186B8_11 {
+    0:  Label  0
+    C:  Wait  1`
+   18:  Goto  0
+   24:  Return
+   2C:  End
+}
+
+#new:Script $Script_HandleEvent_802186EC_11 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   28:  Switch  *Var0 
+   34:  	Case  ==  .Event:BeginFirstStrike % 38
+   40:  	CaseOR  ==  .Event:HitCombo % 9
+   4C:  	CaseOR  ==  .Event:Hit % A
+   58:  		SetConst  *Var0  00000001 
+   68:  		SetConst  *Var1  00760005 
+   78:  		ExecWait  DoNormalHit 
+   84:  	EndCaseGroup
+   8C:  	Case  ==  .Event:BurnHit % E
+   98:  		Set   *Var0  00000001 
+   A8:  		Set   *Var1  00760008 
+   B8:  		Set   *Var2  00760009 
+   C8:  		ExecWait  DoBurnHit 
+   D4:  	Case  ==  .Event:BurnDeath % 24
+   E0:  		Set   *Var0  00000001 
+   F0:  		Set   *Var1  00760008 
+  100:  		Set   *Var2  00760009 
+  110:  		ExecWait  DoBurnHit 
+  11C:  		Wait  10`
+  128:  		SetConst  *Var0  00000001 
+  138:  		SetConst  *Var1  00760009 
+  148:  		ExecWait  DoDeath 
+  154:  		Return
+  15C:  	Case  ==  .Event:SpinSmashHit % B
+  168:  		SetConst  *Var0  00000001 
+  178:  		SetConst  *Var1  00760005 
+  188:  		ExecWait  DoSpinSmashHit 
+  194:  	Case  ==  .Event:SpinSmashDeath % 21
+  1A0:  		SetConst  *Var0  00000001 
+  1B0:  		SetConst  *Var1  00760005 
+  1C0:  		ExecWait  DoSpinSmashHit 
+  1CC:  		SetConst  *Var0  00000001 
+  1DC:  		SetConst  *Var1  00760005 
+  1EC:  		ExecWait  DoDeath 
+  1F8:  		Return
+  200:  	Case  ==  .Event:ShockHit % 2F
+  20C:  		SetConst  *Var0  00000001 
+  21C:  		SetConst  *Var1  00760005 
+  22C:  		ExecWait  DoShockHit 
+  238:  		SetConst  *Var0  00000001 
+  248:  		SetConst  *Var1  00760005 
+  258:  		ExecWait  DoJumpBack 
+  264:  		SetConst  *Var0  00000001 
+  274:  		SetConst  *Var1  0076000E 
+  284:  		ExecWait  DoReturnHome 
+  290:  	CaseOR  ==  00000017 % 17
+  29C:  	CaseOR  ==  .Event:Immune % 19
+  2A8:  	CaseOR  ==  .Event:AirLiftFailed % 1F
+  2B4:  		SetConst  *Var0  00000001 
+  2C4:  		SetConst  *Var1  00760002 
+  2D4:  		ExecWait  DoImmune 
+  2E0:  	EndCaseGroup
+  2E8:  	Case  ==  .Event:SpikeTaunt % 1B
+  2F4:  	Case  ==  .Event:Death % 20
+  300:  		SetConst  *Var0  00000001 
+  310:  		SetConst  *Var1  00760005 
+  320:  		ExecWait  DoNormalHit 
+  32C:  		Wait  10`
+  338:  		SetConst  *Var0  00000001 
+  348:  		SetConst  *Var1  00760005 
+  358:  		ExecWait  DoDeath 
+  364:  		Return
+  36C:  	Case  ==  .Event:EndFirstStrike % 35
+  378:  		SetConst  *Var0  00000001 
+  388:  		SetConst  *Var1  0076000E 
+  398:  		ExecWait  DoReturnHome 
+  3A4:  		Call  HPBarToHome   ( .Actor:Self )
+  3B4:  	Case  ==  .Event:RecoverStatus % 31
+  3C0:  		SetConst  *Var0  00000001 
+  3D0:  		SetConst  *Var1  00760002 
+  3E0:  		ExecWait  DoRecover 
+  3EC:  	Case  ==  00000030 % 30
+  3F8:  		SetConst  *Var0  00000001 
+  408:  		SetConst  *Var1  00760005 
+  418:  		ExecWait  DoNormalHit 
+  424:  		Wait  1000`
+  430:  	Case  ==  .Event:ScareAway % 39
+  43C:  		SetConst  *Var0  00000001 
+  44C:  		SetConst  *Var1  00760002 
+  45C:  		SetConst  *Var2  00760005 
+  46C:  		ExecWait  DoScareAway 
+  478:  		Return
+  480:  	Default
+  488:  EndSwitch
+  490:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  4A4:  Return
+  4AC:  End
+}
+
+#new:Script $Script_TakeTurn_80218BA0_11 {
+    0:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   18:  If  *Var0  ==  00000000 
+   28:  	Return
+   30:  EndIf
+   38:  Call  ActorExists   ( .Actor:Enemy2 *Var0 )
+   4C:  If  *Var0  !=  .False 
+   5C:  	Call  GetStatusFlags    ( .Actor:Partner *Var0 )
+   70:  	If  *Var0  !&  ~Flags:StatusFlags:KO % 1000000
+   80:  		Call  RandInt   ( 00000064 *Var0 )
+   94:  		If  *Var0  <  0000003C 
+   A4:  			ExecWait  $Script_LightningAttack_11 
+   B0:  			Return
+   B8:  		EndIf
+   C0:  	EndIf
+   C8:  EndIf
+   D0:  ExecWait  $Script_BombAttack_11 
+   DC:  Return
+   E4:  End
+}
+
+#new:Script $Script_BombAttack_11 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+   3C:  Call  SetGoalToTarget   ( .Actor:Self )
+   4C:  Call  UseBattleCamPreset    ( 0000000F )
+   5C:  Call  BattleCamTargetActor  ( .Actor:Self )
+   6C:  Call  MoveBattleCamOver ( 0000001E )
+   7C:  Thread
+   84:  	Wait  35`
+   90:  	Call  UseBattleCamPreset    ( 00000002 )
+   A0:  	Call  MoveBattleCamOver     ( 0000001E )
+   B0:  EndThread
+   B8:  Wait  5`
+   C4:  Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206A )
+   DC:  Call  SetAnimation  ( .Actor:Enemy0 00000001 0076000B )
+   F4:  Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .False )
+  110:  Call  PlayModelAnimation    ( 00000000 $ModelAnimation_80220D88_11 )
+  124:  Wait  20`
+  130:  Call  SetAnimation  ( .Actor:Self 00000001 0076000B )
+  148:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  164:  Sub   *Var0  00000008 
+  174:  Add   *Var1  0000001B 
+  184:  Sub   *Var2  00000004 
+  194:  Call  SetPartPos    ( .Actor:Self 00000002 *Var0 *Var1 *Var2 )
+  1B4:  Call  SetAnimation  ( .Actor:Self 00000002 00770000 )
+  1CC:  Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .False )
+  1E8:  Wait  15`
+  1F4:  Call  SetAnimation  ( .Actor:Self 00000001 0076000A )
+  20C:  Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .True )
+  228:  Wait  6`
+  234:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  250:  Sub   *Var0  00000008 
+  260:  Add   *Var1  00000014 
+  270:  Call  SetPartPos    ( .Actor:Self 00000002 *Var0 *Var1 *Var2 )
+  290:  Call  SetAnimation  ( .Actor:Self 00000002 00770001 )
+  2A8:  Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .False )
+  2C4:  Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:NoContact 00000000 00000004 00000020 )
+  2E8:  Switch  *Var0 
+  2F4:  	Case  ==  .HitResult:Miss % 6
+  300:  		Call  PlaySoundAtPart   ( .Actor:Enemy0 00000002 000002F9 )
+  318:  		Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+  32C:  		Call  SetGoalToTarget   ( .Actor:Self )
+  33C:  		Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+  358:  		Sub   *Var0  00000078 
+  368:  		Call  SetPartMoveSpeed  ( .Actor:Self 00000002 *Fixed[12.0] )
+  380:  		Call  SetPartJumpGravity    ( .Actor:Self 00000002 *Fixed[0.1] )
+  398:  		Call  JumpPartTo        ( .Actor:Self 00000002 *Var0 *Var1 *Var2 00000000 .True )
+  3C0:  		Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .True )
+  3DC:  		Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  3F4:  		Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  410:  		Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  424:  		Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  43C:  		Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  450:  		Call  UseIdleAnimation  ( .Actor:Self .True )
+  464:  		Return
+  46C:  	Case  ==  .HitResult:Lucky % 5
+  478:  		Call  PlaySoundAtPart   ( .Actor:Enemy0 00000002 000002F9 )
+  490:  		Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+  4A4:  		Call  SetGoalToTarget   ( .Actor:Self )
+  4B4:  		Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+  4D0:  		Sub   *Var0  00000032 
+  4E0:  		Set   *Var1  FFFFFFFB 
+  4F0:  		Call  SetPartMoveSpeed  ( .Actor:Self 00000002 *Fixed[14.0] )
+  508:  		Call  SetPartJumpGravity    ( .Actor:Self 00000002 *Fixed[0.1] )
+  520:  		Call  FlyPartTo ( .Actor:Self 00000002 *Var0 *Var1 *Var2 00000000 0000001E .Easing:Linear )
+  54C:  		Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+  570:  		Call  UseBattleCamPreset    ( 00000002 )
+  580:  		Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+  59C:  		Sub   *Var0  00000041 
+  5AC:  		Set   *Var1  FFFFFFFB 
+  5BC:  		Call  SetPartMoveSpeed  ( .Actor:Self 00000002 *Fixed[6.0] )
+  5D4:  		Call  SetPartJumpGravity    ( .Actor:Self 00000002 *Fixed[0.1] )
+  5EC:  		Call  FlyPartTo ( .Actor:Self 00000002 *Var0 *Var1 *Var2 00000000 0000000F .Easing:Linear )
+  618:  		Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .True )
+  634:  		Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  64C:  		Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  668:  		Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  67C:  		Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  694:  		Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  6A8:  		Call  UseIdleAnimation  ( .Actor:Self .True )
+  6BC:  		Return
+  6C4:  EndSwitch
+  6CC:  Call  PlaySoundAtPart   ( .Actor:Enemy0 00000002 000002F9 )
+  6E4:  Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+  700:  Call  SetPartMoveSpeed  ( .Actor:Self 00000002 *Fixed[14.0] )
+  718:  Call  SetPartJumpGravity    ( .Actor:Self 00000002 *Fixed[0.1] )
+  730:  Call  FlyPartTo ( .Actor:Self 00000002 *Var0 *Var1 *Var2 00000000 0000000F .Easing:Linear )
+  75C:  Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+  778:  Call  PlayEffect        ( ~FX:BigSmokePuff *Var0 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  7BC:  Call  PlaySoundAtPart   ( .Actor:Self 00000002 .Sound:BombBlast )
+  7D4:  Call  SetPartFlagBits   ( .Actor:Self 00000002 00000001 .True )
+  7F0:  Wait  2`
+  7FC:  Call  SetGoalToTarget   ( .Actor:Self )
+  80C:  Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:NoContact|Blast 00000000 00000000 00000004 00000020 )
+  834:  Switch  *VarF 
+  840:  	CaseOR  ==  .HitResult:Hit % 0
+  84C:  	CaseOR  ==  00000002 % 2
+  858:  	CaseOR  ==  0000000A % A
+  864:  		Call  SetAnimation  ( .Actor:Self 00000001 00760002 )
+  87C:  		Wait  30`
+  888:  		If  *VarF  ==  0000000A % A
+  898:  			Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  8B0:  			Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  8CC:  			Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  8E0:  			Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  8F8:  			Return
+  900:  		EndIf
+  908:  	EndCaseGroup
+  910:  EndSwitch
+  918:  Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  930:  Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  94C:  Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  960:  Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  978:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  98C:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  9A0:  Return
+  9A8:  End
+}
+
+#new:Script $Script_LightningAttack_11 {
+    0:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   14:  Call  EnableIdleScript  ( .Actor:Self 00000000 )
+   28:  Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+   3C:  Call  SetGoalToTarget   ( .Actor:Self )
+   4C:  Call  UseBattleCamPreset    ( 00000013 )
+   5C:  Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+   78:  Call  SetBattleCamTarget    ( *Var0 *Var1 *Var2 )
+   90:  Call  SetBattleCamZoom  ( 00000140 )
+   A0:  Call  SetBattleCamOffsetZ   ( 0000001E )
+   B0:  Call  MoveBattleCamOver ( 00000028 )
+   C0:  Wait  40`
+   CC:  Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206A )
+   E4:  Call  SetAnimation      ( .Actor:Enemy0 00000001 0076000B )
+   FC:  Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .False )
+  118:  Call  PlayModelAnimation    ( 00000000 $ModelAnimation_80220D88_11 )
+  12C:  Wait  10`
+  138:  Call  GetActorVar       ( .Actor:Enemy1 00000007 *Var0 )
+  150:  If  *Var0  !=  00000000 
+  160:  	Call  80253734  ( 00000002 )
+  170:  EndIf
+  178:  Call  SetAnimation      ( .Actor:Self 00000001 00760003 )
+  190:  Wait  20`
+  19C:  Call  SetActorVar       ( .Actor:Enemy1 00000006 00000001 )
+  1B4:  Call  UseBattleCamPreset    ( 00000002 )
+  1C4:  Call  MoveBattleCamOver ( 0000001E )
+  1D4:  Thread
+  1DC:  	Call  $Function_80218000_11 ( )
+  1E8:  EndThread
+  1F0:  Call  GetModelCenter    ( 00000027 )
+  200:  Thread
+  208:  	Loop  00000004 
+  214:  		Call  PlaySoundAtActor  ( *Var8 000003D2 )
+  228:  		Call  RandInt   ( 00000003 *Var0 )
+  23C:  		Add   *Var0  00000003 
+  24C:  		Wait  *Var0 
+  258:  	EndLoop
+  260:  EndThread
+  268:  Call  PlayEffect        ( ~FX:SnakingStatic *Var0 *Var1 *Var2 *Fixed[1.0] 00000028 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  2AC:  Wait  40`
+  2B8:  Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:NoContact|Electric 00000000 00000005 00000020 )
+  2DC:  Switch  *Var0 
+  2E8:  	Case  ==  .HitResult:Miss % 6
+  2F4:  		Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+  308:  		Call  GetModelCenter    ( 00000027 )
+  318:  		Call  SetGoalToTarget   ( .Actor:Self )
+  328:  		Call  GetGoalPos        ( .Actor:Self *Var3 00000000 *Var5 )
+  344:  		Call  PlaySound ( 00002069 )
+  354:  		Call  PlayEffect        ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *Fixed[1.0] 00000012 00000000 00000000 00000000 00000000 )
+  398:  		Wait  12`
+  3A4:  		Call  SetTargetActor    ( .Actor:Self .Actor:Partner )
+  3B8:  		Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:NoContact|Electric 00000000 00000002 00000020 )
+  3DC:  		If  *Var0  !=  .HitResult:Miss % 6
+  3EC:  			Call  GetModelCenter    ( 00000027 )
+  3FC:  			Call  SetGoalToTarget   ( .Actor:Self )
+  40C:  			Call  GetGoalPos        ( .Actor:Self *Var3 *Var4 *Var5 )
+  428:  			Call  PlaySound ( 00002069 )
+  438:  			Call  PlayEffect        ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *Fixed[1.0] 00000012 00000000 00000000 00000000 00000000 )
+  47C:  			Call  SetActorVar       ( .Actor:Enemy1 00000006 00000000 )
+  494:  			Wait  12`
+  4A0:  			Call  SetGoalToTarget   ( .Actor:Self )
+  4B0:  			Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:NoContact|Electric 00000000 00000000 00000002 00000020 )
+  4D8:  		Else
+  4E0:  			Call  SetActorVar   ( .Actor:Enemy1 00000006 00000000 )
+  4F8:  			Wait  20`
+  504:  		EndIf
+  50C:  		Call  GetActorVar   ( .Actor:Enemy1 00000007 *Var0 )
+  524:  		If  *Var0  !=  00000000 
+  534:  			Call  80253734  ( 00000003 )
+  544:  		EndIf
+  54C:  		Call  $Function_80218098_11 ( )
+  558:  		Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  570:  		Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  58C:  		Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  5A0:  		Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  5B8:  		Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  5CC:  		Call  UseIdleAnimation  ( .Actor:Self .True )
+  5E0:  		Return
+  5E8:  	Case  ==  .HitResult:Lucky % 5
+  5F4:  		Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+  608:  		Call  GetModelCenter    ( 00000027 )
+  618:  		Call  SetGoalToTarget   ( .Actor:Self )
+  628:  		Call  GetGoalPos        ( .Actor:Self *Var3 00000000 *Var5 )
+  644:  		Call  PlaySound ( 00002069 )
+  654:  		Call  PlayEffect        ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *Fixed[1.0] 00000012 00000000 00000000 00000000 00000000 )
+  698:  		Wait  12`
+  6A4:  		Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+  6C8:  		Call  SetTargetActor    ( .Actor:Self .Actor:Partner )
+  6DC:  		Call  GetModelCenter    ( 00000027 )
+  6EC:  		Call  SetGoalToTarget   ( .Actor:Self )
+  6FC:  		Call  GetGoalPos        ( .Actor:Self *Var3 00000000 *Var5 )
+  718:  		Call  PlaySound ( 00002069 )
+  728:  		Call  PlayEffect        ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *Fixed[1.0] 00000012 00000000 00000000 00000000 00000000 )
+  76C:  		Call  SetActorVar       ( .Actor:Enemy1 00000006 00000000 )
+  784:  		Wait  12`
+  790:  		Call  GetActorVar       ( .Actor:Enemy1 00000007 *Var0 )
+  7A8:  		If  *Var0  !=  00000000 
+  7B8:  			Call  80253734  ( 00000003 )
+  7C8:  		EndIf
+  7D0:  		Call  $Function_80218098_11 ( )
+  7DC:  		Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  7F4:  		Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  810:  		Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  824:  		Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  83C:  		Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  850:  		Call  UseIdleAnimation  ( .Actor:Self .True )
+  864:  		Return
+  86C:  EndSwitch
+  874:  Call  SetTargetActor    ( .Actor:Self .Actor:Player )
+  888:  Call  GetModelCenter    ( 00000027 )
+  898:  Call  SetGoalToTarget   ( .Actor:Self )
+  8A8:  Call  GetGoalPos        ( .Actor:Self *Var3 *Var4 *Var5 )
+  8C4:  Call  PlaySound ( 00002069 )
+  8D4:  Call  PlayEffect        ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *Fixed[1.0] 00000012 00000000 00000000 00000000 00000000 )
+  918:  Wait  12`
+  924:  Call  SetGoalToTarget   ( .Actor:Self )
+  934:  Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:NoContact|Electric 00000000 00000000 00000005 00000020 )
+  95C:  Switch  *VarF 
+  968:  	CaseOR  ==  .HitResult:Hit % 0
+  974:  	CaseOR  ==  00000002 % 2
+  980:  	CaseOR  ==  0000000A % A
+  98C:  		Call  SetAnimation  ( .Actor:Self 00000001 00760002 )
+  9A4:  		If  *VarF  ==  0000000A % A
+  9B4:  			Call  SetActorVar       ( .Actor:Enemy1 00000006 00000000 )
+  9CC:  			Wait  30`
+  9D8:  			Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  9F0:  			Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  A0C:  			Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  A20:  			Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  A38:  			Return
+  A40:  		EndIf
+  A48:  	EndCaseGroup
+  A50:  EndSwitch
+  A58:  Call  SetTargetActor    ( .Actor:Self .Actor:Partner )
+  A6C:  Call  GetModelCenter    ( 00000027 )
+  A7C:  Call  SetGoalToTarget   ( .Actor:Self )
+  A8C:  Call  GetGoalPos        ( .Actor:Self *Var3 *Var4 *Var5 )
+  AA8:  Call  PlaySound ( 00002069 )
+  AB8:  Call  PlayEffect        ( ~FX:Lightning *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 *Fixed[1.0] 00000012 00000000 00000000 00000000 00000000 )
+  AFC:  Call  SetActorVar       ( .Actor:Enemy1 00000006 00000000 )
+  B14:  Wait  12`
+  B20:  Call  SetGoalToTarget   ( .Actor:Self )
+  B30:  Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:NoContact|Electric 00000000 00000000 00000002 00000020 )
+  B58:  Call  GetActorVar       ( .Actor:Enemy1 00000007 *Var0 )
+  B70:  If  *Var0  !=  00000000 
+  B80:  	Call  80253734  ( 00000003 )
+  B90:  EndIf
+  B98:  Call  $Function_80218098_11 ( )
+  BA4:  Call  SetAnimation      ( .Actor:Enemy0 00000001 00760002 )
+  BBC:  Call  SetPartFlagBits   ( .Actor:Enemy0 00000001 00000001 .True )
+  BD8:  Call  PlayModelAnimation    ( 00000000 $ModelAnimation_8021E798_11 )
+  BEC:  Call  PlaySoundAtPart   ( .Actor:Enemy0 00000001 0000206B )
+  C04:  Call  EnableIdleScript  ( .Actor:Self 00000001 )
+  C18:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  C2C:  Return
+  C34:  End
+}
+
+#new:Vector3D $Vector3D_8021A278_11 {
+240` 0` 0`
+}
+
+#new:SpecialFormation $SpecialFormation_8021A284_11 {
+$End[14D8] $Vector3D_8021A278_11 00000064 00000000 00000000 00000000 00000000 
+}
+
+#new:ModelAnimation $ModelAnimation_8021E798_11 {
+	SetRotation ( 0001s 0.0 0.0 0.0 )
+	SetPosition ( 0001s    0`s    0`s    0`s )
+	SetScale    ( 0001s 1.0 1.0 1.0 )
+	SetRotation ( 0002s 0.0 0.0 0.01 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetScale    ( 0002s 1.0 1.0 1.0 )
+	SetRotation ( 0003s 0.0 0.0 0.01 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetScale    ( 0003s 1.0 1.0 1.0 )
+	SetRotation ( 0004s 0.0 0.0 0.01 )
+	SetPosition ( 0004s   65`s   46`s    0`s )
+	SetScale    ( 0004s 1.0 1.0 1.0 )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s   99`s    9`s  -34`s )
+	SetScale    ( 0005s 1.0 1.0 1.0 )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s   99`s    9`s  -34`s )
+	SetScale    ( 0006s 1.0 1.0 1.0 )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetScale    ( 0007s 1.0 1.0 1.0 )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetScale    ( 0008s 1.0 1.0 1.0 )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s   99`s    9`s   34`s )
+	SetScale    ( 0009s 1.0 1.0 1.0 )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As   99`s    9`s   34`s )
+	SetScale    ( 000As 1.0 1.0 1.0 )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetScale    ( 000Bs 1.0 1.0 1.0 )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   60`s    9`s   34`s )
+	SetScale    ( 000Cs 1.0 1.0 1.0 )
+	SetRotation ( 000Ds 0.0 0.0 -89.995 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetScale    ( 000Ds 1.0 1.0 1.0 )
+	SetRotation ( 000Es 0.0 0.0 0.01 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetScale    ( 000Es 1.0 1.0 1.0 )
+	SetRotation ( 000Fs 0.0 0.0 -0.03 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetScale    ( 000Fs 1.0 1.0 1.0 )
+	SetRotation ( 0010s 0.0 0.0 -0.03 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetScale    ( 0010s 1.0 1.0 1.0 )
+	SetRotation ( 0011s 0.0 0.0 -0.03 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetScale    ( 0011s 1.0 1.0 1.0 )
+	SetRotation ( 0012s 0.0 0.0 -0.03 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetScale    ( 0012s 1.0 1.0 1.0 )
+	SetRotation ( 0013s 0.0 0.0 -0.03 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	SetScale    ( 0013s 1.0 1.0 1.0 )
+	SetRotation ( 0014s 0.0 0.0 0.0 )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetScale    ( 0014s 1.0 1.0 1.0 )
+	SetRotation ( 0015s 0.0 0.0 0.0 )
+	SetPosition ( 0015s   79`s   20`s  -29`s )
+	SetScale    ( 0015s 1.0 1.0 1.0 )
+	SetRotation ( 0016s 0.0 0.0 0.0 )
+	SetPosition ( 0016s   79`s   20`s   30`s )
+	SetScale    ( 0016s 1.0 1.0 1.0 )
+	SetRotation ( 0017s 0.0 0.0 0.0 )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	SetScale    ( 0017s 1.0 1.0 1.0 )
+	SetRotation ( 0018s 0.0 0.0 0.0 )
+	SetPosition ( 0018s   79`s   15`s    0`s )
+	SetScale    ( 0018s 1.0 1.0 1.0 )
+	SetRotation ( 0002s 0.0 0.0 0.0 )
+	SetPosition ( 0002s   81`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 0.0 )
+	SetPosition ( 0003s   81`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 0.0 )
+	SetPosition ( 0004s   66`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 19.955 )
+	SetPosition ( 0005s  101`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 19.955 )
+	SetPosition ( 0006s  101`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 19.955 )
+	SetPosition ( 0007s   61`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 19.955 )
+	SetPosition ( 0008s   61`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 19.955 )
+	SetPosition ( 0009s  101`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 19.955 )
+	SetPosition ( 000As  101`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 19.955 )
+	SetPosition ( 000Bs   61`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 19.955 )
+	SetPosition ( 000Cs   61`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -21.02 )
+	SetPosition ( 000Ds   79`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.0 )
+	SetPosition ( 000Es  114`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.04 )
+	SetPosition ( 000Fs   99`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.04 )
+	SetPosition ( 0010s   99`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.04 )
+	SetPosition ( 0011s   99`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.04 )
+	SetPosition ( 0012s   99`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.04 )
+	SetPosition ( 0013s   99`s   72`s    0`s )
+	SetPosition ( 0014s   82`s   20`s  -30`s )
+	SetPosition ( 0015s   82`s   20`s  -29`s )
+	SetPosition ( 0016s   82`s   20`s   30`s )
+	SetPosition ( 0017s   81`s   20`s   30`s )
+	SetPosition ( 0018s   82`s   15`s    0`s )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s   99`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s   99`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s   99`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As   99`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 0.0 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.035 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.035 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.035 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.035 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.035 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	SetPosition ( 0014s   80`s   20`s  -30`s )
+	SetPosition ( 0015s   79`s   20`s  -29`s )
+	SetPosition ( 0016s   79`s   20`s   30`s )
+	SetPosition ( 0017s   80`s   20`s   30`s )
+	SetPosition ( 0018s   79`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -1.92 )
+	SetPosition ( 0002s   81`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -1.92 )
+	SetPosition ( 0003s   81`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -1.92 )
+	SetPosition ( 0004s   65`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 21.1 )
+	SetPosition ( 0005s  101`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 21.1 )
+	SetPosition ( 0006s  101`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 21.1 )
+	SetPosition ( 0007s   61`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 21.1 )
+	SetPosition ( 0008s   61`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 21.1 )
+	SetPosition ( 0009s  101`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 21.1 )
+	SetPosition ( 000As  101`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 21.1 )
+	SetPosition ( 000Bs   61`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 21.1 )
+	SetPosition ( 000Cs   61`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -1.92 )
+	SetPosition ( 000Ds   79`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -1.92 )
+	SetPosition ( 000Es  113`s   46`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -1.955 )
+	SetPosition ( 000Fs   99`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -1.955 )
+	SetPosition ( 0010s   99`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -1.955 )
+	SetPosition ( 0011s  100`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -1.955 )
+	SetPosition ( 0012s  100`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -1.955 )
+	SetPosition ( 0013s  100`s   72`s    0`s )
+	SetPosition ( 0014s   81`s   20`s  -30`s )
+	SetPosition ( 0015s   81`s   20`s  -29`s )
+	SetPosition ( 0016s   81`s   20`s   30`s )
+	SetPosition ( 0017s   81`s   20`s   30`s )
+	SetPosition ( 0018s   81`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 3.995 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 3.995 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 3.995 )
+	SetPosition ( 0004s   66`s   19`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s  100`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s  100`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s  100`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 3.995 )
+	SetPosition ( 000Ds   76`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 3.995 )
+	SetPosition ( 000Es  111`s   50`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 3.96 )
+	SetPosition ( 000Fs   96`s   56`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 3.96 )
+	SetPosition ( 0010s   96`s   56`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 3.96 )
+	SetPosition ( 0011s   95`s   74`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 3.96 )
+	SetPosition ( 0012s   95`s   74`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 3.96 )
+	SetPosition ( 0013s   95`s   74`s    0`s )
+	SetPosition ( 0014s   80`s   20`s  -30`s )
+	SetPosition ( 0015s   80`s   20`s  -29`s )
+	SetPosition ( 0016s   80`s   20`s   30`s )
+	SetPosition ( 0017s   80`s   20`s   30`s )
+	SetPosition ( 0018s   80`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -2.47 )
+	SetPosition ( 0002s   80`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -2.47 )
+	SetPosition ( 0003s   80`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -2.47 )
+	SetPosition ( 0004s   65`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 22.235 )
+	SetPosition ( 0005s  101`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 22.235 )
+	SetPosition ( 0006s  101`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 22.235 )
+	SetPosition ( 0007s   61`s   10`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 22.235 )
+	SetPosition ( 0008s   61`s   10`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 22.235 )
+	SetPosition ( 0009s  101`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 22.235 )
+	SetPosition ( 000As  101`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 22.235 )
+	SetPosition ( 000Bs   61`s   10`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 22.235 )
+	SetPosition ( 000Cs   61`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -2.47 )
+	SetPosition ( 000Ds   79`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -2.47 )
+	SetPosition ( 000Es  113`s   46`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -2.51 )
+	SetPosition ( 000Fs   99`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -2.51 )
+	SetPosition ( 0010s   99`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -2.51 )
+	SetPosition ( 0011s  100`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -2.51 )
+	SetPosition ( 0012s  100`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -2.51 )
+	SetPosition ( 0013s  100`s   72`s    0`s )
+	SetPosition ( 0014s   81`s   20`s  -30`s )
+	SetPosition ( 0015s   81`s   20`s  -29`s )
+	SetPosition ( 0016s   81`s   20`s   30`s )
+	SetPosition ( 0017s   81`s   20`s   30`s )
+	SetPosition ( 0018s   81`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.26 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -0.26 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -0.26 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s   99`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s   99`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s   99`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.26 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.26 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.295 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.295 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.295 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.295 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.295 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetPosition ( 0015s   79`s   20`s  -29`s )
+	SetPosition ( 0016s   79`s   20`s   30`s )
+	SetPosition ( 0017s   80`s   20`s   30`s )
+	SetPosition ( 0018s   79`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 1.59 )
+	SetPosition ( 0002s   80`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 1.59 )
+	SetPosition ( 0003s   80`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 1.59 )
+	SetPosition ( 0004s   67`s   19`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 23.375 )
+	SetPosition ( 0005s  101`s   10`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 23.375 )
+	SetPosition ( 0006s  101`s   10`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 23.375 )
+	SetPosition ( 0007s   61`s   10`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 23.375 )
+	SetPosition ( 0008s   61`s   10`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 23.375 )
+	SetPosition ( 0009s  101`s   10`s   34`s )
+	SetRotation ( 000As 0.0 0.0 23.375 )
+	SetPosition ( 000As  101`s   10`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 23.375 )
+	SetPosition ( 000Bs   61`s   10`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 23.375 )
+	SetPosition ( 000Cs   61`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 1.59 )
+	SetPosition ( 000Ds   78`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 1.59 )
+	SetPosition ( 000Es  113`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 1.555 )
+	SetPosition ( 000Fs   98`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 1.555 )
+	SetPosition ( 0010s   98`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 1.555 )
+	SetPosition ( 0011s   98`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 1.555 )
+	SetPosition ( 0012s   98`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 1.555 )
+	SetPosition ( 0013s   98`s   73`s    0`s )
+	SetPosition ( 0014s   81`s   20`s  -30`s )
+	SetPosition ( 0015s   81`s   20`s  -29`s )
+	SetPosition ( 0016s   81`s   20`s   30`s )
+	SetPosition ( 0017s   81`s   20`s   30`s )
+	SetPosition ( 0018s   81`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.9 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -0.9 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -0.9 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s   99`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s   99`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s   99`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.9 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.9 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.935 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.935 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.935 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.935 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.935 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	SetPosition ( 0014s   80`s   20`s  -30`s )
+	SetPosition ( 0015s   80`s   20`s  -29`s )
+	SetPosition ( 0016s   80`s   20`s   30`s )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	SetPosition ( 0018s   80`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.69 )
+	SetPosition ( 0002s   80`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -0.69 )
+	SetPosition ( 0003s   80`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -0.69 )
+	SetPosition ( 0004s   65`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 24.515 )
+	SetPosition ( 0005s  101`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 24.515 )
+	SetPosition ( 0006s  101`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 24.515 )
+	SetPosition ( 0007s   61`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 24.515 )
+	SetPosition ( 0008s   61`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 24.515 )
+	SetPosition ( 0009s  101`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 24.515 )
+	SetPosition ( 000As  101`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 24.515 )
+	SetPosition ( 000Bs   61`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 24.515 )
+	SetPosition ( 000Cs   61`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.69 )
+	SetPosition ( 000Ds   78`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.69 )
+	SetPosition ( 000Es  113`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.73 )
+	SetPosition ( 000Fs   98`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.73 )
+	SetPosition ( 0010s   98`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.73 )
+	SetPosition ( 0011s   99`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.73 )
+	SetPosition ( 0012s   99`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.73 )
+	SetPosition ( 0013s   99`s   72`s    0`s )
+	SetPosition ( 0014s   81`s   20`s  -30`s )
+	SetPosition ( 0015s   81`s   20`s  -29`s )
+	SetPosition ( 0016s   81`s   20`s   30`s )
+	SetPosition ( 0017s   81`s   20`s   30`s )
+	SetPosition ( 0018s   81`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 1.47 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 1.47 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 1.47 )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s  100`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s  100`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s  100`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As   99`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 1.47 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 1.47 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 1.435 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 1.435 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 1.435 )
+	SetPosition ( 0011s   96`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 1.435 )
+	SetPosition ( 0012s   96`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 1.435 )
+	SetPosition ( 0013s   96`s   73`s    0`s )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetPosition ( 0015s   79`s   20`s  -29`s )
+	SetPosition ( 0016s   79`s   20`s   30`s )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	SetPosition ( 0018s   79`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.96 )
+	SetPosition ( 0002s   80`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -0.96 )
+	SetPosition ( 0003s   80`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -0.96 )
+	SetPosition ( 0004s   65`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 25.655 )
+	SetPosition ( 0005s  101`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 25.655 )
+	SetPosition ( 0006s  101`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 25.655 )
+	SetPosition ( 0007s   60`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 25.655 )
+	SetPosition ( 0008s   60`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 25.655 )
+	SetPosition ( 0009s  101`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 25.655 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 25.655 )
+	SetPosition ( 000Bs   60`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 25.655 )
+	SetPosition ( 000Cs   60`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.96 )
+	SetPosition ( 000Ds   78`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.96 )
+	SetPosition ( 000Es  113`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.995 )
+	SetPosition ( 000Fs   98`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.995 )
+	SetPosition ( 0010s   98`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.995 )
+	SetPosition ( 0011s   98`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.995 )
+	SetPosition ( 0012s   98`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.995 )
+	SetPosition ( 0013s   98`s   72`s    0`s )
+	SetPosition ( 0014s   80`s   20`s  -30`s )
+	SetPosition ( 0015s   80`s   20`s  -29`s )
+	SetPosition ( 0016s   80`s   20`s   30`s )
+	SetPosition ( 0017s   80`s   20`s   30`s )
+	SetPosition ( 0018s   80`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.03 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -0.03 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -0.03 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s  100`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s  100`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s  100`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As   99`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetRotation ( 000Ds 0.0 0.0 -0.03 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.03 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.065 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.065 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.065 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.065 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.065 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.545 )
+	SetPosition ( 0002s   80`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 0.545 )
+	SetPosition ( 0003s   80`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 0.545 )
+	SetPosition ( 0004s   66`s   19`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 26.795 )
+	SetRotation ( 0006s 0.0 0.0 26.795 )
+	SetRotation ( 0007s 0.0 0.0 26.795 )
+	SetRotation ( 0008s 0.0 0.0 26.795 )
+	SetRotation ( 0009s 0.0 0.0 26.795 )
+	SetRotation ( 000As 0.0 0.0 26.795 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 26.795 )
+	SetRotation ( 000Cs 0.0 0.0 26.795 )
+	SetRotation ( 000Ds 0.0 0.0 0.545 )
+	SetPosition ( 000Ds   78`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.545 )
+	SetPosition ( 000Es  112`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 0.51 )
+	SetPosition ( 000Fs   98`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 0.51 )
+	SetPosition ( 0010s   98`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 0.51 )
+	SetPosition ( 0011s   98`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 0.51 )
+	SetPosition ( 0012s   98`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 0.51 )
+	SetPosition ( 0013s   98`s   73`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.34 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetRotation ( 0003s 0.0 0.0 -0.34 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetRotation ( 0004s 0.0 0.0 -0.34 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.34 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.34 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.375 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.375 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.375 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.375 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.375 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.185 )
+	SetRotation ( 0003s 0.0 0.0 -0.185 )
+	SetRotation ( 0004s 0.0 0.0 -0.185 )
+	SetPosition ( 0004s   65`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 27.935 )
+	SetRotation ( 0006s 0.0 0.0 27.935 )
+	SetRotation ( 0007s 0.0 0.0 27.935 )
+	SetRotation ( 0008s 0.0 0.0 27.935 )
+	SetRotation ( 0009s 0.0 0.0 27.935 )
+	SetRotation ( 000As 0.0 0.0 27.935 )
+	SetRotation ( 000Bs 0.0 0.0 27.935 )
+	SetRotation ( 000Cs 0.0 0.0 27.935 )
+	SetPosition ( 000Cs   60`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.185 )
+	SetPosition ( 000Ds   78`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.185 )
+	SetRotation ( 000Fs 0.0 0.0 -0.22 )
+	SetPosition ( 000Fs   98`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.22 )
+	SetPosition ( 0010s   98`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.22 )
+	SetPosition ( 0011s   98`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.22 )
+	SetPosition ( 0012s   98`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.22 )
+	SetPosition ( 0013s   98`s   72`s    0`s )
+	SetPosition ( 0014s   80`s   20`s  -30`s )
+	SetPosition ( 0017s   80`s   20`s   30`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.465 )
+	SetRotation ( 0003s 0.0 0.0 0.465 )
+	SetRotation ( 0004s 0.0 0.0 0.465 )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s   99`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s   99`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s   99`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As   99`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 0.465 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.465 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 0.425 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 0.425 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 0.425 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 0.425 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 0.425 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetPosition ( 0015s   79`s   20`s  -29`s )
+	SetPosition ( 0016s   79`s   20`s   30`s )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	SetPosition ( 0018s   79`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.295 )
+	SetRotation ( 0003s 0.0 0.0 -0.295 )
+	SetRotation ( 0004s 0.0 0.0 -0.295 )
+	SetPosition ( 0004s   65`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 29.08 )
+	SetPosition ( 0005s  100`s    9`s  -34`s )
+	SetRotation ( 0006s 0.0 0.0 29.08 )
+	SetPosition ( 0006s  100`s    9`s  -34`s )
+	SetRotation ( 0007s 0.0 0.0 29.08 )
+	SetPosition ( 0007s   60`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 29.08 )
+	SetPosition ( 0008s   60`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 29.08 )
+	SetPosition ( 0009s  100`s    9`s   34`s )
+	SetRotation ( 000As 0.0 0.0 29.08 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 29.08 )
+	SetPosition ( 000Bs   60`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 29.08 )
+	SetPosition ( 000Cs   60`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.295 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.295 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.33 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.33 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.33 )
+	SetPosition ( 0011s   98`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.33 )
+	SetPosition ( 0012s   98`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.33 )
+	SetPosition ( 0013s   98`s   72`s    0`s )
+	SetPosition ( 0014s   80`s   20`s  -30`s )
+	SetPosition ( 0015s   80`s   20`s  -29`s )
+	SetPosition ( 0016s   80`s   20`s   30`s )
+	SetPosition ( 0017s   80`s   20`s   30`s )
+	SetPosition ( 0018s   80`s   15`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.07 )
+	SetRotation ( 0003s 0.0 0.0 -0.07 )
+	SetRotation ( 0004s 0.0 0.0 -0.07 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As   99`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.07 )
+	SetRotation ( 000Es 0.0 0.0 -0.07 )
+	SetRotation ( 000Fs 0.0 0.0 -0.1 )
+	SetRotation ( 0010s 0.0 0.0 -0.1 )
+	SetRotation ( 0011s 0.0 0.0 -0.1 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.1 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.1 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.285 )
+	SetRotation ( 0003s 0.0 0.0 0.285 )
+	SetRotation ( 0004s 0.0 0.0 0.285 )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 30.215 )
+	SetRotation ( 0006s 0.0 0.0 30.215 )
+	SetRotation ( 0007s 0.0 0.0 30.215 )
+	SetPosition ( 0007s   60`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 30.215 )
+	SetPosition ( 0008s   60`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 30.215 )
+	SetRotation ( 000As 0.0 0.0 30.215 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetRotation ( 000Bs 0.0 0.0 30.215 )
+	SetPosition ( 000Bs   60`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 30.215 )
+	SetPosition ( 000Cs   60`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 0.285 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.285 )
+	SetPosition ( 000Es  112`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 0.245 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 0.245 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 0.245 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 0.245 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 0.245 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	SetPosition ( 0014s   80`s   20`s  -30`s )
+	SetPosition ( 0017s   80`s   20`s   30`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.245 )
+	SetRotation ( 0003s 0.0 0.0 -0.245 )
+	SetRotation ( 0004s 0.0 0.0 -0.245 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.245 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.245 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.275 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.275 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.275 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.275 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.275 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.08 )
+	SetRotation ( 0003s 0.0 0.0 0.08 )
+	SetRotation ( 0004s 0.0 0.0 0.08 )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 0.08 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.08 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 0.04 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 0.04 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 0.04 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 0.04 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 0.04 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.0 )
+	SetRotation ( 0003s 0.0 0.0 0.0 )
+	SetRotation ( 0004s 0.0 0.0 0.0 )
+	SetRotation ( 000Ds 0.0 0.0 0.0 )
+	SetRotation ( 000Es 0.0 0.0 0.0 )
+	SetRotation ( 000Fs 0.0 0.0 -0.035 )
+	SetRotation ( 0010s 0.0 0.0 -0.035 )
+	SetRotation ( 0011s 0.0 0.0 -0.035 )
+	SetRotation ( 0012s 0.0 0.0 -0.035 )
+	SetRotation ( 0013s 0.0 0.0 -0.035 )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.07 )
+	SetRotation ( 0003s 0.0 0.0 0.07 )
+	SetRotation ( 0004s 0.0 0.0 0.07 )
+	SetRotation ( 000Ds 0.0 0.0 0.07 )
+	SetRotation ( 000Es 0.0 0.0 0.07 )
+	SetRotation ( 000Fs 0.0 0.0 0.03 )
+	SetRotation ( 0010s 0.0 0.0 0.03 )
+	SetRotation ( 0011s 0.0 0.0 0.03 )
+	SetRotation ( 0012s 0.0 0.0 0.03 )
+	SetRotation ( 0013s 0.0 0.0 0.03 )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.215 )
+	SetRotation ( 0003s 0.0 0.0 -0.215 )
+	SetRotation ( 0004s 0.0 0.0 -0.215 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.215 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.215 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.255 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.255 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.255 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.255 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.255 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.145 )
+	SetRotation ( 0003s 0.0 0.0 0.145 )
+	SetRotation ( 0004s 0.0 0.0 0.145 )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 0.145 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.145 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 0.11 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 0.11 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 0.11 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 0.11 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 0.11 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.015 )
+	SetRotation ( 0003s 0.0 0.0 0.015 )
+	SetRotation ( 0004s 0.0 0.0 0.015 )
+	SetRotation ( 000Ds 0.0 0.0 0.015 )
+	SetRotation ( 000Es 0.0 0.0 0.015 )
+	SetRotation ( 000Fs 0.0 0.0 -0.025 )
+	SetRotation ( 0010s 0.0 0.0 -0.025 )
+	SetRotation ( 0011s 0.0 0.0 -0.025 )
+	SetRotation ( 0012s 0.0 0.0 -0.025 )
+	SetRotation ( 0013s 0.0 0.0 -0.025 )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 -0.11 )
+	SetRotation ( 0003s 0.0 0.0 -0.11 )
+	SetRotation ( 0004s 0.0 0.0 -0.11 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -0.11 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 -0.11 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.145 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.145 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.145 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.145 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.145 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.09 )
+	SetRotation ( 0003s 0.0 0.0 0.09 )
+	SetRotation ( 0004s 0.0 0.0 0.09 )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 0.09 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.09 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 0.05 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 0.05 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 0.05 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 0.05 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 0.05 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.0 )
+	SetRotation ( 0003s 0.0 0.0 0.0 )
+	SetRotation ( 0004s 0.0 0.0 0.0 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 0.0 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.0 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.04 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.04 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.04 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.04 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.04 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	Wait        ( 0001s )
+	SaveReadPos 
+	SetRotation ( 0002s 0.0 0.0 -0.05 )
+	SetRotation ( 0003s 0.0 0.0 -0.05 )
+	SetRotation ( 0004s 0.0 0.0 -0.05 )
+	SetRotation ( 000Ds 0.0 0.0 -0.05 )
+	SetRotation ( 000Es 0.0 0.0 -0.05 )
+	SetRotation ( 000Fs 0.0 0.0 -0.09 )
+	SetRotation ( 0010s 0.0 0.0 -0.09 )
+	SetRotation ( 0011s 0.0 0.0 -0.09 )
+	SetRotation ( 0012s 0.0 0.0 -0.09 )
+	SetRotation ( 0013s 0.0 0.0 -0.09 )
+	Wait        ( 0001s )
+	RestoreReadPos  
+	End         
+}
+
+#new:ModelAnimation $ModelAnimation_80220D88_11 {
+	DisableMirroring    
+	SetRotation ( 0001s 0.0 0.0 0.0 )
+	SetPosition ( 0001s    0`s    0`s    0`s )
+	SetScale    ( 0001s 1.0 1.0 1.0 )
+	SetRotation ( 0002s 0.0 0.0 0.01 )
+	SetPosition ( 0002s   79`s   47`s    0`s )
+	SetScale    ( 0002s 1.0 1.0 1.0 )
+	SetRotation ( 0003s 0.0 0.0 0.01 )
+	SetPosition ( 0003s   79`s   47`s    0`s )
+	SetScale    ( 0003s 1.0 1.0 1.0 )
+	SetRotation ( 0004s 0.0 0.0 0.01 )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetScale    ( 0004s 1.0 1.0 1.0 )
+	SetRotation ( 0005s 0.0 0.0 31.36 )
+	SetPosition ( 0005s  100`s    9`s  -34`s )
+	SetScale    ( 0005s 1.0 1.0 1.0 )
+	SetRotation ( 0006s 0.0 0.0 31.36 )
+	SetPosition ( 0006s  100`s    9`s  -34`s )
+	SetScale    ( 0006s 1.0 1.0 1.0 )
+	SetRotation ( 0007s 0.0 0.0 31.36 )
+	SetPosition ( 0007s   59`s    9`s  -34`s )
+	SetScale    ( 0007s 1.0 1.0 1.0 )
+	SetRotation ( 0008s 0.0 0.0 31.36 )
+	SetPosition ( 0008s   59`s    9`s  -34`s )
+	SetScale    ( 0008s 1.0 1.0 1.0 )
+	SetRotation ( 0009s 0.0 0.0 31.36 )
+	SetPosition ( 0009s  100`s    9`s   34`s )
+	SetScale    ( 0009s 1.0 1.0 1.0 )
+	SetRotation ( 000As 0.0 0.0 31.36 )
+	SetPosition ( 000As  100`s    9`s   34`s )
+	SetScale    ( 000As 1.0 1.0 1.0 )
+	SetRotation ( 000Bs 0.0 0.0 31.36 )
+	SetPosition ( 000Bs   59`s    9`s   34`s )
+	SetScale    ( 000Bs 1.0 1.0 1.0 )
+	SetRotation ( 000Cs 0.0 0.0 31.36 )
+	SetPosition ( 000Cs   59`s    9`s   34`s )
+	SetScale    ( 000Cs 1.0 1.0 1.0 )
+	SetRotation ( 000Ds 0.0 0.0 0.01 )
+	SetPosition ( 000Ds   77`s   59`s    0`s )
+	SetScale    ( 000Ds 1.0 1.0 1.0 )
+	SetRotation ( 000Es 0.0 0.0 0.01 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetScale    ( 000Es 1.0 1.0 1.0 )
+	SetRotation ( 000Fs 0.0 0.0 -0.03 )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetScale    ( 000Fs 1.0 1.0 1.0 )
+	SetRotation ( 0010s 0.0 0.0 -0.03 )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	SetScale    ( 0010s 1.0 1.0 1.0 )
+	SetRotation ( 0011s 0.0 0.0 -0.03 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetScale    ( 0011s 1.0 1.0 1.0 )
+	SetRotation ( 0012s 0.0 0.0 -0.03 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetScale    ( 0012s 1.0 1.0 1.0 )
+	SetRotation ( 0013s 0.0 0.0 -0.03 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	SetScale    ( 0013s 1.0 1.0 1.0 )
+	SetRotation ( 0014s 0.0 0.0 0.0 )
+	SetPosition ( 0014s   79`s   20`s  -30`s )
+	SetScale    ( 0014s 1.0 1.0 1.0 )
+	SetRotation ( 0015s 0.0 0.0 0.0 )
+	SetPosition ( 0015s   80`s   20`s  -29`s )
+	SetScale    ( 0015s 1.0 1.0 1.0 )
+	SetRotation ( 0016s 0.0 0.0 0.0 )
+	SetPosition ( 0016s   80`s   20`s   30`s )
+	SetScale    ( 0016s 1.0 1.0 1.0 )
+	SetRotation ( 0017s 0.0 0.0 0.0 )
+	SetPosition ( 0017s   79`s   20`s   30`s )
+	SetScale    ( 0017s 1.0 1.0 1.0 )
+	SetRotation ( 0018s 0.0 0.0 0.0 )
+	SetPosition ( 0018s   80`s   15`s    0`s )
+	SetScale    ( 0018s 1.0 1.0 1.0 )
+	Wait        ( 0001s )
+	SetRotation ( 0002s 0.0 0.0 0.0 )
+	SetRotation ( 0003s 0.0 0.0 0.0 )
+	SetRotation ( 0004s 0.0 0.0 0.0 )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -21.675 )
+	SetPosition ( 000Ds   77`s   60`s    0`s )
+	SetRotation ( 000Es 0.0 0.0 0.0 )
+	SetPosition ( 000Es  112`s   47`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.04 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.04 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.04 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.04 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.04 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   64`s   19`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.0 )
+	SetPosition ( 000Es  111`s   48`s    0`s )
+	SetPosition ( 000Fs   97`s   55`s    0`s )
+	SetPosition ( 0010s   97`s   55`s    0`s )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   65`s   19`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -75.0 )
+	SetRotation ( 000Fs 0.0 0.0 -0.03 )
+	SetRotation ( 0010s 0.0 0.0 -0.03 )
+	SetRotation ( 0011s 0.0 0.0 -0.03 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.03 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.03 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   64`s   19`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.01 )
+	SetRotation ( 000Fs 0.0 0.0 -0.04 )
+	SetRotation ( 0010s 0.0 0.0 -0.04 )
+	SetRotation ( 0011s 0.0 0.0 -0.04 )
+	SetPosition ( 0011s   97`s   72`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.04 )
+	SetPosition ( 0012s   97`s   72`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.04 )
+	SetPosition ( 0013s   97`s   72`s    0`s )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   64`s   20`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.035 )
+	SetRotation ( 000Fs 0.0 0.0 -0.035 )
+	SetRotation ( 0010s 0.0 0.0 -0.035 )
+	SetRotation ( 0011s 0.0 0.0 -0.035 )
+	SetPosition ( 0011s   97`s   73`s    0`s )
+	SetRotation ( 0012s 0.0 0.0 -0.035 )
+	SetPosition ( 0012s   97`s   73`s    0`s )
+	SetRotation ( 0013s 0.0 0.0 -0.035 )
+	SetPosition ( 0013s   97`s   73`s    0`s )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   65`s   20`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.13 )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   64`s   23`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.27 )
+	SetPosition ( 000Es  112`s   48`s    0`s )
+	SetRotation ( 000Fs 0.0 0.0 -0.04 )
+	SetPosition ( 000Fs   97`s   54`s    0`s )
+	SetRotation ( 0010s 0.0 0.0 -0.04 )
+	SetPosition ( 0010s   97`s   54`s    0`s )
+	SetRotation ( 0011s 0.0 0.0 -0.04 )
+	SetRotation ( 0012s 0.0 0.0 -0.04 )
+	SetRotation ( 0013s 0.0 0.0 -0.04 )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   65`s   28`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.44 )
+	SetRotation ( 000Fs 0.0 0.0 -0.035 )
+	SetRotation ( 0010s 0.0 0.0 -0.035 )
+	SetRotation ( 0011s 0.0 0.0 -0.035 )
+	SetRotation ( 0012s 0.0 0.0 -0.035 )
+	SetRotation ( 0013s 0.0 0.0 -0.035 )
+	Wait        ( 0001s )
+	SetPosition ( 0004s   65`s   35`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.635 )
+	Wait        ( 0001s )
+	SaveReadPos 
+	SetPosition ( 0004s   65`s   46`s    0`s )
+	SetRotation ( 000Ds 0.0 0.0 -90.83 )
+	Wait        ( 0001s )
+	RestoreReadPos  
+	End         
+}
+

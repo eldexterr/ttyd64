@@ -1,0 +1,224 @@
+% This add patch a bunch of random stuff to behave more like in TTYD
+
+%================
+% Battle - Fight won - Use the same animation as TTYD (stay on the same pos and just use the walking animation)
+%================
+
+% Don't move player
+@Function 18E794 % 8025FEB4
+{
+    NOP
+}
+
+% Don't move Partner
+@Function 18E7A0 % 8025FEC0
+{
+    NOP
+}
+
+% Don't use the "grab cap animation"
+@Function:Battle 18E6F4 % 8025FE14
+{
+    LIO     A2, 00010004 % walking
+    JAL	    ~Func:set_animation
+    RESERVED
+}
+
+
+%================
+% Patching FXs
+%================
+
+% Fire Flower - Fire Balls - Move balls to the opposite side when an enemy use a fire flower against Mario/Partner
+@Function 37F834 % E007E114
+{
+    LIO     AT $37F834
+    JR      AT
+    NOP    
+}
+
+#new:Function $37F834
+{
+    PUSH    T0, T1, T2
+    % Check if player is inside battle
+    LABU    T0, 80074094 % load game state
+    ORI     T1, R0, 1 % Battle
+    BNE     T0, T1, .Skip
+    NOP
+    % Player is inside a battle
+    %
+    % check if actor using the item is an enemy
+    LAW     T1, 800DC068 % battleState
+    ORI     T2, R0, 15 % .BattleState:EnemyMove
+    BNE     T1, T2, .Skip
+    NOP
+    % Attacker is an enemy, throw the balls to the left side
+    LIF     F22, -8.0
+    BEQ     R0, R0, .End
+    RESERVED
+    .Skip
+    % original code
+    LIF     F22, 8.0
+    .End
+    POP     T0, T1, T2
+    % restore vanilla code
+    LUI	    AT, E008
+    LDC1	F20, EC40 (AT)
+    LIO     AT, E007E124
+    JR      AT
+    NOP
+}
+
+% Fire Flower - Fire Balls - Make spread size smaller when an enemy use a fire flower against Mario/Partner
+@Function 37F890 % E007E170
+{
+    LIO     AT $37F890
+    JR      AT
+    NOP
+}
+
+#new:Function $37F890
+{
+    PUSH    T0, T1, T2
+    % Check if player is inside battle
+    LABU    T0, 80074094 % load game state
+    ORI     T1, R0, 1 % Battle
+    BNE     T0, T1, .Skip
+    NOP
+    % Player is inside a battle
+    %
+    % check if actor using the item is an enemy
+    LAW     T1, 800DC068 % battleState
+    ORI     T2, R0, 15 % .BattleState:EnemyMove
+    BEQL    T1, T2, .Skip
+    CLEAR   A0 % Attacker is an enemy
+    .Skip
+    % original code
+    ORI     A0, R0, 50
+    .End
+    POP     T0, T1, T2
+    % restore vanilla code
+    MUL.D	F0, F0, F20
+    ADDIU	S1, S1, 004C
+    LIO     AT, E007E184
+    JR      AT
+    CVT.S.D	F0, F0
+}
+
+% Stats Boost Arrows
+
+% Extend number cap from 9 to 99
+%
+% If amount is above 9 replace the symbol with
+% the 2nd digit
+%
+% from func_E00AC2A4 % ~func:update_fx56
+@Function 3AF524 % E00AC704
+{
+    LIO     AT, $E00AC704
+    JR      AT
+    NOP
+}
+
+#new:Function $E00AC704
+{
+    PUSH    T0, T1, T2
+    % S7 = Amount (signed)
+    % A2 = Amount
+    %
+    % check if amount from the arrow is >= 10`
+    SLTIU   T0, A2, 10`
+    BNE     T0, R0, .End
+    NOP
+    % Get left digit
+    COPY    T1, A2
+    ORI     T0, R0, 10`
+    DIVU    T1, T0
+    MFLO    T1 % T1 = left digit
+    % get new number address
+    LIO     V0, 66666667
+    MULT	T1, V0
+    SRA	    V0, T1, 31`
+    MFHI	T2
+    SRA	    V1, T2, 2
+    SUBU	V1, V1, V0
+    SLL	    V0, V1, 2
+    ADDU	V0, V0, V1
+    SLL	    V0, V0, 1
+    SUBU	V0, T1, V0
+    SLL	    V0, V0, 2
+    LUI	    V1, E00B
+    ADDU	V1, V1, V0
+    LW	    V1, C7C8 (V1) % load new numbers
+    .End
+    POP     T0, T1, T2
+    % restore vanilla code
+    SW	    V1, 0014 (A1) % save symbol
+    LUI	    A2, D838
+    LIO     A0, 8009A66C
+    LIO     AT, E00AC714
+    JR      AT
+    NOP
+}
+
+%========================
+% Disable Focus mechanic
+
+% Disable Focus from the Star Powers list
+@Function 41B250 % 802A64C0
+{
+    SB	R0, 01F6 (S6)
+}
+
+%================
+% Overworld - ~Func:add_badge
+%================
+
+
+@Function 800E77B4
+{
+    J   $Function_BadgeInventoryException
+}
+
+% If player is in the overworld and it has reached the badges cap
+% show a warning and throw the badge.
+%
+% A0=badgeID
+#new:Function $Function_BadgeInventoryException
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V1, S0
+    LABU    A1, 80074094 % game mode (00=overworld)
+    BNE     A1, R0, .End
+    NOP
+    ORI     A0, R0, 107 % works along with Battle_MessageBox_NewIndexes.patch
+    JAL     ~Func:show_merlee_message
+    ORI     A1, R0, 60`
+    % drop item entity
+    JAL     $add_badge_to_sold_inventory % add item in sold inventory
+    LW      A0, 1C (SP) % POP A0, itemID
+    LIO     V0, 800740BC % playerPos
+    LW      A1, 0 (V0) % x
+    LW      A2, 4 (V0) % y
+    LW      A3, 8 (V0) % z
+    ORI     V0, R0, 17 % .ItemSpawnMode:Toss_Fade1
+    SW      V0, 10 (SP)
+    JAL     ~Func:make_item_entity_nodelay
+    SW      R0, 14 (SP) % Don't use a pickupFlag
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V1, S0
+    % restore vanilla code
+    J       800E77B8
+    ADDI    V0, R0, -1 % Return a -1 when there's no more badge slots available instead of zero. (Needed by Parakarry's Parcel Check)
+}
+
+%======================
+% Player First Strikes
+%======================
+
+% Make All or Nothing compatible with the Action Commands from Player's First Strikes
+%
+% ~Func:calc_player_damage_enemy
+@Function:Battle 802721DC
+{
+NOP
+}

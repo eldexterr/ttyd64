@@ -1,0 +1,786 @@
+#define .Npc:Boo1 00000001
+#define .Npc:Boo2 00000002
+#define .Npc:Boo3 00000003
+#define .Npc:Boo4 00000004
+#define .Npc:Boo5 00000005
+#define .Npc:Boo6 00000006
+#define .Npc:Boo7 00000007
+#define .Npc:Boo8 00000008
+#define .Npc:Boo9 00000009
+
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:BowsersCastle
+	Call  SetCamPerspective  ( .Cam:Default 00000003 0000001E 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+	Exec  $Script_SetupMusic
+	Exec  $Script_SetupTexturePan
+	Exec  $Script_EnterMap
+    Call  MakeNpcs ( .False $NpcGroupList_kpa137 )
+    Set   *Var0 $Script_CreateExitTriggers
+    Exec  EnterWalk
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+    If *GF_KPA137_PuzzleSolved == .False
+        Bind  $Script_Tomb1 .Trigger:WallPressA ~Collider:tTrigger_1 00000001 00000000
+        Bind  $Script_Tomb2 .Trigger:WallPressA ~Collider:tTrigger_2 00000001 00000000
+        Bind  $Script_Tomb3 .Trigger:WallPressA ~Collider:tTrigger_3 00000001 00000000
+        Bind  $Script_Tomb4 .Trigger:WallPressA ~Collider:tTrigger_4 00000001 00000000
+        Bind  $Script_Tomb5 .Trigger:WallPressA ~Collider:tTrigger_5 00000001 00000000
+        Bind  $Script_Tomb6 .Trigger:WallPressA ~Collider:tTrigger_6 00000001 00000000
+        Bind  $Script_Tomb7 .Trigger:WallPressA ~Collider:tTrigger_7 00000001 00000000
+        Bind  $Script_Tomb8 .Trigger:WallPressA ~Collider:tTrigger_8 00000001 00000000
+        Bind  $Script_Tomb9 .Trigger:WallPressA ~Collider:tTrigger_9 00000001 00000000
+    Else
+        Call    MakeItemEntity ( .Item:DefendPlusA ~Vec3d:ItemPos .ItemSpawnMode:Fall_NeverVanish *GF_KPA137_Reward )
+    EndIf
+	Return
+	End
+}
+
+#new:Script $Script_Tomb1
+{
+    Set  *Var0 1
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb2
+{
+    Set  *Var0 2
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb3
+{
+    Set  *Var0 3
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb4
+{
+    Set  *Var0 4
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb5
+{
+    Set  *Var0 5
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb6
+{
+    Set  *Var0 6
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb7
+{
+    Set  *Var0 7
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb8
+{
+    Set  *Var0 8
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Script $Script_Tomb9
+{
+    Set  *Var0 9
+    Exec $Script_Tombstone
+    Return
+    End
+}
+
+#new:Unknown $Data_Solution
+{
+    00000002 00000006 00000004 FFFFFFFF
+}
+
+% Base code grabbed from my omo_18 map ($Script_InputBox)
+#new:Script $Script_Tombstone
+{
+    If *GF_KPA137_PuzzleSolved == .True % minigame completed
+        Return
+    EndIf
+    Set     *Var8 *Var0
+    Set     *Var0 *Var8
+    Set     *Var1 10`
+    Call    DisablePlayerInput ( .True )
+    UseIntBuffer $Data_Solution
+    Set *Var1 *MapVar[1]
+    GetIntN *Var0 *Var1
+    If *Var0 == *Var8 % correct tomb
+        % check if this one was the last tomb
+        Add *Var1 1
+        GetIntN *Var0 *Var1
+        If *Var0 == -1 % puzzle completed!
+            ExecWait $Script_Boos_BooAppears
+            Set *MapVar[1] 0
+            Add *GF_KPA137_PuzzleSolved .True
+            Call PlaySound ( 000B )
+            ExecWait $Script_Boos_Completed
+        Else
+            ExecWait $Script_Boos_BooAppears
+            Add *MapVar[1] 1
+        EndIf
+    Else % Wrong
+        Call PlaySound ( 021D ) % error
+        ExecWait $Script_Boos_Wrong
+        Set *MapVar[1] 0
+    EndIf
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+#new:Script $Script_Boos_BooAppears
+{
+    Call    PlaySound ( 200F )
+    UseIntBuffer $Data_Solution
+    Set *Var1 *MapVar[1]
+    GetIntN *Var0 *Var1
+    Switch *Var0
+        Case == 1
+            Set *Var3 .Npc:Boo1
+            Set *Var4 ~Collider:tTrigger_1
+        Case == 2
+            Set *Var3 .Npc:Boo2
+            Set *Var4 ~Collider:tTrigger_2
+        Case == 3
+            Set *Var3 .Npc:Boo3
+            Set *Var4 ~Collider:tTrigger_3
+        Case == 4
+            Set *Var3 .Npc:Boo4
+            Set *Var4 ~Collider:tTrigger_4
+        Case == 5
+            Set *Var3 .Npc:Boo5
+            Set *Var4 ~Collider:tTrigger_5
+        Case == 6
+            Set *Var3 .Npc:Boo6
+            Set *Var4 ~Collider:tTrigger_6
+        Case == 7
+            Set *Var3 .Npc:Boo7
+            Set *Var4 ~Collider:tTrigger_7
+        Case == 8
+            Set *Var3 .Npc:Boo8
+            Set *Var4 ~Collider:tTrigger_8
+        Case == 9
+            Set *Var3 .Npc:Boo9
+            Set *Var4 ~Collider:tTrigger_9
+    EndSwitch
+    Call    SetNpcAnimation ( *Var3 00950005 )
+    Call    GetColliderCenter ( *Var4 )
+    Add     *Var1 15` % y
+    Call    SetNpcPos ( *Var3 *Var0 *Var1 *Var2 )
+    % Boo appear
+    Set *Var1 0
+    Loop 10` % Boos fade
+        Add     *Var1  24`
+        Call    802CFD30 ( *Var3 7 *Var1 .False .False .False ) % set opacity
+        Wait    1
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_Boos_Completed
+{
+    Call    SetNpcAnimation ( .Npc:Boo1 00950008 ) % scream
+    Call    SetNpcAnimation ( .Npc:Boo2 00950008 )
+    Call    SetNpcAnimation ( .Npc:Boo3 00950008 )
+    Call    SetNpcAnimation ( .Npc:Boo4 00950008 )
+    Call    SetNpcAnimation ( .Npc:Boo5 00950008 )
+    Call    SetNpcAnimation ( .Npc:Boo6 00950008 )
+    Call    SetNpcAnimation ( .Npc:Boo7 00950008 )
+    Call    SetNpcAnimation ( .Npc:Boo8 00950008 )
+    Call    SetNpcAnimation ( .Npc:Boo9 00950008 )
+    Wait    25`
+    ExecWait $Script_Boos_DissapearAllBoos
+    Wait    10`
+    Set     *Var0 ~PosXd:ItemPos
+    Set     *Var1 ~PosYd:ItemPos
+    Set     *Var2 ~PosZd:ItemPos
+    Add     *Var1 60` % y
+    Call    PlaySound  ( .Sound:SmokeBurst )
+	Add		*Var2 1 % z
+	Call    PlayEffect ( ~FX:BigSmokePuff *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+    Sub		*Var2 1 % z
+    Call    MakeItemEntity ( .Item:DefendPlusA *Var0 *Var1 *Var2 .ItemSpawnMode:Fall_NeverVanish *GF_KPA137_Reward )
+    Wait    20`
+    Return
+    End
+}
+
+#new:Script $Script_Boos_Wrong
+{
+    If *MapVar[1] != .False % There's at least one boo
+        Call    PlaySound ( 200E )
+    EndIf
+    Call    SetNpcAnimation ( .Npc:Boo1 00950007 ) % cover eyes
+    Call    SetNpcAnimation ( .Npc:Boo2 00950007 )
+    Call    SetNpcAnimation ( .Npc:Boo3 00950007 )
+    Call    SetNpcAnimation ( .Npc:Boo4 00950007 )
+    Call    SetNpcAnimation ( .Npc:Boo5 00950007 )
+    Call    SetNpcAnimation ( .Npc:Boo6 00950007 )
+    Call    SetNpcAnimation ( .Npc:Boo7 00950007 )
+    Call    SetNpcAnimation ( .Npc:Boo8 00950007 )
+    Call    SetNpcAnimation ( .Npc:Boo9 00950007 )
+    Exec    $Script_Boos_DissapearAllBoos
+    Return
+    End
+}
+
+#new:Script $Script_Boos_DissapearAllBoos
+{
+    % Boos dissapear
+    Set *Var1 240`
+    Loop 10` % Boos fade
+        Sub     *Var1  24`
+        Call    802CFD30 ( .Npc:Boo1 7 *Var1 .False .False .False ) % set opacity
+        Call    802CFD30 ( .Npc:Boo2 7 *Var1 .False .False .False )
+        Call    802CFD30 ( .Npc:Boo3 7 *Var1 .False .False .False )
+        Call    802CFD30 ( .Npc:Boo4 7 *Var1 .False .False .False )
+        Call    802CFD30 ( .Npc:Boo5 7 *Var1 .False .False .False )
+        Call    802CFD30 ( .Npc:Boo6 7 *Var1 .False .False .False )
+        Call    802CFD30 ( .Npc:Boo7 7 *Var1 .False .False .False )
+        Call    802CFD30 ( .Npc:Boo8 7 *Var1 .False .False .False )
+        Call    802CFD30 ( .Npc:Boo9 7 *Var1 .False .False .False )
+        Wait    1
+    EndLoop
+    Call    SetNpcPos ( .Npc:Boo1 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo2 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo3 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo4 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo5 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo6 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo7 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo8 0 -1000` 0 )
+    Call    SetNpcPos ( .Npc:Boo9 0 -1000` 0 )
+    Return
+    End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "kpa_03" 00000002 )
+    Wait  100`
+    Return
+    End
+}
+
+%% NPCs
+
+#new:NpcGroupList $NpcGroupList_kpa137
+{
+	00000009 $NpcGroup_Boos 00000000
+	00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Boos
+{
+	.Npc:Boo1 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo2 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo3 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo4 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo5 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo6 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo7 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo8 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+    %
+    .Npc:Boo9 $NpcSettings_Generic ~Vec3f:NPC_Boo
+	00110D09 $Script_Init_NPC_Boo 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Boo
+	~AnimationTable:NPC_Boo
+	00000000 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Generic
+{
+	00000000 001E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_Init_NPC_Boo
+{
+    Return
+    End
+}
+
+%% Panner
+
+#new:Script $Script_TexturePan_Update
+{
+    SetGroup  00000000
+    If  *Var[5]  ==  00000001
+        If  *Var[6]  ==  00000001
+            If  *Var[7]  ==  00000001
+                If  *Var[8]  ==  00000001
+                    Call  $Function_TexturePan_Simple ( )
+                    Return
+                EndIf
+            EndIf
+        EndIf
+    EndIf
+    Call  $Function_TexturePan_Complex ( )
+    Return
+    End
+}
+
+#new:Function $Function_TexturePan_Simple
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    SW          RA, 14 (SP)
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o30
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o40
+    ADDU        V0, V1, V0
+    .o30
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o44
+    SUBU        V0, V1, A0
+    .o40
+    SW          V0, A8 (S0)
+    .o44
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o64
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o74
+    ADDU        V0, V1, V0
+    .o64
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o78
+    SUBU        V0, V1, A0
+    .o74
+    SW          V0, AC (S0)
+    .o78
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o98
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA8
+    ADDU        V0, V1, V0
+    .o98
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oAC
+    SUBU        V0, V1, A0
+    .oA8
+    SW          V0, B0 (S0)
+    .oAC
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oCC
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oDC
+    ADDU        V0, V1, V0
+    .oCC
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE0
+    SUBU        V0, V1, A0
+    .oDC
+    SW          V0, B4 (S0)
+    .oE0
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+#new:Function $Function_TexturePan_Complex
+{
+    ADDIU       SP, SP, FFE8
+    SW          S0, 10 (SP)
+    COPY        S0, A0
+    BEQ         A1, R0, .o24
+    SW          RA, 14 (SP)
+    SW          R0, 70 (S0)
+    SW          R0, 74 (S0)
+    SW          R0, 78 (S0)
+    SW          R0, 7C (S0)
+    .o24
+    LW          V0, 70 (S0)
+    BNE         V0, R0, .o64
+    NOP
+    LW          V1, A8 (S0)
+    LW          V0, 88 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o50
+    SW          V1, A8 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o60
+    ADDU        V0, V1, V0
+    .o50
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o64
+    SUBU        V0, V1, A0
+    .o60
+    SW          V0, A8 (S0)
+    .o64
+    LW          V0, 74 (S0)
+    BNE         V0, R0, .oA4
+    NOP
+    LW          V1, AC (S0)
+    LW          V0, 8C (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o90
+    SW          V1, AC (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oA0
+    ADDU        V0, V1, V0
+    .o90
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oA4
+    SUBU        V0, V1, A0
+    .oA0
+    SW          V0, AC (S0)
+    .oA4
+    LW          V0, 78 (S0)
+    BNE         V0, R0, .oE4
+    NOP
+    LW          V1, B0 (S0)
+    LW          V0, 90 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .oD0
+    SW          V1, B0 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .oE0
+    ADDU        V0, V1, V0
+    .oD0
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .oE4
+    SUBU        V0, V1, A0
+    .oE0
+    SW          V0, B0 (S0)
+    .oE4
+    LW          V0, 7C (S0)
+    BNE         V0, R0, .o124
+    NOP
+    LW          V1, B4 (S0)
+    LW          V0, 94 (S0)
+    ADDU        V1, V1, V0
+    BGEZ        V1, .o110
+    SW          V1, B4 (S0)
+    LUI         V0, 2
+    BEQ         R0, R0, .o120
+    ADDU        V0, V1, V0
+    .o110
+    LUI         A0, 2
+    SLT         V0, A0, V1
+    BEQ         V0, R0, .o124
+    SUBU        V0, V1, A0
+    .o120
+    SW          V0, B4 (S0)
+    .o124
+    LW          A0, 84 (S0)
+    JAL         8011BC1C
+    LW          A1, A8 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC34
+    LW          A1, AC (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC4C
+    LW          A1, B0 (S0)
+    LW          A0, 84 (S0)
+    JAL         8011BC64
+    LW          A1, B4 (S0)
+    LW          V0, 70 (S0)
+    LW          V1, 78 (S0)
+    LW          A0, 98 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 70 (S0)
+    LW          V0, 74 (S0)
+    ADDIU       V1, V1, 1
+    SW          V1, 78 (S0)
+    LW          V1, 70 (S0)
+    ADDIU       V0, V0, 1
+    SW          V0, 74 (S0)
+    LW          V0, 7C (S0)
+    SLT         V1, V1, A0
+    ADDIU       V0, V0, 1
+    BNE         V1, R0, .o198
+    SW          V0, 7C (S0)
+    SW          R0, 70 (S0)
+    .o198
+    LW          V0, 74 (S0)
+    LW          V1, 9C (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1AC
+    SW          R0, 74 (S0)
+    .o1AC
+    LW          V0, 78 (S0)
+    LW          V1, A0 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1C0
+    SW          R0, 78 (S0)
+    .o1C0
+    LW          V0, 7C (S0)
+    LW          V1, A4 (S0)
+    SLT         V0, V0, V1
+    BEQL        V0, R0, .o1D4
+    SW          R0, 7C (S0)
+    .o1D4
+    LW          RA, 14 (SP)
+    LW          S0, 10 (SP)
+    CLEAR       V0
+    JR          RA
+    ADDIU       SP, SP, 18
+}
+
+#new:Script $Script_SetupTexturePan
+{
+	Thread
+		Set  *Var[0] 0
+		Set  *Var[1] FFFFFE70
+		Set  *Var[2] 0
+		Set  *Var[3] FFFFFCE0
+		Set  *Var[4] 0
+		Set  *Var[5] 1
+		Set  *Var[6] 0
+		Set  *Var[7] 1
+		Set  *Var[8] 0
+		Set  *Var[9] 0
+		Set  *Var[A] 0
+		Set  *Var[B] 0
+		Set  *Var[C] 0
+		Exec $Script_TexturePan_Update
+	EndThread
+	Return
+	End
+}
+
+%============
+% NPCs Data
+%============
+
+#new:NpcGroupList $NpcGroupList_arn22
+{
+00000009 $NpcGroup_Boo 00000000
+00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Boo
+{
+	00000001 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000002 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000003 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000004 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000005 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000006 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000007 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000008 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+    %
+    00000009 $NPCSettings_NPC ~Vec3f:NPC_Boo
+    00440C0D 00000000 00000000 00000000 0000010E
+    ~NoDrops
+    ~Movement:NPC_Boo
+    ~AnimationTable:NPC_Boo
+    00000001 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NPCSettings_NPC
+{
+00000000 00180028 00000000 00000000 00000000 00000000 00000000 00000000 
+00000000 00000000 000D0000 
+}
+
+%==========
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+How kind of Bowser that he would[BR]
+have ordered making a cemetery for[BR]
+his troops, the dead also need to[BR]
+rest you know?
+[Wait][End]      
+}

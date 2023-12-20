@@ -1,0 +1,2872 @@
+% This file change the Map tab from the pause menu to the Extra tab
+
+%============================
+% Data used on this file
+%============================
+
+#new:Data $MapTab_GlobalXYOffset
+{
+    00000000 % X
+    00000000 % Y
+}
+
+% Cursor main data
+#new:Data $ExtraTab_CursorData
+{
+/% 0x00 %/  00b % Inside Extra Tab (bool)
+/% 0x01 %/  00b % Current Menu
+/% 0x02 %/  00b % Current Sub-Menu
+/% 0x03 %/  00b % Current Page
+
+/% 0x04 %/  00b % Cursor Pos - X
+/% 0x05 %/  00b % Cursor Pos - Y
+/% 0x06 %/  00b % Current Menu elements
+/% 0x07 %/  00b % Current Menu pages
+
+/% 0x08 %/  00b % current menu type, 0 = Normal, 1=Settings, 2=Info
+/% 0x09 %/  00b % Menu state / 00=Normal, 01=Fading, 02=Unfading
+/% 0x0A %/  00b % global opacity
+/% 0x0B %/  00b % cooldown timer (needed when entering to the extra tab)
+} % 0x0C bytes long
+
+% Menu Types
+%
+% 00=Normal
+% 01=Settings (Show elements with multiple options)
+% 02=Info (Only show information)
+
+% Data for each menu
+#new:Data $ExtraTab_MenusData
+{
+    $ExtraTab_Menu0_MenuData % Menu0 data pointer
+    .False % Menu1 data pointer
+    $ExtraTab_Stats_MenuData % Menu2
+    .False % Menu3
+    $ExtraTab_Settings_MenuData % Menu4 data pointer
+    FFFFFFFF
+}
+
+% Menu0 - Data for each subMenu
+#new:Data $ExtraTab_Menu0_MenuData
+{
+    $ExtraTab_Menu0_MenuData_SubMenu0 % Menu0 - SubMenu0 data
+    FFFFFFFF
+}
+
+#new:Data $ExtraTab_Stats_MenuData
+{
+    00b % current page
+    00b % menu pages
+    0000s % unused
+}
+
+#export:Data $ExtraTab_Menu0_MenuData_SubMenu0
+{
+    %=============
+    % Menu1 Data % Map
+    %=============
+    /% 0x00 %/  01b % menuID
+    /% 0x01 %/  00b % subMenuID
+    /% 0x02 %/  00b % unused
+    /% 0x03 %/  00b % unused
+    /% 0x04 %/  00b % menu type
+    /% 0x05 %/  00b % last element from this page (bool)
+    /% 0x06 %/  0000s % iconIndex
+    /% 0x08 %/  $String_Menu0_Map_Title % stringID
+    /% 0x0C %/  $String_Menu0_Map_Description % descriptionString
+    %=============
+    % Menu2 Data % Tattle Log
+    %=============
+    02b % menuID
+    00b % subMenuID
+    00b % unused
+    00b % unused
+    00b % menu type
+    00b % last element from this page (bool)
+    0000s % iconIndex
+    $String_Menu0_TattleLog_Title % stringID
+    $String_Menu0_TattleLog_Description % descriptionString
+    %=============
+    % Menu3 Data % Stats
+    %=============
+    03b % menuID
+    00b % subMenuID
+    00b % unused
+    00b % unused
+    02b % menu type
+    00b % last element from this page (bool)
+    0000s % iconIndex
+    $String_Menu0_Stats_Title % stringID
+    $String_Menu0_Stats_Description % descriptionString
+    %=============
+    % Menu4 Data % Settings
+    %=============
+    04b % menuID
+    00b % subMenuID
+    00b % unused
+    00b % unused
+    00b % menu type
+    00b % last element from this page (bool)
+    0000s % iconIndex
+    $String_Menu0_Settings_Title % stringID
+    $String_Menu0_Settings_Description % descriptionString
+    FFFFFFFF
+    % cursor data from previous menu
+    00b % menuID
+    00b % subMenuID
+    00b % last menu page
+    00b % last cursor pos - x
+    00b % last cursor pos - y
+    00b % menu type
+    0000s % unused
+}
+
+% Settings - Data for each subMenu
+#new:Data $ExtraTab_Settings_MenuData
+{
+    $ExtraTab_Settings_MenuData_SubMenu0 % Settings Menu - SubMenu0 data
+    $ExtraTab_Settings_MenuData_General
+    $ExtraTab_Settings_MenuData_QoL
+    $ExtraTab_Settings_MenuData_Audio
+    $ExtraTab_Settings_MenuData_About
+    FFFFFFFF
+}
+
+#new:Data $ExtraTab_Settings_MenuData_SubMenu0
+{
+    %=============
+    % Element #1 % General
+    %=============
+    04b % menuID
+    01b % subMenuID
+    00b % unused
+    00b % unused
+    01b % menu type
+    00b % last element from this page (bool)
+    0000s % iconIndex
+    $String_Settings_General_Title % stringID
+    $String_Settings_General_Description % descriptionString
+    %=============
+    % Element #2 % QoL
+    %=============
+    04b % menuID
+    02b % subMenuID
+    00b % unused
+    00b % unused
+    01b % menu type
+    00b % last element from this page (bool)
+    0000s % iconIndex
+    $String_Settings_QoL_Title % stringID
+    $String_Settings_QoL_Description % descriptionString
+    %=============
+    % Element #3 % Audio
+    %=============
+    04b % menuID
+    03b % subMenuID
+    00b % unused
+    00b % unused
+    01b % menu type
+    00b % last element from this page (bool)
+    0000s % iconIndex
+    $String_Settings_Audio_Title % stringID
+    $String_Settings_Audio_Description % descriptionString
+    %=============
+    % Element #4 % About
+    %=============
+    04b % menuID
+    04b % subMenuID
+    00b % unused
+    00b % unused
+    02b % menu type
+    00b % last element from this page (bool)
+    0000s % iconIndex
+    $String_Settings_About_Title % stringID
+    $String_Settings_About_Description % descriptionString
+    %
+    % subMenu 0x05 = Bind Battle Shortcuts
+    %
+    FFFFFFFF
+    % cursor data from previous menu
+    00b % menuID
+    00b % subMenuID
+    00b % last menu page
+    00b % last cursor pos - x
+    00b % last cursor pos - y
+    00b % menu type
+    0000s % unused
+}
+
+#new:Data $ExtraTab_Settings_MenuData_General
+{
+    %=============
+    % Difficulty
+    %=============
+    $String_Settings_General_Difficulty_Title % stringID
+    02b % settings type, 0=bool, 1=multiple, 2=slider, 3=open new menu
+    03b % settings arg0 % slider size
+    00b % settings arg1
+    00b % settings arg2 % unused
+    *Byte_Settings_Difficulty % globalFlag/byte
+    $ExtraTab_Settings_OptionsData_General_Difficulty % optionsData
+    %=============
+    % Stylishes Fanfare
+    %=============
+    $String_Settings_General_Stylish_Title % stringID
+    00b % settings type, 0=bool, 1=multiple, 2=slider, 3=open new menu
+    00b % settings arg0
+    00b % settings arg1
+    00b % settings arg2 % unused
+    *Flag_DisableFanfare % globalFlag/byte
+    $ExtraTab_Settings_OptionsData_General_Fanfare % optionsData
+    FFFFFFFF
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_General_Difficulty
+{
+    .False $String_Settings_General_Difficulty_Easy_Description % stringID descriptionString
+    .False $String_Settings_General_Difficulty_Normal_Description
+    .False $String_Settings_General_Difficulty_Hard_Description
+    .False $String_Settings_General_Difficulty_MQ_Description
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_General_Fanfare
+{
+    $String_Settings_Yes $String_Settings_General_Stylish_Description % stringID descriptionString
+    $String_Settings_No $String_Settings_General_Stylish_Description
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_General_Superguard
+{
+    $String_Settings_TTYD $String_Settings_General_Superguard_Description_TTYD
+    $String_Settings_Bugfables $String_Settings_General_Superguard_Description_Bugfables
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_General_Checkpoints
+{
+    $String_Settings_Yes $String_Settings_General_Checkpoints_Description_Checkpoints_ON
+    $String_Settings_No $String_Settings_General_Checkpoints_Description_Checkpoints_OFF
+}
+
+%================
+% QOL Menu Data
+%================
+
+#new:Data $ExtraTab_Settings_MenuData_QoL
+{
+    %=============
+    % FFWD
+    %=============
+    $String_Settings_QoL_FFWD_Title % stringID
+    00b % settings type, 0=bool, 1=multiple, 2=slider, 3=open new menu
+    00b % settings arg0
+    00b % settings arg1
+    00b % settings arg2 % unused
+    *Flag_Settings_FFWD % globalFlag/byte
+    $ExtraTab_Settings_OptionsData_QoL_FFWD % optionsData
+    %=============
+    % Battle Shortcuts
+    %=============
+    $String_Settings_QoL_Shortcuts_Title % stringID
+    00b % settings type, 0=bool, 1=multiple, 2=slider, 3=open new menu
+    00b % settings arg0
+    00b % settings arg1
+    00b % settings arg2 % unused
+    *Flag_DisableShortcuts % globalFlag/byte
+    $ExtraTab_Settings_OptionsData_QoL_Shortcuts % optionsData
+    FFFFFFFF
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_QoL_FFWD
+{
+    $String_Settings_Yes $String_Settings_QoL_FFWD_Description % stringID descriptionString
+    $String_Settings_No $String_Settings_QoL_FFWD_Description
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_QoL_Quickswap
+{
+    $String_Settings_Yes $String_Settings_QoL_Quickswap_Description
+    $String_Settings_No $String_Settings_QoL_Quickswap_Description
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_QoL_Shortcuts
+{
+    $String_Settings_Yes $String_Settings_QoL_Shortcuts_Description
+    $String_Settings_No $String_Settings_QoL_Shortcuts_Description
+}
+
+%================
+% Audio Menu
+%================
+
+#new:Data $ExtraTab_Settings_MenuData_Audio
+{
+    
+    %=============
+    % Original Soundtrack
+    %=============
+    $String_Settings_Audio_OST_Title % stringID
+    00b % settings type, 0=bool, 1=multiple, 2=slider, 3=open new menu
+    00b % settings arg0
+    00b % settings arg1
+    00b % settings arg2 % unused
+    *Flag_Settings_OST % globalFlag/byte
+    $ExtraTab_Settings_OptionsData_Audio_OST % stringDescription/optionsData
+    % BGM Volume
+    %=============
+    $String_Settings_Audio_BGM_Title % stringID
+    02b % settings type, 0=bool, 1=multiple, 2=slider, 3=open new menu
+    00b % settings arg0 % slider pos
+    08b % settings arg1 % cap
+    00b % settings arg2 % unused
+    *Byte_Settings_BGM % globalFlag/byte
+    $ExtraTab_Settings_OptionsData_Audio_BGM % stringDescription/optionsData
+    FFFFFFFF
+}
+
+#new:Data $ExtraTab_Settings_MenuData_About
+{
+    % Data structure for only info menus
+    0000s % unused
+    00b % current page
+    00b % menu pages
+    00000000 % unused
+    .False % unused
+    $String_Settings_About_Description % descriptionString
+    FFFFFFFF
+    % cursor data from previous menu
+    00b % menuID
+    00b % subMenuID
+    00b % last menu page
+    00b % last cursor pos - x
+    00b % last cursor pos - y
+    00b % menu type
+    0000s % unused
+}
+
+%%%%%%%%%%
+
+/% Init Extra Tab data when the pause menu get initializated
+%
+% From ~Func:state_step_pause
+@Hook FE94 % 80034A94
+{
+PUSH    RA, T0, T1, T2
+JAL	    ~Func:allocate_hit_tables
+SB      S1, 0070 (V0)
+LIO     T0, $ExtraTab_CursorData
+SW      R0, 0 (T0)
+SW      R0, 4 (T0)
+SW      R0, 8 (T0)
+ORI     T1, R0, FF
+SB      T1, A (T0) % save opacity
+% clear cursor memory for all menus
+LIO     T0, $ExtraTab_MenusData
+LW      T1, 0 (T0)
+% UNFINISHED
+POP     RA, T0, T1, T2
+J       80034A9C
+NOP
+}%/
+
+%===================================
+% Draw content inside the Extra Tab
+%===================================
+
+/% Change Map Tab main function
+@Data 1438DC % 8025059C
+{
+    $pause_extra_draw_contents
+}%/
+
+#new:Function:Pause $pause_extra_draw_contents
+{
+    ADDI    GP, SP, -A0 % needed by ~Func:pause_map_draw_contents
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    % check if the cursor is inside the extra tab
+    LIO     A0, $ExtraTab_CursorData
+    LABU    V0, 802700D4 % Current Opened tab, 00=None, 06=Extra Tab
+    ORI     V1, R0, 6
+    BEQ     V0, V1, .SetInsideTab_True
+    NOP
+    .SetInsideTab_False
+    SB      R0, 0 (A0) % Inside Extra Tab (bool)
+    BEQ     R0, R0, .SetInsideTab_End
+    SB      R0, B (A0) % cool down timer
+    .SetInsideTab_True
+    ORI     V0, R0, 1
+    SB      V0, 0 (A0) % Inside Extra Tab (bool)
+    % update cooldown timer
+    LBU     V0, B (A0) % load timer
+    SLTIU   V1, V0, 2
+    BEQ     V1, R0, .SetInsideTab_End
+    NOP
+    ADDIU   V0, V0, 1
+    SB      V0, B (A0) % save timer
+    .SetInsideTab_End
+    SAB     R0, 8015A290 % disable map's little purple box
+    % update global x/y pos if the menu is doing the
+    % flipping animation
+    LABU    A0, 8015A28C % Map Tab animation frame
+    % >= 5, Menu is static
+    SLTIU   A1, A0, 6
+    CLEAR   A0 % x
+    BEQ     A1, R0, .UpdateGlobalOffsets
+    CLEAR   A1 % y
+    % Menu is being flipped
+    ADDI    A0, R0, -14` % x
+    ADDI    A1, R0, -35` % y
+    .UpdateGlobalOffsets
+    LIO     A2, $MapTab_GlobalXYOffset
+    SW      A0, 0 (A2) % x
+    SW      A1, 4 (A2) % y
+    LIO     S0, $ExtraTab_CursorData
+    % get menu data
+    LBU     V0, 1 (S0) % load current menu
+    LIO     V1, $ExtraTab_MenusData
+    SLL     V0, V0, 2
+    ADDU    S1, V0, V1 % get menu's data
+    LW      S1, 0 (S1)
+    % get sub menu data
+    LBU     V1, 2 (S0) % load subMenu
+    SLL     V1, V1, 2
+    ADDU    S1, S1, V1 % get subMenu data
+    LW      S1, 0 (S1)
+    % Update fading animations
+    LBU     V0, 9 (S0) % get menu state
+    LBU     A3, A (S0) % get global opacity
+    BEQ     V0, R0, .MenuState_EndFadeAnimations
+    NOP
+    ORI     V1, R0, 1
+    BNE     V0, V1, .MenuState_Unfade
+    NOP
+    %========================
+    .MenuState_Fade
+    SUBI    A3, A3, 50 % "animation speed"
+    BLEZL   A3, .FadeMenu_ForceCap
+    CLEAR   A3
+    .FadeMenu_ForceCap
+    SB      A3, A (S0) % save opacity
+    BNE     A3, R0, .MenuState_EndFadeAnimations
+    NOP
+    % fade animation has ended
+    %
+    %=================
+    % Do menu command
+    %=================
+    LBU     V1, C (S0) % UpdateMenu next command
+    % 00=Go to previous page
+    % 01=Go to next page
+    % 02=Enter menu
+    % 03=Go back
+    % 04=Quit pause menu % unused
+    %
+    % 00 = Go to previous page
+    LBU     A0, 3 (S0) % get current page
+    SUBI    V0, A0, 1
+    BNE    V1, R0, .CheckMenuCommand_01
+    NOP
+    SB      R0, 4 (S0) % cursor pos - x
+    SB      R0, 5 (S0) % cursor pos - y
+    BEQ     R0, R0, .DoMenuCommand
+    SB      V0, 3 (S0) % update current page
+    % 01 = Go to next page
+    .CheckMenuCommand_01
+    ORI     A1, R0, 1
+    LBU     A0, 3 (S0) % get current page
+    ADDI    V0, A0, 1
+    BNE     V1, A1, .CheckMenuCommand_02
+    NOP
+    SB      R0, 4 (S0) % cursor pos - x
+    SB      R0, 5 (S0) % cursor pos - y
+    BEQ     R0, R0, .DoMenuCommand
+    SB      V0, 3 (S0) % update current page
+    % 02 = Enter menu
+    .CheckMenuCommand_02
+    ORI     A1, R0, 2
+    LBU     A0, 1 (S0) % get current menu
+    BNE     V1, A1, .CheckMenuCommand_03
+    NOP
+    % S1 = subMenuData
+    JAL     $ExtraTab_GetCurrentPageData
+    COPY    A0, S1
+    % get element data
+    LBU     A0, 5 (S0) % get cursor pos - y
+    ORI     A1, R0, 10 % 0x10 because each element uses 0x0F bytes
+    MULT    A0, A1
+    MFLO    A0
+    ADDU    A2, V0, A0
+    LBU     A0, 0 (A2) % get next menuID
+    LBU     A1, 1 (A2) % get next subMenuID
+    JAL     $ExtraTab_StoreCurrentCursorDataInNextMenu
+    NOP
+    % go to next menu
+    SB      A0, 1 (S0) % set current menuID
+    SB      A1, 2 (S0) % set current subMenuID
+    SB      R0, 3 (S0) % clear current page
+    SB      R0, 4 (S0) % clear cursor pos - x
+    SB      R0, 5 (S0) % clear cursor pos - y
+    LBU     A1, 4 (A2) % get next menu typeID
+    SB      A1, 8 (S0) % set current menuType
+    BEQ     R0, R0, .DoMenuCommand
+    NOP
+    % 03 = Go back
+    .CheckMenuCommand_03
+    ORI     A1, R0, 3
+    LBU     A0, 1 (S0) % get current menu
+    BNE     V1, A1, .DoMenuCommand
+    NOP
+    JAL     $ExtraTab_RestorePreviousCursorPos
+    NOP
+    .DoMenuCommand
+    % do unfade animation
+    ORI     V0, R0, 2
+    BEQ     R0, R0, .MenuState_EndFadeAnimations
+    SB      V0, 9 (S0) % set menu state
+    %========================
+    .MenuState_Unfade
+    ADDI    A3, A3, 50 % "animation speed"
+    SLTIU   V1, A3, FF
+    BEQL    V1, R0, .UnfadeMenu_ForceCap
+    ORI     A3, R0, FF
+    .UnfadeMenu_ForceCap
+    SB      A3, A (S0) % save opacity
+    ORI     V1, R0, FF
+    BNE     A3, V1, .MenuState_EndFadeAnimations
+    NOP
+    % fade animation has ended
+    BEQ     R0, R0, .MenuState_EndFadeAnimations
+    SB      R0, 9 (S0) % set menu state
+    .MenuState_EndFadeAnimations
+    %========================
+    % check by menuID
+    LBU     V0, 8 (S0) % get menu type
+    LBU     A0, 1 (S0) % get menuID
+    ORI     V1, R0, 1 % Map
+    BEQ     A0, V1, .ShowMap
+    ORI     V1, R0, 2 % Tattle Log
+    BEQ     A0, V1, .ShowTattleLog
+    NOP
+    % check by menuType
+    BEQ     V0, R0, .ShowGenericMenu
+    ORI     V1, R0, 1 % Settings
+    BEQ     V0, V1, .ShowSettingsMenu
+    ORI     V1, R0, 2 % Info
+    BEQ     V0, V1, .ShowInfoOnlyMenu
+    NOP
+    .ShowGenericMenu % Used by Menu0 and Settings
+    % get menu data
+    LIO     V1, $ExtraTab_MenusData
+    SLL     A0, A0, 2
+    ADDU    A0, A0, V1 % get menu's data
+    JAL     $ExtraMenu_GenericMenu_Step
+    LW      A0, 0 (A0)
+    JAL     $ExtraMenu_GenericMenu_UpdateInputs
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .ShowMap
+    % enable map's little purple box
+    ORI     V0, R0, 1
+    SAB     V0, 8015A290
+    JAL     ~Func:pause_map_draw_contents
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .ShowTattleLog
+    BEQ     R0, R0, .End
+    NOP
+    .ShowSettingsMenu
+    JAL     $ExtraMenu_SettingsMenu_Step
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .ShowInfoOnlyMenu
+    LIO     V1, $ExtraTab_MenusData
+    SLL     V0, V0, 2
+    ADDU    A0, V0, V1 % get menu's data
+    JAL     $ExtraMenu_InfoOnlyMenu_Step
+    LW      A0, 0 (A0)
+    JAL     $ExtraMenu_InfoOnlyMenu_UpdateInputs
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    NOP
+}
+
+% a0 = menuData*
+#new:Function $ExtraMenu_GenericMenu_Step
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S1, S2, S3, S4, S5, S6, S7, S8, F0, F2, F4
+    COPY    S1, A0
+    LIO     S0, $ExtraTab_CursorData
+    LIO     S7, $MapTab_GlobalXYOffset
+    LBU     V1, 2 (S0) % load subMenu
+    SLL     V1, V1, 2
+    ADDU    S1, S1, V1 % get subMenu data
+    LW      S1, 0 (S1)
+    %=============
+    % update menu's - amount of pages
+    %=============
+    CLEAR   V0
+    COPY    A1, S1
+    .GetPageAmount_Loop
+    % check if this element has a page separator
+    LBU     A0, 5 (A1) % ExtraTab_SubMenuData[5] = last element from this page (bool)
+    BNEL    A0, R0, .GetPageAmount_AddPage
+    ADDIU   V0, V0, 1
+    .GetPageAmount_AddPage
+    % check if this element is the last one from the menu data
+    ADDIU   A1, A1, 10 % every option uses 0x0F bytes
+    LIO     A2, FFFFFFFF % data end
+    LW      A3, 0 (A1)
+    BNE     A2, A3, .GetPageAmount_Loop
+    NOP
+    SB      V0, 7 (S0) % ExtraTab_CursorData[7] = Current menu pages
+    %=============
+    % update menu's - amount of elements
+    %=============
+    .UpdateAmountOfElements
+    CLEAR   S2
+    CLEAR   S3
+    % go to current page data
+    JAL     $ExtraTab_GetCurrentPageData
+    COPY    A0, S1
+    COPY    A1, V0
+    .GetMenuLenght_Loop
+    ADDIU   S3, S3, 1
+    % check if this element is the last one from this page
+    LBU     A0, 5 (A1) % ExtraTab_SubMenuData[5] = last element from this page (bool)
+    BNE     A0, R0, .GetMenuLenght_BreakLoop
+    NOP
+    ADDIU   A1, A1, 10 % every option uses 0x0F bytes
+    LIO     A2, FFFFFFFF % data end
+    LW      A3, 0 (A1)
+    BNE     A2, A3, .GetMenuLenght_Loop
+    NOP
+    .GetMenuLenght_BreakLoop
+    SUBI    V0, S3, 1
+    SB      V0, 6 (S0) % ExtraTab_CursorData[6] = Current menu elements
+    %=============
+    % draw boxes
+    %=============
+    % S3 = Lenght
+    %
+    % get first box y pos
+    ADDIU   A1, R0, 14` % substract 0x16 by each element in the menu
+    MULT    S3, A1
+    MFLO    A1
+    ADDIU   S4, R0, 65 % base y pos
+    SUBU    S4, S4, A1 % substract according to the amount of elements in the menu
+    % check the box doesn't go outside the extra tab
+    SLTIU   A0, S4, 45`
+    BNEL    A0, R0, .ForceBoxToBeInside
+    ORI     S4, R0, 45`
+    .ForceBoxToBeInside
+    % go to current page data
+    JAL     $ExtraTab_GetCurrentPageData
+    COPY    A0, S1
+    COPY    S6, V0
+    %=================
+    .DrawNextElement
+    %
+    % print each element from the menu
+    %=================
+    %
+    % Y Pos
+    % make spacing between elements
+    SUBI    A1, S3, 1
+    SLL     A1, A1, 2
+    ORI     A0, R0, 42` % max spacing between elements is 42`
+    SUBU    A0, A0, A1
+    ADDU    S4, S4, A0
+    % X Pos
+    % get element's string lenght
+    LW      A0, 8 (S6) % load element string
+    JAL     ~Func:get_string_width
+    CLEAR   A1
+    COPY    S8, V0
+    SRL     A3, V0, 1 % get half
+    ADDIU   A0, R0, 40` % x
+    SUB     S5, A0, A3
+    %============
+    % draw box
+    %============
+    % S5 = box x pos
+    % S4 = box y pos
+    ADDI    A0, S5, 91` % x
+    ADDI    A1, S4, -20` % y
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A0, A0, A3
+    LW      A3, 4 (S7) % load globalY offset
+    ADD     A1, A1, A3
+    ADDIU   A2, S8, 59` % size X
+    ADDIU   A3, R0, 20` % size y
+    LBU     T1, A (S0) % get opacity
+    JAL     $DrawBox
+    ADDIU   T0, R0, 11 % box style
+    %============
+    % draw cursor
+    %============
+    % Check if the cursor is inside the Extra Tab
+    LBU     A1, 0 (S0) % inside Extra tab (bool)
+    BEQ     A1, R0, .DrawElementTitle
+    NOP
+    LBU     A1, 5 (S0) % load cursor y pos
+    BNE     A1, S2, .DrawElementTitle
+    NOP
+    LW      A3, 0 (S7) % load globalX offset
+    ADDI    A1, S5, 83` % x
+    ADD     A1, A1, A3
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    A2, S4, -11` % y
+    ADD     A2, A2, A3
+    JAL     ~Func:set_hud_element_render_pos
+    ORI     A0, R0, 080D % hand cursor
+    LBU     A1, A (S0) % get opacity
+    JAL     ~Func:set_hud_element_alpha
+    ORI     A0, R0, 080D % hand cursor
+    JAL     ~Func:draw_hud_element
+    ORI     A0, R0, 080D % hand cursor
+    % draw pages arrow
+    JAL     $ExtraTab_DrawNavigationArrows
+    NOP
+    %============
+    % draw string
+    %============
+    .DrawElementTitle
+    LW      A3, 0 (S7) % load globalX offset
+    ADDI    A1, S5, 120` % x
+    ADD     A1, A1, A3
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    A2, S4, -18` % y
+    ADD     A2, A2, A3
+    LBU     A3, A (S0) % get opacity
+    JAL     ~Func:draw_string
+    LW      A0, 8 (S6) % load element string  
+    %============
+    % draw icon
+    %============
+    % Check if this element at least has an icon
+    LHU     A0, 6 (S6) % load iconIndex
+    BEQ     A0, R0, .PrintNextElement
+    NOP
+    %=======================
+    % draw icon on the left
+    %=======================
+    ADDI    A1, S5, 104` % x
+    ADDI    A2, S4, -10` % y
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A1, A1, A3
+    LW      A3, 4 (S7) % load globalY offset
+    ADD     A2, A2, A3
+    JAL     ~Func:set_hud_element_render_pos
+    NOP
+    LIF     F0, 0.34375
+    MFC1    A1, F0
+    JAL     ~Func:set_hud_element_scale
+    LHU     A0, 6 (S6) % load iconIndex
+    LBU     A1, A (S0) % get opacity
+    JAL     ~Func:set_hud_element_alpha
+    LHU     A0, 6 (S6) % load iconIndex
+    JAL     ~Func:draw_hud_element
+    LHU     A0, 6 (S6) % load iconIndex
+    %=======================
+    % draw icon on the right
+    %=======================
+    ADDI    A1, S5, 134` % x
+    ADD     A1, A1, S8 % add string lenght
+    ADDI    A2, S4, -10` % y
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A1, A1, A3
+    LW      A3, 4 (S7) % load globalY offset
+    ADD     A2, A2, A3
+    JAL     ~Func:set_hud_element_render_pos
+    LHU     A0, 6 (S6) % load iconIndex
+    JAL     ~Func:draw_hud_element
+    LHU     A0, 6 (S6) % load iconIndex
+    .PrintNextElement
+    % Check if all elements has been printed
+    %
+    % S2 = amount of elements printed
+    % S3 = Menu lenght
+    % S6 = current element data
+    ADDIU   S2, S2, 1
+    BNEL    S2, S3, .DrawNextElement
+    ADDIU   S6, S6, 10 % read next element data
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S1, S2, S3, S4, S5, S6, S7, S8, F0, F2, F4
+    JR      RA
+    NOP
+}
+
+#new:Function $ExtraMenu_GenericMenu_UpdateInputs
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4, S5
+    % Check if the cursor is inside the Extra Tab
+    LIO     S0, $ExtraTab_CursorData
+    LBU     A0, 0 (S0) % inside Extra tab (bool)
+    BEQ     A0, R0, .End
+    NOP
+    % Check if the menu is doing a fadding animation
+    LBU     A0, 9 (S0) % menu state
+    BNE     A0, R0, .End
+    NOP
+    % Check cooldown timer
+    LBU     A0, B (S0) % load cooldown timer
+    ORI     A1, R0, 2
+    BNE     A0, A1, .End
+    NOP
+    % get current menu data
+    LBU     A0, 1 (S0) % load menu
+    LBU     A1, 2 (S0) % load subMenu
+    LIO     A2, $ExtraTab_MenusData
+    SLL     A0, A0, 2
+    ADDU    A2, A2, A0
+    LW      A2, 0 (A2) % load MenuData*
+    SLL     A1, A1, 2
+    ADDU    A2, A2, A1
+    LW      S1, 0 (A2) % load subMenuData*
+    LAW     S2, 80074044 % 5 frames inputs
+    LAW     S3, 80074034 % 1 frame inputs
+    LBU     S4, 6 (S0) % ExtraTab_CursorData[6] = Current menu elements
+    LBU     S5, 7 (S0) % ExtraTab_CursorData[7] = Current menu pages
+    % S0 = cursorData*
+    % S1 = subMenuData*
+    % S2 = 5 frames inputs
+    % S3 = 1 frame inputs
+    % S4 = amounts of elements in current menu
+    % S5 = amount of pages in current menu
+    %
+    % Move stick - Vertical way
+    LIO     V0, 00030000 % Up/Down bitflags
+    AND     V0, S2, V0
+    BEQ     V0, R0, .CheckInputs_MoveHorizontal
+    NOP
+    % move cursor
+    LBU     A0, 5 (S0) % load cursor y pos
+    % check if cursor was moved upwards
+    LIO     V0, 00010000 % Up bitflag
+    AND     V0, S2, V0
+    BEQ     V0, R0, .CheckInputs_MoveDown
+    NOP
+    % Joystick was move upwards
+    SUBI    A0, A0, 1
+    BLTZL   A0, .UpdateCursor
+    COPY    A0, S4 % go to last element
+    BEQ     R0, R0, .UpdateCursor
+    NOP
+    .CheckInputs_MoveDown
+    ADDI    A0, A0, 1
+    SLT     A1, S4, A0
+    BNEL    A1, R0, .UpdateCursor
+    CLEAR   A0 % go to first element
+    .UpdateCursor
+    SB      A0, 5 (S0) % save cursor y pos
+    % play sfx
+    JAL     ~Func:sfx_play_sound
+    ORI     A0, R0, 00C7
+    BEQ     R0, R0, .End
+    NOP
+    % Move stick - Horizontal way
+    .CheckInputs_MoveHorizontal
+    LIO     V0, 000C2030 % Left/Right/Z/L/R bitflags
+    AND     V0, S2, V0
+    BEQ     V0, R0, .CheckInputs_AButton
+    NOP
+    % Joystick was moved in an horizontal way
+    LIO     V0, 00042020 % Left/Z/L bitflags % Move to the left
+    AND     V0, S2, V0
+    BEQ     V0, R0, .CheckInputs_RightJoy
+    NOP
+    % check if cursor is on the first page
+    LBU     A1, 3 (S0) % load current page
+    BEQ     A1, R0, .CheckInputs_AButton % skip
+    NOP
+    BEQ     R0, R0, .UpdateMenu
+    CLEAR   V1 % go to previous page
+    .CheckInputs_RightJoy
+    % The joystick wasn't moved to the left so it means was moved to the right then
+    %
+    % check if cursor is on the last page
+    LBU     A0, 7 (S0) % load menu's pages
+    LBU     A1, 3 (S0) % load current page
+    BEQ     A0, A1, .CheckInputs_AButton % skip
+    NOP
+    BEQ     R0, R0, .UpdateMenu
+    ORI     V1, R0, 1 % go to next page
+    .CheckInputs_AButton
+    LIA     V0, 00008000 % A bitflag
+    AND     V0, S3, V0
+    BNEL    V0, R0, .UpdateMenu
+    ORI     V1, R0, 2 % enter menu
+    .CheckInputs_BButton
+    LIA     V0, 00004000 % B bitflag
+    AND     V0, S3, V0
+    BNEL    V0, R0, .UpdateMenu
+    ORI     V1, R0, 3 % go back
+    .CheckInputs_StartButton
+    LIA     V0, 00001000 % Start bitflag
+    AND     V0, S3, V0
+    BEQ     V0, R0, .End
+    NOP
+    ORI     V1, R0, 4 % quit pause menu % unused
+    .UpdateMenu
+    SB      V1, C (S0) % UpdateMenu next command
+    ORI     A0, R0, 1 % Do Unfade animation
+    SB      A0, 9 (S0) % set menu state
+    ORI     A0, R0, 3 % go back
+    BEQ     V1, A0, .End
+    NOP
+    % play sfx
+    JAL     ~Func:sfx_play_sound
+    ORI     A0, R0, 00C9
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4, S5
+    JR      RA
+    NOP
+}
+
+#new:Function $ExtraMenu_SettingsMenu_Step
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4, S5, S7
+    LIO     S0, $ExtraTab_CursorData
+    COPY    S1, A0 % menuData
+    LIO     S7, $MapTab_GlobalXYOffset
+    LBU     A0, 1 (S0) % load Menu
+    LBU     A1, 2 (S0) % load subMenu
+    %=============
+    % update menu's - amount of pages
+    %=============
+    LBU     V0, 1 (S1) % get current page
+    SB      V0, 3 (S0) % ExtraTab_CursorData[3] = Current page
+    LBU     V0, 2 (S1) % get menu pages
+    SB      V0, 7 (S0) % ExtraTab_CursorData[7] = Current menu pages
+    % get menu data
+    SLL     A2, A0, 2
+    LIO     A3, $ExtraTab_MenusData
+    ADDU    A3, A3, A2
+    LW      A3, 0 (A3)
+    % get sub-menu data
+    SLL     A2, A1, 2
+    ADDU    A3, A3, A2
+    LW      A3, 0 (A3)
+    COPY    S2, A3
+    COPY    S3, S2
+    ORI     S4, R0, 20 % universal x offset
+    ORI     S5, R0, 30 % universal y offset
+    %===============
+    % draw menu
+    %===============
+    .Loop_DrawElement
+    % check if the entire menu has already been drawn
+    LW      A0, 0 (S3)
+    ADDI    A1, R0, -1
+    BEQ     A0, A1, .SettingsMenu_ShowArrows
+    NOP
+    % draw title
+    COPY    A1, S4 % x
+    ADDIU   A2, S5, 10 % y
+    LBU     A3, A (S0) % get opacity
+    SW      R0, 10 (SP)
+    ORI     V0, R0, 8 % text FX - 0x08 = Drop Shadow
+    JAL     ~Func:draw_string
+    SW      V0, 14 (SP)
+    % draw setting button/slider
+    %
+    % get type of setting
+    
+    .SettingsMenu_ShowArrows
+    JAL     $ExtraTab_DrawNavigationArrows
+    NOP
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4, S5, S7
+    JR      RA
+    NOP
+}
+
+% Note: Menus that only shows information
+%
+% They're coded one by one, the menu to be shown is determined
+%
+% by reading cursor's menu and subMenu IDs
+%
+% A0 = menuData
+#new:Function $ExtraMenu_InfoOnlyMenu_Step
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S7
+    LIO     S0, $ExtraTab_CursorData
+    COPY    S1, A0 % menuData
+    LIO     S7, $MapTab_GlobalXYOffset
+    LBU     A0, 1 (S0) % load Menu
+    LBU     A1, 2 (S0) % load subMenu
+    %=============
+    % update menu's - amount of pages
+    %=============
+    LBU     V0, 1 (S1) % get current page
+    SB      V0, 3 (S0) % ExtraTab_CursorData[3] = Current page
+    LBU     V0, 2 (S1) % get menu pages
+    SB      V0, 7 (S0) % ExtraTab_CursorData[7] = Current menu pages
+    %%
+    % Go to "stats" menu?
+    ORI     A2, R0, 3 % Stats
+    BEQ     A0, A2, .InfoMenu_stats_step
+    NOP
+    % Go to "about" menu?
+    ORI     A2, R0, 4 % Settings
+    BNE     A0, A2, .NotAboutMenu
+    NOP
+    BEQ     A1, A2, .InfoMenu_about_step
+    NOP
+    .NotAboutMenu
+    BEQ     R0, R0, .End
+    NOP
+    %====================
+    .InfoMenu_stats_step
+    %
+    % Show "Stats" Menu
+    %====================
+    NOP
+    %====================
+    .InfoMenu_about_step
+    %
+    % Show "About" Menu
+    %====================
+    JAL     $ExtraTab_OnlyInfoMenu_About_Step
+    NOP
+    .InfoMenu_ShowArrows
+    JAL     $ExtraTab_DrawNavigationArrows
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S7
+    JR      RA
+    NOP
+}
+
+#new:Function $ExtraTab_OnlyInfoMenu_About_Step
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S2, S3, S4, S5, S6, S8, F0, F2, F4
+    LAW     A0, $EntityByteFlag_Logo
+    BNE     A0, R0, .LogoAlreadyCreated
+    NOP
+    JAL     $Function_CreateEntity_Logo
+    NOP
+    ORI     A1, R0, 1
+    SAW     A1, $EntityByteFlag_Logo
+    .LogoAlreadyCreated
+    % S0 = Cursor Data
+    % S1 = MenuData
+    % S4 = Global X Offset (This menu only)
+    % S5 = Global Y Offset (This menu only)
+    % S7 = GlobalOffsets
+    ORI     S4, R0, 5E  % x
+    ORI     S5, R0, 36  % y
+    % Draw all strings
+    %
+    % get string width
+    LIO     A0, $String_About_ModBy_1
+    JAL     ~Func:get_string_width
+    CLEAR   A1
+    SRL     A3, V0, 1 % get half
+    SUB     V0, S4, A3
+    % draw string
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A1, V0, A3
+    ADDI    A1, A1, 0 % x
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    S5, S5, 1 % y
+    ADD     A2, S5, A3
+    LBU     A3, A (S0) % get opacity
+    ORI     V0, R0, 8 % text FX - 0x08 = Drop Shadow
+    LIO     A0, $String_About_ModBy_1
+    JAL     ~Func:draw_string
+    SW      V0, 14 (SP)
+    %%%
+    % get string width
+    LIO     A0, $String_About_MadeW
+    JAL     ~Func:get_string_width
+    CLEAR   A1
+    SRL     A3, V0, 1 % get half
+    SUB     V0, S4, A3
+    % draw string
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A1, V0, A3
+    ADDI    A1, A1, 0 % x
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    S5, S5, 1A % y
+    ADD     A2, S5, A3
+    LBU     A3, A (S0) % get opacity
+    ORI     V0, R0, 8 % text FX - 0x08 = Drop Shadow
+    LIO     A0, $String_About_MadeW
+    JAL     ~Func:draw_string
+    SW      V0, 14 (SP)
+    %%%
+    % get string width
+    LIO     A0, $String_About_SRBy
+    JAL     ~Func:get_string_width
+    CLEAR   A1
+    SRL     A3, V0, 1 % get half
+    SUB     V0, S4, A3
+    % draw string
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A1, V0, A3
+    ADDI    A1, A1, 0 % x
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    S5, S5, 10 % y
+    ADD     A2, S5, A3
+    LBU     A3, A (S0) % get opacity
+    ORI     V0, R0, 8 % text FX - 0x08 = Drop Shadow
+    LIO     A0, $String_About_SRBy
+    JAL     ~Func:draw_string
+    SW      V0, 14 (SP)
+    %%%
+    % get string width
+    LIO     A0, $String_About_TattleLogBy
+    JAL     ~Func:get_string_width
+    CLEAR   A1
+    SRL     A3, V0, 1 % get half
+    SUB     V0, S4, A3
+    % draw string
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A1, V0, A3
+    ADDI    A1, A1, 0 % x
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    S5, S5, 1A % y
+    ADD     A2, S5, A3
+    LBU     A3, A (S0) % get opacity
+    ORI     V0, R0, 8 % text FX - 0x08 = Drop Shadow
+    LIO     A0, $String_About_TattleLogBy
+    JAL     ~Func:draw_string
+    SW      V0, 14 (SP)
+    %%%
+    % get string width
+    LIO     A0, $String_About_MenuBy
+    JAL     ~Func:get_string_width
+    CLEAR   A1
+    SRL     A3, V0, 1 % get half
+    SUB     V0, S4, A3
+    % draw string
+    LW      A3, 0 (S7) % load globalX offset
+    ADD     A1, V0, A3
+    ADDI    A1, A1, 0 % x
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    S5, S5, 10 % y
+    ADD     A2, S5, A3
+    LBU     A3, A (S0) % get opacity
+    ORI     V0, R0, 8 % text FX - 0x08 = Drop Shadow
+    LIO     A0, $String_About_MenuBy
+    JAL     ~Func:draw_string
+    SW      V0, 14 (SP)
+    %%%
+    % get string width
+    LIO     A0, $String_About_BuildVer
+    JAL     ~Func:get_string_width
+    CLEAR   A1
+    SRL     A3, V0, 1 % get half
+    SUB     V0, S4, A3
+    % draw string
+    LW      A3, 0 (S7) % load globalX offset
+    ADDI    A1, R0, 90 % x
+    ADD     A1, A1, A3
+    ADD     A1, A1, V0 % add half width
+    LW      A3, 4 (S7) % load globalY offset
+    ADDI    A2, R0, A6 % y
+    ADD     A2, A2, A3
+    LBU     A3, A (S0) % get opacity
+    ORI     V0, R0, 8 % text FX - 0x08 = Drop Shadow
+    LIO     A0, $String_About_BuildVer
+    JAL     ~Func:draw_string
+    SW      V0, 14 (SP)
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S2, S3, S4, S5, S6, S8, F0, F2, F4
+    JR      RA
+    NOP
+}
+
+%=================
+% Logo stuff
+
+#new:Data $EntityByteFlag_Logo
+{ 00000000 }
+
+#new:Function $Function_CreateEntity_Logo
+{
+    PUSH    RA, A0, A1, A2, A3, V0
+    LA      A1, $Function_DrawAsset_Logo
+    JAL     ~Func:create_generic_entity_frontUI
+    CLEAR   A0
+    POP     RA, A0, A1, A2, A3, V0
+    JR      RA
+    NOP
+}
+
+#new:Data $title_1_png
+{
+    ~RasterFile:RGBA-32:pause_menu/title_1.png
+}
+
+#new:Function $Function_DrawAsset_Logo
+{
+    0:  ADDIU     SP, SP, FFF0
+    4:  CLEAR     T1
+    8:  LA        V0, 8009A66C
+   10:  COPY      T0, V0
+   14:  LI        T6, FD1800C7
+   1C:  SW        S3, C (SP)
+        LIO       S3, $title_1_png
+   28:  LI        T3, F5186400
+   30:  SW        S2, 8 (SP)
+   34:  LUI       S2, 700
+   38:  SW        S1, 4 (SP)
+   3C:  LUI       S1, E600
+   40:  SW        S0, 0 (SP)
+   44:  LUI       S0, F400
+   48:  LI        T5, 0731C004
+   50:  LUI       T9, E700
+   54:  LUI       T8, F200
+   58:  LI        T4, 0031C004
+   68:  COPY      T2, T1
+   6C:  LW        V1, 0 (T0)
+   70:  LUI       V0, DE00
+   74:  COPY      A0, V1
+   78:  ADDIU     V1, V1, 8
+   7C:  SW        V1, 0 (T0)
+   80:  SW        V0, 0 (A0)
+   84:  LA        V0, $DisplayList_80240338
+   8C:  SW        V0, 4 (A0)
+   90:  ADDIU     V0, V1, 8
+   94:  SW        V0, 0 (T0)
+        LIO       A0, $ExtraTab_CursorData
+        LBU       A0, A (A0) % get opacity
+   A0:  LUI       V0, FA00
+   A4:  SW        V0, 0 (V1)
+   A8:  ADDIU     V0, V1, 10
+   AC:  SW        A0, 4 (V1)
+   B0:  SW        V0, 0 (T0)
+   B4:  COPY      V0, T9
+   B8:  SW        V0, 8 (V1)
+   BC:  SW        R0, C (V1)
+        .oC0
+   C0:  LI        A3, 04000400
+   C8:  SLL       A1, T1, 1
+   CC:  ADDIU     T1, T1, 1
+   D0:  LW        A0, 0 (T0)
+   D4:  LW        V0, 0 (S3)
+        COPY      V0, S3
+   D8:  COPY      V1, A0
+   DC:  ADDIU     A0, A0, 8
+   E0:  ADDU      V0, V0, T2
+   E4:  ADDIU     T2, T2, 640
+   E8:  SW        A0, 0 (T0)
+   EC:  SW        V0, 4 (V1)
+   F0:  ADDIU     V0, A0, 8
+   F4:  SW        T6, 0 (V1)
+   F8:  SW        V0, 0 (T0)
+   FC:  ADDIU     V0, A0, 10
+  100:  SW        T3, 0 (A0)
+  104:  SW        S2, 4 (A0)
+  108:  SW        V0, 0 (T0)
+  10C:  ADDIU     V0, A0, 18
+  110:  SW        S1, 8 (A0)
+  114:  SW        R0, C (A0)
+  118:  SW        V0, 0 (T0)
+  11C:  ADDIU     V0, A0, 20
+  120:  SW        S0, 10 (A0)
+  124:  SW        T5, 14 (A0)
+  128:  SW        V0, 0 (T0)
+  12C:  ADDIU     V0, A0, 28
+  130:  SW        T9, 18 (A0)
+  134:  SW        R0, 1C (A0)
+  138:  SW        V0, 0 (T0)
+  13C:  ADDIU     V0, A0, 30
+  140:  SW        T3, 20 (A0)
+  144:  SW        R0, 24 (A0)
+  148:  SW        V0, 0 (T0)
+  14C:  ADDIU     V0, A0, 38
+  150:  SW        T8, 28 (A0)
+  154:  SW        T4, 2C (A0)
+        ORI       A2, R0, 35 % y pos
+  15C:  LUI       V1, E450 % E4[XX] impresion area X size
+  160:  SW        V0, 0 (T0)
+  164:  ADDIU     V0, A2, 2
+  168:  ADDU      V0, A1, V0
+  16C:  SLL       V0, V0, 2
+  170:  ANDI      V0, V0, FFF
+  174:  OR        V0, V0, V1
+  178:  ADDU      A1, A1, A2
+  17C:  SLL       A1, A1, 2
+  180:  ANDI      A1, A1, FFF
+  184:  SW        V0, 30 (A0)
+  188:  LUI       V0, 24 % x pos?
+  18C:  OR        A1, A1, V0
+  190:  ADDIU     V0, A0, 40
+  194:  SW        A1, 34 (A0)
+  198:  SW        V0, 0 (T0)
+  19C:  LUI       V0, E100
+  1A0:  SW        V0, 38 (A0)
+  1A4:  ADDIU     V0, A0, 48
+  1A8:  SW        R0, 3C (A0)
+  1AC:  SW        V0, 0 (T0)
+  1B0:  LUI       V0, F100
+  1B4:  SW        V0, 40 (A0)
+  1B8:  SLTI      V0, T1, 38
+  1BC:  BNE       V0, R0, .oC0
+  1C0:  SW        A3, 44 (A0)
+  1C4:  LA        V1, 8009A66C
+  1CC:  LW        V0, 0 (V1)
+  1D0:  COPY      A0, V0
+  1D4:  ADDIU     V0, V0, 8
+  1D8:  SW        V0, 0 (V1)
+  1DC:  LUI       V0, E700
+  1E0:  SW        V0, 0 (A0)
+  1E4:  SW        R0, 4 (A0)
+  1E8:  LW        S3, C (SP)
+  1EC:  LW        S2, 8 (SP)
+  1F0:  LW        S1, 4 (SP)
+  1F4:  LW        S0, 0 (SP)
+  1F8:  JR        RA
+  1FC:  ADDIU     SP, SP, 10
+}
+
+#new:DisplayList $DisplayList_80240338
+{
+	G_RDPPIPESYNC
+	G_SetOtherMode_H (G_MDSFT_CYCLETYPE, G_CYC_1CYCLE)
+	G_SetOtherMode_L (G_MDSFT_RENDERMODE, ...
+	                  IM_RD, CVG_DST_FULL, FORCE_BL, ZMODE_OPA, ...
+	                  G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_1MA, ...
+	                  G_BL_CLR_IN, G_BL_A_IN, G_BL_CLR_MEM, G_BL_1MA)
+	G_SETCOMBINE     (G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_TEXEL1, G_ACMUX_0, G_ACMUX_PRIMITIVE, G_ACMUX_0, ...
+	                  G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_TEXEL1, G_ACMUX_0, G_ACMUX_PRIMITIVE, G_ACMUX_0)
+	G_SetOtherMode_H (G_MDSFT_TEXTFILT, G_TF_POINT)
+	G_TEXTURE        (G_TX_RENDERTILE, 0.999985, 0.999985, 0, true)
+	G_SetOtherMode_H (G_MDSFT_TEXTPERSP, 0)
+	G_SetOtherMode_H (G_MDSFT_RGBDITHER, G_CD_DISABLE)
+	G_SetOtherMode_H (G_MDSFT_ALPHADITHER, G_AD_DISABLE)
+	G_SetOtherMode_H (G_MDSFT_TEXTLOD, G_TL_TILE)
+	G_SetOtherMode_H (G_MDSFT_TEXTLUT, G_TT_NONE)
+	G_SetOtherMode_H (G_MDSFT_TEXTDETAIL, G_TD_CLAMP)
+	G_SetOtherMode_H (G_MDSFT_TEXTCONV, G_TC_FILT)
+	G_SetOtherMode_H (G_MDSFT_COMBKEY, 0)
+	G_SetOtherMode_L (G_MDSFT_ALPHACOMPARE, 0)
+	G_NOOP
+	G_ENDDL
+}
+
+%=================
+
+#string $String_About_ModBy_1
+{
+    [Size 14]TTYD64 [SaveColor][Color 0x07]by[RestoreColor] elDexter[End]
+}
+
+#string $String_About_MenuBy
+{
+    [Size 14]Menu [SaveColor][Color 0x07]by[RestoreColor] elDexter[End]
+}
+
+#string $String_About_TattleLogBy
+{
+    [Size 14]Tattle Log [SaveColor][Color 0x07]by[RestoreColor] Rain[End]
+}
+
+#string $String_About_MadeW
+{
+    [Size 14]Made with Star Rod [SaveColor][Color 0x07]0.5.2[RestoreColor][End]
+}
+
+#string $String_About_SRBy
+{
+    [Size 14]Star Rod is made [SaveColor][Color 0x07]by[RestoreColor] Clover[End]
+}
+
+#string $String_About_BuildVer
+{
+    [Size 14]TTYD64 v0.9.5[End]
+}
+
+% Only track joy left, right and B button
+#new:Function $ExtraMenu_InfoOnlyMenu_UpdateInputs
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    % Check if the cursor is inside the Extra Tab
+    LIO     S0, $ExtraTab_CursorData
+    LBU     A0, 0 (S0) % inside Extra tab (bool)
+    BEQ     A0, R0, .End
+    NOP
+    % Check if the menu is doing a fadding animation
+    LBU     A0, 9 (S0) % menu state
+    BNE     A0, R0, .End
+    NOP
+    % Check cooldown timer
+    LBU     A0, B (S0) % load cooldown timer
+    ORI     A1, R0, 2
+    BNE     A0, A1, .End
+    NOP
+    % get current menu data
+    LBU     A0, 1 (S0) % load menu
+    LBU     A1, 2 (S0) % load subMenu
+    LIO     A2, $ExtraTab_MenusData
+    SLL     A0, A0, 2
+    ADDU    A2, A2, A0
+    LW      S1, 0 (A2) % load MenuData*
+    LAW     S2, 80074044 % 5 frames inputs
+    LAW     S3, 80074034 % 1 frame inputs
+    % S0 = cursorData*
+    % S1 = subMenuData*
+    % S2 = 5 frames inputs
+    % S3 = 1 frame inputs
+    %
+    % Move stick - Horizontal way
+    .CheckInputs_MoveHorizontal
+    LIO     V0, 000C2030 % Left/Right/Z/L/R bitflags
+    AND     V0, S2, V0
+    BEQ     V0, R0, .CheckInputs_BButton
+    NOP
+    % Joystick was moved in an horizontal way
+    LIO     V0, 00042020 % Left/Z/L bitflags % Move to the left
+    AND     V0, S2, V0
+    BEQ     V0, R0, .CheckInputs_RightJoy
+    NOP
+    % check if cursor is on the first page
+    LBU     A1, 3 (S0) % load current page
+    BEQ     A1, R0, .CheckInputs_BButton % skip
+    NOP
+    BEQ     R0, R0, .UpdateMenu
+    CLEAR   V1 % go to previous page
+    .CheckInputs_RightJoy
+    % The joystick wasn't moved to the left so it means was moved to the right then
+    %
+    % check if cursor is on the last page
+    LBU     A0, 7 (S0) % load menu's pages
+    LBU     A1, 3 (S0) % load current page
+    BEQ     A0, A1, .CheckInputs_BButton % skip
+    NOP
+    BEQ     R0, R0, .UpdateMenu
+    ORI     V1, R0, 1 % go to next page
+    .CheckInputs_BButton
+    LIA     V0, 00004000 % B bitflag
+    AND     V0, S3, V0
+    BEQ     V0, R0, .End
+    NOP
+    ORI     V1, R0, 3 % go back
+    .UpdateMenu
+    SB      V1, C (S0) % UpdateMenu next command
+    ORI     A0, R0, 1 % Do Unfade animation
+    SB      A0, 9 (S0) % set menu state
+    ORI     A0, R0, 3 % go back
+    BEQ     V1, A0, .End
+    NOP
+    % play sfx
+    JAL     ~Func:sfx_play_sound
+    ORI     A0, R0, 00C9
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    JR      RA
+    NOP
+}
+
+% Read current page and amount of pages to know
+%
+% what arrow to draw.
+#new:Function $ExtraTab_DrawNavigationArrows
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S7, R0
+    LIO     S0, $ExtraTab_CursorData
+    LIO     S7, $MapTab_GlobalXYOffset
+    %============
+    % draw pages arrow
+    %============
+    LBU     A0, 7 (S0) % load menu's pages
+    BEQ     A0, R0, .End % skip if menu has a single page
+    NOP
+    LBU     A1, 3 (S0) % load current page
+    BEQL    A1, R0, .UpdatePagesArrows
+    ORI     A2, R0, 1 % draw right arrow
+    BEQL    A0, A1, .UpdatePagesArrows
+    ORI     A2, R0, 0 % draw left arrow
+    ORI     A2, R0, 2 % draw both arrows
+    SW      A2, 34 (SP)
+    .UpdatePagesArrows
+    ORI     A3, R0, 1
+    BEQ     A2, A3, .DrawRArrow
+    NOP
+    .DrawZArrow
+    LW      A3, 0 (S7) % load globalX offset
+    ORI     A1, R0, 37` % x
+    ADD     A1, A1, A3
+    LW      A3, 4 (S7) % load globalY offset
+    ORI     A2, R0, 121` % y
+    ADD     A2, A2, A3
+    JAL     ~Func:set_hud_element_render_pos
+    ORI     A0, R0, 0838 % Z arrow
+    LBU     A1, A (S0) % get opacity
+    JAL     ~Func:set_hud_element_alpha
+    ORI     A0, R0, 0838 % Z arrow
+    JAL     ~Func:draw_hud_element
+    ORI     A0, R0, 0838 % Z arrow
+    % check if the other arrow need to be shown too
+    ORI     A1, R0, 2
+    LW      A2, 34 (SP)
+    BNE     A1, A2, .End
+    NOP
+    .DrawRArrow
+    LW      A3, 0 (S7) % load globalX offset
+    ORI     A1, R0, 280` % x
+    ADD     A1, A1, A3
+    LW      A3, 4 (S7) % load globalY offset
+    ORI     A2, R0, 121` % y
+    ADD     A2, A2, A3
+    JAL     ~Func:set_hud_element_render_pos
+    ORI     A0, R0, 0839 % R arrow
+    LBU     A1, A (S0) % get opacity
+    JAL     ~Func:set_hud_element_alpha
+    ORI     A0, R0, 0839 % R arrow
+    JAL     ~Func:draw_hud_element
+    ORI     A0, R0, 0839 % R arrow
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S7, R0
+    JR      RA
+    NOP
+}
+
+% Hide the hand cursor when being inside the Extra Tab.
+%
+/% From ~Func:pause_update_cursor
+@Hook 136884 % 80243544
+{
+    PUSH    S1
+    LIO     S1, $ExtraTab_CursorData
+    % Check if the cursor is inside the Extra Tab
+    LBU     A1, 0 (S1) % inside Extra tab (bool)
+    BNE     A1, R0, .End
+    NOP
+    JAL	   ~Func:draw_hud_element_2
+    LW	    A0, 0 (S0)
+    .End
+    POP     S1
+    J       80243550
+    NOP
+}%/
+
+% To only leave the Extra Tab if the player is at the start Menu
+%
+/% From ~Func:pause_map_handle_input
+@Hook 141F40 % 8024EC00
+{
+    LIO       T0, $ExtraTab_CursorData
+    LBU       T0, 1 (T0) % Load Current Menu
+    BNE       T0, R0, .DontLeaveExtraTab
+    NOP
+    SAB       R0, 802700D4 % Inside Tab ID
+    .DontLeaveExtraTab
+    J         8024EC08
+    NOP
+}
+
+% Overwrite the description box String ID
+%
+% From ~Func:pause_handle_input
+@Hook 13778C % 8024444C
+{
+    LIO     T0, $ExtraTab_CursorData
+    % Check if the cursor is inside the Extra Tab
+    LBU     T1, 0 (T0) % inside Extra tab (bool)
+    BEQ     T1, R0, .BypassOverwriting
+    NOP
+    PUSH    A0, A1, A2, A3, V0, V1, RA, S0, S1, S2, S3, S4
+    % get string data
+    LIO     S0, $ExtraTab_CursorData
+    LIO     S1, $ExtraTab_MenusData
+    LBU     A0, 1 (S0) % load current menu
+    LBU     A1, 2 (S0) % load sub menu
+    LBU     A2, 3 (S0) % load page
+    LBU     A3, 4 (S0) % cursor x pos
+    % get menu data
+    SLL     A0, A0, 2
+    ADDU    V0, S1, A0
+    LW      V0, 0 (V0)
+    % get subMenu data
+    SLL     A1, A1, 2
+    ADDU    V0, V0, A1
+    LW      V0, 0 (V0)
+    JAL     $ExtraTab_GetCurrentPageData
+    COPY    A0, V0
+    .GetElementString
+    LBU     A3, 5 (S0) % cursor y pos
+    ORI     A0, R0, 10 % every option uses 0x0F bytes
+    MULT    A0, A3
+    MFLO    A0
+    ADDU    V0, V0, A0
+    COPY    S1, V0
+    LW      V0, C (V0) % load string
+    LBU     A0, 8 (S0) % menu type
+    ORI     A1, R0, 1 % Settings
+    BNE     A0, A1, .UpdateString
+    NOP
+    LW      A1, 8 (S1) % get this seting globalByte/Flag
+    JAL     ~Func:get_variable
+    COPY    S0, V0
+    % get string
+    ORI     A0, R0, 8
+    MULT    A0, V0
+    MFLO    A0
+    LW      A1, C (S1) % get this settings option data
+    ADDU    A0, A1, A0
+    LW      V0, 4 (A0) % get description
+    .UpdateString
+    SAW     V0, 802700C8 % write new string
+    POP     A0, A1, A2, A3, V0, V1, RA, S0, S1, S2, S3, S4
+    .BypassOverwriting
+    LAW     S3, 802700C8
+    .End
+    J   80244454
+    NOP
+}%/
+
+% Get the start of the current page data
+%
+% A0 = subMenuData
+%
+% out = V0 = pageData
+#new:Function $ExtraTab_GetCurrentPageData
+{
+    PUSH    A0, A1, A2, A3, T0
+    % get page
+    LIO     A2, $ExtraTab_CursorData
+    LBU     A2, 3 (A2) % load current page
+    % If current page is zero, skip this
+    BEQ     A2, R0, .End
+    COPY    V0, A0
+    COPY    A1, A0
+    CLEAR   V1
+    CLEAR   T0
+    .FindPageOffset_Loop
+    % check if this element has a page separator
+    LBU     A0, 5 (A1) % ExtraTab_SubMenuData[5] = last element from this page (bool)
+    BNEL    A0, R0, .FindPageOffset_AddPage
+    ADDIU   V1, V1, 1
+    .FindPageOffset_AddPage
+    % A2 = current page
+    % V1 = Amount of pages found
+    % T0 = Amount of loops
+    ADDI    A1, A1, 10 % read next element
+    BNE     A2, V1, .FindPageOffset_Loop
+    ADDIU   T0, T0, 1
+    % go to the first element from that page by using T0
+    ORI     A0, R0, 10 % every option uses 0x0F bytes
+    MULT    A0, T0
+    MFLO    A0
+    ADDU    V0, V0, A0
+    .End
+    POP     A0, A1, A2, A3, T0
+    JR      RA
+    NOP
+}
+
+% Data needed when the player press B to go back to the
+%
+% previous menu.
+%
+% A0 = nextMenuID
+%
+% A1 = nextSubMenuID
+%
+% S0 = $ExtraTab_CursorData
+#new:Function $ExtraTab_StoreCurrentCursorDataInNextMenu
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % get next menu data
+    LIO     A2, $ExtraTab_MenusData
+    SLL     A0, A0, 2
+    ADDU    V0, A0, A2 % get menu's data
+    LW      V0, 0 (V0)
+    % get next sub menu data
+    SLL     A1, A1, 2
+    ADDU    V0, V0, A1 % get subMenu data
+    LW      V0, 0 (V0)
+    % go to next menu previous cursor data
+    COPY    A1, V0
+    .Loop
+    % go to the end of the subMenu data
+    ADDIU   A1, A1, 10 % every option uses 0x0F bytes
+    LIO     A2, FFFFFFFF % data end
+    LW      A3, 0 (A1)
+    BNE     A2, A3, .Loop
+    NOP
+    ADDIU   A1, A1, 3
+    % store current cursor data in next subMenu cursor data
+    LBU     A0, 1 (S0) % get current menu
+    SB      A0, 1 (A1)
+    LBU     A0, 2 (S0) % get current submenu
+    SB      A0, 2 (A1)
+    LBU     A0, 3 (S0) % get current page
+    SB      A0, 3 (A1)
+    LBU     A0, 4 (S0) % get current cursor x pos
+    SB      A0, 4 (A1)
+    LBU     A0, 5 (S0) % get current cursor y pos
+    SB      A0, 5 (A1)
+    LBU     A0, 8 (S0) % get current menu type
+    SB      A0, 6 (A1)
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% Used when the player pressed B to go back
+%
+% to the previous menu.
+%
+% S0 = $ExtraTab_CursorData
+#new:Function $ExtraTab_RestorePreviousCursorPos
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LBU     A0, 1 (S0) % get current menu
+    LBU     A1, 2 (S0) % get current subMenu
+    % get next menu data
+    LIO     A2, $ExtraTab_MenusData
+    SLL     A0, A0, 2
+    ADDU    V0, A0, A2 % get menu's data
+    LW      V0, 0 (V0)
+    % get next sub menu data
+    SLL     A1, A1, 2
+    ADDU    V0, V0, A1 % get subMenu data
+    LW      V0, 0 (V0)
+    % go to next menu previous cursor data
+    COPY    A1, V0
+    .Loop
+    % go to the end of the subMenu data
+    ADDIU   A1, A1, 10 % every option uses 0x0F bytes
+    LIO     A2, FFFFFFFF % data end
+    LW      A3, 0 (A1)
+    BNE     A2, A3, .Loop
+    NOP
+    ADDIU   A1, A1, 3
+    % store previous cursor data in current data
+    LBU     A0, 1 (A1) % get previous menu
+    SB      A0, 1 (S0)
+    LBU     A0, 2 (A1) % get previous submenu
+    SB      A0, 2 (S0)
+    LBU     A0, 3 (A1) % get previous page
+    SB      A0, 3 (S0)
+    LBU     A0, 4 (A1) % get previous cursor x pos
+    SB      A0, 4 (S0)
+    LBU     A0, 5 (A1) % get previous cursor y pos
+    SB      A0, 5 (S0)
+    LBU     A0, 6 (A1) % get previous menu type
+    SB      A0, 8 (S0)
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% A0 = menuData
+%
+% A1 = 1st index
+%
+% It sets all the iconIndexes for that menu, will always
+%
+% set the indexes in consecutive order.
+%
+% -
+%
+% Called at globals/patch/BadgeTab.patch - Hook 1419C8
+%
+% Right after the icons get created
+#export:Function $ExtraTab_SetMenuIconsIndexes
+{
+    PUSH    A0, A1, A2, A3, V0, V1
+    .SetNextIndex
+    SH      A1, 6 (A0) % set icon index
+    ADDIU   A1, A1, 1
+    ADDIU   A0, A0, 10 % every option uses 0x0F bytes
+    LIO     A2, FFFFFFFF % data end
+    LW      A3, 0 (A0)
+    BNE     A2, A3, .SetNextIndex
+    NOP
+    POP     A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+%===========
+% Image Files - /res
+%===========
+
+% The icon is created and freed in BadgeTab.patch - Hook 1419C8
+#new:Data $IconScript_Compass
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_Compass $Palette_Compass
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_EmptyBook
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_EmptyBook $Palette_EmptyBook
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_gear_boots_1
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_gear_boots_1 $Palette_gear_boots_1
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_screwdriver
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_screwdriver $Palette_screwdriver
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $Icon_Compass
+{ ~RasterFile:CI-4:pause_menu/unused_compass.png }
+
+#new:Data $Palette_Compass
+{ ~PaletteFile:CI-4:pause_menu/unused_compass.png }
+
+%
+
+#new:Data $Icon_EmptyBook
+{ ~RasterFile:CI-4:pause_menu/EmptyBook.png }
+
+#new:Data $Palette_EmptyBook
+{ ~PaletteFile:CI-4:pause_menu/EmptyBook.png }
+
+%
+
+#new:Data $Icon_gear_boots_1
+{ ~RasterFile:CI-4:pause_menu/gear_boots_1.png }
+
+#new:Data $Palette_gear_boots_1
+{ ~PaletteFile:CI-4:pause_menu/gear_boots_1.png }
+
+%
+
+#new:Data $Icon_screwdriver
+{ ~RasterFile:CI-4:pause_menu/screwdriver.png }
+
+#new:Data $Palette_screwdriver
+{ ~PaletteFile:CI-4:pause_menu/screwdriver.png }
+
+#export $IconScript_Compass
+#export $IconScript_EmptyBook
+#export $IconScript_gear_boots_1
+#export $IconScript_screwdriver
+
+#export:Data $ExtraTab_FirstIconIndex % unused
+{ 00000000 }
+
+% Patch ~Func:pause_map_draw_contents to read the SP
+% data before I made a push in $pause_extra_draw_contents
+%
+% read GP instead of SP for every time the game try to
+/% read/write above SP(0xA0)
+@Function:Pause 140E5C % 8024DB1C % ~Func:pause_map_draw_contents
+{
+    0:  ADDIU     SP, SP, FF60
+    4:  SW        S7, 8C (SP)
+    8:  CLEAR     S7
+    C:  LIA       V0, 8009A66C
+   14:  SW        S1, 74 (SP)
+   18:  COPY      S1, V0
+   1C:  SW        S4, 80 (SP)
+   20:  LUI       S4, F548
+   24:  LAF       F0, 80270708
+   2C:  ORI       S4, S4, 5000
+   30:  SW        S8, 90 (SP)
+   34:  LUI       S8, E700
+   38:  SW        S5, 84 (SP)
+   3C:  SW        A1, A4 (GP) % use GP instead of SP
+   40:  ADDIU     S5, A1, 1A
+   44:  SW        S6, 88 (SP)
+   48:  ADDIU     S6, A1, 104
+   4C:  SW        S2, 78 (SP)
+   50:  ADDIU     S2, R0, 4
+   54:  SW        S3, 7C (SP)
+   58:  ADDIU     S3, R0, 16
+   5C:  SW        S0, 70 (SP)
+   60:  COPY      S0, S7
+   64:  SW        RA, 94 (SP)
+   68:  SDC1      F20, 98 (SP)
+   6C:  SW        A2, A8 (GP) % use GP instead of SP
+   70:  SW        A3, AC (GP) % use GP instead of SP
+   74:  LW        V0, 0 (S1)
+   78:  TRUNC.W.S F6, F0
+   7C:  SWC1      F6, 54 (SP)
+   80:  LAF       F0, 80270704
+   88:  COPY      A0, V0
+   8C:  TRUNC.W.S F6, F0
+   90:  SWC1      F6, 50 (SP)
+   94:  LW        T7, 50 (SP)
+   98:  ADDIU     V0, V0, 8
+   9C:  SUBU      V1, R0, T7
+   A0:  SLL       V1, V1, 5
+   A4:  SW        V1, 58 (SP)
+   A8:  SW        V0, 0 (S1)
+   AC:  LUI       V0, DE00
+   B0:  SW        V0, 0 (A0)
+   B4:  LIA       V0, 8026F118
+   BC:  SW        V0, 4 (A0)
+   .oC0
+   C0:  SLTI      V0, S2, 6F
+   C4:  BNE       V0, R0, .oD4
+   C8:  ADDIU     T5, R0, 4
+   CC:  ADDIU     V0, R0, 6F
+   D0:  SUBU      T5, V0, S0
+   .oD4
+   D4:  LIO       V0, FD48013F
+   DC:  LIO       T1, 07080200
+   E4:  LIO       T2, 074FC000
+   EC:  LIO       T3, 00080200
+   F4:  LIO       T4, 004FC000
+   FC:  SLL       A0, S5, 2
+  100:  SLL       A2, S6, 2
+  104:  LW        T6, A8 (GP) % use GP instead of SP
+  108:  LW        V1, 0 (S1)
+  10C:  ADDU      A3, T6, S3
+  110:  SLL       A1, A3, 2
+  114:  ADDU      A3, A3, T5
+  118:  SLL       A3, A3, 2
+  11C:  COPY      T0, V1
+  120:  ADDIU     V1, V1, 8
+  124:  SW        V1, 0 (S1)
+  128:  SW        V0, 0 (T0)
+  12C:  LIA       V0, 802510B0
+  134:  SW        V0, 4 (T0)
+  138:  ADDIU     V0, V1, 8
+  13C:  SW        V0, 0 (S1)
+  140:  ADDIU     V0, V1, 10
+  144:  SW        S4, 0 (V1)
+  148:  SW        T1, 4 (V1)
+  14C:  SW        V0, 0 (S1)
+  150:  LUI       V0, E600
+  154:  SW        V0, 8 (V1)
+  158:  ADDIU     V0, V1, 18
+  15C:  SW        R0, C (V1)
+  160:  SW        V0, 0 (S1)
+  164:  LUI       V0, F400
+  168:  LW        T7, 54 (SP)
+  16C:  ADDU      T0, S0, T5
+  170:  SUBU      T1, S0, T7
+  174:  SLL       T1, T1, 2
+  178:  ANDI      T1, T1, FFF
+  17C:  OR        V0, T1, V0
+  180:  SW        V0, 10 (V1)
+  184:  ADDIU     V0, T7, 1
+  188:  SUBU      T0, T0, V0
+  18C:  SLL       T0, T0, 2
+  190:  ANDI      T0, T0, FFF
+  194:  OR        T2, T0, T2
+  198:  ADDIU     V0, V1, 20
+  19C:  SW        T2, 14 (V1)
+  1A0:  SW        V0, 0 (S1)
+  1A4:  ADDIU     V0, V1, 28
+  1A8:  SW        S8, 18 (V1)
+  1AC:  SW        R0, 1C (V1)
+  1B0:  SW        V0, 0 (S1)
+  1B4:  ADDIU     V0, V1, 30
+  1B8:  SW        S4, 20 (V1)
+  1BC:  SW        T3, 24 (V1)
+  1C0:  SW        V0, 0 (S1)
+  1C4:  LUI       V0, F200
+  1C8:  OR        T1, T1, V0
+  1CC:  OR        T0, T0, T4
+  1D0:  SUBU      V0, S0, T7
+  1D4:  SW        T1, 28 (V1)
+  1D8:  SW        T0, 2C (V1)
+  1DC:  LW        T6, 58 (SP)
+  1E0:  SLL       V0, V0, 5
+  1E4:  SW        V0, 18 (SP)
+  1E8:  ADDIU     V0, R0, 400
+  1EC:  SW        R0, 10 (SP)
+  1F0:  SW        V0, 1C (SP)
+  1F4:  SW        V0, 20 (SP)
+  1F8:  JAL       ~Func:pause_draw_rect
+  1FC:  SW        T6, 14 (SP)
+  200:  LW        A1, 0 (S1)
+  204:  COPY      V0, A1
+  208:  ADDIU     A1, A1, 8
+  20C:  SW        A1, 0 (S1)
+  210:  SW        S8, 0 (V0)
+  214:  SW        R0, 4 (V0)
+  218:  SLTI      V0, S2, 6E
+  21C:  BEQ       V0, R0, .o240
+  220:  COPY      A0, S5
+  224:  ADDIU     S2, S2, 4
+  228:  ADDIU     S3, S3, 4
+  22C:  ADDIU     S7, S7, 1
+  230:  SLTI      V0, S7, 3C
+  234:  BNE       V0, R0, .oC0
+  238:  ADDIU     S0, S0, 4
+  23C:  COPY      A0, S5
+  .o240
+  240:  COPY      A2, S6
+  244:  LW        T7, A8 (GP) % use GP instead of SP
+  248:  ADDIU     V0, A1, 8
+  24C:  SW        V0, 0 (S1)
+  250:  LUI       V0, DE00
+  254:  SW        V0, 0 (A1)
+  258:  LIA       V0, 8026F1B8
+  260:  SW        V0, 4 (A1)
+  264:  ADDIU     V1, T7, 16
+  268:  BGTZ      A0, .o274
+  26C:  ADDIU     A3, T7, 84
+  270:  ADDIU     A0, R0, 1
+  .o274
+  274:  BLEZL     V1, .o27C
+  278:  ADDIU     V1, R0, 1
+  .o27C
+  27C:  BLEZ      A2, .o9FC
+  280:  NOP
+  284:  BLEZ      A3, .o9FC
+  288:  SLTI      V0, A0, 13F
+  28C:  BEQ       V0, R0, .o9FC
+  290:  SLTI      V0, V1, EF
+  294:  BEQ       V0, R0, .o9FC
+  298:  SLTI      V0, A2, 13F
+  29C:  BEQL      V0, R0, .o2A4
+  2A0:  ADDIU     A2, R0, 13F
+  .o2A4
+  2A4:  SLTI      V0, A3, EF
+  2A8:  BEQL      V0, R0, .o2B0
+  2AC:  ADDIU     A3, R0, EF
+  .o2B0
+  2B0:  LIA       T6, 802502B8
+  2B8:  CLEAR     S7
+  2BC:  LIA       T0, 8009A66C
+  2C4:  MTC1      A0, F2
+  2C8:  NOP
+  2CC:  CVT.S.W   F2, F2
+  2D0:  ADDIU     V0, A1, 10
+  2D4:  LW        T7, 50 (SP)
+  2D8:  MTC1      V1, F0
+  2DC:  NOP
+  2E0:  CVT.S.W   F0, F0
+  2E4:  SW        T6, 5C (SP)
+  2E8:  LW        T6, A4 (GP) % use GP instead of SP
+  2EC:  LIF       F4, 4.0
+  2F4:  ADDU      T7, T7, T6
+  2F8:  MUL.S     F2, F2, F4
+  2FC:  NOP
+  300:  SW        T7, 60 (SP)
+  304:  LW        T7, 54 (SP)
+  308:  LW        T6, A8 (GP) % use GP instead of SP
+  30C:  LUI       A0, ED00
+  310:  ADDU      T7, T7, T6
+  314:  SW        T7, 64 (SP)
+  318:  LW        T7, 5C (SP)
+  31C:  MUL.S     F0, F0, F4
+  320:  NOP
+  324:  SW        V0, 0 (S1)
+  328:  ADDIU     S8, T7, 8
+  32C:  TRUNC.W.S F6, F2
+  330:  MFC1      V0, F6
+  334:  NOP
+  338:  ANDI      V0, V0, FFF
+  33C:  SLL       V0, V0, C
+  340:  TRUNC.W.S F6, F0
+  344:  MFC1      V1, F6
+  348:  MTC1      A2, F2
+  34C:  NOP
+  350:  CVT.S.W   F2, F2
+  354:  MUL.S     F2, F2, F4
+  358:  NOP
+  35C:  ANDI      V1, V1, FFF
+  360:  OR        V1, V1, A0
+  364:  OR        V0, V0, V1
+  368:  MTC1      A3, F0
+  36C:  NOP
+  370:  CVT.S.W   F0, F0
+  374:  MUL.S     F0, F0, F4
+  378:  NOP
+  37C:  SW        V0, 8 (A1)
+  380:  TRUNC.W.S F6, F2
+  384:  MFC1      V0, F6
+  388:  NOP
+  38C:  ANDI      V0, V0, FFF
+  390:  SLL       V0, V0, C
+  394:  TRUNC.W.S F6, F0
+  398:  MFC1      V1, F6
+  39C:  NOP
+  3A0:  ANDI      V1, V1, FFF
+  3A4:  OR        V0, V0, V1
+  3A8:  SW        V0, C (A1)
+  .o3AC
+  3AC:  LIO       A1, F840632A
+  3B4:  CLEAR     A0
+  3B8:  LW        T7, 5C (SP)
+  3BC:  LH        S1, FFFA (S8)
+  3C0:  LH        S0, 0 (T7)
+  3C4:  ADDU      A1, S7, A1
+  3C8:  JAL       ~Func:get_variable
+  3CC:  SW        T0, 68 (SP)
+  3D0:  LW        T0, 68 (SP)
+  3D4:  BEQL      V0, R0, .o5CC
+  3D8:  ADDIU     S7, S7, 1
+  3DC:  LAW       V0, 8027071C
+  3E4:  BEQ       S7, V0, .o410
+  3E8:  LUI       V0, DC50
+  3EC:  LW        V1, 0 (T0)
+  3F0:  ORI       V0, V0, 1EFF
+  3F4:  COPY      A0, V1
+  3F8:  ADDIU     V1, V1, 8
+  3FC:  LUI       T6, FA00
+  400:  SW        V1, 0 (T0)
+  404:  SW        T6, 0 (A0)
+  408:  J         8024DFB4
+  40C:  SW        V0, 4 (A0)
+  .o410
+  410:  LUI       A1, 8888
+  414:  LW        V1, 0 (T0)
+  418:  LAW       V0, 8007419C
+  420:  COPY      A2, V1
+  424:  LUI       T7, FA00
+  428:  SW        T7, 0 (A2)
+  42C:  LHU       V0, 134 (V0)
+  430:  ORI       A1, A1, 8889
+  434:  SLL       A0, V0, 2
+  438:  ADDU      A0, A0, V0
+  43C:  SLL       A0, A0, 1
+  440:  MULT      A0, A1
+  444:  ADDIU     V1, V1, 8
+  448:  SW        V1, 0 (T0)
+  44C:  SRA       V0, A0, 1F
+  450:  MFHI      T6
+  454:  ADDU      V1, T6, A0
+  458:  SRA       V1, V1, 6
+  45C:  SUBU      V1, V1, V0
+  460:  SLL       V0, V1, 4
+  464:  SUBU      V0, V0, V1
+  468:  SLL       V0, V0, 3
+  46C:  SUBU      A0, A0, V0
+  470:  ADDIU     V0, A0, 78
+  474:  ANDI      V0, V0, FF
+  478:  SLL       V1, V0, 18
+  47C:  SLL       V0, V0, 10
+  480:  OR        V1, V1, V0
+  484:  ANDI      A0, A0, FF
+  488:  SLL       A0, A0, 8
+  48C:  OR        V1, V1, A0
+  490:  ORI       V1, V1, FF
+  494:  SW        V1, 4 (A2)
+  498:  LW        T7, 60 (SP)
+  49C:  LW        T6, 64 (SP)
+  4A0:  ADDIU     V0, S0, 1A
+  4A4:  SW        R0, 10 (SP)
+  4A8:  SW        R0, 14 (SP)
+  4AC:  SW        R0, 18 (SP)
+  4B0:  SW        T0, 68 (SP)
+  4B4:  ADDU      S5, T7, V0
+  4B8:  ADDIU     A0, S5, FFF8
+  4BC:  SLL       A0, A0, 2
+  4C0:  ADDIU     V0, S1, 16
+  4C4:  ADDU      S4, T6, V0
+  4C8:  ADDIU     A1, S4, FFF8
+  4CC:  SLL       A1, A1, 2
+  4D0:  ADDIU     A2, S5, 8
+  4D4:  SLL       A2, A2, 2
+  4D8:  ADDIU     A3, S4, 8
+  4DC:  SLL       A3, A3, 2
+  4E0:  ADDIU     T7, R0, 400
+  4E4:  COPY      T6, T7
+  4E8:  SW        T7, 1C (SP)
+  4EC:  JAL       ~Func:pause_draw_rect
+  4F0:  SW        T6, 20 (SP)
+  4F4:  LUI       A1, E6BE
+  4F8:  LW        T0, 68 (SP)
+  4FC:  ORI       A1, A1, B4FF
+  500:  LW        V1, 0 (T0)
+  504:  LUI       V0, E700
+  508:  COPY      A0, V1
+  50C:  ADDIU     V1, V1, 8
+  510:  SW        V0, 0 (A0)
+  514:  SW        R0, 4 (A0)
+  518:  LUI       T7, FA00
+  51C:  SW        T7, 0 (V1)
+  520:  SW        A1, 4 (V1)
+  524:  LW        S0, 0 (S8)
+  528:  SW        V1, 0 (T0)
+  52C:  ADDIU     V1, V1, 8
+  530:  SW        V1, 0 (T0)
+  534:  LBU       S6, FFFD (S8)
+  538:  BEQL      S0, R0, .o5CC
+  53C:  ADDIU     S7, S7, 1
+  540:  CLEAR     S3
+  544:  COPY      S2, S3
+  548:  BEQ       S6, R0, .o5C8
+  54C:  COPY      S1, S3
+  550:  ADDIU     S1, S1, 1
+  .o554
+  554:  LB        V0, 0 (S0)
+  558:  LB        V1, 1 (S0)
+  55C:  ADDIU     S0, S0, 2
+  560:  ADDIU     T6, R0, 1
+  564:  ADDIU     T7, R0, 400
+  568:  SW        T6, 10 (SP)
+  56C:  COPY      T6, T7
+  570:  SW        R0, 14 (SP)
+  574:  SW        R0, 18 (SP)
+  578:  SW        T7, 1C (SP)
+  57C:  SW        T6, 20 (SP)
+  580:  SW        T0, 68 (SP)
+  584:  ADDU      S3, S3, V0
+  588:  ADDU      S2, S2, V1
+  58C:  ADDU      A2, S5, S3
+  590:  ADDIU     A0, A2, FFF8
+  594:  SLL       A0, A0, 2
+  598:  ADDU      A3, S4, S2
+  59C:  ADDIU     A1, A3, FFF8
+  5A0:  SLL       A1, A1, 2
+  5A4:  ADDIU     A2, A2, 8
+  5A8:  SLL       A2, A2, 2
+  5AC:  ADDIU     A3, A3, 8
+  5B0:  JAL       ~Func:pause_draw_rect
+  5B4:  SLL       A3, A3, 2
+  5B8:  SLT       V0, S1, S6
+  5BC:  LW        T0, 68 (SP)
+  5C0:  BNE       V0, R0, .o554
+  5C4:  ADDIU     S1, S1, 1
+  .o5C8
+  5C8:  ADDIU     S7, S7, 1
+  .o5CC
+  5CC:  ADDIU     S8, S8, 14
+  5D0:  LW        T7, 5C (SP)
+  5D4:  SLTI      V0, S7, 22
+  5D8:  ADDIU     T7, T7, 14
+  5DC:  BNE       V0, R0, .o3AC
+  5E0:  SW        T7, 5C (SP)
+  5E4:  LIA       S0, 80270700
+  5EC:  LW        A0, 0 (S0)
+  5F0:  LW        T6, 50 (SP)
+  5F4:  LAW       A1, 8027070C
+  5FC:  LW        T7, A4 (GP) % use GP instead of SP
+  600:  LAW       A2, 80270710
+  608:  ADDIU     V0, T6, 1A
+  60C:  ADDU      S2, T7, V0
+  610:  ADDU      A1, S2, A1
+  614:  LW        T6, 54 (SP)
+  618:  LW        T7, A8 (GP) % use GP instead of SP
+  61C:  ADDIU     V0, T6, 16
+  620:  ADDU      S1, T7, V0
+  624:  ADDU      A2, S1, A2
+  628:  JAL       ~Func:set_hud_element_render_pos
+  62C:  ADDIU     A2, A2, FFF9
+  630:  LW        A0, 0 (S0)
+  634:  JAL       ~Func:draw_hud_element_2
+  638:  NOP
+  63C:  LIA       S3, 802700D4
+  644:  LB        S0, 0 (S3)
+  648:  ADDIU     V0, R0, 6
+  64C:  BNE       S0, V0, .o854
+  650:  NOP
+  654:  LAF       F0, 80270714
+  65C:  MTC1      S2, F4
+  660:  NOP
+  664:  CVT.S.W   F4, F4
+  668:  ADD.S     F4, F4, F0
+  66C:  LAF       F0, 80270718
+  674:  MTC1      S1, F2
+  678:  NOP
+  67C:  CVT.S.W   F2, F2
+  680:  ADD.S     F2, F2, F0
+  684:  LIF       F0, 8.0
+  68C:  NOP
+  690:  SUB.S     F4, F4, F0
+  694:  TRUNC.W.S F6, F2
+  698:  MFC1      A2, F6
+  69C:  TRUNC.W.S F6, F4
+  6A0:  MFC1      A1, F6
+  6A4:  JAL       80242D04
+  6A8:  ADDIU     A0, R0, 29
+  6AC:  LB        V0, 0 (S3)
+  6B0:  BNE       V0, S0, .o854
+  6B4:  NOP
+  6B8:  LIA       A2, 8009A66C
+  6C0:  LIO       A1, AAAAAAAB
+  6C8:  LAW       V0, 8007419C
+  6D0:  LIA       S4, 80270704
+  6D8:  LHU       V1, 134 (V0)
+  6DC:  LW        A0, 0 (A2)
+  6E0:  MULTU     V1, A1
+  6E4:  LWC1      F0, 0 (S4)
+  6E8:  MTC1      R0, F20
+  6EC:  COPY      A3, A0
+  6F0:  ADDIU     A0, A0, 8
+  6F4:  C.LT.S    F0, F20
+  6F8:  SW        A0, 0 (A2)
+  6FC:  MFHI      T6
+  700:  SRL       A0, T6, 3
+  704:  SLL       V0, A0, 1
+  708:  ADDU      V0, V0, A0
+  70C:  SLL       V0, V0, 2
+  710:  SUBU      V1, V1, V0
+  714:  ANDI      V1, V1, FFFF
+  718:  SLL       V1, V1, 2
+  71C:  LTW       S1, V1 (80250560)
+  728:  LUI       V0, DE00
+  72C:  SW        V0, 0 (A3)
+  730:  LIA       V0, 8026F2A0
+  738:  SW        V0, 4 (A3)
+  73C:  COPY      A1, S1
+  740:  COPY      S2, S1
+  744:  BC1T      .o750
+  748:  COPY      S3, S1
+  74C:  CLEAR     A1
+  .o750
+  750:  CLEAR     A0
+  754:  ADDIU     A1, A1, FFE6
+  758:  LW        T7, A4 (GP) % use GP instead of SP
+  75C:  LW        T6, B0 (GP) % use GP instead of SP
+  760:  SUBU      A1, T7, A1
+  764:  SRL       V0, T6, 1F
+  768:  ADDU      V0, T6, V0
+  76C:  LW        T7, A8 (GP) % use GP instead of SP
+  770:  SRA       V0, V0, 1
+  774:  ADDU      V0, T7, V0
+  778:  ADDIU     S0, V0, FFF8
+  77C:  JAL       ~Func:pause_map_draw_border_arrows
+  780:  COPY      A2, S0
+  784:  LWC1      F2, 0 (S4)
+  788:  LIF       F0, -86.0
+  790:  NOP
+  794:  C.LT.S    F0, F2
+  798:  NOP
+  79C:  BC1FL     .o7A4
+  7A0:  CLEAR     S2
+  .o7A4
+  7A4:  ADDIU     A0, R0, 1
+  7A8:  ADDIU     A1, S2, FFCE
+  7AC:  LW        T6, A4 (GP) % use GP instead of SP
+  7B0:  LW        T7, AC (GP) % use GP instead of SP
+  7B4:  COPY      A2, S0
+  7B8:  ADDU      V0, T6, T7
+  7BC:  JAL       ~Func:pause_map_draw_border_arrows
+  7C0:  ADDU      A1, V0, A1
+  7C4:  LIA       S2, 80270708
+  7CC:  LWC1      F0, 0 (S2)
+  7D0:  C.LT.S    F0, F20
+  7D4:  NOP
+  7D8:  BC1FL     .o7E0
+  7DC:  CLEAR     S3
+  .o7E0
+  7E0:  ADDIU     A0, R0, 2
+  7E4:  ADDIU     A2, S3, FFE8
+  7E8:  LW        T6, AC (GP) % use GP instead of SP
+  7EC:  LW        T7, A4 (GP) % use GP instead of SP
+  7F0:  SRL       V0, T6, 1F
+  7F4:  ADDU      V0, T6, V0
+  7F8:  SRA       V0, V0, 1
+  7FC:  ADDU      V0, T7, V0
+  800:  ADDIU     S0, V0, FFF8
+  804:  LW        T6, A8 (GP) % use GP instead of SP
+  808:  COPY      A1, S0
+  80C:  JAL       ~Func:pause_map_draw_border_arrows
+  810:  SUBU      A2, T6, A2
+  814:  LWC1      F2, 0 (S2)
+  818:  LIF       F0, -210.0
+  820:  NOP
+  824:  C.LT.S    F0, F2
+  828:  NOP
+  82C:  BC1FL     .o834
+  830:  CLEAR     S1
+  .o834
+  834:  ADDIU     A0, R0, 3
+  838:  COPY      A1, S0
+  83C:  LW        T7, A8 (GP) % use GP instead of SP
+  840:  LW        T6, B0 (GP) % use GP instead of SP
+  844:  ADDIU     A2, S1, FFD4
+  848:  ADDU      V0, T7, T6
+  84C:  JAL       ~Func:pause_map_draw_border_arrows
+  850:  ADDU      A2, V0, A2
+  .o854
+  854:  LW        T7, A4 (GP) % use GP instead of SP
+  858:  LW        T6, A8 (GP) % use GP instead of SP
+  85C:  ADDIU     A3, T7, 12
+  860:  ADDIU     T0, T6, E
+  864:  ADDIU     T2, T7, 10C
+  868:  BGTZ      A3, .o874
+  86C:  ADDIU     T3, T6, 8C
+  870:  ADDIU     A3, R0, 1
+  .o874
+  874:  BLEZL     T0, .o87C
+  878:  ADDIU     T0, R0, 1
+  .o87C
+  87C:  BLEZ      T2, .o9FC
+  880:  NOP
+  884:  BLEZ      T3, .o9FC
+  888:  SLTI      V0, A3, 13F
+  88C:  BEQ       V0, R0, .o9FC
+  890:  SLTI      V0, T0, EF
+  894:  BEQ       V0, R0, .o9FC
+  898:  SLTI      V0, T2, 13F
+  89C:  BEQL      V0, R0, .o8A4
+  8A0:  ADDIU     T2, R0, 13F
+  .o8A4
+  8A4:  SLTI      V0, T3, EF
+  8A8:  BEQL      V0, R0, .o8B0
+  8AC:  ADDIU     T3, R0, EF
+  .o8B0
+  8B0:  LIA       V1, 8009A66C
+  8B8:  MTC1      A3, F2
+  8BC:  NOP
+  8C0:  CVT.S.W   F2, F2
+  8C4:  MTC1      T0, F0
+  8C8:  NOP
+  8CC:  CVT.S.W   F0, F0
+  8D0:  LUI       T0, ED00
+  8D4:  LW        T7, A4 (GP) % use GP instead of SP
+  8D8:  LW        V0, 0 (V1)
+  8DC:  LIF       F4, 4.0
+  8E4:  LW        T6, A8 (GP) % use GP instead of SP
+  8E8:  MUL.S     F2, F2, F4
+  8EC:  NOP
+  8F0:  ADDIU     A2, T7, 12
+  8F4:  ADDIU     A3, T6, E
+  8F8:  COPY      T1, V0
+  8FC:  ADDIU     V0, V0, 8
+  900:  MUL.S     F0, F0, F4
+  904:  NOP
+  908:  SW        V0, 0 (V1)
+  90C:  TRUNC.W.S F6, F2
+  910:  MFC1      V0, F6
+  914:  NOP
+  918:  ANDI      V0, V0, FFF
+  91C:  SLL       V0, V0, C
+  920:  TRUNC.W.S F6, F0
+  924:  MFC1      V1, F6
+  928:  MTC1      T2, F2
+  92C:  NOP
+  930:  CVT.S.W   F2, F2
+  934:  MUL.S     F2, F2, F4
+  938:  NOP
+  93C:  ANDI      V1, V1, FFF
+  940:  OR        V1, V1, T0
+  944:  OR        V0, V0, V1
+  948:  MTC1      T3, F0
+  94C:  NOP
+  950:  CVT.S.W   F0, F0
+  954:  MUL.S     F0, F0, F4
+  958:  NOP
+  95C:  SW        V0, 0 (T1)
+  960:  TRUNC.W.S F6, F2
+  964:  MFC1      V0, F6
+  968:  NOP
+  96C:  ANDI      V0, V0, FFF
+  970:  SLL       V0, V0, C
+  974:  TRUNC.W.S F6, F0
+  978:  MFC1      V1, F6
+  97C:  NOP
+  980:  ANDI      V1, V1, FFF
+  984:  OR        V0, V0, V1
+  988:  SW        V0, 4 (T1)
+  98C:  ADDIU     V0, R0, FA
+  990:  SW        V0, 14 (SP)
+  994:  ADDIU     V0, R0, 7E
+  998:  SW        V0, 18 (SP)
+  99C:  LBU       V0, B7 (GP) % use GP instead of SP
+  9A0:  LIF       F0, 1.0
+  9A8:  LW        T7, AC (GP) % use GP instead of SP
+  9AC:  LW        T6, B0 (GP) % use GP instead of SP
+  9B0:  CLEAR     A0
+  9B4:  SW        V0, 1C (SP)
+  9B8:  LBU       V0, BB (GP) % use GP instead of SP
+  9BC:  LIA       A1, 8026FEE8
+  9C4:  SW        R0, 10 (SP)
+  9C8:  SW        R0, 2C (SP)
+  9CC:  SW        R0, 30 (SP)
+  9D0:  SW        R0, 34 (SP)
+  9D4:  SW        R0, 38 (SP)
+  9D8:  SW        R0, 3C (SP)
+  9DC:  SW        R0, 40 (SP)
+  9E0:  SW        R0, 4C (SP)
+  9E4:  SWC1      F0, 24 (SP)
+  9E8:  SWC1      F0, 28 (SP)
+  9EC:  SW        T7, 44 (SP)
+  9F0:  SW        T6, 48 (SP)
+  9F4:  JAL       ~Func:draw_box
+  9F8:  SW        V0, 20 (SP)
+  .o9FC
+  9FC:  LW        RA, 94 (SP)
+  A00:  LW        S8, 90 (SP)
+  A04:  LW        S7, 8C (SP)
+  A08:  LW        S6, 88 (SP)
+  A0C:  LW        S5, 84 (SP)
+  A10:  LW        S4, 80 (SP)
+  A14:  LW        S3, 7C (SP)
+  A18:  LW        S2, 78 (SP)
+  A1C:  LW        S1, 74 (SP)
+  A20:  LW        S0, 70 (SP)
+  A24:  LDC1      F20, 98 (SP)
+  A28:  JR        RA
+  A2C:  ADDIU     SP, SP, A0    
+}%/
+
+%===============
+% strings
+%===============
+
+%===========
+% Menu0
+%===========
+
+#string $String_Menu0_Map_Title
+{
+Map[END]
+}
+
+#string $String_Menu0_Map_Description
+{
+Look at the map to see the[BR]
+places you've been to so far.[END]
+}
+
+%
+
+#string $String_Menu0_TattleLog_Title
+{
+Tattle Log[END]
+}
+
+#string $String_Menu0_TattleLog_Description
+{
+See all the enemies you have[BR]
+tattled so far.[END]
+}
+
+%
+
+#string $String_Menu0_Stats_Title
+{
+Stats[END]
+}
+
+#string $String_Menu0_Stats_Description
+{
+See some miscellaneous stats[BR]
+about your playthrough.[END]
+}
+
+%
+
+#string $String_Menu0_Settings_Title
+{
+Settings[END]
+}
+
+#string $String_Menu0_Settings_Description
+{
+Adjust different settings about[BR]
+the game.[END]
+}
+
+%===========
+% Settings - Sub Menus
+%===========
+
+#string $String_Settings_General_Title
+{
+General[END]
+}
+
+#string $String_Settings_General_Description
+{
+General settings about the[BR]
+game.[END]
+}
+
+%
+
+#string $String_Settings_QoL_Title
+{
+QoL[END]
+}
+
+#string $String_Settings_QoL_Description
+{
+Adjust the new Quality of Life[BR]
+changes.[END]
+}
+
+%
+
+#string $String_Settings_Audio_Title
+{
+Audio[END]
+}
+
+#string $String_Settings_Audio_Description
+{
+Adjust the game volume.[END]
+}
+
+#string $String_Settings_About_Title
+{
+About[END]
+}
+
+#string $String_Settings_About_Description
+{
+Learn more about this mod.[END]
+}
+
+%===========
+% Settings - General - Difficulty
+%===========
+
+#string $String_Settings_General_Difficulty_Title
+{
+Difficulty[END]
+}
+
+#string $String_Settings_General_Difficulty_Easy_Description
+{
+Current Difficulty: [SaveColor][Color 0x19]Easy[RestoreColor][BR]
+[BR]
+Recommended for more casual[BR]
+players.[END]
+}
+
+#string $String_Settings_General_Difficulty_Normal_Description
+{
+Current Difficulty: [SaveColor][Color 0x19]Normal[RestoreColor][BR]
+[BR]
+Recommended for players that[BR]
+wants a fair challenge.[END]
+}
+
+#string $String_Settings_General_Difficulty_Hard_Description
+{
+Current Difficulty: [SaveColor][Color 0x19]Hard[RestoreColor][BR]
+[BR]
+Recommended for players that[BR]
+find PM a little too easy.[END]
+}
+
+#string $String_Settings_General_Difficulty_MQ_Description
+{
+Current Difficulty: [SaveColor][Color 0x19]Master Quest[RestoreColor][BR]
+[BR]
+Recommended for players[BR]
+really familiar with PM.[BR]
+[END]
+}
+
+%===========
+% Settings - General - Stylish
+%===========
+
+#string $String_Settings_General_Stylish_Title
+{
+Stylishes Fanfare[END]
+}
+
+#string $String_Settings_General_Stylish_Description
+{
+Enable the cheers after a[BR]
+Stylish is successfully done.[END]
+}
+
+#string $String_Settings_Yes
+{
+Yes[END]
+}
+
+#string $String_Settings_No
+{
+No[END]
+}
+
+%===========
+% Settings - General - Superguard
+%===========
+
+#string $String_Settings_General_Superguard_Title
+{
+Superguard Behaviour[END]
+}
+
+#string $String_Settings_General_Superguard_Description_TTYD
+{
+Suppress all damage when a[BR]
+Superguard is successfully done.[END]
+}
+
+#string $String_Settings_General_Superguard_Description_Bugfables
+{
+Reduce damage by 2 when a[BR]
+Superguard is successfully done.[END]
+}
+
+#string $String_Settings_TTYD
+{
+TTYD[END]
+}
+
+#string $String_Settings_Bugfables
+{
+Bugfables[END]
+}
+
+%===========
+% Settings - General - Checkpoints
+%===========
+
+#string $String_Settings_General_Checkpoints_Title
+{
+Checkpoints[END]
+}
+
+#string $String_Settings_General_Checkpoints_Description_Checkpoints_OFF
+{
+When you die, you will go[BR]
+directly to the title screen.[END]
+}
+
+#string $String_Settings_General_Checkpoints_Description_Checkpoints_ON
+{
+When you die, you can try[BR]
+the battle once again.[END]
+}
+
+%===========
+% Settings - Quality of Life Changes / QoL - FFWD
+%===========
+
+#string $String_Settings_QoL_FFWD_Title
+{
+FFWD Memory[END]
+}
+
+#string $String_Settings_QoL_FFWD_Description
+{
+Remember FFWD's state.[END]
+}
+
+%===========
+% Settings - Quality of Life Changes / QoL - Quickswapping
+%===========
+
+#string $String_Settings_QoL_Quickswap_Title
+{
+Quickswap Partners[END]
+}
+
+#string $String_Settings_QoL_Quickswap_Description
+{
+Enable being able to use [R][BR]
+to swap to your last partner.[END]
+}
+
+%===========
+% Settings - Quality of Life Changes / QoL - Battle Shortcuts
+%===========
+
+#string $String_Settings_QoL_Shortcuts_Title
+{
+Battle Shortcuts[END]
+}
+
+#string $String_Settings_QoL_Shortcuts_Description
+{
+Enable being able to use the[BR]
+C buttons to navigate in battle.[END]
+}
+
+%===========
+% Settings - Quality of Life Changes / QoL - Bind Battle Shortcuts
+%===========
+
+#string $String_Settings_QoL_BindBShortcuts_Title
+{
+Bind Battle Shortcuts[END]
+}
+
+#string $String_Settings_QoL_BindBShortcuts_Description
+{
+Customize what every shortcut do.[END]
+}
+
+%===========
+% Settings - Audio - OG OST
+%===========
+
+#string $String_Settings_Audio_OST_Title
+{
+Music[END]
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_Audio_OST
+{
+$String_Settings_Yes $String_Settings_Audio_OST_Description
+$String_Settings_No $String_Settings_Audio_OST_Description
+}
+
+#string $String_Settings_Audio_OST_Description
+{
+Toggle between the original game[BR]
+music or the new one.[END]
+}
+
+%===========
+% Settings - Audio - BGM Volume
+%===========
+
+#string $String_Settings_Audio_BGM_Title
+{
+Volume[END]
+}
+
+#new:Data $ExtraTab_Settings_OptionsData_Audio_BGM
+{
+.False $String_Settings_Audio_BGM_Description
+FFFFFFFF
+}
+
+#string $String_Settings_Audio_BGM_Description
+{
+Adjust the BGM volume.[END]
+}
+
+/%
+
+===EXTRA TAB===
+
+Map
+Tattle Log
+Stats
+Settings >
+
+==GENERAL==
+Difficulty SLIDER
+Stylishes Fanfare ON/OFF
+Superguard TTYD/Bugfables % scrapped
+Battle Checkpoints ON/OFF % scrapped
+
+===QoL===
+FFWD Memory ON/OFF
+Quickswap Partners ON/OFF % scrapped
+Battle Shortcuts ON/OFF
+Bind B. Shortcuts > % scrapped
+
+==AUDIO==
+OG OST ON/OFF
+BGM SLIDER
+
+==ABOUT==
+
+%/

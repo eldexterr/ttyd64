@@ -1,0 +1,52 @@
+% Add new exit to "kpa_135"
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  00000000
+    [MapTattle]   0019015F
+}
+
+
+@ $EntryList {
+    ~Vec4f:Entry0 % 1042.0  250.0 -496.0   90.0
+    ~Vec4f:Entry1 % 1168.0   30.0 -560.0  270.0
+    ~Vec4f:Entry2
+}
+
+
+@ $Script_80240240 {
+    Bind  $Script_ExitWalk_802401B0 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+    Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+    Return
+    End
+}
+
+@ $Script_EnterWalk_8024026C
+{
+    Call  GetEntryID    ( *Var0 )
+    Switch  *Var0
+        Case  ==  ~Entry:Entry0
+            Exec  $Script_80240240
+            Exec  $Script_802404C8
+        Case  ==  ~Entry:Entry2
+            Exec  $Script_80240240
+        Default
+            Set   *Var0  $Script_80240240
+            Exec  EnterWalk
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Exit2
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "kpa_135" 00000000 )
+    Wait  100`
+    Return
+    End
+}

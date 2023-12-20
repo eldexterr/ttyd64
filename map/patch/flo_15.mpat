@@ -1,0 +1,61 @@
+% Add new bombeable wall
+
+@ $Script_Main_EnterWalk
+{
+  [138]  ExecWait  $Script_SetMusicTrack % Script_80240060
+}
+
+#delete $Script_80240060
+
+#new:Script $Script_SetMusicTrack % Script_80240060
+{
+    Call  GetEntryID    ( *Var0 )
+    If  *Var0  ==  ~Entry:Entry1
+        Call  SetMusicTrack ( 00000000 .Song:SunshineReturns 00000000 00000008 )
+    Else
+        Switch  *GB_StoryProgress
+            Case  <  .Story:Ch6_DestroyedPuffPuffMachine % 35
+                Call  SetMusicTrack ( 00000000 .Song:SunTowerCloudy 00000000 00000008 )
+            Default
+                Call  SetMusicTrack ( 00000000 .Song:SunTowerSunny 00000000 00000008 )
+        EndSwitch
+    EndIf
+    Exec $Script_InitNewStuff
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Door
+{
+	~BombPos:BombPos
+}
+
+#new:Script $Script_InitNewStuff
+{
+    If *GF_FLO15_Wall == .False
+        Bind     $Script_BlastDoor .Trigger:PointBomb $TriggerCoord_Door 00000001 00000000
+    Else
+        Exec    $Script_HideCrack
+    EndIf
+    Call  MakeItemEntity ( .Item:DamageDodgeP ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_FLO15_Item )
+    Return
+    End
+}
+
+#new:Script $Script_BlastDoor
+{
+    Call    PlayEffect  	( 66` 0 ~Model:crack_wall ~Model:crack_wall 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Exec    $Script_HideCrack
+    Set     *GF_FLO15_Wall .True
+    Unbind
+    Return
+    End
+}
+
+#new:Script $Script_HideCrack
+{
+    Call    EnableGroup ( ~Model:crack .False )
+    Call    ModifyColliderFlags 	( .False ~Collider:crack 7FFFFE00 )
+    Return
+    End
+}

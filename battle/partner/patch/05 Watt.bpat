@@ -1,0 +1,1790 @@
+% Delete all original data and declare
+% everything once again to being able to
+% edit everything whatever way I want without
+% worring about causing an overflow.
+%/
+
+#delete $Script_Init_802390D8
+#delete $Script_Idle_80239138
+#delete $Script_HandleEvent_80239160
+#delete $Script_TakeTurn_80239578
+#delete $Script_8023960C
+#delete $Script_80239684
+#delete $Script_802396DC
+#delete $Script_NextTurn_802397BC
+#delete $Script_802397CC
+#delete $Script_80239914
+#delete $Script_80239990
+#delete $Script_80239A10
+#delete $Script_80239A54
+#delete $Script_80239B98
+#delete $Script_80239BC8
+#delete $Script_8023A684
+#delete $Script_8023AE8C
+#delete $Script_8023B450
+#delete $Script_8023B8EC
+#delete $Script_8023B970
+#delete $IdleAnimations_80238F90
+#delete $DefenseTable_80238FCC
+#delete $StatusTable_80238FE0
+#delete $PartsTable_8023908C
+
+#alias $Function_802383F8 $Function_Watt_Sparkles_TurnOff
+#alias $Function_802383E4 $Function_Watt_Sparkles_TurnOn
+
+@ $Watt
+{
+    % stats
+    [Index]        74b
+    [Level]         0`b
+    [MaxHP]        99`b
+    [Coins]         0`b
+    [Flags]       00000200
+    [StatusTable] $StatusTable_Watt_80238FE0
+    % ai
+    [PartsCount]    1`s
+    [PartsTable]  $PartsTable_Watt_8023908C
+    [Script]      $Script_Watt_Init_802390D8
+    % move effectiveness
+    [Escape]        0`b
+    [Item]          0`b
+    [AirLift]       0`b
+    [Hurricane]     0`b % Bow's "Spook" as well
+    [UpAndAway]     0`b
+    [PowerBounce]  80`b
+    [SpinSmash]     4`b % weight (0-4)
+    % ui positions
+    [Size]         34`b  28`b % width height
+    [HealthBar]     0`b   0`b % dx dy
+    [StatusTurn]  -10`b  20`b % dx dy
+    [StatusIcon]   10`b  20`b % dx dy
+}
+
+#new:IdleAnimations $IdleAnimations_Watt_80238F90
+{
+	.Status:Normal    000E0002
+	.Status:Stone     000E0000
+	.Status:Sleep     000E0014
+	.Status:Poison    000E0015
+	.Status:Stop      000E0000
+    .Status:Dizzy     000E000F
+	.Status:Daze      000E000F
+	.Status:TurnDone  000E0000
+    .Status:Danger    000E0015
+    .Status:Frozen	  000E0000
+    00000030    	  000E0013 % Defense
+	.Status:End
+}
+
+#new:DefenseTable $DefenseTable_Watt_80238FCC
+{
+	.Element:Normal 00000000
+	.Element:Shock  00000063
+	.Element:End
+}
+
+#new:StatusTable $StatusTable_Watt_80238FE0
+{
+	.Status:Normal    100`
+	.Status:Default   100`
+	.Status:Sleep     100`
+	.Status:Poison    100`
+	.Status:Frozen    100`
+	.Status:Dizzy     100`
+	.Status:Fear      100`
+	.Status:Static    100`
+	.Status:Paralyze  100`
+	.Status:Shrink    100`
+	.Status:Stop      100`
+	.Status:DefaultTurnMod    0`
+	.Status:SleepTurnMod      0`
+	.Status:PoisonTurnMod     0`
+	.Status:FrozenTurnMod     0`
+	.Status:DizzyTurnMod      0`
+	.Status:FearTurnMod       0`
+	.Status:StaticTurnMod     0`
+	.Status:ParalyzeTurnMod   0`
+	.Status:ShrinkTurnMod     0`
+	.Status:StopTurnMod       0`
+	.Status:End
+}
+
+#new:PartsTable $PartsTable_Watt_8023908C
+{
+	00800000 01000000 0A1600FF $IdleAnimations_Watt_80238F90 $DefenseTable_Watt_80238FCC 00000080 00000000 00000000 00000000
+}
+
+#new:Script $Script_Watt_Init_802390D8
+{
+    Call  BindTakeTurn  ( .Actor:Self $Script_Watt_TakeTurn_80239578 )
+    Call  BindIdle      ( .Actor:Self $Script_Watt_Idle_80239138 )
+    Call  BindHandleEvent   ( .Actor:Self $Script_Watt_HandleEvent_80239160 )
+    Call  BindNextTurn  ( .Actor:Self $Script_Watt_NextTurn_802397BC )
+    Return
+    End
+}
+
+#new:Script $Script_Watt_Idle_80239138
+{
+    SetPriority  00000063
+    Call  $Function_Watt_UpdateSparkles % Function_80238000
+    Return
+    End
+}
+
+#new:Script $Script_Watt_HandleEvent_80239160
+{
+    Call  UseIdleAnimation      ( .Actor:Partner .False )
+    Call  CloseActionCommandInfo
+    Call  $Function_802383D4
+    Call  $Function_Watt_Sparkles_TurnOn
+    Call  $Function_80238408    ( 00000000 )
+    Call  GetLastEvent  ( .Actor:Partner *Var0 )
+    Switch  *Var0
+        CaseOR  ==  .Event:HitCombo % 9
+        CaseOR  ==  .Event:Hit % A
+            SetConst   *Var0  FFFFFFFF 
+            Set 	   *Var1  000E000C
+            ExecWait DoNormalHit 
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+        EndCaseGroup
+        CaseOR  ==  00000017 % 17
+        CaseOR  ==  .Event:Immune % 19
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            % Check if Partner used the defend command
+            Call $GetPartnerExtraBattleData_API ( E *Var0 )
+            If *Var0 == .False
+                  SetConst  *Var0  00000001
+                  SetConst  *Var1  000E0000
+            Else % Defend
+                  SetConst  *Var0  00000001
+                  SetConst  *Var1  000E0013
+            EndIf
+            ExecWait  DoImmune
+            Call  $Function_802383C0
+        EndCaseGroup
+        Case  ==  .Event:SpikeContact % 2A
+            SetConst  *Var1  000E000C
+            SetConst  *Var2  0000000C
+            ExecWait  80294FE4
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnContact % 2C
+            Call  $Function_Watt_Sparkles_TurnOff
+            SetConst  *Var1  000E000D
+            Set   *Var2  0000000C
+            SetConst  *Var3  000E000E
+            ExecWait  80294C68
+            Call  $Function_Watt_Sparkles_TurnOn
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:BurnHit % E
+            SetConst  *Var1  000E000D
+            SetConst  *Var2  000E000E
+            ExecWait  8029621C
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  .Event:ShockHit % 2F
+            SetConst  *Var1  000E000C
+            Set   *Var2  0000000C
+            ExecWait  80295744
+        Case  ==  00000033 % 33
+            /% Don't KO partner
+          	SetConst  *Var1  000A0011
+          	ExecWait  80296014%/
+        Case  ==  00000034 % 34 % Recover
+            Call  $Function_802383C0
+            SetConst  *Var0  00000001
+            SetConst  *Var1  000E0001
+            SetConst  *Var2  000E0003
+            Set   *Var3  0000000B % Height
+            ExecWait  80295EC4
+            Call  $Function_802383C0
+        Case  ==  0000003E % 3E
+            Call  $Function_80238370
+        CaseOR  ==  00000018 % 18
+        CaseOR  ==  .Event:Block % 1A
+            Call  PlaySoundAtActor  ( .Actor:Partner 0000208C )
+            SetConst  *Var0  00000001
+            SetConst  *Var1  000E0013
+            ExecWait  DoImmune
+            Wait  10`
+        EndCaseGroup
+        Case  ==  .Event:LifeShroomProc % 40
+            Call  $Function_Watt_Sparkles_TurnOff
+        Case  ==  .Event:Revive % 41
+            Call  $Function_Watt_Sparkles_TurnOn
+        Case  ==  .Event:Death % 20 % NEW!
+            Set *Var0 FFFFFFFF
+            Set *Var1 000E000C
+            ExecWait $PartnerDies
+            Return
+        Case  ==  43 % NEW! % .Event:Superguard
+            Set *Var0 FFFFFFFF
+			Set *Var1 000E0013
+            ExecWait $DoSuperguard
+        Default
+    EndSwitch
+    Call  UseIdleAnimation  ( .Actor:Partner .True )
+    Return
+    End
+}
+
+#new:Script $Script_Watt_TakeTurn_80239578
+{
+    Call  GetBattlePhase    ( *Var0 )
+    Switch  *Var0
+        Case  ==  .Phase:ExecuteAction
+            ExecWait  $Script_Watt_802397CC
+        Case  ==  00000005
+            ExecWait  $Script_Watt_8023960C
+        Case  ==  .Phase:RunAwayStart
+            ExecWait  $Script_Watt_RunAwayStart
+        Case  ==  .Phase:RunAwayFail
+            ExecWait  $Script_Watt_RunAwayFail
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Watt_8023960C
+{
+    Call  $Function_Watt_Sparkles_TurnOn
+    Call  $Function_80238408    ( 00000001 )
+    SetConst  *Var0  00000001
+    SetConst  *Var1  000E0008
+    SetConst  *Var2  000E0002
+    SetConst  *Var3  000E0001
+    ExecWait  80294720
+    Return
+    End
+}
+
+#new:Script $Script_Watt_RunAwayStart % Script_80239684
+{
+    Call  $Function_Watt_Sparkles_TurnOn
+    Call  $Function_80238408    ( 00000001 )
+    SetConst  *Var0  00000001
+    SetConst  *Var1  000E0003
+    ExecWait  80294AFC
+    Return
+    End
+}
+
+#new:Script $Script_Watt_RunAwayFail % Script_802396DC
+{
+    Call  $GetPartnerHP_API ( *Var0 )
+    If *Var0 == .False
+        % Don't do anything if partner is dead
+        Return
+    EndIf
+    Call  $Function_Watt_Sparkles_TurnOn
+    Call  $Function_80238408    ( 00000001 )
+    Call  UseIdleAnimation      ( .Actor:Partner .False )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetActorSpeed ( .Actor:Partner *Fixed[6.0] )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+    Call  SetActorYaw   ( .Actor:Partner 00000000 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+    Call  UseIdleAnimation      ( .Actor:Partner .True )
+    Call  $Function_80238408    ( 00000000 )
+    Return
+    End
+}
+
+#new:Script $Script_Watt_NextTurn_802397BC
+{
+    Return
+    End
+}
+
+#new:Script $Script_Watt_802397CC
+{
+    Call  802694A4  ( 00000001 )
+    Call  SetBattleFlagBits ( 00004000 .False )
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var0
+        Case  ==  00000008
+            Call  LoadStarPowerScript
+            ExecWait  *Var0
+            Return
+        Case  ==  00000002 
+			Call  LoadItemScript
+			ExecWait *Var0
+			Return
+    EndSwitch
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000A1 % Electro Dash
+            ExecWait  $Script_Init_ElectroDash
+        Case  ==  000000A2 % Electro Dash - Super Rank
+            ExecWait  $Script_Init_ElectroDash
+        Case  ==  000000A3 % Electro Dash - Ultra Rank
+            ExecWait  $Script_Init_ElectroDash
+        Case  ==  000000A4 % Power Shock
+            ExecWait  $Script_Init_PowerShock
+        Case  ==  000000A5 % Turbo Charge
+            ExecWait  $Script_Init_TurboCharge
+        Case  ==  000000A6 % Mega Shock
+            ExecWait  $Script_Init_MegaShock
+    EndSwitch
+    Return
+    End
+}
+
+% Used for Electro Dash, Power Shock and Mega Shock
+#new:Script $Script_BackToHome_Succeed
+{
+    Call GetMenuSelection ( .False .False *Var0 )
+    If *Var0 <= A3 % Electro Dash
+        Exec $Script_InitTracker
+    EndIf
+    Call  UseBattleCamPreset  ( 00000004 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  GetMenuSelection  ( .False .False *Var0 )
+    If *Var0 <= A3 % Electro Dash - Stylish Move
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .False % The A button wasn't still pressed
+            Loop 4 % 4 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                % Set *Var0 .True % testing
+                If *Var0 == .True
+                    Set   *TrackInput .False % turn off tracker
+                    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                    % Add 1 to the stylish counter (last move only)
+                    Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                    Add *Var0 1
+                    Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                    Set *VarA .False % this move doesn't have an SP cap
+                    ExecWait $Script_DoStylishFX
+                    % happy :D
+                    Call  UseIdleAnimation  ( .Actor:Partner .False )
+                    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0008 )
+                    Wait  25`
+                    Call  UseIdleAnimation  ( .Actor:Partner .True )
+                    Return
+                EndIf
+                Wait 1
+            EndLoop
+        EndIf
+        Set   *TrackInput .False % turn off tracker
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    EndIf
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Watt_80239990
+{
+    Call  UseBattleCamPreset  ( 00000033 )
+    Call  SetGoalToHome ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+    Return
+    End
+}
+
+#new:Script $Script_Watt_80239A10
+{
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 00000000 .Easing:Linear )
+    Return
+    End
+}
+
+#new:Script $Script_Watt_80239A54
+{
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0005 )
+    Call  $Function_Watt_Sparkles_TurnOff
+    Call  80253974      ( 00000100 00000000 00000289 )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  0000000C
+    Call  $Function_802384B0    ( *Var0 *Var1 *Var2 )
+    Call  $Function_80238434
+    Set   *Var9  00000000
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0006 )
+    Loop  00000037
+        Add   *Var9  0000001E
+        If  *Var9  >  000000C8
+            Set   *Var9  000000C8
+        EndIf
+        Call  $Function_80238478    ( *Var9 )
+        Wait  1`
+    EndLoop
+    Call  8026EA7C  ( FFFFFF81 00000001 00000009 )
+    Return
+    End
+}
+
+#new:Script $Script_Watt_80239B98
+{
+    Loop  0000001E
+        Wait  1`
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_Init_ElectroDash
+{
+    Call  LoadActionCommand ( 0000000C )
+    Exec  $Script_NukeTracker
+    Call  802A9000
+    Call  SetupMashMeter  ( 00000001 00000064 00000000 00000000 00000000 00000000 )
+    Wait  10`
+    Call  UseBattleCamPreset      ( 00000030 )
+    Call  InitTargetIterator
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Call  AddGoalPos        ( .Actor:Partner FFFFFFEC 00000000 00000000 )
+    Set   *Flag[02]  .False
+    Loop  0000003C
+        Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+        If  *Var0  !=  .False
+            Set   *Flag[02]  .True
+            BreakLoop
+        EndIf
+        Wait  1`
+    EndLoop
+    Call  MoveBattleCamOver ( 0000004B )
+    If  *Flag[02]  ==  .True
+        Call  802A91B8  ( 00000000 00000066 00000003 00000001 )
+        Set   *Flag[00]  .False
+        Exec  $Script_Watt_80239A10 *VarA
+        Loop  00000014
+            Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+            If  *Var0  ==  .False
+                Set   *Flag[00]  .True
+                BreakLoop
+            EndIf
+            Wait  1`
+        EndLoop
+        If  *Flag[00]  ==  .True
+            Kill  *VarA
+            Goto  A
+        EndIf
+        Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000004 00000000 00000001 00000010 )
+        Set   *Flag[00]  .False
+        Exec  $Script_Watt_80239A54 *VarA
+        Loop  00000037
+            Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+            If  *Var0  ==  .False
+                Set   *Flag[00]  .True
+                BreakLoop
+            EndIf
+            Wait  1`
+        EndLoop
+        If  *Flag[00]  ==  .True
+            Kill  *VarA
+            Goto  A
+        EndIf
+        If  *Flag[00]  ==  .False
+            Exec  $Script_Watt_80239B98 *VarA
+            Loop  0000001E
+                Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+                If  *Var0  ==  .False
+                    Set   *Flag[00]  .True
+                    BreakLoop
+                EndIf
+                Wait  1`
+            EndLoop
+            If  *Flag[00]  ==  .True
+                Kill  *VarA
+                Goto  A
+            EndIf
+        EndIf
+    Else
+        Set   *Flag[00]  .False
+        Exec  $Script_Watt_80239A10 *VarA
+        Loop  00000014
+            Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+            If  *Var0  !=  .False
+                If  *Flag[02]  ==  .False
+                    Call  802A91B8  ( 00000000 0000005C 00000003 00000001 )
+                    Set   *Flag[02]  .True
+                EndIf
+            EndIf
+            If  *Flag[02]  ==  .True
+                If  *Var0  ==  .False
+                    Set   *Flag[00]  .True
+                    BreakLoop
+                EndIf
+            EndIf
+            Wait  1`
+        EndLoop
+        If  *Flag[00]  ==  .True
+            Kill  *VarA
+            Goto  A
+        EndIf
+        Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000004 00000000 00000001 00000010 )
+        Set   *Flag[00]  .False
+        Exec  $Script_Watt_80239A54 *VarA
+        Loop  00000037
+            Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+            If  *Var0  !=  .False
+                If  *Flag[02]  ==  .False
+                    Call  802A91B8  ( 00000000 0000005C 00000003 00000001 )
+                    Set   *Flag[02]  .True
+                EndIf
+            EndIf
+            If  *Flag[02]  ==  .True
+                If  *Var0  ==  .False
+                    Set   *Flag[00]  .True
+                    BreakLoop
+                EndIf
+            EndIf
+            Wait  1`
+        EndLoop
+        If  *Flag[00]  ==  .True
+            Kill  *VarA
+            Goto  A
+        EndIf
+        If  *Flag[00]  ==  .False
+            Exec  $Script_Watt_80239B98 *VarA
+            Loop  0000001E
+                Call  CheckButtonDown   ( ~Flags:Buttons:A *Var0 )
+                If  *Var0  ==  .False
+                    Set   *Flag[00]  .True
+                    BreakLoop
+                EndIf
+                Wait  1`
+            EndLoop
+            If  *Flag[00]  ==  .True
+                Kill  *VarA
+                Goto  A
+            EndIf
+        EndIf
+    EndIf
+    Label  A
+    Wait  2`
+    Call  CloseActionCommandInfo
+    Call  $Function_80238570
+    Call  StopLoopingSoundAtActor      ( .Actor:Partner 00000000 )
+    Call  80269EAC      ( 00000013 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0005 )
+    Call  8026EA7C      ( FFFFFF81 00000001 0000000A )
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Call  AddGoalPos    ( .Actor:Partner FFFFFFFB 00000000 00000000 )
+    Call  FlyToGoal     ( .Actor:Partner 00000005 00000000 .Easing:Linear )
+    Thread
+        Wait  2`
+        Call  $Function_80238478    ( 00000000 )
+    EndThread
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000004 00000000 00000001 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Thread
+            Wait  5`
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+        EndThread
+        Call  SetGoalToTarget   ( .Actor:Partner )
+        Call  AddGoalPos    ( .Actor:Partner 00000028 0000000A 00000000 )
+        Call  FlyToGoal     ( .Actor:Partner 0000000A FFFFFFEC .Easing:QuadraticOut )
+        Wait  20`
+        Call  SetGoalToHome ( .Actor:Partner )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+        Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+        Return
+    EndIf
+    Call  $Function_Watt_Sparkles_TurnOn
+    Call  $Function_802383C0
+    Call  GetMenuSelection  ( *Var0 *Var1 *Var2 )
+    Switch  *Var2
+        Case  ==  000000A1
+            Set   *VarE  00000001
+            Set   *VarF  00000003
+        Case  ==  000000A2
+            Set   *VarE  00000001
+            Set   *VarF  00000004
+        Case  ==  000000A3
+            Set   *VarE  00000001
+            Set   *VarF  00000005
+    EndSwitch
+    Call  GetActionCommandResult  ( *Var0 )
+    Switch  *Var0
+        Case  >  00000000
+            Call  PartnerDamageEnemy    ( *Var0 08000020 0000008D 00000000 *VarF 00000070 )
+        Default
+            Call  PartnerDamageEnemy    ( *Var0 08000020 0000008D 00000000 *VarE 00000030 )
+    EndSwitch
+    Call  80280818
+    Switch  *Var0
+        CaseOR  ==  00000001 % 1
+        CaseOR  ==  00000003 % 3
+            ExecWait  $Script_BackToHome_Succeed
+        EndCaseGroup
+        CaseOR  ==  .HitResult:Hit % 0
+        CaseOR  ==  00000002 % 2
+            ExecWait  $Script_Watt_80239990
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_Init_PowerShock
+{
+    Call  LoadActionCommand ( 00000010 )
+    Exec  $Script_NukeTracker
+    Call  802A9000
+    Call  SetupMashMeter  ( 00000001 00000064 00000000 00000000 00000000 00000000 )
+    Call  80269344  ( 00000000 )
+    Set   *Flag[0F]  .False
+    Call  GetOwnerTarget    ( *VarA *VarB )
+    Call  GetActorFlags     ( *VarA *Var0 )
+    If  *Var0  &  00000800
+        Set   *Flag[0F]  .True
+    EndIf
+    Call  UseBattleCamPreset  ( 0000002F )
+    Call  MoveBattleCamOver ( 00000028 )
+    Call  InitTargetIterator
+    Call  SetGoalToTarget   ( .Actor:Partner )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+    Call  $Function_80238408    ( 00000001 )
+    Call  AddGoalPos    ( .Actor:Partner FFFFFFF1 FFFFFFF6 00000000 )
+    Call  FlyToGoal     ( .Actor:Partner 0000001E 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000004 00000000 00000001 00000010 )
+    Call  AddBattleCamZoom  ( FFFFFF9C )
+    Call  MoveBattleCamOver ( 00000050 )
+    Call  $Function_Watt_Sparkles_TurnOff
+    Call  $Function_80238784
+    Call  802A9210      ( 00000000 00000048 00000003 *Var0 )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  0000000F
+    Add   *Var2  00000005
+    Call  PlayEffect    ( ~FX:SnakingStatic *Var0 *Var1 *Var2 *Fixed[1.0] 0000004B 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Call  $Function_80238434
+    Set   *Var9  00000000
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0006 )
+    Call  8026EA7C      ( FFFFFF81 00000001 0000000A )
+    Thread
+        Loop  0000004B
+            Add   *Var9  00000003
+            Call  $Function_80238478    ( *Var9 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Wait  75`
+    Call  8026EA7C  ( FFFFFF81 00000001 00000009 )
+    Call  PlaySoundAtActor  ( .Actor:Partner 0000028A )
+    Thread
+        SetF  *Var0  *Fixed[1.0]
+        Loop  00000003
+            AddF  *Var0  *Fixed[0.4]
+            Call  SetActorScale ( .Actor:Partner *Var0 *Var0 *Var0 )
+            Wait  1`
+        EndLoop
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Add   *Var1  00000008
+        Call  PlayEffect    ( ~FX:EnergyIn:LongStreaks1 *Var0 *Var1 *Var2 *Fixed[1.8] 0000001E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    EndThread
+    Call  GetActorPos       ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  00000014
+    Add   *Var2  00000005
+    Call  $Function_8023859C    ( *Var0 *Var1 *Var2 )
+    Call  UseBattleCamPreset      ( 0000002F )
+    Call  AddBattleCamZoom  ( 00000064 )
+    Call  MoveBattleCamOver ( 00000005 )
+    Thread
+        Call  $Function_80238668    ( 00000014 )
+    EndThread
+    Loop  00000003
+        Call  $Function_80238478    ( 00000000 )
+        Wait  1`
+        Call  $Function_80238478    ( 000000C8 )
+        Wait  1`
+    EndLoop
+    Call  $Function_80238478    ( 00000000 )
+    Wait  10`
+    Call  $Function_Watt_Sparkles_TurnOn
+    Call  $Function_80238408    ( 00000000 )
+    Exec  $Script_InitTracker
+    Thread
+        Call  SetActorRotationOffset    ( .Actor:Self 00000000 00000014 00000000 )
+        SetF  *Var0  *Fixed[2.2]
+        Loop  0000000C
+            SubF  *Var0  *Fixed[0.1]
+            Call  SetActorScale ( .Actor:Partner *Var0 *Var0 *Var0 )
+            Wait  1`
+        EndLoop
+        Call  SetActorRotationOffset    ( .Actor:Self 00000000 00000000 00000000 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+    EndThread
+    Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000004 00000000 00000001 00000010 )
+    If  *Var0  ==  .HitResult:Miss % 6
+        Wait  15`
+        ExecWait  $Script_Watt_80239990
+        Return
+    EndIf
+    If  *Flag[0F]  !=  .True
+        Call  AddGoalPos    ( .Actor:Partner FFFFFFE7 0000000A 00000000 )
+        Call  FlyToGoal     ( .Actor:Partner 0000000F FFFFFFF6 .Easing:CosInOut )
+    Else
+        Call  AddGoalPos    ( .Actor:Partner FFFFFFE7 FFFFFFF6 00000000 )
+        Call  FlyToGoal     ( .Actor:Partner 0000000F FFFFFFF6 .Easing:CosInOut )
+    EndIf
+    % Stylish Move
+    Exec  $Script_PowerShock_DoStylish *Var9
+    Loop
+        DoesScriptExist ( *Var9 *Var0 )
+        If *Var0 == .False
+            BreakLoop
+        EndIf
+        Wait 1
+    EndLoop
+    Call  802695A8  ( *VarF )
+    Call  GetActionCommandResult  ( *Var0 ) % save filled percentage from action command's gauge
+    Switch  *Var0
+        Case  >  00000000
+            Call  PartnerAfflictEnemy   ( *Var0 50000020 00000000 C0010300 000000FE 00000000 00000070 )
+        Default % Failed
+            Call  PartnerAfflictEnemy   ( *Var0 50000020 00000000 C0010300 000000FF 00000000 00000030 )
+    EndSwitch
+    Call  80280818
+    Wait  30`
+    Switch  *Var0
+        CaseOR  ==  00000001 % 1
+        CaseOR  ==  00000003 % 3
+            ExecWait  $Script_BackToHome_Succeed
+        EndCaseGroup
+        CaseOR  ==  .HitResult:Hit % 0
+        CaseOR  ==  00000002 % 2
+            ExecWait  $Script_Watt_80239990
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_PowerShock_DoStylish
+{
+    Call $ReadAddress ( 8029FC24 0 *Var0 .False .False )
+    If *Var0 >= 27 % Action Command's Gauge was at 100%
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .False % The A button wasn't still pressed
+            Loop 4 % 4 frames
+                % Timing Tutor Badge
+                ExecWait $Script_TimingTutor % writes in var0,1,2
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                % Set *Var0 .True % testing
+                If *Var0 == .True
+                    Set   *TrackInput .False % turn off tracker
+                    Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                    % Add 1 to the stylish counter (last move only)
+                    Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                    Add *Var0 1
+                    Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                    Set *VarA .False % this move doesn't have an SP cap
+                    ExecWait $Script_DoStylishFX
+                    % happy :D
+                    Call  UseIdleAnimation  ( .Actor:Partner .False )
+                    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0008 )
+                    Wait  25`
+                    Call  UseIdleAnimation  ( .Actor:Partner .True )
+                    Return
+                EndIf
+                Wait 1
+            EndLoop
+        EndIf
+        Set   *TrackInput .False % turn off tracker
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_TurboCharge_Main
+{
+    Call  LoadActionCommand ( 00000016 )
+    Call  802A9000      ( 00000001 )
+    Call  80269344      ( 00000000 )
+    Call  SetActorFlagBits  ( .Actor:Player 20000000 .True )
+    Call  UseIdleAnimation  ( .Actor:Player .False )
+    Call  SetAnimation  ( .Actor:Player 00000000 0001001F )
+    Wait  5`
+    Call  UseBattleCamPreset  ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFF83 0000002A 00000000 )
+    Call  SetBattleCamOffsetZ   ( 00000000 )
+    Call  SetBattleCamZoom  ( 00000154 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  SetActorYaw   ( .Actor:Partner 0000001E )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 0000003C )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 0000005A )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 00000078 )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 00000096 )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 000000B4 )
+    Wait  10`
+    Call  802A9398      ( 00000000 00000064 00000003 )
+    Call  AddBattleCamZoom  ( FFFFFFB5 )
+    Call  MoveBattleCamOver ( 00000064 )
+    Call  8024ECF8      ( 00000000 00000000 00000001 )
+    Thread % stylish - init A button tracker
+        Wait  88` % wait until the action command's inputs end
+        Exec  $Script_InitTracker
+    EndThread
+    Thread % Watt flies around Mario
+        Call  EnableActorBlur       ( .Actor:Partner 00000001 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0005 )
+        Call  $Function_80238810    ( 00000000 ) % Function_FlyAroundMario
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+        Call  SetGoalToHome ( .Actor:Partner )
+        Exec  $Script_TurboCharge_Stylish_TrackInputs
+        Call  FlyToGoal     ( .Actor:Partner 0000000A FFFFFFF6 .Easing:CubicOut )
+        % Do Stylish
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            Set   *TrackInput .False % turn off tracker
+            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            % happy :D
+            Call  UseIdleAnimation  ( .Actor:Partner .False )
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0008 )
+            Wait  25`
+            Call  UseIdleAnimation  ( .Actor:Partner .True )
+        EndIf
+        Set   *TrackInput .False % turn off tracker
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+        Wait  10`
+        Call  EnableActorBlur       ( .Actor:Partner 00000000 )
+    EndThread
+    Wait  30`
+    Call  PlaySoundAtActor  ( .Actor:Partner 0000028B )
+    Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var1  0000002A
+    Call  $Function_80238B3C    ( *Var0 *Var1 *Var2 )
+    Wait  59`
+    Call  AddBattleCamZoom  ( 00000064 )
+    Call  MoveBattleCamOver ( 00000005 )
+    Thread % Mario Jump
+        Call  PlaySoundAtActor      ( .Actor:Player 00000160 )
+        Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.0] )
+        Call  SetActorSpeed ( .Actor:Player *Fixed[1.0] )
+        Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+        Call  SetJumpAnimations     ( .Actor:Player 00000000 00010007 00010008 00010009 )
+        Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+        Call  80273444      ( 00000014 00000000 00000000 )
+        Call  SetAnimation  ( .Actor:Player 00000000 00010009 )
+        Wait  4`
+        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+    EndThread
+    Wait  30`
+    Call  UseBattleCamPreset      ( 00000002 )
+    Call  MoveBattleCamOver ( 0000000A )
+    Call  PlaySoundAtActor  ( .Actor:Partner 0000208E )
+    Call  GetActionCommandResult  ( *Var0 )
+    %Call  $Function_80238C08
+    Call  $AddAttackBoost ( .Actor:Player 1 *Var0 )
+    Set   *VarE  *VarF
+    If  *VarA  >  00000000
+        Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+        Add   *Var0  0000000F
+        Add   *Var1  00000023
+        Add   *VarF  00000000
+        Call  PlayEffect    ( 00000056 *VarF *Var0 *Var1 *Var2 *Fixed[1.5] 0000003C 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Wait  4`
+    EndIf
+    If  *Var0  ==  00000000
+    Else
+        Call  ShowVariableMessageBox    ( 0000002A 0000003C *VarA )
+    EndIf
+    Call  WaitForMessageBoxDone
+    Call  SetActorFlagBits  ( .Actor:Player 20000000 .False )
+    Return
+    End
+}
+
+#new:Script $Script_TurboCharge_Stylish_TrackInputs
+{
+    Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+    If *Var0 == .False % The A button wasn't still pressed
+        Loop 4 % 4 frames
+            % Timing Tutor Badge
+            ExecWait $Script_TimingTutor % writes in var0,1,2
+            Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+            If *Var0 == .True
+                BreakLoop
+            EndIf
+            Wait 1
+        EndLoop
+    Else % A button was pressed to soon
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+    EndIf
+    Set   *TrackInput .False % turn off tracker
+    Return
+    End
+}
+
+#new:Script $Script_TurboCharge_Alt
+{
+    Call  LoadActionCommand ( 00000016 )
+    Call  802A9000      ( 00000001 )
+    Call  80269344      ( 00000000 )
+    Call  UseIdleAnimation  ( .Actor:Player .False )
+    Wait  5`
+    Call  UseBattleCamPreset  ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFF83 0000002A 00000000 )
+    Call  SetBattleCamOffsetZ   ( 00000000 )
+    Call  SetBattleCamZoom  ( 00000154 )
+    Call  MoveBattleCamOver ( 0000001E )
+    Call  SetActorYaw   ( .Actor:Partner 0000001E )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 0000003C )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 0000005A )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 00000078 )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 00000096 )
+    Wait  1`
+    Call  SetActorYaw   ( .Actor:Partner 000000B4 )
+    Wait  10`
+    Call  802A9398      ( 00000000 00000064 00000003 )
+    Call  AddBattleCamZoom  ( FFFFFF9C )
+    Call  MoveBattleCamOver ( 00000064 )
+    Call  8024ECF8      ( 00000000 00000000 00000001 )
+    Thread % stylish - init A button tracker
+        Wait  88` % wait until the action command's inputs end
+        Exec  $Script_InitTracker
+    EndThread
+    Thread
+        Call  EnableActorBlur       ( .Actor:Partner 00000001 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0005 )
+        Call  $Function_80238810    ( 00000001 )
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+        Call  SetGoalToHome ( .Actor:Partner )
+        Exec  $Script_TurboCharge_Stylish_TrackInputs
+        Call  FlyToGoal     ( .Actor:Partner 0000000A FFFFFFF6 .Easing:CubicOut )
+        % Do Stylish
+        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+        If *Var0 == .True
+            Set   *TrackInput .False % turn off tracker
+            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            % Add 1 to the stylish counter (last move only)
+            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+            Add *Var0 1
+            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+            Set *VarA .False % this move doesn't have an SP cap
+            ExecWait $Script_DoStylishFX
+            % happy :D
+            Call  UseIdleAnimation  ( .Actor:Partner .False )
+            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0008 )
+            Wait  25`
+            Call  UseIdleAnimation  ( .Actor:Partner .True )
+        EndIf
+        Set   *TrackInput .False % turn off tracker
+        Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+        Wait  10`
+        Call  EnableActorBlur       ( .Actor:Partner 00000000 )
+    EndThread
+    Wait  30`
+    Call  PlaySoundAtActor  ( .Actor:Partner 0000028B )
+    Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var1  0000002A
+    Call  $Function_80238B3C    ( *Var0 *Var1 *Var2 )
+    Wait  59`
+    Call  AddBattleCamZoom  ( 00000064 )
+    Call  MoveBattleCamOver ( 00000005 )
+    Wait  30`
+    Call  UseBattleCamPreset      ( 00000002 )
+    Call  MoveBattleCamOver ( 0000000A )
+    Call  PlaySoundAtActor  ( .Actor:Partner 0000208E )
+    Call  GetActionCommandResult  ( *Var0 )
+    %Call  $Function_80238C08
+    Call  $AddAttackBoost ( .Actor:Player 1 *Var0 )
+    Set   *VarE  *VarF
+    If  *VarA  >  00000000
+        Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+        Add   *Var0  0000000F
+        Add   *Var1  00000023
+        Add   *VarF  00000000
+        Call  PlayEffect    ( 00000056 *VarF *Var0 *Var1 *Var2 *Fixed[1.5] 0000003C 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Wait  4`
+    EndIf
+    If  *Var0  ==  00000000
+    Else
+        Call  ShowVariableMessageBox    ( 0000002A 0000003C *VarA )
+    EndIf
+    Call  WaitForMessageBoxDone
+    Call  SetActorFlagBits  ( .Actor:Player 20000000 .False )
+    Return
+    End
+}
+
+#new:Script $Script_Init_TurboCharge
+{
+    Exec  $Script_NukeTracker
+    Call  GetStatusFlags    ( .Actor:Player *Var0 )
+    If  *Var0  &  0035D000
+        ExecWait  $Script_TurboCharge_Alt % ? - I dunno exactly when this one is used, I added the stylish on both just to be cautious
+    Else
+        ExecWait  $Script_TurboCharge_Main
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_Init_MegaShock
+{
+    Call  LoadActionCommand     ( 00000011 )
+    Exec  $Script_NukeTracker
+    Call  802A9000
+    Call  SetupMashMeter      ( 00000001 00000064 00000000 00000000 00000000 00000000 )
+    Call  80269344      ( 00000000 )
+    Call  UseBattleCamPreset  ( 00000013 )
+    Call  SetBattleCamTarget    ( FFFFFFCA 0000003F 0000000A )
+    Call  SetBattleCamOffsetZ   ( 0000000F )
+    Call  SetBattleCamZoom      ( 0000013A )
+    Call  MoveBattleCamOver     ( 0000001E )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0  00000028
+    Add   *Var1  0000001E
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0003 )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  FlyToGoal     ( .Actor:Partner 00000014 00000000 .Easing:CosInOut )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+    Call  $Function_80238434
+    Set   *Var9  00000000
+    Thread
+        Loop  0000004B
+            Add   *Var9  00000003
+            Call  $Function_80238478    ( *Var9 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  $Function_80238E5C
+    Call  802A91A0      ( 00000000 00000057 00000003 *Var0 )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  0000000F
+    Add   *Var2  00000005
+    Call  PlayEffect    ( ~FX:SnakingStatic *Var0 *Var1 *Var2 *Fixed[1.0] 0000005A 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var1  0000000C
+    Call  PlayEffect    ( ~FX:RadialFlowIn:ElectricalWaves *Var0 *Var1 *Var2 *Fixed[1.3] 0000005A 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    Call  AddBattleCamZoom      ( FFFFFF9C )
+    Call  MoveBattleCamOver     ( 0000005A )
+    Call  8024ECF8      ( 00000000 00000000 00000001 )
+    Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0006 )
+    Call  8026EA7C      ( FFFFFF81 00000001 0000000A )
+    Call  $Function_Watt_Sparkles_TurnOff
+    Call  802695A8      ( *Var1 )
+    Wait  90`
+    Call  $Function_80238478    ( 00000000 )
+    Thread
+        Set   *Var9  0000003C
+        Loop  00000014
+            Sub   *Var9  00000003
+            Call  $Function_80238478    ( *Var9 )
+            Wait  1`
+        EndLoop
+    EndThread
+    Call  8026EA7C  ( FFFFFF81 00000001 00000009 )
+    Call  InitTargetIterator
+    Thread
+        Call  GetActorPos       ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Add   *Var1  0000000C
+        Call  PlaySoundAtActor  ( .Actor:Partner 0000028C )
+        Call  PlayEffect        ( ~FX:ShockNova:Green *Var0 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Wait  10`
+        Call  PlaySoundAtActor  ( .Actor:Partner 00002024 )
+        Call  PlayEffect        ( ~FX:ShockNova:Green *Var0 *Var1 *Var2 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+    EndThread
+    Thread
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0007 )
+        Wait  5`
+        Exec  $Script_InitTracker
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0005 )
+        Wait  15` % was 30`
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0001 )
+    EndThread
+    Thread
+        Call  SetBattleCamZoom      ( 000001A4 )
+        Call  SetBattleCamTarget    ( 00000006 0000003F 0000000A )
+        Call  MoveBattleCamOver     ( 0000000F )
+        Wait  4`
+        Set   *Var0  00000006
+        Loop  0000001E
+            Add   *Var0  00000001
+            Call  SetBattleCamTarget    ( *Var0 0000003F 0000000A )
+            Wait  1`
+        EndLoop
+    EndThread
+    Thread
+        Call  $Function_80238668    ( 0000000A )
+    EndThread
+    Call  802695A8  ( *Var0 )
+    Call  GetActorPos   ( .Actor:Partner *Var1 *Var2 *Var3 )
+    Add   *Var2  0000000C
+    Call  $Function_80238C84    ( *Var0 *Var1 *Var2 *Var3 )
+    Loop
+        Call  SetGoalToTarget   ( .Actor:Self )
+        Call  GetActionCommandResult  ( *VarF )
+        Call  PartnerTestEnemy  ( *Var0 ~Flags:DamageType:0 00000014 00000000 00000001 00000010 )
+        If  *Var0  ==  .HitResult:Miss % 6
+            Goto  B
+        EndIf
+        If  *VarF  ==  00000064
+            % Mega Shock - Stylish Move
+            % Do the stylish only when the 1st actor is about to be electrocuted
+            If *TrackInput == .True
+                Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                If *Var0 == .False % The A button wasn't still pressed
+                    Loop 4 % 4 frames
+                        % Timing Tutor Badge
+                        ExecWait $Script_TimingTutor % writes in var0,1,2
+                        Call $ReadAddress ( $Data_Inputs 0 *Var0 .False .False )
+                        % Set *Var0 .True % testing
+                        If *Var0 == .True
+                            Set   *TrackInput .False % turn off tracker
+                            Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+                            % Add 1 to the stylish counter (last move only)
+                            Call $ReadAddress  ( $Data_Inputs 0 *Var0 2 .False )
+                            Add *Var0 1
+                            Call $WriteAddress ( $Data_Inputs 0 *Var0 2 .False )
+                            Set *VarA .False % this move doesn't have an SP cap
+                            ExecWait $Script_DoStylishFX
+                            % happy :D
+                            Call  SetAnimation  ( .Actor:Partner FFFFFFFF 000E0008 )
+                            Wait  25`
+                            BreakLoop
+                        EndIf
+                        Wait 1
+                    EndLoop
+                EndIf
+                Set   *TrackInput .False % turn off tracker
+                Call  $WriteAddress ( $Data_Inputs 0 0 .False .False ) % turn input bool as false again
+            EndIf
+            Call  PartnerAfflictEnemy   ( *Var0 70000020 00000000 C0010300 000000FE 00000000 00000070 )
+        Else
+            Call  PartnerAfflictEnemy   ( *Var0 70000020 00000000 C0010300 *VarF 00000000 00000070 )
+        EndIf
+        Label  B
+        Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+        If  *Var0  ==  FFFFFFFF % FFFFFFFF
+            BreakLoop
+        EndIf
+        Wait  5`
+    EndLoop
+    Call  $Function_Watt_Sparkles_TurnOn
+    Call  80280818
+    Wait  30`
+    Call  GetActionCommandResult  ( *Var0 )
+    Switch  *Var0
+        Case  >  00000063
+            ExecWait  $Script_BackToHome_Succeed
+        Default
+            ExecWait  $Script_Watt_80239990
+    EndSwitch
+    Return
+    End
+}
+
+#delete $Function_80238000
+
+% Now disable sparkles if Watt is poisoned.
+#new:Function $Function_Watt_UpdateSparkles % Function_80238000
+{
+    0:  ADDIU     SP, SP, FFB0
+    4:  SW        S3, 2C (SP)
+    8:  LA        S3, 800DC070
+   10:  SW        RA, 30 (SP)
+   14:  SW        S2, 28 (SP)
+   18:  SW        S1, 24 (SP)
+   1C:  SW        S0, 20 (SP)
+   20:  SDC1      F24, 48 (SP)
+   24:  SDC1      F22, 40 (SP)
+   28:  SDC1      F20, 38 (SP)
+   2C:  LW        S2, DC (S3)
+   30:  BEQ       A1, R0, .oBC
+   34:  LI        S1, 5
+   38:  LIF       F20, 1.0
+   40:  SW        S1, 14 (SP)
+   44:  SW        R0, 18 (SP)
+   48:  SWC1      F20, 10 (SP)
+   4C:  LW        A1, 144 (S2)
+   50:  LW        A2, 148 (S2)
+   54:  LW        A3, 14C (S2)
+   58:  LI        S0, 1
+   5C:  SAW       S0, $End[C]
+   64:  SAW       R0, $End[10]
+   6C:  SAW       S0, $End[14]
+   74:  SAW       R0, $End[18]
+   7C:  JAL       ~Func:playFX_73
+   80:  CLEAR     A0
+   84:  SWC1      F20, 10 (SP)
+   88:  SW        S1, 14 (SP)
+   8C:  SW        R0, 18 (SP)
+   90:  LW        A1, 144 (S2)
+   94:  LUI       A2, C47A
+   98:  LW        A3, 14C (S2)
+   9C:  SAW       V0, $End[1C]
+   A4:  JAL       ~Func:playFX_73
+   A8:  COPY      A0, S0
+   AC:  SAW       V0, $End[20]
+   B4:  SAW       S0, $End[8]
+        .oBC
+   BC:  LAW       V0, $End[8]
+   C4:  BEQ       V0, R0, .o348
+   C8:  LI        V0, 2
+   CC:  LAW       V0, $End[C]
+   D4:  BEQ       V0, R0, .o108
+   D8:  NOP
+   DC:  LA        S0, $End[10]
+   E4:  LW        V0, 0 (S0)
+   E8:  ADDIU     V0, V0, F
+   EC:  MTC1      V0, F12
+   F0:  NOP
+   F4:  CVT.S.W   F12, F12
+   F8:  JAL       ~Func:clamp_angle
+   FC:  SW        V0, 0 (S0)
+  100:  TRUNC.W.S F6, F0
+  104:  SWC1      F6, 0 (S0)
+        .o108
+  108:  LIF       F0, 6.28318
+  114:  LAF       F12, $End[10]
+  11C:  CVT.S.W   F12, F12
+  120:  MUL.S     F12, F12, F0
+  124:  NOP
+  128:  LIF       F0, 360.0
+  130:  JAL       ~Func:sin_rad
+  134:  DIV.S     F12, F12, F0
+  138:  LIF       F2, 3.0
+  140:  NOP
+  144:  MUL.S     F0, F0, F2
+  148:  NOP
+  14C:  LH        V0, 152 (S2)
+  150:  LIF       F4, 12.0
+  158:  MTC1      V0, F2
+  15C:  NOP
+  160:  CVT.S.W   F2, F2
+  164:  TRUNC.W.S F6, F0
+  168:  MFC1      V1, F6
+  16C:  NOP
+  170:  SLL       V0, V1, 18
+  174:  LWC1      F0, 148 (S2)
+  178:  SRA       V0, V0, 18
+  17C:  SB        V1, 19A (S2)
+  180:  ADD.S     F0, F0, F2
+  184:  MTC1      V0, F2
+  188:  NOP
+  18C:  CVT.S.W   F2, F2
+  190:  LH        V0, 150 (S2)
+  194:  ADD.S     F0, F0, F2
+  198:  MTC1      V0, F2
+  19C:  NOP
+  1A0:  CVT.S.W   F2, F2
+  1A4:  LW        V0, 4 (S3)
+  1A8:  LH        V1, 154 (S2)
+  1AC:  ANDI      V0, V0, 14
+  1B0:  ADD.S     F22, F0, F4
+  1B4:  LWC1      F0, 144 (S2)
+  1B8:  MTC1      V1, F4
+  1BC:  NOP
+  1C0:  CVT.S.W   F4, F4
+  1C4:  ADD.S     F20, F0, F2
+  1C8:  LWC1      F0, 14C (S2)
+  1CC:  LI        V1, 4
+  1D0:  BNE       V0, V1, .o1E0
+  1D4:  ADD.S     F24, F0, F4
+  1D8:  LIF       F22, -1000.0
+        .o1E0
+        % check if watt is poisoned
+        LIO       V0, 800DC070 % battleStatus
+        LW        V0, DC (V0) % partnerActor*
+        LBU       V0, 210 (V0) % debuff byte
+        ORI       V1, R0, 9 % .Status:Poison
+        BEQ       V0, V1, .o2FC % disable sparkles
+        NOP
+  1E0:  LAW       V0, $End[14]
+  1E8:  BEQ       V0, R0, .o2FC
+  1EC:  NOP
+  1F0:  LAW       V1, $End[18]
+  1F8:  BEQ       V1, R0, .o210
+  1FC:  LI        V0, 1
+  200:  BEQ       V1, V0, .o278
+  204:  CLEAR     V0
+  208:  BEQ       R0, R0, .o348
+  20C:  NOP
+        .o210
+  210:  LA        S0, $End[1C]
+  218:  LW        V0, 0 (S0)
+  21C:  BNE       V0, R0, .o250
+  220:  CLEAR     A0
+  224:  MFC1      A1, F20
+  228:  MFC1      A2, F22
+  22C:  MFC1      A3, F24
+  230:  LIF       F0, 1.0
+  238:  LI        V0, 5
+  23C:  SW        V0, 14 (SP)
+  240:  SW        R0, 18 (SP)
+  244:  JAL       ~Func:playFX_73
+  248:  SWC1      F0, 10 (SP)
+  24C:  SW        V0, 0 (S0)
+        .o250
+  250:  LA        A0, $End[20]
+  258:  LW        V1, 0 (A0)
+  25C:  BEQ       V1, R0, .o2DC
+  260:  NOP
+  264:  LW        V0, 0 (V1)
+  268:  SW        R0, 0 (A0)
+  26C:  ORI       V0, V0, 10
+  270:  BEQ       R0, R0, .o2DC
+  274:  SW        V0, 0 (V1)
+        .o278
+  278:  LA        A0, $End[1C]
+  280:  LW        V1, 0 (A0)
+  284:  BEQ       V1, R0, .o29C
+  288:  NOP
+  28C:  LW        V0, 0 (V1)
+  290:  SW        R0, 0 (A0)
+  294:  ORI       V0, V0, 10
+  298:  SW        V0, 0 (V1)
+        .o29C
+  29C:  LA        S0, $End[20]
+  2A4:  LW        V0, 0 (S0)
+  2A8:  BNE       V0, R0, .o2DC
+  2AC:  LI        A0, 1
+  2B0:  MFC1      A1, F20
+  2B4:  MFC1      A2, F22
+  2B8:  MFC1      A3, F24
+  2BC:  LIF       F0, 1.0
+  2C4:  LI        V0, 5
+  2C8:  SW        V0, 14 (SP)
+  2CC:  SW        R0, 18 (SP)
+  2D0:  JAL       ~Func:playFX_73
+  2D4:  SWC1      F0, 10 (SP)
+  2D8:  SW        V0, 0 (S0)
+        .o2DC
+  2DC:  LW        V1, 0 (S0)
+  2E0:  LW        V0, C (V1)
+  2E4:  SWC1      F20, 4 (V0)
+  2E8:  LW        V0, C (V1)
+  2EC:  SWC1      F22, 8 (V0)
+  2F0:  LW        V0, C (V1)
+  2F4:  BEQ       R0, R0, .o344
+  2F8:  SWC1      F24, C (V0)
+        .o2FC
+  2FC:  LA        A0, $End[1C]
+  304:  LW        V1, 0 (A0)
+  308:  BEQ       V1, R0, .o320
+  30C:  NOP
+  310:  LW        V0, 0 (V1)
+  314:  SW        R0, 0 (A0)
+  318:  ORI       V0, V0, 10
+  31C:  SW        V0, 0 (V1)
+        .o320
+  320:  LA        A0, $End[20]
+  328:  LW        V1, 0 (A0)
+  32C:  BEQ       V1, R0, .o348
+  330:  CLEAR     V0
+  334:  LW        V0, 0 (V1)
+  338:  SW        R0, 0 (A0)
+  33C:  ORI       V0, V0, 10
+  340:  SW        V0, 0 (V1)
+        .o344
+  344:  CLEAR     V0
+        .o348
+  348:  LW        RA, 30 (SP)
+  34C:  LW        S3, 2C (SP)
+  350:  LW        S2, 28 (SP)
+  354:  LW        S1, 24 (SP)
+  358:  LW        S0, 20 (SP)
+  35C:  LDC1      F24, 48 (SP)
+  360:  LDC1      F22, 40 (SP)
+  364:  LDC1      F20, 38 (SP)
+  368:  JR        RA
+  36C:  ADDIU     SP, SP, 50
+}
+
+% All functions that references $End (to update the new $End address)
+@ $Function_80238370
+{
+    0:  LAW       A0, $End[1C]
+    8:  ADDIU     SP, SP, FFE8
+    C:  SW        RA, 10 (SP)
+   10:  SAW       R0, $End[8]
+   18:  BEQ       A0, R0, .o28
+   1C:  NOP
+   20:  JAL       ~Func:remove_effect
+   24:  NOP
+        .o28
+   28:  LAW       A0, $End[20]
+   30:  BEQ       A0, R0, .o40
+   34:  NOP
+   38:  JAL       ~Func:remove_effect
+   3C:  NOP
+        .o40
+   40:  LW        RA, 10 (SP)
+   44:  LI        V0, 2
+   48:  JR        RA
+   4C:  ADDIU     SP, SP, 18
+}
+
+@ $Function_802383C0
+{
+    0:  LI        V0, 1
+    4:  SAW       V0, $End[C]
+    C:  JR        RA
+   10:  LI        V0, 2
+}
+
+@ $Function_802383D4
+{
+    0:  SAW       R0, $End[C]
+    8:  JR        RA
+    C:  LI        V0, 2
+}
+
+@ $Function_802383E4
+{
+    0:  LI        V0, 1
+    4:  SAW       V0, $End[14]
+    C:  JR        RA
+   10:  LI        V0, 2
+}
+
+@ $Function_802383F8
+{
+    0:  SAW       R0, $End[14]
+    8:  JR        RA
+    C:  LI        V0, 2
+}
+
+@ $Function_80238408
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  LW        V0, C (A0)
+    C:  JAL       ~Func:get_variable
+   10:  LW        A1, 0 (V0)
+   14:  LW        RA, 10 (SP)
+   18:  SAW       V0, $End[18]
+   20:  LI        V0, 2
+   24:  JR        RA
+   28:  ADDIU     SP, SP, 18
+}
+
+@ $Function_8023859C
+{
+    0:  ADDIU     SP, SP, FFD8
+    4:  SW        S1, 1C (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 24 (SP)
+   10:  SW        S2, 20 (SP)
+   14:  SW        S0, 18 (SP)
+   18:  LW        S0, C (S1)
+   1C:  LW        A1, 0 (S0)
+   20:  JAL       ~Func:get_variable
+   24:  ADDIU     S0, S0, 4
+   28:  LW        A1, 0 (S0)
+   2C:  ADDIU     S0, S0, 4
+   30:  COPY      A0, S1
+   34:  JAL       ~Func:get_variable
+   38:  COPY      S2, V0
+   3C:  COPY      A0, S1
+   40:  LW        A1, 0 (S0)
+   44:  JAL       ~Func:get_variable
+   48:  COPY      S0, V0
+   4C:  CLEAR     A0
+   50:  MTC1      S2, F2
+   54:  NOP
+   58:  CVT.S.W   F2, F2
+   5C:  MFC1      A1, F2
+   60:  MTC1      S0, F2
+   64:  NOP
+   68:  CVT.S.W   F2, F2
+   6C:  MFC1      A2, F2
+   70:  MTC1      V0, F2
+   74:  NOP
+   78:  CVT.S.W   F2, F2
+   7C:  LIF       F0, 1.0
+   84:  MFC1      A3, F2
+   88:  LI        V1, A
+   8C:  SW        V1, 14 (SP)
+   90:  JAL       ~Func:playFX_58
+   94:  SWC1      F0, 10 (SP)
+   98:  COPY      V1, V0
+   9C:  LW        A0, C (V1)
+   A0:  SAW       V1, $End[4]
+   A8:  LI        V1, 3
+   AC:  SW        V1, 30 (A0)
+   B0:  LW        RA, 24 (SP)
+   B4:  LW        S2, 20 (SP)
+   B8:  LW        S1, 1C (SP)
+   BC:  LW        S0, 18 (SP)
+   C0:  LI        V0, 2
+   C4:  JR        RA
+   C8:  ADDIU     SP, SP, 28
+}
+
+@ $Function_80238668
+{
+    0:  LAW       V1, 800DC14C
+    8:  ADDIU     SP, SP, FFC8
+    C:  SW        RA, 1C (SP)
+   10:  SW        S0, 18 (SP)
+   14:  SDC1      F24, 30 (SP)
+   18:  SDC1      F22, 28 (SP)
+   1C:  SDC1      F20, 20 (SP)
+   20:  LH        V0, 150 (V1)
+   24:  LWC1      F2, 144 (V1)
+   28:  MTC1      V0, F0
+   2C:  NOP
+   30:  CVT.S.W   F0, F0
+   34:  ADD.S     F24, F2, F0
+   38:  LH        V0, 152 (V1)
+   3C:  LWC1      F2, 148 (V1)
+   40:  MTC1      V0, F0
+   44:  NOP
+   48:  CVT.S.W   F0, F0
+   4C:  ADD.S     F2, F2, F0
+   50:  LB        V0, 19A (V1)
+   54:  COPY      S0, A0
+   58:  MTC1      V0, F0
+   5C:  NOP
+   60:  CVT.S.W   F0, F0
+   64:  ADD.S     F2, F2, F0
+   68:  LIF       F0, 12.0
+   70:  LH        V0, 154 (V1)
+   74:  ADD.S     F22, F2, F0
+   78:  MTC1      V0, F0
+   7C:  NOP
+   80:  CVT.S.W   F0, F0
+   84:  LWC1      F2, 14C (V1)
+   88:  LW        V0, C (S0)
+   8C:  BEQ       A1, R0, .oD0
+   90:  ADD.S     F20, F2, F0
+   94:  LW        A1, 0 (V0)
+   98:  JAL       ~Func:get_variable
+   9C:  NOP
+   A0:  MFC1      A1, F24
+   A4:  LIF       F0, 1.0
+   AC:  MFC1      A2, F22
+   B0:  MFC1      A3, F20
+   B4:  CLEAR     A0
+   B8:  SW        V0, 70 (S0)
+   BC:  LA        V0, $End[0]
+   C4:  SW        V0, 14 (SP)
+   C8:  JAL       ~Func:playFX_3C
+   CC:  SWC1      F0, 10 (SP)
+        .oD0
+   D0:  LW        V0, 70 (S0)
+   D4:  ADDIU     V0, V0, FFFF
+   D8:  BEQ       V0, R0, .oE8
+   DC:  SW        V0, 70 (S0)
+   E0:  BEQ       R0, R0, .o100
+   E4:  CLEAR     V0
+        .oE8
+   E8:  LAW       V1, $End[0]
+   F0:  LI        V0, 2
+   F4:  LW        A0, C (V1)
+   F8:  LI        V1, 5
+   FC:  SW        V1, 14 (A0)
+        .o100
+  100:  LW        RA, 1C (SP)
+  104:  LW        S0, 18 (SP)
+  108:  LDC1      F24, 30 (SP)
+  10C:  LDC1      F22, 28 (SP)
+  110:  LDC1      F20, 20 (SP)
+  114:  JR        RA
+  118:  ADDIU     SP, SP, 38
+}
+
+@ $Function_80238B3C
+{
+    0:  ADDIU     SP, SP, FFD8
+    4:  SW        S1, 1C (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 24 (SP)
+   10:  SW        S2, 20 (SP)
+   14:  SW        S0, 18 (SP)
+   18:  LW        S0, C (S1)
+   1C:  LW        A1, 0 (S0)
+   20:  JAL       ~Func:get_variable
+   24:  ADDIU     S0, S0, 4
+   28:  LW        A1, 0 (S0)
+   2C:  ADDIU     S0, S0, 4
+   30:  COPY      A0, S1
+   34:  JAL       ~Func:get_variable
+   38:  COPY      S2, V0
+   3C:  COPY      A0, S1
+   40:  LW        A1, 0 (S0)
+   44:  JAL       ~Func:get_variable
+   48:  COPY      S0, V0
+   4C:  CLEAR     A0
+   50:  MTC1      S2, F2
+   54:  NOP
+   58:  CVT.S.W   F2, F2
+   5C:  MFC1      A1, F2
+   60:  MTC1      S0, F2
+   64:  NOP
+   68:  CVT.S.W   F2, F2
+   6C:  MFC1      A2, F2
+   70:  MTC1      V0, F2
+   74:  NOP
+   78:  CVT.S.W   F2, F2
+   7C:  LIF       F0, 1.0
+   84:  MFC1      A3, F2
+   88:  LI        V1, 3C
+   8C:  SW        V1, 14 (SP)
+   90:  JAL       ~Func:playFX_58
+   94:  SWC1      F0, 10 (SP)
+   98:  COPY      V1, V0
+   9C:  LW        A0, C (V1)
+   A0:  LI        V0, 2
+   A4:  SAW       V1, $End[4]
+   AC:  COPY      V1, V0
+   B0:  SW        V1, 30 (A0)
+   B4:  LW        RA, 24 (SP)
+   B8:  LW        S2, 20 (SP)
+   BC:  LW        S1, 1C (SP)
+   C0:  LW        S0, 18 (SP)
+   C4:  JR        RA
+   C8:  ADDIU     SP, SP, 28
+}
+
+@ $Function_80238C84
+{
+    0:  ADDIU     SP, SP, FFD8
+    4:  SW        S2, 20 (SP)
+    8:  COPY      S2, A0
+    C:  SW        RA, 24 (SP)
+   10:  SW        S1, 1C (SP)
+   14:  SW        S0, 18 (SP)
+   18:  LW        S0, C (S2)
+   1C:  BNEL      A1, R0, .o24
+   20:  SW        R0, 70 (S2)
+        .o24
+   24:  LW        V1, 70 (S2)
+   28:  BEQ       V1, R0, .o40
+   2C:  LI        V0, 1
+   30:  BEQ       V1, V0, .o130
+   34:  CLEAR     V0
+   38:  BEQ       R0, R0, .o1C0
+   3C:  NOP
+        .o40
+   40:  LW        A1, 0 (S0)
+   44:  ADDIU     S0, S0, 4
+   48:  JAL       ~Func:get_variable
+   4C:  COPY      A0, S2
+   50:  SW        V0, 74 (S2)
+   54:  LW        A1, 0 (S0)
+   58:  ADDIU     S0, S0, 4
+   5C:  JAL       ~Func:get_variable
+   60:  COPY      A0, S2
+   64:  LW        A1, 0 (S0)
+   68:  ADDIU     S0, S0, 4
+   6C:  COPY      A0, S2
+   70:  JAL       ~Func:get_variable
+   74:  COPY      S1, V0
+   78:  COPY      A0, S2
+   7C:  LW        A1, 0 (S0)
+   80:  JAL       ~Func:get_variable
+   84:  COPY      S0, V0
+   88:  CLEAR     A0
+   8C:  LI        V1, 14
+   90:  SW        V1, 78 (S2)
+   94:  LI        V1, A
+   98:  MTC1      S1, F2
+   9C:  NOP
+   A0:  CVT.S.W   F2, F2
+   A4:  MFC1      A1, F2
+   A8:  MTC1      S0, F2
+   AC:  NOP
+   B0:  CVT.S.W   F2, F2
+   B4:  LIF       F0, 1.0
+   BC:  MFC1      A2, F2
+   C0:  MTC1      V0, F2
+   C4:  NOP
+   C8:  CVT.S.W   F2, F2
+   CC:  SW        V1, 7C (S2)
+   D0:  SWC1      F0, 10 (SP)
+   D4:  LW        V1, 78 (S2)
+   D8:  MFC1      A3, F2
+   DC:  ADDIU     V1, V1, A
+   E0:  JAL       ~Func:playFX_58
+   E4:  SW        V1, 14 (SP)
+   E8:  LW        V1, C (V0)
+   EC:  SAW       V0, $End[4]
+   F4:  LI        V0, 3
+   F8:  SW        V0, 30 (V1)
+   FC:  LW        V0, 74 (S2)
+  100:  BLTZL     V0, .o108
+  104:  ADDIU     V0, V0, F
+        .o108
+  108:  SRA       V0, V0, 4
+  10C:  SLL       V0, V0, 2
+  110:  LA        V1, $???_8023B948
+  118:  ADDU      V0, V0, V1
+  11C:  LW        V1, 0 (V0)
+  120:  LI        V0, 1
+  124:  SW        V0, 70 (S2)
+  128:  BEQ       R0, R0, .o1BC
+  12C:  SW        V1, 74 (S2)
+        .o130
+  130:  LI        V0, A
+  134:  LW        V1, 7C (S2)
+  138:  LW        A0, 74 (S2)
+  13C:  SUBU      V0, V0, V1
+  140:  MULT      A0, V0
+  144:  LI        A0, 66666667
+  14C:  SLL       V0, V1, 1
+  150:  MFLO      T1
+  154:  ADDU      V0, V0, V1
+  158:  ADDU      V0, V0, T1
+  15C:  MULT      V0, A0
+  160:  LA        A1, $End[4]
+  168:  LW        A0, 0 (A1)
+  16C:  SRA       V0, V0, 1F
+  170:  LW        A0, C (A0)
+  174:  MFHI      V1
+  178:  SRA       V1, V1, 2
+  17C:  SUBU      V1, V1, V0
+  180:  SW        V1, 30 (A0)
+  184:  LW        V0, 7C (S2)
+  188:  BEQ       V0, R0, .o194
+  18C:  ADDIU     V0, V0, FFFF
+  190:  SW        V0, 7C (S2)
+        .o194
+  194:  LW        V0, 78 (S2)
+  198:  BNE       V0, R0, .o1B8
+  19C:  ADDIU     V0, V0, FFFF
+  1A0:  LW        A0, 0 (A1)
+  1A4:  LW        V1, 0 (A0)
+  1A8:  LI        V0, 2
+  1AC:  ORI       V1, V1, 10
+  1B0:  BEQ       R0, R0, .o1C0
+  1B4:  SW        V1, 0 (A0)
+        .o1B8
+  1B8:  SW        V0, 78 (S2)
+        .o1BC
+  1BC:  CLEAR     V0
+        .o1C0
+  1C0:  LW        RA, 24 (SP)
+  1C4:  LW        S2, 20 (SP)
+  1C8:  LW        S1, 1C (SP)
+  1CC:  LW        S0, 18 (SP)
+  1D0:  JR        RA
+  1D4:  ADDIU     SP, SP, 28
+}

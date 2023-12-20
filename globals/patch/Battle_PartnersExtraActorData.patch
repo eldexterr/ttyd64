@@ -1,0 +1,553 @@
+% In PM64 all partner actor data get nuked every time
+% you swap partners unlike TTYD, this file reserve some
+% extra data to know if a partner had an status or boosts
+% after swapping.
+
+%==Struct==
+%
+%=Statuses=
+%
+%   [0x00]= StatusID
+%
+%   [0x01]= Status - turns left
+%
+%   [0x02]= Static - turns left
+%
+%   [0x03]= Invisible - turns left
+%
+%=Boosts & Debuffs=
+%
+%   [0x04]= Defense Boosts
+%
+%   [0x05]= Defense boosts - turns left
+%
+%   [0x06]= Offensive boosts
+%
+%   [0x07]= Offensive boosts - turns left
+%
+%   [0x08]= HP boosts
+%
+%   [0x09]= HP boosts - turns left
+%
+%   [0x0A]= FP boosts
+%
+%   [0x0B]= FP boosts - turns left
+%
+%=Only used by Kooper=
+%
+%   [0x0C]= Actor Flipped byteflag
+%
+%   [0x0D]= Actor Flipped - turns left
+%
+%=Defend & Charge Bytes=========
+%
+%   [0x0E]= Defend Command Byte
+%   [0x0F]= Charge Byte
+#new:Data $ExtraPartnerActorData
+{
+    00000000 00000000 00000000 00000000 % Goombario
+    00000000 00000000 00000000 00000000 % Kooper
+    00000000 00000000 00000000 00000000 % Bombette
+    00000000 00000000 00000000 00000000 % Parakarry
+    00000000 00000000 00000000 00000000 % Bow
+    00000000 00000000 00000000 00000000 % Watt
+    00000000 00000000 00000000 00000000 % Sushie
+    00000000 00000000 00000000 00000000 % Lakilester
+}
+
+% A0 = offset
+%
+% V0 = *out (Always saves as 1 byte)
+#new:Function $GetPartnerExtraBattleData
+{
+    PUSH    RA, T0, T1
+    % Get current Partner
+    LABU    T0, 8010F2A2 % PartnerID
+    BEQ     T0, R0, .End
+    CLEAR   V0 % no partner
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End
+    CLEAR   V0 % Partner isn't HP compatible
+    % Check if is Bow
+    ORI     T1, R0, 9
+    BEQL    T0, T1, .FormatBowID
+    ORI     T0, R0, 5 % use 5 instead of 9
+    .FormatBowID
+    % get offset
+    ADDI    T0, T0, FFFF % sub 1
+    ORI     T1, R0, 10
+    MULT    T0, T1
+    MFLO    T1
+    LIO     T0, $ExtraPartnerActorData
+    ADDU    T0, T0, T1 % get partner offset
+    % get exact byte to read
+    ADDU    T0, T0, A0
+    LBU     V0, 0 (T0)
+    .End
+    POP     RA, T0, T1
+    JR      RA
+    NOP
+}
+
+% V0 = current partner extra data (pointer)
+#new:Function $GetPartnerExtraBattleData_Pointer
+{
+    PUSH    RA, T0, T1
+    % Get current Partner
+    LABU    T0, 8010F2A2 % PartnerID
+    BEQ     T0, R0, .End
+    CLEAR   V0 % no partner
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End
+    CLEAR   V0 % Partner isn't HP compatible
+    % Check if is Bow
+    ORI     T1, R0, 9
+    BEQL    T0, T1, .FormatBowID
+    ORI     T0, R0, 5 % use 5 instead of 9
+    .FormatBowID
+    % get offset
+    ADDI    T0, T0, FFFF % sub 1
+    ORI     T1, R0, 10
+    MULT    T0, T1
+    MFLO    T1
+    LIO     T0, $ExtraPartnerActorData
+    ADDU    V0, T0, T1 % get partner offset
+    .End
+    POP     RA, T0, T1
+    JR      RA
+    NOP
+}
+
+% A0 = partnerID
+%
+% V0 = partner extra data (pointer)
+#new:Function $GetPartnerExtraBattleData_Pointer_byID
+{
+    PUSH    T0, T1
+    % Check if is Bow
+    ORI     T1, R0, 9
+    BEQL    A0, T1, .FormatBowID
+    ORI     A0, R0, 5 % use 5 instead of 9
+    .FormatBowID
+    % get offset
+    ADDI    T0, A0, FFFF % sub 1
+    ORI     T1, R0, 10
+    MULT    T0, T1
+    MFLO    T1
+    LIO     T0, $ExtraPartnerActorData
+    ADDU    V0, T0, T1 % get partner offset
+    POP     T0, T1
+    JR      RA
+    NOP
+}
+
+% A0 = PartnerID
+%
+% A1 = offset
+%
+% V0 = *out (Always saves as 1 byte)
+#new:Function $GetPartnerExtraBattleData_byID
+{
+    PUSH    T0, T1
+    % Check if partner is Bow
+    ORI     T1, R0, 9
+    BEQL    A0, T1, .FormatBowID
+    ORI     T0, R0, 5 % use 5 instead of 9
+    .FormatBowID
+    % get offset
+    ADDI    T0, A0, FFFF % sub 1
+    ORI     T1, R0, 10
+    MULT    T0, T1
+    MFLO    T1
+    LIO     T0, $ExtraPartnerActorData
+    ADDU    T0, T0, T1 % get partner offset
+    % get exact byte to read
+    ADDU    T0, T0, A1
+    LBU     V0, 0 (T0)
+    POP     T0, T1
+    JR      RA
+    NOP
+}
+
+% A0 = offset
+%
+% A1 = value
+%
+% Note: Always write by 1 byte
+#new:Function $SetPartnerExtraBattleData
+{
+    PUSH    RA, T0, T1
+    % Get current Partner
+    LABU    T0, 8010F2A2 % PartnerID
+    BEQ     T0, R0, .End
+    CLEAR   V0 % no partner
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End
+    CLEAR   V0 % Partner isn't HP compatible
+    % Check if is Bow
+    ORI     T1, R0, 9
+    BEQL    T0, T1, .FormatBowID
+    ORI     T0, R0, 5 % use 5 instead of 9
+    .FormatBowID
+    % get offset
+    ADDI    T0, T0, FFFF % sub 1
+    ORI     T1, R0, 10
+    MULT    T0, T1
+    MFLO    T1
+    LIO     T0, $ExtraPartnerActorData
+    ADDU    T0, T0, T1 % get partner offset
+    % get exact byte to read
+    ADDU    T0, T0, A0
+    SB      A1, 0 (T0)
+    .End
+    POP     RA, T0, T1
+    JR      RA
+    NOP
+}
+
+% A0 = PartnerID
+%
+% A1 = offset
+%
+% A2 = value
+%
+% Note: Always write by 1 byte
+#new:Function $SetPartnerExtraBattleData_byID
+{
+    PUSH    T0, T1
+    % Check if partner is Bow
+    ORI     T1, R0, 9
+    BEQL    A0, T1, .FormatBowID
+    ORI     T0, R0, 5 % use 5 instead of 9
+    .FormatBowID
+    % get offset
+    ADDI    T0, A0, FFFF % sub 1
+    ORI     T1, R0, 10
+    MULT    T0, T1
+    MFLO    T1
+    LIO     T0, $ExtraPartnerActorData
+    ADDU    T0, T0, T1 % get partner offset
+    % get exact byte to read
+    ADDU    T0, T0, A1
+    SB      A2, 0 (T0)
+    POP     T0, T1
+    JR      RA
+    NOP
+}
+
+#new:Function $ClearPartnerExtraData
+{
+    PUSH    RA, V0, T0, T1
+    LABU    T0, 8010F2A2 % partnerID
+    BEQ     T0, R0, .End
+    NOP     % no partner
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End % Partner isn't HP compatible
+    NOP
+    % Check if is Bow
+    ORI     T1, R0, 9
+    BEQL    T0, T1, .FormatBowID
+    ORI     T0, R0, 5 % use 5 instead of 9
+    .FormatBowID
+    ADDI    T0, T0, FFFF % sub 1
+    ORI     T1, R0, 10
+    MULT    T0, T1
+    MFLO    T1
+    LIO     T0, $ExtraPartnerActorData
+    ADDU    T0, T0, T1 % get partner offset
+    SW      R0, 0 (T0)
+    SW      R0, 4 (T0)
+	SW      R0, 8 (T0)
+    SW      R0, C (T0)
+    .End
+    POP     RA, V0, T0, T1
+    JR      RA
+    NOP
+}
+
+% Clear all related data for statuses, buffs and debuffs for current partner.
+#export:Function:Battle $ClearPartnerStatusData
+{
+    PUSH    RA, A0, V0, T0, T1, R0
+    LIO     T0, 800DC14C % partner battle data
+    LW      T0, 0 (T0)
+    SW      T0, 24 (SP) % push $partner
+    LH      A0, 210 (T0) % debuff data
+    BEQ     A0, R0, .Static
+    NOP
+    SH      R0, 210 (T0) % debuff data
+    JAL     80047898 % ~Func:remove_status_icon_debuff
+    LHU     A0, 436 (T0) % load iconDataIndex
+    % remove debuff counter
+    LW	    V0, 0440 (T0) % load debuffIconData
+    LW	    V0, 000C (V0) % load counter data
+    SW	    R0, 003C (V0) % set remaining turns as zero
+    .Static
+    LW      T0, 24 (SP) % load $partner
+    LH      A0, 212 (T0) % static status data
+    BEQ     A0, R0, .KO
+    SH      R0, 212 (T0) % static status data
+    JAL     800479A0 % ~Func:remove_status_icon_static
+    LHU     A0, 436 (T0) % load iconDataIndex
+    .KO
+    LW      T0, 24 (SP) % load $partner
+    SH      R0, 216 (T0) % KO status data
+    LH      A0, 218 (T0) % transparent status data
+    BEQ     A0, R0, .Status
+    SH      R0, 218 (T0) % transparent status data
+    JAL     80047AA8 % ~Func:remove_status_icon_transparent
+    LHU     A0, 436 (T0) % load iconDataIndex
+    .Status
+    LW      T0, 24 (SP) % load $partner
+    SB      R0, 21C (T0) % status
+    SW      R0, 220 (T0) % atk & def buffs
+    % clear all data related to the new buff and debuffs
+    JAL     $Function_RemoveBuffs_Partner
+    NOP
+    POP     RA, A0, V0, T0, T1, R0
+    JR      RA
+    NOP
+}
+
+% Clear all related data for statuses, buffs and debuffs for player.
+#export:Function:Battle $ClearPlayerStatusData % used in Battle_PlayerTeam_DontSwapPositions.patch
+{
+    PUSH    RA, A0, V0, T0, T1, R0
+    LIO     T0, 800DC148 % player battle data
+    LW      T0, 0 (T0)
+    SW      T0, 24 (SP) % push $player
+    LH      A0, 210 (T0) % debuff data
+    BEQ     A0, R0, .Static
+    NOP
+    SH      R0, 210 (T0) % debuff data
+    JAL     80047898 % ~Func:remove_status_icon_debuff
+    LHU     A0, 436 (T0) % load iconDataIndex
+    % remove debuff counter
+    LW	    V0, 0440 (T0) % load debuffIconData
+    LW	    V0, 000C (V0) % load counter data
+    SW	    R0, 003C (V0) % set remaining turns as zero
+    .Static
+    LW      T0, 24 (SP) % load $player
+    LH      A0, 212 (T0) % static status data
+    BEQ     A0, R0, .KO
+    SH      R0, 212 (T0) % static status data
+    JAL     800479A0 % ~Func:remove_status_icon_static
+    LHU     A0, 436 (T0) % load iconDataIndex
+    .KO
+    LW      T0, 24 (SP) % load $player
+    SH      R0, 216 (T0) % KO status data
+    LH      A0, 218 (T0) % transparent status data
+    BEQ     A0, R0, .Status
+    SH      R0, 218 (T0) % transparent status data
+    JAL     80047AA8 % ~Func:remove_status_icon_transparent
+    LHU     A0, 436 (T0) % load iconDataIndex
+    .Status
+    LW      T0, 24 (SP) % load $player
+    SB      R0, 21C (T0) % status
+    SW      R0, 220 (T0) % atk & def buffs
+    % clear all data related to the new buff and debuffs
+    JAL     $Function_RemoveBuffs_ActorID
+    CLEAR   A0 % .Actor:Player
+    POP     RA, A0, V0, T0, T1, R0
+    JR      RA
+    NOP
+}
+
+% Call  $GetPartnerExtraBattleData_API ( offset *out )
+%
+% Note: Always saves as 1 byte
+#new:Function $GetPartnerExtraBattleData_API
+{
+    PUSH    RA, A0, A1, A2, V0, V1, S0, S1
+    COPY    S1, A0
+    LW      S0, C (S1)
+    % read arg0
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    COPY    A0, V0
+    JAL     $GetPartnerExtraBattleData
+    NOP
+    COPY    A0, S1 % restore A0
+    COPY    A2, V0
+    JAL     ~Func:set_variable
+    LW      A1, 4 (S0)
+    POP     RA, A0, A1, A2, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call  $SetPartnerExtraBattleData_API ( offset value )
+%
+% Note: Always saves as 1 byte
+#new:Function $SetPartnerExtraBattleData_API
+{
+    PUSH    RA, A0, A1, A2, V0, V1, S0, S1, S2
+    COPY    S1, A0
+    LW      S0, C (S1)
+    % read arg0
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S0)
+    COPY    S2, V0
+    % read arg1
+    JAL     ~Func:get_variable
+    LW      A1, 4 (S0)
+    % S2=offset
+    % V0=new value
+    COPY    A0, S2
+    JAL     $SetPartnerExtraBattleData
+    COPY    A1, V0    
+    POP     RA, A0, A1, A2, V0, V1, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Decrease partner extra data every new turn (if neccesary)
+#new:Function $AdvancePartnersExtraData
+{
+    % This function is ran at the start of every turn at PartnersHP.patch - Hook 170454 % 80241B74
+    PUSH    RA, A0, A1, A2, V0
+    % check if the player even have a partner
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End
+    NOP
+    % check if is neccesary to advance any status turn or
+    % defense buffs for you current partner
+    JAL     $GetPartnerExtraBattleData_Pointer
+    NOP
+    COPY    A0, V0
+    .Loop_TurnsLeft
+    % status turns
+    LBU     A1, 1 (A0) % load status turns left
+    BNEL    A1, R0, .StatusTurnDecreased
+    ADDI    A1, A1, FFFF
+    .StatusTurnDecreased
+    SB      A1, 1 (A0)
+    % defense buffs, turns left
+    LBU     A1, 5 (A0)
+    BEQ     A1, R0, .DefTurnDecreased
+    NOP
+    % Update buff
+    ADDI    A1, A1, FFFF
+    BNE     A1, R0, .DefTurnDecreased
+    ORI     A2, R0, 0014
+    SAW     A2, 8029F258 % battle wait timer
+    .DefTurnDecreased
+    SB      A1, 5 (A0)
+    % attack buffs, turns left
+    LBU     A1, 7 (A0)
+    BEQ     A1, R0, .AtkTurnDecreased
+    NOP
+    % Update buff
+    ADDI    A1, A1, FFFF
+    BNE     A1, R0, .AtkTurnDecreased
+    ORI     A2, R0, 0014
+    SAW     A2, 8029F258 % battle wait timer
+    .AtkTurnDecreased
+    SB      A1, 7 (A0)
+    % HP buffs, turns left
+    LBU     A1, 9 (A0)
+    BEQ     A1, R0, .HPTurnDecreased
+    NOP
+    % Update buff
+    ADDI    A1, A1, FFFF
+    BNE     A1, R0, .HPTurnDecreased
+    ORI     A2, R0, 0014
+    SAW     A2, 8029F258 % battle wait timer
+    .HPTurnDecreased
+    SB      A1, 9 (A0)
+    % FP buffs, turns left
+    LBU     A1, B (A0)
+    BEQ     A1, R0, .FPTurnDecreased
+    NOP
+    % Update buff
+    ADDI    A1, A1, FFFF
+    BNE     A1, R0, .FPTurnDecreased
+    ORI     A2, R0, 0014
+    SAW     A2, 8029F258 % battle wait timer
+    .FPTurnDecreased
+    SB      A1, B (A0)
+    %=====================
+    % Kooper flipped data
+    %=====================
+    LABU    V0, 8010F2A2 % partnerID
+    ORI     T0, R0, 2
+    % Only decrease the flipped turns with this function if kooper isn't the
+    % current partner, if kooper is the current partner, the turns get decreased
+    % on his NextTurn script in his battle patch (Kooper.bpat).
+    BEQ     V0, T0, .End
+    NOP
+    ADDI    A1, R0, C
+    JAL     $GetPartnerExtraBattleData_byID
+    ORI     A0, R0, 2 % kooper
+    BEQ     V0, R0, .End
+    NOP
+    % Decrease koopers flipped turns each new turn (even if he isn't the current partner)
+    ORI     A0, R0, 2 % kooper
+    ADDI    A1, R0, D
+    JAL     $SetPartnerExtraBattleData_byID
+    ADDI    A2, V0, FFFF % sub 1
+    .End
+    POP     RA, A0, A1, A2, V0
+    JR      RA
+    NOP
+}
+
+% Patch ~Func:initialize_battle
+%
+% Nuke the extra data everytime a battle starts
+@Hook 16CA18 % 8023E138
+{
+    PUSH    RA
+    JAL     $Function_ClearExtraActorData_Partners
+    NOP
+    JAL     $Function_ClearExtraActorData_Everyone % from Battle_ExtraActorData_Everyone.patch
+    NOP
+    % Enemies item data
+    JAL     $EnemyItemTable_ClearAllData % from Battle_ItemDropsHoldTables.patch
+    NOP
+    % Clear buffs/debuffs counters stuff
+    JAL     $Function_ClearDeBuffs_AllData % from Battle_NewStatuses.patch
+    NOP
+    SAB     R0, $FPDrainByte % clear FP Drain's byte
+    POP     RA
+    % restore vanilla code
+    LIO     S3, 8010F290
+    J       8023E140
+    RESERVED
+}
+
+#new:Function $Function_ClearExtraActorData_Partners
+{
+    PUSH    T0, T1, T2
+    LIO     T0, $ExtraPartnerActorData
+    CLEAR   T1
+    .Loop
+	SW      R0, 0 (T0)
+    SW      R0, 4 (T0)
+    SW      R0, 8 (T0)
+    SW      R0, C (T0)
+    ADDIU   T1, T1, 1
+    SLTIU   T2, T1, 8 % Because 8 Partners
+    BNE     T2, R0, .Loop
+    ADDIU   T0, T0, 10 % read next partner data
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+#export $ExtraPartnerActorData
+#export $GetPartnerExtraBattleData
+#export $GetPartnerExtraBattleData_Pointer
+#export $SetPartnerExtraBattleData
+#export $GetPartnerExtraBattleData_byID
+#export $GetPartnerExtraBattleData_Pointer_byID
+#export $SetPartnerExtraBattleData_byID
+#export $GetPartnerExtraBattleData_API
+#export $SetPartnerExtraBattleData_API
+#export $AdvancePartnersExtraData
+#export $ClearPartnerExtraData

@@ -1,0 +1,551 @@
+% Data and functions the minigames use
+
+#export:Function $Function_UpdateMinigames
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    JAL     $Function_MoleMinigame_Step
+    NOP
+    JAL     $Function_BartenderMinigame_Step
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+%========================
+% Monty Moles - kmr_32
+%========================
+
+% Code ported from Cooking Princess
+
+#export:Data $GameState_Mole
+{ 00b }
+
+#export:Data $Minigame_Mole_Data
+{
+00000000 % timer
+00000000 % score
+}
+
+#new:Function $Function_MoleMinigame_Step
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LABU    A0, $GameState_Mole
+    BEQ     A0, R0, .End
+    NOP
+    ORI     A1, R0, 1
+    BEQ     A0, A1, .State_Ready
+    ORI     A1, R0, 2
+    BEQ     A0, A1, .State_Step
+    ORI     A1, R0, 3
+    BEQ     A0, A1, .State_Results
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .State_Ready
+    JAL     $Minigame_Mole_ReadySetGo
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .State_Step
+    JAL     $Minigame_Mole_UpdateScoreAndTimer
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .State_Results
+    JAL     $Minigame_Mole_FinishGame
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% `0x00` - `u16` state
+%
+% `0x02` - `u16` timer
+#export:Data $GoTimer
+{
+    0000s % state
+    0000s % timer
+}
+
+#export:Function $Minigame_Mole_ReadySetGo
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     S0, $GoTimer
+    LHU     A0, 0 (S0) % state
+    ORI     A1, R0, 5 % timer has ended
+    BEQ     A0, A1, .SetGameState_2
+    NOP
+    JAL     $ReadySetGo
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .SetGameState_2
+    ORI     A2, R0, 2 % Moles game - step
+    SAB     A2, $GameState_Mole
+    %JAL     ~Func:enable_player_input
+    %RESERVED
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    JR      RA
+    NOP
+}
+
+#new:Function $ReadySetGo
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     S0, $GoTimer
+    LHU     A0, 0 (S0) % state
+    % Start
+    BEQ     A0, R0, .AdvanceTimer
+    NOP
+    .DrawNumbers
+    % 3
+    ORI     A1, R0, 1
+    BEQ     A0, A1, .ConvertIntToASCII
+    ORI     A2, R0, 3
+    % 2
+    ORI     A1, R0, 2
+    BEQ     A0, A1, .ConvertIntToASCII
+    ORI     A2, R0, 2
+    % 1
+    ORI     A1, R0, 3
+    BEQ     A0, A1, .ConvertIntToASCII
+    ORI     A2, R0, 1
+    NOP
+    LIO     A0, $String_Go
+    BEQ     R0, R0, .DrawString
+    RESERVED
+    .ConvertIntToASCII
+    LIO     A0, $ASCII_Buffer          % Pointer to Save ASCII
+    LIO     A1, $ASCII_Format_Byte     % Type of Format to use
+    JAL     ~Func:sprintf
+    RESERVED
+    % Convert ASCII to String and Print
+    LIO     A0, $String_Buffer_Size25  % save final string here
+    LIO     A1, $ASCII_Buffer   % previously converted ASCII
+    JAL     $ConvertAsciiToPM64String % save in A0
+    RESERVED
+    .DrawString
+    ORI     A1, R0, 0068 % x pos
+    ORI     A2, R0, 0071 % y pos
+    ORI     V0, R0, 2 % shake text (fx)
+    SW      R0, 0010 (SP) % text color
+    SW      V0, 0014 (SP) % text fx
+    JAL     ~Func:draw_string
+    ORI     A3, R0, 00FF % opacity
+    .AdvanceTimer
+    LH      A0, 0 (S0) % state
+    LHU     A1, 2 (S0) % timer
+    ADDIU   A1, A1, 1
+    SH      A1, 2 (S0)
+    % check if is state 4 (GO!), to wait a few more frames
+    ORI     A2, R0, 4
+    BEQL    A0, A2, .ResetTimer
+    SLTIU   A2, A1, 0019
+    % normal numbers
+    SLTIU   A2, A1, 0014
+    .ResetTimer
+    BNE     A2, R0, .End
+    NOP
+    % advance state
+    ADDIU   A0, A0, 1
+    SH      A0, 0 (S0) % state
+    SH      R0, 2 (S0) % clear timer
+    % Play Sound?
+    SLTIU   A2, A0, 5 % only timer states 00-04
+    BEQ     A2, R0, .End
+    NOP
+    ORI     A1, R0, 4
+    BEQL    A0, A1, .PlaySound
+    ORI     A0, R0, 0395 % go sfx / general guy whistle
+    ORI     A0, R0, 0233 % number sfx
+    .PlaySound
+    JAL     ~Func:sfx_play_sound
+    NOP
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    JR      RA
+    NOP
+}
+
+#export:Function $Function_ClearMinigameData_Moles
+{
+	PUSH	RA, A0, A1, A2, A3, V0, V1
+	SAB		R0, $GameState_Mole
+	SAW		R0, $GoTimer
+    LIO     A0, $Minigame_Mole_Data
+    SW      R0, 0 (A0)
+    SW      R0, 4 (A0)
+	POP		RA, A0, A1, A2, A3, V0, V1
+	JR		RA
+	NOP
+}
+
+#string $String_Go
+{
+[Size 40][Right 33][Up 12]GO!
+[End]
+}
+
+#new:ASCII $ASCII_Format_Byte
+{
+"%3u"
+}
+
+#string $String_Buffer_Size25
+{
+[Size 25]             [End]
+}
+
+%=====
+
+#new:Function $Minigame_Mole_UpdateScoreAndTimer
+{
+    PUSH    R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    /%LABU    A0, $PauseByte
+    BNE     A0, R0, .End
+    NOP%/
+    LIO     S0, $Minigame_Mole_Data
+    LIO     A0, $String_Score
+    ORI     A1, R0, 13 % x
+    ORI     A2, R0, C5 % y
+    SW      R0, 10 (SP) % palette
+    SW      R0, 14 (SP) % style
+    JAL     ~Func:draw_string
+    ORI     A3, R0, FF % opacity
+    % draw actual score
+    LW      A0, 4 (S0) % current score
+    ADDI    A1, R0, 45 % X
+    ADDI    A2, R0, C8 % Y
+    SW      R0, 10 (SP) % color
+    ORI     A3, R0, FF
+    SW      A3, 14 (SP) % opacity
+    ORI     A3, R0, 0 % bool
+    JAL     ~Func:draw_number
+    SW      R0, 18 (SP) % text fx
+    %===========================================
+    % Draw timer, code ported from Black Pit
+    %
+    %%
+    % Convert Data to ASCII - Load Minutes
+    %%
+    LIO     A0, $ASCII_Buffer          % Pointer to Save ASCII
+    LIO     A1, $ASCII_Format_Time     % Type of Format to use
+    JAL     ~Func:sprintf
+    LB      A2, 1 (S0)                 % Load Minutes
+    % Convert ASCII to String and Print
+    LIO     A1, $ASCII_Buffer                 % ASCII to Format
+    LIO     A0, $String_Buffer_Size20      % Pointer to Save Final String
+    JAL     $ConvertAsciiToPM64String
+    NOP
+    ORI     S1, R0, D9  % x
+    ORI     S2, R0, C4  % y
+    COPY    A1, S1
+    COPY    A2, S2
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    JAL     ~Func:draw_string
+    ADDIU   A3, R0, FF % opacity
+    % Draw ":"
+    LIO     A0, $String_DosPuntos
+    ADDI    A1, S1, 34  % x
+    COPY    A2, S2
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    JAL     ~Func:draw_string
+    ADDIU   A3, R0, FF % opacity
+    %%
+    % Convert Data to ASCII - Load Seconds
+    %%
+    LIO     A0, $ASCII_Buffer          % Pointer to Save ASCII
+    LIO     A1, $ASCII_Format_Time     % Type of Format to use
+    JAL     ~Func:sprintf
+    LB      A2, 2 (S0)                 % Load Seconds
+    % Convert ASCII to String and Print
+    LIO     A1, $ASCII_Buffer                 % ASCII to Format
+    LIO     A0, $String_Buffer_Size20      % Pointer to Save Final String
+    JAL     $ConvertAsciiToPM64String
+    NOP
+    ADDI    S1, S1, 20 % x
+    COPY    A1, S1
+    COPY    A2, S2 % y
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    JAL     ~Func:draw_string
+    ADDIU   A3, R0, FF % opacity
+    /% show clock icon
+    JAL     $IconTable_GetIndex_byItemID
+    ORI     A0, R0, .Item:Clock % 7
+    SW      V0, 14 (SP)
+    ADDI    A1, S1, -16` % x
+    ADDI    A2, S2, 9 % Y
+    JAL	    ~Func:set_hud_element_render_pos
+    COPY    A0, V0 % itemIndex
+    % render icon
+    JAL	    ~Func:draw_hud_element_1
+    LW      A0, 14 (SP) % iconIndex%/
+    %==========================================
+    % Advance timer, code grabbed from Black Pit
+    %====
+    % Check if timer is empty
+    LB      V0, 1 (S0) % get minutes
+    LB      V1, 2 (S0) % get seconds
+    ADDU    V0, V0, V1
+    BNE     V0, R0, .DecreaseTimer
+    NOP
+    % Timer is zero, stop the game
+    SW      R0, 0 (S0)
+    ORI     A2, R0, 3 % moles game - results
+    SAB     A2, $GameState_Mole
+    %SAW     R0, $Data_Results
+    BEQ     R0, R0, .End
+    NOP
+    .DecreaseTimer
+    /% Check if the timer is paused
+    LABU    T0, $PauseByte
+    BNE     T0, R0, .End
+    NOP%/
+    LABU    V0, $GameState_Mole
+    ORI     T0, R0, 2 % moles game - step
+    BNE     V0, T0, .End
+    NOP
+    LB      T0, 3 (S0) % get milliseconds
+    % Check if is time to decrease the seconds
+    BLEZL   T0, .MoveSeconds
+    ADDIU   T0, R0, 85` % reset milliseconds
+    ADDI    T0, T0, -3
+    .MoveMilliseconds
+    BEQ     R0, R0, .End
+    SB      T0, 3 (S0) % milliseconds
+    .MoveSeconds
+    SB      T0, 3 (S0) % reset milli
+    LB      T0, 2 (S0) % get seconds
+    %% Check if is time to decrease the minutes
+    BLEZL   T0, .MoveMinutes
+    ADDIU   T0, R0, 59` % reset seconds
+    ADDI    T0, T0, -1
+    % check if they're the last 10 seconds from this match
+    LB      T1, 1 (S0) % minutes
+    BNE     T1, R0, .WriteSecs
+    NOP
+    % zero minutes, check for last 10 secs
+    SLTIU   T1, T0, 11`
+    BEQ     T1, R0, .WriteSecs
+    NOP
+    % last seconds in the game, play a sfx every second
+    JAL     $play_sound
+    ORI     A0, R0, 01A5
+    .WriteSecs
+    BEQ     R0, R0, .End
+    SB      T0, 2 (S0) % seconds
+    .MoveMinutes
+    JAL     $play_sound
+    ORI     A0, R0, 01A5
+    SB      T0, 2 (S0) % seconds
+    LB      T0, 1 (S0) % get minutes
+    %% Check if is time to decrease the hours
+    BLEZL   T0, .MoveHours
+    ADDIU   T0, R0, 59` % reset minutes
+    ADDI    T0, T0, -1
+    BEQ     R0, R0, .End
+    SB      T0, 1 (S0) % minutes
+    .MoveHours
+    SB      T0, 1 (S0) % reset minutes
+    LB      T0, 0 (S0) % get hours
+    ADDI    T0, T0, -1
+    BEQ     R0, R0, .End
+    SB      T0, 0 (S0) % hours
+    .End
+    POP     R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+#new:Function $Minigame_Mole_FinishGame
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    SAB     R0, $GameState_Mole
+    CLEAR   A2
+    LIA	    A0, $Script_ExitMinigame_Mole
+    JAL	    ~Func:start_script
+    ADDIU	A1, R0, 1
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+#new:Script $Script_ExitMinigame_Mole
+{
+    Call    DisablePlayerInput ( .True )
+    Call    GotoMap ( "kmr_32" 1 )
+    Return
+    End
+}
+
+% used to call this function without modifying any register
+#new:Function $play_sound
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, T0, T1, T2, T3, T4
+    JAL     ~Func:sfx_play_sound
+    NOP     
+    POP     RA, A0, A1, A2, A3, V0, V1, T0, T1, T2, T3, T4
+    JR      RA
+    NOP
+}
+
+#string $String_Score
+{
+Score:[End]
+}
+
+#string $String_DosPuntos
+{
+[Size 20]:[End]
+}
+
+#new:ASCII $ASCII_Format_Time
+{
+"%02u"
+}
+
+#string $String_Buffer_Size20
+{
+[Size 20]             [End]
+}
+
+%========================
+% Bartender - mac_08
+%========================
+
+% Code ported from Cooking Princess
+
+#export:Data $GameState_Bartender
+{ 00b }
+
+#new:Function $Function_BartenderMinigame_Step
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LABU    A0, $GameState_Bartender
+    BEQ     A0, R0, .End
+    ORI     A1, R0, 1
+    BEQ     A0, A1, .State_Ready
+    ORI     A1, R0, 2
+    BEQ     A0, A1, .State_DrawHP
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .State_Ready
+    JAL     $Minigame_Bar_ReadySetGo
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .State_DrawHP
+    JAL     $Minigame_Bar_DrawHP
+    NOP
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+#export:Function $Minigame_Bar_ReadySetGo
+{
+    PUSH    R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     S0, $GoTimer
+    LHU     A0, 0 (S0) % state
+    ORI     A1, R0, 5 % timer has ended
+    BEQ     A0, A1, .SetGameState_2
+    NOP
+    JAL     $ReadySetGo
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .SetGameState_2
+    ORI     A2, R0, 2 % Bartender Minigame - step
+    SAB     A2, $GameState_Bartender
+    %JAL     ~Func:enable_player_input
+    %RESERVED
+    .End
+    POP     R0, R0, RA, A0, A1, A2, A3, V0, V1, S0
+    JR      RA
+    NOP
+}
+
+#export:Function $Function_ClearMinigameData_Bar
+{
+	PUSH	RA, A0, A1, A2, A3, V0, V1
+	SAB		R0, $GameState_Bartender
+	SAW		R0, $GoTimer
+	POP		RA, A0, A1, A2, A3, V0, V1
+	JR		RA
+	NOP
+}
+
+#new:Function $Minigame_Bar_DrawHP
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    ORI     A0, R0, 003C % posX
+    ORI     A1, R0, 00C2 % posY
+    ORI     A2, R0, 00D0 % sizeX
+    ORI     A3, R0, 0014 % sizeY
+    ORI     T1, R0, FF % opacity
+    JAL     $DrawBox
+    ORI     T0, R0, 1 % style
+    % HP metter
+    CLEAR   A0
+    LIO     A1, *MapVar[0] % get HP
+    JAL     ~Func:get_variable
+    RESERVED
+    COPY    A2, V0
+    % get HP in percentage
+    ORI     A1, R0, 100`
+    MULT    A2, A1
+    MFLO    A2
+    ORI     A1, R0, 100` % maxHP
+    DIV     A2, A1
+    MFLO    A2 % get HP percentage
+    % now convert HP percentage into boxSize
+    ORI     A1, R0, D0 % maxBoxSize
+    MULT    A1, A2
+    MFLO    A1
+    ORI     A2, R0, 100`
+    DIV     A1, A2
+    MFLO    A2
+    SLTI    A3, A2, 10
+    BEQ     A3, R0, .GetHPPosX
+    NOP
+    % trigger a game over
+    CLEAR   A0
+    LIO     A1, *MapVar[0] % get HP
+    JAL     ~Func:set_variable
+    CLEAR   A2 % set HP as zero
+    CLEAR   A2
+    .GetHPPosX
+    ORI     A0, R0, 003C % posX
+    ORI     A1, R0, 00C2 % posY
+    ORI     A3, R0, 0014 % sizeY
+    ORI     T1, R0, FF % opacity
+    JAL     $DrawBox
+    ORI     T0, R0, 17 % style
+    % draw icon
+    ORI     A0, R0, 1
+    ORI     A1, R0, 32 % x
+    JAL     ~Func:set_hud_element_render_pos
+    ORI     A2, R0, CB % y
+    % make icon larger
+    LIO     A1, 41A00000 % 20.0 % Width
+    LIO     A2, 41A00000 % 20.0 % Lenght
+    JAL     $SetIconSize
+    ORI     A0, R0, 1
+    ORI     A0, R0, 1
+    JAL     ~Func:draw_hud_element
+    ORI     A1, R0, 0
+    % restore icon size
+    LIO     A1, 41800000 % 16.0 % Width
+    LIO     A2, 41800000 % 16.0 % Lenght
+    JAL     $SetIconSize2
+    ORI     A0, R0, 1
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}

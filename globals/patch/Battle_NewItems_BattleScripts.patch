@@ -1,0 +1,2418 @@
+% This file holds the new items battle scripts, if the item isn't food `LoadItemScript` will always
+% load `Item_Shroom` as the item's battle file.
+
+% I added this script in `Item_Shroom` and `Item_Food` to know which code to use,
+% the shrooms' code? or one from the new items.
+
+% Items that load `Item_Food` are the ones that have the 0080 (Food or Drink) flag as true.
+% If that flag isn't true will always load the `Item_Shroom` file instead.
+
+% Var9 = itemID
+#export:Script:Battle $NewItemsScripts_GetNewScript
+{
+    Switch *Var9
+        CaseOR == .Item:CourageShell % 18E
+        CaseOR == .Item:GradualSyrup % 195
+        CaseOR == .Item:PowerPunch % 1A1
+        CaseOR == .Item:SlowShroom % 1A3
+        CaseOR == .Item:HotSauce % 198
+        CaseOR == .Item:PointSwap % 19F
+        CaseOR == .Item:PoisonShroom % 1A0
+        CaseOR == .Item:CouplesCake % 1A9
+        CaseOR == .Item:FreshJuice % 1AB
+        CaseOR == .Item:HealthySalad % 1AD
+        CaseOR == .Item:HeartfulCake % 1AE
+        CaseOR == .Item:IciclePop % 1AF
+        CaseOR == .Item:MeteorMeal % 1B6
+        CaseOR == .Item:ShroomBroth % 1BA
+        CaseOR == .Item:SnowBunny % 1BD
+        CaseOR == .Item:SpicyPasta % 1BF
+        CaseOR == .Item:TrialStew % 1A5
+        CaseOR == .Item:TayceFrappe % 1C4
+            ExecWait    $UseItem_StatusItem_SingleTarget
+            Set *Var7 .True
+        EndCaseGroup
+        CaseOR == .Item:MiniMrMini % 19C
+        CaseOR == .Item:MrSoftener % 19D
+        CaseOR == .Item:RuinPowder % 1A2
+            ExecWait    $UseItem_StatusItem_MultiTarget
+            Set *Var7 .True
+        EndCaseGroup
+        CaseOR == .Item:HPDrainItem % 199
+        CaseOR == .Item:CoconutBomb % 1A8
+        CaseOR == .Item:CourageMeal % 1AA
+        CaseOR == .Item:TayceDynamite % 1C3
+            ExecWait    $UseItem_OffensiveItem_SingleTarget
+            Set *Var7 .True
+        EndCaseGroup
+        CaseOR == .Item:EarthQuake % 190
+        CaseOR == .Item:IceStorm % 19A
+            ExecWait    $UseItem_OffensiveItem_MultiTarget
+            Set *Var7 .True
+        EndCaseGroup 
+        CaseOR == .Item:LovePudding % 1B4
+        CaseOR == .Item:PeachTart % 1B9
+            ExecWait    $UseItem_StrangeCake
+            Set *Var7 .True
+        EndCaseGroup
+        Default
+            Set *Var7 .False
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script:Battle $UseItem_StatusItem_SingleTarget
+{
+    Call  $GetItemFlags ( *Var9 *Var1 *Var2 )
+    If *Var1 & 0080 % Food or Drink
+        If *Var1 & 0100 % Use drink animation
+            ExecWait  $BattleScript_DrinkItem
+        Else
+            ExecWait  $BattleScript_EatItem
+        EndIf
+    EndIf
+    Call  GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only player team
+        Call  InitTargetIterator
+    EndIf
+    Call  GetOwnerTarget ( *Var4 .False )
+    % check if target is KO'd
+    Set *VarF .False
+    Call GetStatusFlags ( *Var4 *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Set *VarF .True
+    EndIf
+    Switch *Var9
+        Case == .Item:CourageShell % 18E
+            If  *VarF  ==  .False
+                Switch *Var4
+                    Case == .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                    Case == .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                EndSwitch
+            EndIf
+            Call    UseBattleCamPreset    ( 00000002 ) % reset camera
+            % Show blue arrow
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var0  15` % x
+            Add     *Var1  35` % y
+            Set     *VarF  6 % z
+            Call    PlayEffect    ( ~FX:StatChange:DefensePlus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+            % set arrowFx's number
+            Call    GetItemPower  ( *Var9 *Var5 .False )
+            Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+            Call    $WriteAddress ( *Var0 2 *Var5 20 .False  ) % set amount inside the arrow
+            % show wave fx
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    PlayEffect ( ~FX:Debuff:Blue *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+            % sfx
+            Call    PlaySoundAtActor ( *Var4 208F ) % Charging
+            % end
+            Wait    20`
+            Call    $AddDefenseBoost ( *Var4 *Var5 3 )
+            Call    ShowMessageBox        ( 00000101 0000003C )
+            Call    WaitForMessageBoxDone
+        Case == .Item:PowerPunch % 1A1
+            If  *VarF  ==  .False
+                Switch *Var4
+                    Case == .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                    Case == .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                EndSwitch
+            EndIf
+            Call    UseBattleCamPreset    ( 00000002 ) % reset camera
+            % Show red arrow
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var0  15` % x
+            Add     *Var1  35` % y
+            Set     *VarF  6 % z
+            Call    PlayEffect    ( ~FX:StatChange:AttackPlus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+            % show wave fx
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+            % sfx
+            Call    PlaySoundAtActor ( *Var4 208E ) % pipe
+            % set arrowFx's number
+            Call    GetItemPower  ( *Var9 *Var5 .False )
+            Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+            Call    $WriteAddress ( *Var0 2 *Var5 20 .False  ) % set amount inside the arrow
+            Call    $AddAttackBoost ( *Var4 *Var5 3 )
+            Call    $MakeActorGiant ( *Var4 )
+            % end
+            Wait    20`
+            Call    ShowMessageBox        ( 00000102 0000003C )
+            Call    WaitForMessageBoxDone
+        CaseOR == .Item:SlowShroom % 1A3
+        CaseOR == .Item:GradualSyrup % 195
+        CaseOR == .Item:CouplesCake % 1A9
+        CaseOR == .Item:MeteorMeal % 1B6
+            If  *VarF  ==  .False
+                Switch *Var4
+                    Case == .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                    Case == .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                EndSwitch
+            EndIf
+            % check if owner used Couples Cake on himself
+            If *Var9 == .Item:CouplesCake % 1A9
+                Call  GetOwnerID ( *Var0 )
+                If *Var4 == *Var0
+                    Wait    20`
+                    Call    UseBattleCamPreset    ( 00000002 )
+                    ExecWait  $BattleScript_GoBackToHome_HealingItem
+                    If *Var4 == .Actor:Player
+                        Call    DispatchEventPlayer ( .Event:Immune )
+                    Else
+                        Call    DispatchEvent ( *Var4 .Event:Immune )
+                    EndIf
+                    Wait    20`
+                    Return
+                EndIf
+            EndIf
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 20` % y
+            Add     *Var2 2 % z
+            Call    PlayEffect  ( ~FX:RedShimmer:Burst *Var0 *Var1 *Var2 -54` 37` 12` 20` .False .False .False .False .False ) % X/Y/Z, emitter radius, emitter height, num particles
+            Call    PlaySoundAtActor ( *Var4 2055 ) % sparkles
+            Wait    20`
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call    802D75D8      ( *Var0 *Var1 *Var2 *VarB ) % sparkles2
+            % set boost
+            Call    UseBattleCamPreset    ( 00000002 )
+            Call    GetItemPower  ( *Var9 *Var5 *Var6 )
+            Switch *Var9 
+                CaseOR == .Item:SlowShroom
+                CaseOR == .Item:CouplesCake
+                    Call    $SetActorExtraData ( *Var4 9 *Var6 ) % HP buff turns
+                    Call    $SetActorExtraData ( *Var4 8 *Var5 ) % HP boost
+                    Call    WaitForMessageBoxDone
+                    Call    ShowMessageBox        ( 00000103 0000003C )
+                    Call    WaitForMessageBoxDone
+                EndCaseGroup
+                CaseOR == .Item:GradualSyrup
+                    Call    $SetActorExtraData ( *Var4 B *Var6 ) % FP buff turns
+                    Call    $SetActorExtraData ( *Var4 A *Var5 ) % FP boost
+                    Call    GetOwnerID ( *Var0 )
+                    If *Var0 < .Actor:Enemy0 % Only Player team
+                        Call    WaitForMessageBoxDone
+                        Call    ShowMessageBox        ( 00000104 0000003C )
+                        Call    WaitForMessageBoxDone
+                    EndIf
+                EndCaseGroup
+                CaseOR == .Item:MeteorMeal
+                    Call    $SetActorExtraData ( *Var4 9 3 ) % HP buff turns
+                    Call    $SetActorExtraData ( *Var4 8 2 ) % HP boost
+                    If *Var4 >= .Actor:Enemy0
+                        Call    $HealActor ( *Var4 *Var5 )
+                    Else
+                        Call    $Heal_PlayerTeam ( *Var4 *Var5 )
+                    EndIf
+                    Call    FXRecoverHP ( *Var0 *Var1 *Var2 *Var5 )
+                    Call    PlaySoundAtActor ( *Var4 206D ) % heart
+                    Call    WaitForMessageBoxDone
+                    Call    ShowMessageBox        ( 00000103 0000003C )
+                    Call    WaitForMessageBoxDone
+                EndCaseGroup
+            EndSwitch
+        EndCaseGroup
+        CaseOR == .Item:HotSauce % 198
+        CaseOR == .Item:SpicyPasta % 1BF
+            If  *VarF  ==  .False
+                Switch *Var4
+                    Case == .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                    Case == .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                EndSwitch
+            EndIf
+            Switch *Var9
+                Case == .Item:SpicyPasta
+                    Call    GetItemPower  ( *Var9 *Var5 *Var6 )
+                    If *Var4 >= .Actor:Enemy0
+                        Call    $HealActor ( *Var4 *Var5 )
+                    Else
+                        Call    $Heal_PlayerTeam ( *Var4 *Var5 )
+                    EndIf
+                    Call    GetActorPos ( *Var4 *Var0 *Var1 *Var2 )
+                    Call    FXRecoverHP ( *Var0 *Var1 *Var2 *Var5 )
+                    Call    802D75D8    ( *Var0 *Var1 *Var2 *Var5 ) % ShowRecoveryShimmer ( ~vec3d amount )
+                    Call    PlaySoundAtActor ( *Var4 206D ) % heart
+                    Add     *Var1 25`
+                    Call    FXRecoverFP    ( *Var0 *Var1 *Var2 *Var6 )
+                    If *Var4 < .Actor:Enemy0 % Player team
+                        Call  $RecoverFP    ( *Var6 )
+                    EndIf
+            EndSwitch
+            Call    GetActorPos ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+            Call	PlaySound   ( 208E ) % Pipe
+            Call    GetActorPos ( *Var4 *Var0 *Var1 *Var2 )
+            Add	    *Var0 20` % x
+            Add	    *Var1 5 % y
+            Add     *Var2 1 % z
+            Call    PlayEffect ( ~FX:StatChange:AttackPlus1 *Var0 *Var1 *Var2 *Fixed[1.0] 30` .False .False .False .False .False .False .False )
+            % set boost
+            Call    GetItemPower  ( *Var9 *Var5 .False )
+            Switch *Var9
+                Case == .Item:SpicyPasta
+                    Set *Var5 1
+            EndSwitch
+            Call    $GetActorExtraData ( *Var4 F *Var6 ) % charge byte
+            Add     *Var6 *Var5
+            If *Var6 > FF % check cap
+                Set *Var6 FF
+            EndIf
+            Call    $SetActorExtraData ( *Var4 F *Var6 ) % charge byte
+            Wait    22`
+            Call    UseBattleCamPreset    ( 00000002 )
+            Call    ShowMessageBox        ( 00000047 0000003C )
+            Call    WaitForMessageBoxDone
+        EndCaseGroup
+        Case == .Item:PointSwap % 19F
+            If *Var4 >= .Actor:Enemy0 % Enemies can't use this item
+                Return
+            EndIf
+            If  *VarF  ==  .False
+                Switch *Var4
+                    Case == .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                    Case == .Actor:Partner
+                        Set   *Var0 0 % idle
+                        Exec  $SetPartnerAnimation_Battle
+                EndSwitch
+            EndIf
+            Call    GetActorPos ( *Var4 *Var0 *Var1 *Var2 )
+            Sub     *Var0 37` % x
+            Add     *Var1 60` % y
+            Add     *Var2 2 % z
+            Call    PlayEffect ( ~FX:Recover:HP *Var0 *Var1 *Var2 *Var5 .False .False .False .False .False .False .False .False )
+            Call    $ReadAddress ( *VarF 2 *Var3 C .False ) % fxData
+            Set     *VarB *VarF
+            Call    GetOwnerTarget ( *Var6 .False )
+            If *Var6 == .Actor:Player
+                Call    $ReadAddress ( 8010F290 0 *Var5 2 .False ) % current HP
+            Else
+                Call    $GetPartnerHP_API ( *Var5 )
+            EndIf
+            Call    $WriteAddress ( *Var3 2 *Var5 40 .False ) % amount inside fx
+            %
+            Call    GetActorPos ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var0 37` % x
+            Add     *Var1 60` % y
+            Add     *Var2 -2 % z
+            Call    PlayEffect ( ~FX:Recover:FP *Var0 *Var1 *Var2 *Var5 .False .False .False .False .False .False .False .False )
+            Call    $ReadAddress ( *VarF 2 *Var4 C .False ) % fxData
+            Set     *VarC *VarF
+            Call    $ReadAddress ( 8010F290 0 *Var5 5 .False ) % current FP
+            Call    $WriteAddress ( *Var4 2 *Var5 40 .False ) % amount inside fx
+            Set *VarE .False % FXs killed (bool)
+            ChildThread % Freeze FXs
+                Loop
+                    % HP
+                    Call    $WriteAddress ( *Var3 2 28` 2C .False ) % fxTimeLeft
+                    Call    $WriteAddress ( *Var3 2 0 5C .False ) % animationOffsetSpeedY
+                    % FP
+                    Call    $WriteAddress ( *Var4 2 28` 2C .False ) % fxTimeLeft
+                    Call    $WriteAddress ( *Var4 2 0 5C .False ) % animationOffsetSpeedY
+                    If *VarE == .True
+                        BreakLoop
+                    EndIf
+                    Wait    1
+                EndLoop
+            EndChildThread
+            % unfade FXs
+            Call    $WriteAddress ( *Var3 2 0 70 .False ) % opacity
+            Call    $WriteAddress ( *Var4 2 0 70 .False ) % opacity
+            Loop
+                % HP
+                Call    $ReadAddress ( *Var3 2 *Var5 70 .False )
+                Add *Var5 10 % speed
+                If *Var5 > FF % max opacity
+                    Call    $WriteAddress ( *Var3 2 FF 70 .False )
+                    Call    $WriteAddress ( *Var4 2 FF 70 .False )
+                    BreakLoop
+                EndIf
+                Call    $WriteAddress ( *Var3 2 *Var5 70 .False )
+                Call    $WriteAddress ( *Var4 2 *Var5 70 .False )
+                Wait    1
+            EndLoop
+            Wait    15`
+            % var3=heartFX data
+            % var4=flowerFX data
+            Set *Var7 15`
+            Set *Var8 *Var7
+            Loop *Var7 % Move FXs
+                Call    $ReadAddressFloat ( *Var3 2 *Var5 4 .False ) % fxPosX
+                AddF    *Var5 5 % speed
+                Call    $WriteAddressFloat ( *Var3 2 *Var5 4 .False )
+                % FP
+                Call    $ReadAddressFloat ( *Var4 2 *Var5 4 .False ) % fxPosX
+                SubF    *Var5 5 % speed
+                Call    $WriteAddressFloat ( *Var4 2 *Var5 4 .False )
+                If *Var7 == 7 % half loops
+                    % swap amounts inside the hearth and the flower
+                    Call    $ReadAddress ( *Var3 2 *Var8 40 .False ) % amount inside heart
+                    Call    $ReadAddress ( *Var4 2 *Var9 40 .False ) % amount inside fp
+                    Call    $WriteAddress ( *Var3 2 *Var9 40 .False ) % hp
+                    Call    $WriteAddress ( *Var4 2 *Var8 40 .False ) % fp
+                    Call    PlaySound ( 000F )
+                EndIf
+                Wait    1
+            EndLoop
+            Wait    10`
+            % Make FXs dissapear
+            Loop
+                % HP
+                Call    $ReadAddress ( *Var3 2 *Var5 70 .False )
+                Sub *Var5 10 % speed
+                If *Var5 <= 0
+                    Set     *VarE .True % FXs killed (bool)
+                    Call    RemoveEffect ( *VarB )
+                    Call    RemoveEffect ( *VarC )
+                    BreakLoop
+                EndIf
+                Call    $WriteAddress ( *Var3 2 *Var5 70 .False )
+                Call    $WriteAddress ( *Var4 2 *Var5 70 .False )
+                Wait    1
+            EndLoop
+            % get HP
+            Call    GetOwnerTarget ( *Var0 .False )
+            If *Var0 == .Actor:Player
+                Call    $ReadAddress ( 8010F290 0 *Var1 2 .False ) % current HP
+            Else
+                Call    $GetPartnerHP_API ( *Var1 )
+            EndIf
+            Call    $ReadAddress ( 8010F290 0 *Var2 5 .False ) % current FP
+            % Set new HP & FP
+            If *Var0 == .Actor:Player
+                % HP ===========
+                Call    $ReadAddress ( 8010F290 0 *Var3 3 .False ) % max HP
+                If *Var2 > *Var3 % don't overflow HP
+                    Set *Var2 *Var3
+                EndIf
+                Call    $WriteAddress ( 8010F290 0 *Var2 2 .False ) % new HP
+                % FP ===========
+                Call    $ReadAddress ( 8010F290 0 *Var3 6 .False ) % max FP
+                If *Var1 > *Var3 % don't overflow FP
+                    Set *Var1 *Var3
+                EndIf
+                Call    $WriteAddress ( 8010F290 0 *Var1 5 .False ) % new FP
+            Else
+                % PARTNER
+                %
+                % HP ===========
+                Call    $GetPartnerData_API ( *Var4 )
+                Call    $ReadAddress ( *Var4 0 *Var3 6 .False ) % get maxHP
+                If *Var2 > *Var3 % don't overflow HP
+                    Set *Var2 *Var3
+                EndIf
+                Call    $WriteAddress ( *Var4 0 *Var2 5 .False ) % new HP
+                % FP ===========
+                Call    $ReadAddress ( 8010F290 0 *Var3 6 .False ) % max FP
+                If *Var1 > *Var3 % don't overflow FP
+                    Set *Var1 *Var3
+                EndIf
+                Call    $WriteAddress ( 8010F290 0 *Var1 5 .False ) % new FP
+            EndIf
+            Wait    15`
+            Call    UseBattleCamPreset    ( 00000002 )
+        Case == .Item:PoisonShroom % 1A0
+            Call    UseBattleCamPreset    ( 00000002 )
+            % get target HP
+            Switch *Var4
+                Case == .Actor:Player
+                    Call    GetPlayerHP ( *Var2 )
+                    Call    $ReadAddress ( 8010F293 0 *Var3 .False .False ) % max HP
+                Case == .Actor:Partner
+                    Call    $GetPartnerHP_API ( *Var2 )
+                    Call    $GetPartnerData_API ( *Var3 )
+                    Call    $ReadAddress ( *Var3 0 *Var3 6 .False ) % max HP
+                Default
+                    Call    GetActorHP ( *Var4 *Var2 )
+                    Call    GetEnemyMaxHP ( *Var4 *Var3 )
+            EndSwitch
+            Call    RandInt ( 100` *Var0 )
+            % ===== poison target =======
+            If *Var0 < 80`
+                Set     *VarC *Var2
+                Div     *Var2 2
+                If *Var2 <= 0
+                    Set *Var2 1
+                EndIf
+                Sub     *VarC *Var2
+                Thread
+                    If *Var4 == .Actor:Player
+                        Call    DispatchDamagePlayerEvent ( *Var2 .Event:Hit )
+                    Else
+                        Call    DispatchDamageEvent ( *Var4 *Var2 .Event:Hit )
+                    EndIf
+                EndThread
+                Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+                Add     *Var1 15` % y
+                Add     *Var2 2 % z
+                Call    80271328 % PlayPoisonHitFX, reads var0/1/2 > FXpos%/
+                Call    GetItemPower  ( *Var9 *Var5 *Var6 )
+                Call    $Function_TryToInflictStatus ( *Var4 .Status:Poison *Var5 )
+                Call    $RunFunction ( 8026777C ) % ~Func:btl_update_ko_status
+                If *VarC > 0 % target didn't died
+                    If *Var4 < .Actor:Enemy0 % only player team
+                        Call    ShowMessageBox        ( 0000000D 0000003C )
+                        Call    WaitForMessageBoxDone
+                    EndIf
+                EndIf
+            Else
+                % ===== heal target =======
+                If *Var4 >= .Actor:Enemy0
+                    Call    $HealActor ( *Var4 *Var3 )
+                Else
+                    Call    $Heal_PlayerTeam ( *Var4 *Var3 )
+                EndIf
+                Call    GetActorPos ( *Var4 *Var0 *Var1 *Var2 )
+                Call    FXRecoverHP ( *Var0 *Var1 *Var2 *Var3 )
+                Call    802D75D8    ( *Var0 *Var1 *Var2 *Var3 ) % ShowRecoveryShimmer ( ~vec3d amount )
+                Call    PlaySoundAtActor ( *Var4 206D ) % heart
+                If *VarF == .False % target isn't KO'd
+                    Switch *Var4
+                        Case == .Actor:Player
+                            Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                        Case == .Actor:Partner
+                            Set   *Var0 5 % happy
+                            Exec  $SetPartnerAnimation_Battle
+                    EndSwitch
+                EndIf
+                Wait    30`
+                If *VarF == .False
+                    Switch *Var4
+                        Case == .Actor:Player
+                            Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                        Case == .Actor:Partner
+                            Set   *Var0 0 % idle
+                            Exec  $SetPartnerAnimation_Battle
+                    EndSwitch
+                EndIf
+                Wait    2
+            EndIf
+            Wait    15`
+            Call    UseBattleCamPreset    ( 00000002 )
+        CaseOR == .Item:FreshJuice % 1AB
+        CaseOR == .Item:HealthySalad % 1AD
+        CaseOR == .Item:SpaceFood % 1BE
+            % this is actually just Super Soda's code but pasted here
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call  GetItemPower ( *Var9 *Var5 *Var6 )
+            Add   *Var0  00000000
+            Add   *Var1  00000023
+            Switch *Var9
+                CaseOR == .Item:FreshJuice % 1AB
+                CaseOR == .Item:HealthySalad % 1AD
+                    Call  FXRecoverFP    ( *Var0 *Var1 *Var2 *Var6 )
+                    If *Var4 < .Actor:Enemy0 % Player team
+                        Call  $RecoverFP    ( *Var6 )
+                    EndIf
+                EndCaseGroup
+                Case == .Item:SpaceFood % 1BE
+                    Call  FXRecoverHP    ( *Var0 *Var1 *Var2 *Var6 )
+                    If *Var4 >= .Actor:Enemy0
+                        Call    $HealActor ( *Var4 *Var5 )
+                    Else
+                        Call    $Heal_PlayerTeam ( *Var4 *Var5 )
+                    EndIf
+            EndSwitch
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add   *Var1  00000019
+            Call  802D7520      ( *Var0 *Var1 *Var2 *Var6 )
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add   *Var1  00000014
+            Call  GetOwnerTarget    ( *Var0 .False )
+            Call  GetOwnerID ( *Var1 ) % The actor didn't used the item on himself?
+            If *Var0 != *Var1
+                Call  UseIdleAnimation  ( *Var0 .False )
+            EndIf
+            Call GetStatusFlags ( *Var0 *Var1 )
+            If  *Var1  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+                Switch *Var0
+                    Case  ==  .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                        Wait  30`
+                        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                    Case  ==  .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                        Wait  30`
+                        Set   *Var0 0 % idle
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                        Wait  30`
+                EndSwitch
+            EndIf
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call  802D75D8      ( *Var0 *Var1 *Var2 *Var6 )
+            Call  GetOwnerID ( *Var0 )
+            If *Var0 < .Actor:Enemy0 % Only player team
+                Call  InitTargetIterator
+            EndIf
+            Call  $Function_ClearDebuffs    ( *Var4 )
+            Wait  20`
+        EndCaseGroup
+        Case == .Item:HeartfulCake % 1AE
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call  GetItemPower ( *Var9 *Var5 *Var6 )
+            Add   *Var0  00000000
+            Add   *Var1  00000023
+            Call  FXRecoverFP    ( *Var0 *Var1 *Var2 *Var6 )
+            If *Var4 < .Actor:Enemy0 % player team
+                Call  $RecoverFP    ( *Var6 )
+            EndIf
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add   *Var1  00000019
+            Call  802D7520      ( *Var0 *Var1 *Var2 *Var6 )
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add   *Var1  00000014
+            Call  GetOwnerTarget    ( *Var0 .False )
+            Call  GetOwnerID ( *Var1 ) % The actor didn't used the item on himself?
+            If *Var0 != *Var1
+                Call  UseIdleAnimation  ( *Var0 .False )
+            EndIf
+            Call GetStatusFlags ( *Var0 *Var1 )
+            If  *Var1  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+                Switch *Var0
+                    Case  ==  .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                        Wait  30`
+                        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                    Case  ==  .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                        Wait  30`
+                        Set   *Var0 0 % idle
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                        Wait  30`
+                EndSwitch
+            EndIf
+            %=============
+            % FX
+            %=============
+            Call    PlaySoundAtActor ( *Var4 2106 )
+            % show arrow
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var0  15` % x
+            Add     *Var1  35` % y
+            Set     *Var2  6 % z
+            Call    PlayEffect    ( ~FX:StatChange:DefensePlus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+            % set arrowFx's number
+            Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+            Call    $WriteAddress ( *Var0 2 *Var5 20 .False  ) % set amount inside the arrow
+            % show wave fx
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    $ReadAddress ( $Data_LastFX 2 *Var7 C .True  )
+            Call    $WriteAddress ( *Var7 2 3 1C .False  ) % set arrowType as 0x03 (Blue upside-down)
+            Call    PlayEffect    ( ~FX:Debuff:Blue *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call    802D75D8      ( *Var0 *Var1 *Var2 *Var6 )
+            Call    GetOwnerID ( *Var0 )
+            If *Var0 < .Actor:Enemy0 % only player team
+                Call  InitTargetIterator
+            EndIf
+            Mul   *Var5 -1
+            Call  $AddDefenseBoost ( *Var4 *Var5 3 )
+            Wait  20`
+        CaseOR == .Item:IciclePop % 1AF
+        CaseOR == .Item:TayceFrappe % 1C4
+        CaseOR == .Item:SnowBunny % 1BD
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call  GetItemPower ( *Var9 *Var5 *Var6 )
+            Add   *Var0  00000000
+            Add   *Var1  00000023
+            Switch *Var9
+                CaseOR == .Item:IciclePop
+                CaseOR == .Item:TayceFrappe
+                    Call  FXRecoverFP    ( *Var0 *Var1 *Var2 *Var6 )
+                    If *Var4 < .Actor:Enemy0 % player team
+                        Call  $RecoverFP    ( *Var6 )
+                    EndIf
+                EndCaseGroup
+                Case == .Item:SnowBunny
+                    Call  FXRecoverHP    ( *Var0 *Var1 *Var2 *Var5 )
+                    If *Var4 >= .Actor:Enemy0
+                        Call    $HealActor ( *Var4 *Var5 )
+                    Else
+                        Call    $Heal_PlayerTeam ( *Var4 *Var5 )
+                    EndIf
+            EndSwitch
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add   *Var1  00000019
+            Call  802D7520      ( *Var0 *Var1 *Var2 *Var6 )
+            Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add   *Var1  00000014
+            Call  GetOwnerTarget    ( *Var0 .False )
+            Call  GetOwnerID ( *Var1 ) % The actor didn't used the item on himself?
+            If *Var0 != *Var1
+                Call  UseIdleAnimation  ( *Var0 .False )
+            EndIf
+            Call GetStatusFlags ( *Var0 *Var1 )
+            If  *Var1  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+                Switch *Var0
+                    Case  ==  .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                        Wait  30`
+                        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                    Case  ==  .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                        Wait  30`
+                        Set   *Var0 0 % idle
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                        Wait  30`
+                EndSwitch
+            EndIf
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call    802D75D8      ( *Var0 *Var1 *Var2 *Var6 )
+            Call    GetOwnerID ( *Var0 )
+            If *Var0 < .Actor:Enemy0 % only player team
+                Call  InitTargetIterator
+            EndIf
+            % inflict status
+            Call  RandInt ( 100` *Var0 )
+            If *Var9 == .Item:SnowBunny
+                Set *Var0 .False
+            EndIf
+            If *Var0 <= 30`
+                Call  $Function_TryToInflictStatus ( *Var4 .Status:Frozen 2 )
+                % check if status was inflicted
+                Call  GetStatusFlags ( *Var4 *Var0 )
+                If *Var0 & ~Flags:StatusFlags:Frozen
+                    Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+                    Call  $GetActorPointer ( *Var4 *Var3 )
+                    Call  80271484 % PlayFreezeHitParticleFX
+                    If *Var4 < .Actor:Enemy0 % only player team
+                        Call    ShowMessageBox        ( 0000000C 0000003C )
+                        Call    WaitForMessageBoxDone
+                    EndIf
+                EndIf
+            EndIf
+            Wait  20`
+        EndCaseGroup
+        Case == .Item:ShroomBroth % 1BA
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 20` % y
+            Add     *Var2 2 % z
+            Call    PlayEffect  ( ~FX:RedShimmer:Burst *Var0 *Var1 *Var2 -54` 37` 12` 20` .False .False .False .False .False ) % X/Y/Z, emitter radius, emitter height, num particles
+            Call    PlaySoundAtActor ( *Var4 2055 ) % sparkles
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call    802D75D8      ( *Var0 *Var1 *Var2 *VarB ) % sparkles2
+            % set hp boost
+            Call    UseBattleCamPreset    ( 00000002 )
+            Call    GetItemPower  ( *Var9 *Var5 *Var6 )
+            Call    $SetActorExtraData ( *Var4 9 *Var6 ) % HP buff turns
+            Call    $SetActorExtraData ( *Var4 8 *Var5 ) % HP boost
+            Wait    20`
+            %=============
+            % debuff FX
+            %=============
+            Call    PlaySoundAtActor ( *Var4 2106 )
+            % show arrow
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var0  15` % x
+            Add     *Var1  35` % y
+            Set     *Var2  6 % z
+            Call    PlayEffect    ( ~FX:StatChange:DefensePlus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+            % set arrowFx's number
+            Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+            Call    $WriteAddress ( *Var0 2 *Var5 20 .False  ) % set amount inside the arrow
+            % show wave fx
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Call    $ReadAddress ( $Data_LastFX 2 *Var7 C .True  )
+            Call    $WriteAddress ( *Var7 2 3 1C .False  ) % set arrowType as 0x03 (Blue upside-down)
+            Call    PlayEffect    ( ~FX:Debuff:Blue *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call    802D75D8      ( *Var0 *Var1 *Var2 *Var6 )
+            Call    GetOwnerID ( *Var0 )
+            If *Var0 < .Actor:Enemy0 % only player team
+                Call  InitTargetIterator
+            EndIf
+            Mul     *Var5 -1
+            Call    $AddDefenseBoost ( *Var4 *Var5 3 )
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Call    GetOwnerTarget    ( *Var0 .False )
+            Call    GetOwnerID ( *Var1 ) % The actor didn't used the item on himself?
+            If *Var0 != *Var1
+                Call  UseIdleAnimation  ( *Var0 .False )
+            EndIf
+            Call GetStatusFlags ( *Var0 *Var1 )
+            If  *Var1  !&  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+                Switch *Var0
+                    Case  ==  .Actor:Player
+                        Call  SetAnimation  ( .Actor:Player 00000000 .PlayerAnim:ThumbsUp )
+                        Wait  30`
+                        Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                    Case  ==  .Actor:Partner
+                        Set   *Var0 5 % happy
+                        Exec  $SetPartnerAnimation_Battle
+                        Wait  30`
+                        Set   *Var0 0 % idle
+                        Exec  $SetPartnerAnimation_Battle
+                    Default
+                        Wait  30`
+                EndSwitch
+            EndIf
+            Wait  20`
+        Case == .Item:TrialStew % 1A5
+            ExecWait  $BattleScript_GoBackToHome_HealingItem
+            Thread
+                Wait    10`
+                Call    PlaySoundAtActor ( *Var4 02E0 )
+            EndThread
+            Wait  30`
+            Call    GetOwnerTarget ( *Var4 .False )
+            If *Var4 < .Actor:Enemy0 % player team
+                If *Var4 == .Actor:Player
+                    % player
+                    Call    $WriteAddress ( 8010F292 0 1 .False .False ) % set player HP
+                Else
+                    % partner
+                    Call    $GetPartnerHP_API ( *Var0 )
+                    If *Var0 > 0
+                        Call    $GetPartnerData_API ( *Var1 )
+                        Call    $WriteAddress ( *Var1 0 1 5 .False ) % set partner HP
+                    EndIf
+                EndIf
+                Call    FullyRestoreSP
+                Call    $WriteAddress ( 8010F295 0 .False .False .False ) % set FP
+            Else
+                % enemy
+                Call    SetEnemyHP ( *Var4 1 )
+            EndIf
+            If *Var4 < .Actor:Enemy0 % player team
+                % player
+                If *Var4 == .Actor:Player
+                    Thread
+                        Call    DispatchDamagePlayerEvent ( 0 .Event:Hit )
+                    EndThread
+                Else
+                    % partner
+                    Call    $GetPartnerHP_API ( *Var0 )
+                    If *Var0 > 0
+                        Thread
+                            Call    DispatchDamageEvent ( .Actor:Partner 0 .Event:Hit )
+                        EndThread
+                    EndIf
+                EndIf
+            Else
+                % enemies
+                Call    DispatchDamageEvent ( *Var4 0 .Event:Hit )
+            EndIf
+            Return
+    EndSwitch
+    ExecWait  $BattleScript_GoBackToHome_HealingItem
+    Return
+    End
+}
+
+#new:Script:Battle $UseItem_StatusItem_MultiTarget
+{
+    Call  GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % only player team
+        Call  InitTargetIterator
+    EndIf
+    Switch *Var9
+        CaseOR == .Item:MiniMrMini % 19C
+        CaseOR == .Item:MrSoftener % 19D
+            Call    UseBattleCamPreset ( 00000002 ) % reset cam
+            Label  MiniLabel0
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  ItemCheckHit      ( *Var0 ~Flags:DamageType:NoContact 00000000 *Var0 00000000 )
+            If  *Var0  ==  .HitResult:Miss % 6
+                Goto  MiniLabel1
+            EndIf
+            Wait  1
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  GetOwnerTarget ( *Var4 *Var6 )
+            Call  GetItemPower      ( *Var9 *Var5 .False )
+            Mul   *Var5 -1 % turn negative
+            Switch *Var9
+                Case == .Item:MiniMrMini % 19C
+                    Call  $AddAttackBoost ( *Var4 *Var5 3 )
+                    Call  $MakeActorTiny ( *Var4 )
+                Case == .Item:MrSoftener % 19D
+                    Call    $Function_GetActorDefense ( *Var4 *Var6 .Element:Normal *Var7 )
+                    If *Var7 > 0 % Only if actor has a defense above zero.
+                        If *Var7 >= 3
+                            Set *Var5 -3
+                        Else
+                            Set *Var5 *Var7
+                            Mul *Var5 -1
+                        EndIf
+                        Call  $AddDefenseBoost ( *Var4 *Var5 3 )
+                    Else
+                        Set *Var5 .False
+                    EndIf                    
+            EndSwitch
+            %=============
+            % FX
+            %=============
+            Call    PlaySoundAtActor ( *Var4 2106 )
+            % Show arrow
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var0  15` % x
+            Add     *Var1  35` % y
+            Set     *Var2  6 % z
+            Set     *Var6 56 % fx
+            Switch *Var9
+                Case == .Item:MiniMrMini % 19C
+                    Set *Var7 3 % AttackMinus1
+                Case == .Item:MrSoftener % 19D
+                    Set *Var7 6 % DefensePlus1
+            EndSwitch
+            If *Var5 != .False
+                Call    PlayEffect    ( *Var6 *Var7 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+                % set arrowFx's number
+                Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+                Call    $WriteAddress ( *Var0 2 *Var5 20 .False  ) % set amount inside the arrow
+            EndIf
+            % show wave fx
+            Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+            Add     *Var1 15` % y
+            Add     *Var2 2 % z
+            Switch *Var9
+                Case == .Item:MiniMrMini % 19C
+                    Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+                Case == .Item:MrSoftener % 19D
+                    If *Var5 != .False
+                        Call    $ReadAddress ( $Data_LastFX 2 *Var6 C .True  )
+                        Call    $WriteAddress ( *Var6 2 3 1C .False  ) % set arrowType as 0x03 (Blue upside-down)
+                        Call    PlayEffect    ( ~FX:Debuff:Blue *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+                    EndIf
+            EndSwitch
+            Label  MiniLabel1
+            Wait  5`
+            Call  GetOwnerID ( *Var2 )
+            If *Var2 >= .Actor:Enemy0 % Enemies
+                % check if partner has been already attacked
+                Call GetOwnerTarget ( *Var0 *Var1 )
+                % Check if Player has a partner available
+                Call $GetPartnerHP_API ( *Var1 )
+                If *Var1 <= 0
+                    Set *Var0 .Actor:Partner % skip partner
+                EndIf
+                If *Var0 != .Actor:Partner
+                    Call  SetTargetActor ( .Actor:Self .Actor:Partner )
+                    Goto  MiniLabel0
+                EndIf
+            Else % Player team
+                Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+                If  *Var0  !=  FFFFFFFF
+                    Goto  MiniLabel0
+                EndIf
+            EndIf
+            Call  GetOwnerTarget        ( *Var7 .False )
+            Call  GetOwnerID ( *Var4 ) % The actor didn't used the item on himself?
+            If *Var7 != *Var4
+                Call  UseIdleAnimation  ( *Var7 .False )
+            EndIf
+            Switch *Var7
+                Case == .Actor:Player
+                    Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                Case == .Actor:Partner
+                    Set     *Var0 0 % idle
+                    Exec    $SetPartnerAnimation_Battle
+                Default
+            EndSwitch
+            Wait  30`
+            Switch *Var9
+                Case == .Item:MiniMrMini % 19C
+                    Call    ShowMessageBox        ( 0000010A 0000003C )
+                    Call    WaitForMessageBoxDone
+                Case == .Item:MrSoftener % 19D
+                    Call    ShowMessageBox        ( 00000109 0000003C )
+                    Call    WaitForMessageBoxDone
+            EndSwitch
+        EndCaseGroup
+        Case == .Item:RuinPowder % 1A2
+            Call  UseBattleCamPreset    ( 00000002 ) % reset camera
+            Call  MoveBattleCamOver ( 25` )
+            Wait  30`
+            % Hit targets
+            Label RP0
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  ItemCheckHit      ( *Var0 ~Flags:DamageType:NoContact 00000000 *Var0 00000000 )
+            If  *Var0  ==  .HitResult:Miss % 6
+                Goto  RP1
+            EndIf
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  GetItemPower      ( .Item:RuinPowder *Var0 *Var1 )
+            Call  MakeStatusField   ( *Var0 00040000 00000064 *Var0 )
+            Call  80252B3C  ( *Var0 50000000 *Var0 00000000 00000020 ) % ItemAfflictEnemy
+            % inflict status
+            Call  RandInt ( 100` *Var0 )
+            If *Var0 <= 50`
+                Call  GetOwnerTarget ( *Var0 .False )
+                Call  $Function_TryToInflictStatus ( *Var0 .Status:Dizzy 3 )
+            EndIf
+            Label  RP1
+            Call  GetOwnerID ( *Var2 )
+            If *Var2 >= .Actor:Enemy0 % Enemies
+                % check if partner has been already attacked
+                Call GetOwnerTarget ( *Var0 *Var1 )
+                % Check if Player has a partner available
+                Call $GetPartnerHP_API ( *Var1 )
+                If *Var1 <= 0
+                    Set *Var0 .Actor:Partner % skip partner
+                EndIf
+                If *Var0 != .Actor:Partner
+                    Call  SetTargetActor ( .Actor:Self .Actor:Partner )
+                    Goto  RP0
+                EndIf
+            Else % Player team
+                Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+                If  *Var0  !=  FFFFFFFF
+                    Goto  RP0
+                EndIf
+            EndIf
+            Call  GetOwnerTarget        ( *Var7 .False )
+            Call  GetOwnerID ( *Var4 ) % The actor didn't used the item on himself?
+            If *Var7 != *Var4
+                Call  UseIdleAnimation  ( *Var7 .False )
+            EndIf
+            Switch *Var7
+                Case == .Actor:Player
+                    Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                Case == .Actor:Partner
+                    Set   *Var0 0 % idle
+                    Exec  $SetPartnerAnimation_Battle
+                Default
+            EndSwitch
+            Wait  30`
+    EndSwitch
+    ExecWait  $BattleScript_GoBackToHome_Item
+    Return
+    End
+}
+
+% Call    $Function_GetActorDefense ( actorID actorPart element *out )
+#export:Function:Battle $Function_GetActorDefense
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4
+    % get arguments
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % get arg1
+    COPY    S1, V0
+    %
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1) % get arg2
+    COPY    S2, V0
+    %
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1) % get arg3
+    COPY    S3, V0
+    %
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      S4, C (A1) % get arg4
+    % S1=actorID
+    % S2=actorPart
+    % S3=element
+    % S4=*out
+    JAL     ~Func:get_actor
+    COPY    A0, S1
+    %
+    COPY    A0, V0
+    JAL     ~Func:get_actor_part
+    COPY    A1, S2
+    %
+    LW      A0, 78 (V0) % actor's defenseTable
+    JAL     ~Func:lookup_defense
+    COPY    A1, S3
+    %
+    COPY    A0, S0
+    COPY    A1, S4
+    JAL     ~Func:set_variable
+    COPY    A2, V0
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+#new:Script:Battle $UseItem_OffensiveItem_SingleTarget
+{
+    Call  GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only player team
+        Call  InitTargetIterator
+    EndIf
+    Switch *Var9
+        Case == .Item:HPDrainItem % 199
+            Call  UseBattleCamPreset    ( 00000002 ) % reset camera
+            Call  MoveBattleCamOver ( 25` )
+            Call  GetOwnerID ( *Var7 )
+            Call  SetGoalToTarget ( *Var7 )
+            Call  ItemCheckHit      ( *Var0 ~Flags:DamageType:NoContact 00000000 *Var0 00000000 )
+            If  *Var0  ==  .HitResult:Miss % 6
+                Wait    30`
+                ExecWait  $BattleScript_GoBackToHome_Item
+                Return
+            EndIf
+            Loop 2
+                Call    PlaySound ( 03E0 ) % suck
+                Wait    10`
+            EndLoop
+            Call  GetItemPower  ( .Item:HPDrainItem *Var1 .False )
+            Call  ItemDamageEnemy  ( .False ~Flags:DamageType:IgnoreDefense|NoContact|Unblockable 00000000 *Var1 00000020 )
+            Call  GetActorPos ( *Var7 *Var2 *Var3 *Var4 )
+            Switch *Var7
+                Case == .Actor:Player
+                    Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                    Call  $Heal_PlayerTeam ( *Var7 *Var1 )
+                Case == .Actor:Partner
+                    Set   *Var0 0 % idle
+                    Exec  $SetPartnerAnimation_Battle
+                    Call  $Heal_PlayerTeam ( *Var7 *Var1 )
+                Default
+                    Call  $HealActor ( *Var7 *Var1 )
+            EndSwitch
+            Call    PlaySoundAtActor ( *Var7 206D ) % heart
+            Call    FXRecoverHP ( *Var2 *Var3 *Var4 *Var1 )
+            Wait  30`
+        CaseOR == .Item:CoconutBomb % 1A8
+        CaseOR == .Item:CourageMeal % 1AA
+        CaseOR == .Item:TayceDynamite % 1C3 (isn't actually single target but whatever)
+            % throw animation
+            Call  GetOwnerID ( *Var7 )
+            Switch *Var7
+                Case == .Actor:Player
+                    Call  UseBattleCamPreset    ( 00000003 )
+                    Call  MoveBattleCamOver     ( 0000000F )
+                    Call  SetAnimation  ( .Actor:Player 00000000 00010016 )
+                Case == .Actor:Partner
+                    Call  UseBattleCamPreset    ( 00000003 )
+                    Call  MoveBattleCamOver     ( 0000000F )
+                    Call  GetCurrentPartnerID ( *Var0 )
+                    If *Var0 == .Partner:Lakilester
+                        Call  SetAnimation  ( .Actor:Partner 00000000 00100012 )
+                    EndIf
+                Default % Enemies
+                    Call  UseBattleCamPreset    ( 00000002 )
+                    Call  MoveBattleCamOver     ( 0000000F )
+            EndSwitch
+            Call  PlaySound ( 000003FA )
+            Wait  3`
+            Switch *Var9
+                Case == .Item:CoconutBomb % 1A8
+                    Call  CreateVirtualEntity       ( *VarA $EntityModelScript_CoconutBomb )
+                Case == .Item:CourageMeal % 1AA
+                    Call  CreateVirtualEntity       ( *VarA $EntityModelScript_CourageMeal )
+                Case == .Item:TayceDynamite % 1C3
+                    Call  CreateVirtualEntity       ( *VarA $EntityModelScript_Dynamite )
+            EndSwitch
+            Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add   *Var0  00000014
+            Add   *Var1  0000002A
+            Add   *Var2  00000005
+            Call  SetVirtualEntityPosition  ( *VarA *Var0 *Var1 *Var2 )
+            Call  GetOwnerID ( *Var0 )
+            If *Var0 < .Actor:Enemy0 % Only player team
+                Call  InitTargetIterator
+            EndIf
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  GetGoalPos        ( .Actor:Self *Var0 *Var1 *Var2 )
+            If *Var9 == .Item:TayceDynamite
+                Set *Var0 71`   % x
+                Set *Var1 0     % y
+                Set *Var2 -5    % z
+            EndIf
+            Thread
+                Set   *Var0  00000000
+                Loop  00000012
+                    Add   *Var0  0000003C
+                    Call  SetVirtualEntityRotation  ( *VarA 00000000 00000000 *Var0 )
+                    Wait  1`
+                EndLoop
+            EndThread
+            Call  SetVirtualEntityJumpGravity   ( *VarA *Fixed[1.0] )
+            Add   *Var2  00000005
+            Call  VirtualEntityJumpTo   ( *VarA *Var0 *Var1 *Var2 00000012 )
+            Call  DeleteVirtualEntity   ( *VarA )
+            Call  PlaySound ( 00002010 )
+            Call  $Function_802A123C_Projectile    ( *Var0 *Var1 *Var2 )
+            Thread
+                Call  StartRumble   ( 00000005 )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.75] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[1.5] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000004 *Fixed[1.2] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.45] )
+            EndThread
+            Switch *Var9
+                CaseOR == .Item:CoconutBomb % 1A8
+                CaseOR == .Item:CourageMeal % 1AA
+                    Call  ItemCheckHit      ( *Var0 ~Flags:DamageType:NoContact 00000000 *Var0 00000000 )
+                    If  *Var0  ==  .HitResult:Miss % 6
+                        Wait    1
+                        Goto    TI1
+                    EndIf
+                EndCaseGroup
+                Case == .Item:TayceDynamite % 1C3
+                    %==========
+                    % NPC FX
+                    %==========
+                    % create NPC
+                    Call    CreateNpc ( 00000030 00AA000D )
+                    Call    SetNpcPos ( 00000030 71` 0 -5 )
+                    Call    SetNpcScale ( 00000030 *Fixed[3.0] *Fixed[3.0] *Fixed[3.0] )
+                    Call    802CFD30 ( 00000030 7 .False .False .False .False ) % set opacity
+                    Thread % unfade NPC
+                        % fire FX
+                        Call    GetNpcPos ( 00000030 *Var0 *Var1 *Var2 )
+                        Sub     *Var0 0 % x
+                        Sub     *Var1 96` % y
+                        Sub     *Var2 3 % z
+                        Call    PlayEffect  ( ~FX:Fire:LargeRed *Var0 *Var1 *Var2 *Fixed[3.2] 0 .False .False .False .False .False .False .False )
+                        Call    $ReadAddress ( $Data_LastFX 2 *VarE .False .False )
+                        Set *Var1 .False
+                        Loop 10`
+                            Add     *Var1  24`
+                            Call    802CFD30 ( 00000030 7 *Var1 .False .False .False ) % set opacity
+                            Wait    1
+                        EndLoop
+                        Call    802CFD30 ( 00000030 7 255` .False .False .False )
+                        Wait    5
+                        Call    GetNpcPos ( 00000030 *Var0 *Var1 *Var2 )
+                        Add     *Var1 35`
+                        Call    PlayEffect  ( ~FX:Explosion3 *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+                        Call    PlaySound ( 2018 ) % explosion sfx
+                        Wait    20`
+                        Call    RemoveEffect ( *VarE )
+                        % fade NPC
+                        Set *Var1 255`
+                        Loop 10`
+                            Sub     *Var1  24`
+                            Call    802CFD30 ( 00000030 7 *Var1 .False .False .False ) % set opacity
+                            Wait    1
+                        EndLoop
+                        Call    802CFD30 ( 00000030 7 .False .False .False .False )
+                        Call    DeleteNpc ( 00000030 )
+                    EndThread
+                    Wait    15`
+                    %============
+                    % hit targets
+                    %============
+                    Label TI2
+                    Call  SetGoalToTarget   ( .Actor:Self )
+                    Call  ItemCheckHit      ( *Var0 ~Flags:DamageType:NoContact 00000000 *Var0 00000000 )
+                    If  *Var0  ==  .HitResult:Miss % 6
+                        Goto  TI3
+                    EndIf
+                    Call  SetGoalToTarget   ( .Actor:Self )
+                    Call  GetItemPower      ( *Var9 *Var0 *Var1 )
+                    Call  ItemDamageEnemy   ( *Var0 ~Flags:DamageType:IgnoreDefense|NoContact|Blast|Unblockable|NoOtherDamagePopups 00000000 *Var0 00000020 )
+                    Label  TI3
+                    Call  GetOwnerID ( *Var2 )
+                    If *Var2 >= .Actor:Enemy0 % Enemies
+                        % check if partner has been already attacked
+                        Call GetOwnerTarget ( *Var0 *Var1 )
+                        % Check if Player has a partner available
+                        Call $GetPartnerHP_API ( *Var1 )
+                        If *Var1 <= 0
+                            Set *Var0 .Actor:Partner % skip partner
+                        EndIf
+                        If *Var0 != .Actor:Partner
+                            Call  SetTargetActor ( .Actor:Self .Actor:Partner )
+                            Goto  TI2
+                        EndIf
+                    Else % Player team
+                        Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+                        If  *Var0  !=  FFFFFFFF
+                            Goto  TI2
+                        EndIf
+                    EndIf
+                    Call  GetOwnerTarget        ( *Var7 .False )
+                    Call  GetOwnerID ( *Var4 ) % The actor didn't used the item on himself?
+                    If *Var7 != *Var4
+                        Call  UseIdleAnimation  ( *Var7 .False )
+                    EndIf
+                    Switch *Var7
+                        Case == .Actor:Player
+                            Call    SetAnimation  ( .Actor:Player 00000000 00010002 )
+                        Case == .Actor:Partner
+                            Set     *Var0 0 % idle
+                            Exec    $SetPartnerAnimation_Battle
+                        Default
+                    EndSwitch
+                    Wait    30`
+                    Goto    TI1
+            EndSwitch
+            Call  GetItemPower      ( *Var9 *Var0 *Var1 )
+            Switch  *Var9
+                Case == .Item:CourageMeal % 1AA
+                    Call  ItemDamageEnemy   ( *Var0 ~Flags:DamageType:IgnoreDefense|NoContact|Unblockable 00000000 *Var0 00000020 )
+                Default
+                    Call  ItemDamageEnemy   ( *Var0 ~Flags:DamageType:IgnoreDefense|NoContact|Fire|Blast|Unblockable 00000000 *Var0 00000020 )
+            EndSwitch
+            Label TI1
+        EndCaseGroup
+    EndSwitch
+    ExecWait  $BattleScript_GoBackToHome_Item
+    Return
+    End
+}
+
+#new:Script:Battle $UseItem_OffensiveItem_MultiTarget
+{
+    Call  GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only player team
+        Call  InitTargetIterator
+    EndIf
+    Switch *Var9
+        Case == .Item:EarthQuake % 190
+            Call  UseBattleCamPreset    ( 00000002 ) % reset camera
+            Call  MoveBattleCamOver ( 25` )
+            Call  StartRumble   ( 00000004 )
+            Call  PlaySoundAtActor ( .Actor:Self 0060 )
+            Call  ShakeCam  ( .Cam:Battle 00000000 5 *Fixed[0.2] )
+            Thread % dust FXs
+                Call  GetActorPos ( .Actor:Player *Var0 *Var1 *Var2 )
+                Add   *Var1 150` % y
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 20` .False .False .False .False .False .False .False .False )
+                Wait  3
+                Add   *Var0 22 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 25` .False .False .False .False .False .False .False .False )
+                Wait  6
+                Add   *Var0 22 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 20` .False .False .False .False .False .False .False .False )
+                Wait  4
+                Add   *Var0 22 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 30` .False .False .False .False .False .False .False .False )
+                Wait  7
+                Add   *Var0 32 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 15` .False .False .False .False .False .False .False .False )
+                Wait  3
+                Add   *Var0 22 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 25` .False .False .False .False .False .False .False .False )
+                Wait  6
+                Add   *Var0 22 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 20` .False .False .False .False .False .False .False .False )
+                Wait  4
+                Add   *Var0 22 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 25` .False .False .False .False .False .False .False .False )
+                Wait  7
+                Add   *Var0 32 % x
+                Call  PlayEffect  ( ~FX:Dust:HeavyRain *Var0 *Var1 *Var2 20` .False .False .False .False .False .False .False .False )
+            EndThread
+            Call  ShakeCam  ( .Cam:Battle 00000000 5 *Fixed[0.4] )
+            Call  ShakeCam  ( .Cam:Battle 00000000 10` *Fixed[0.6] )
+            Call  ShakeCam  ( .Cam:Battle 00000000 15` *Fixed[2.0] )
+            Call  StopSound ( 0060 )
+            Call  PlaySoundAtActor ( .Actor:Self 00DD )
+            Thread
+                Call  StartRumble   ( 00000004 )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[3.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[6.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[5.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[4.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[3.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[2.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[1.0] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.5] )
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000002 *Fixed[0.2] )
+            EndThread
+            % Hit targets
+            Label EQ0
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  ItemCheckHit      ( *Var0 ~Flags:DamageType:NoContact 00000000 *Var0 00000000 )
+            If  *Var0  ==  .HitResult:Miss % 6
+                Goto  EQ1
+            EndIf
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  GetItemPower      ( .Item:EarthQuake *Var0 *Var1 )
+            Call  ItemDamageEnemy   ( *Var0 ~Flags:DamageType:IgnoreDefense|NoContact|NoOtherDamagePopups|Unblockable|Quake 00000000 *Var0 00000020 )
+            Label  EQ1
+            Call  GetOwnerID ( *Var2 )
+            If *Var2 >= .Actor:Enemy0 % Enemies
+                % check if partner has been already attacked
+                Call GetOwnerTarget ( *Var0 *Var1 )
+                % Check if Player has a partner available
+                Call $GetPartnerHP_API ( *Var1 )
+                If *Var1 <= 0
+                    Set *Var0 .Actor:Partner % skip partner
+                EndIf
+                If *Var0 != .Actor:Partner
+                    Call  SetTargetActor ( .Actor:Self .Actor:Partner )
+                    Goto  EQ0
+                EndIf
+            Else % Player team
+                Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+                If  *Var0  !=  FFFFFFFF
+                    Goto  EQ0
+                EndIf
+            EndIf
+            Call  GetOwnerTarget        ( *Var7 .False )
+            Call  GetOwnerID ( *Var4 ) % The actor didn't used the item on himself?
+            If *Var7 != *Var4
+                Call  UseIdleAnimation  ( *Var7 .False )
+            EndIf
+            Switch *Var7
+                Case == .Actor:Player
+                    Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                Case == .Actor:Partner
+                    Set     *Var0 0 % idle
+                    Exec    $SetPartnerAnimation_Battle
+                Default
+            EndSwitch
+            Wait  30`
+        Case == .Item:IceStorm % 19A
+            Call  PlaySoundAtActor  ( .Actor:Self 0000035D )
+            Call  UseBattleCamPreset    ( 00000002 ) % reset camera
+            Call  MoveBattleCamOver ( 25` )
+            % Animation
+            Thread % code grabbed from Snowman Doll,I tweaked it a little bit.
+                Call  GetOwnerID ( *Var3 )
+                Set   *Var6 .False
+                Loop  17`
+                    If *Var6 == .False
+                        Call  GetActorPos ( *Var3 *Var4 .False .False )
+                    EndIf
+                    Add   *Var6 1
+                    If *Var6 == 6
+                        Set   *Var6 .False
+                    EndIf
+                    % x
+                    If *Var3 >= .Actor:Enemy0
+                        Sub   *Var4  30`
+                    Else % Player Team
+                        Add   *Var4  30`
+                    EndIf
+                    % y
+                    Set   *Var1  40`
+                    Call  RandInt       ( 25` *Var5 )
+                    Call  RandInt       ( 1 *Var2 )
+                    If *Var1 == 1
+                        Mul *Var5 -1
+                    EndIf
+                    Add   *Var1 *Var5
+                    % z
+                    Call  RandInt       ( 00000032 *Var2 )
+                    Sub   *Var2  00000019
+                    Call  PlayEffect    ( ~FX:Snowflake *Var4 *Var1 *Var2 30` 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+                    Wait  2`
+                EndLoop
+            EndThread
+            % code grabbed from Crystal King's Frost Breath
+            Call  GetOwnerID ( *Var3 )
+            If *Var3 >= .Actor:Enemy0
+                SetF *Var3 *Fixed[180.0]
+            Else % Player Team
+                Set  *Var3 .False
+            EndIf
+            Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            Set   *Var1 25` % y
+            Call  PlayEffect    ( ~FX:HuffPuffBreath *Var0 *Var1 *Var2 *Var3 *Fixed[2.0] *Fixed[1.0] 0000003C .False .False .False .False .False )
+            Call  $Function_IceStorm_ChangeBreathColor ( *VarF )
+            Call  $Function_IceStorm_Rumble ( 00000046 00000064 )
+            Thread
+                Call  ShakeCam  ( .Cam:Battle 00000000 00000032 *Fixed[0.3] )
+            EndThread
+            Wait  60`
+            Call  StopSound ( 0000035D )
+            % Hit targets
+            Label IS0
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  ItemCheckHit      ( *Var0 ~Flags:DamageType:NoContact|Ice 00000000 *Var0 00000000 )
+            If  *Var0  ==  .HitResult:Miss % 6
+                Goto  IS1
+            EndIf
+            Call  SetGoalToTarget   ( .Actor:Self )
+            Call  GetItemPower      ( .Item:IceStorm *Var0 *Var1 )
+            Call  ItemDamageEnemy   ( *Var0 ~Flags:DamageType:IgnoreDefense|NoContact|Unblockable|Ice|NoOtherDamagePopups 00000000 *Var0 00000020 )
+            % Inflict status
+            Call  RandInt ( 100` *Var0 )
+            If *Var0 <= 50`
+                Call  GetOwnerTarget ( *Var0 .False )
+                Call  $Function_TryToInflictStatus ( *Var0 .Status:Frozen 3 )
+            EndIf
+            Label  IS1
+            Call  GetOwnerID ( *Var2 )
+            If *Var2 >= .Actor:Enemy0 % Enemies
+                % check if partner has been already attacked
+                Call GetOwnerTarget ( *Var0 *Var1 )
+                % Check if Player has a partner available
+                Call $GetPartnerHP_API ( *Var1 )
+                If *Var1 <= 0
+                    Set *Var0 .Actor:Partner % skip partner
+                EndIf
+                If *Var0 != .Actor:Partner
+                    Call  SetTargetActor ( .Actor:Self .Actor:Partner )
+                    Goto  IS0
+                EndIf
+            Else % Player team
+                Call  ChooseNextTarget  ( .Iter:Next *Var0 )
+                If  *Var0  !=  FFFFFFFF
+                    Goto  IS0
+                EndIf
+            EndIf
+            Call  GetOwnerTarget        ( *Var7 .False )
+            Call  GetOwnerID ( *Var4 ) % The actor didn't used the item on himself?
+            If *Var7 != *Var4
+                Call  UseIdleAnimation  ( *Var7 .False )
+            EndIf
+            Switch *Var7
+                Case == .Actor:Player
+                    Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                Case == .Actor:Partner
+                    Set   *Var0 0 % idle
+                    Exec  $SetPartnerAnimation_Battle
+                Default
+            EndSwitch
+            Wait  30`
+    EndSwitch
+    ExecWait  $BattleScript_GoBackToHome_Item
+    Return
+    End
+}
+
+% Code grabbed from `Item_StrangeCake.bpat`
+#new:Script:Battle $UseItem_StrangeCake
+{
+    Call  GetOwnerID ( *Var0 )
+    If *Var0 < .Actor:Enemy0 % Only player team
+        Call  InitTargetIterator
+    EndIf
+    Call  GetOwnerTarget ( *Var4 .False )
+    % check if target is KO'd
+    Set *VarF .False
+    Call GetStatusFlags ( *Var4 *Var0 )
+    If  *Var0  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+        Set *VarF .True
+    EndIf
+    Wait  10`
+    Thread
+        Wait  220`
+        Call  PlaySoundAtActor  ( .Actor:Self 03F3 )
+    EndThread
+    Call  PlaySoundAtActor  ( .Actor:Self 0368 )
+    Call  $Function_StrangeCake_Roulette
+    Wait  2`
+    Switch  *Var0
+        Case  ==  00000000
+            ExecWait  $Script_RandomEffect_Static
+        Case  ==  00000001
+            ExecWait  $Script_RandomEffect_Invicible
+        Case  ==  00000002
+            ExecWait  $Script_RandomEffect_Sleep
+    EndSwitch
+    ExecWait  $BattleScript_GoBackToHome_HealingItem
+    Return
+    End
+}
+
+#new:Script:Battle $Script_RandomEffect_Static % Script_802A2B70
+{
+        Call  GetOwnerTarget    ( *Var4 .False )
+        Switch *Var4
+            Case == .Actor:Player
+                Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+            Case == .Actor:Partner
+                Set   *Var0 0 % idle
+                Exec  $SetPartnerAnimation_Battle
+            Default
+        EndSwitch
+   18:  Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+   34:  Add   *Var1  00000014
+   44:  Call  PlayEffect    ( ~FX:SnakingStatic *Var0 *Var1 *Var2 *Fixed[1.0] 0000001E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Call  $Function_InflictStatus ( *Var4 .Status:Static 3 )
+        If *Var4 == .Actor:Player
+            Wait  20`
+            Call  ShowMessageBox        ( 00000010 0000003C )
+            Call  WaitForMessageBoxDone
+        Else
+            Wait  30`
+        EndIf
+   C0:  Return
+   C8:  End
+}
+
+#new:Script:Battle $Script_RandomEffect_Invicible % Script_802A2C40
+{
+        Call  GetOwnerTarget    ( *Var4 .False )
+        Switch *Var4
+            Case == .Actor:Player
+                Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+            Case == .Actor:Partner
+                Set   *Var0 0 % idle
+                Exec  $SetPartnerAnimation_Battle
+            Default
+        EndSwitch
+   18:  Call  GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+   34:  Add   *Var1  00000014
+   44:  Call  PlayEffect    ( ~FX:RadialFlowOut:WhiteWaves *Var0 *Var1 *Var2 *Fixed[1.0] 0000001E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+        Call  $Function_InflictStatus ( *Var4 E 3 )
+        If *Var4 == .Actor:Player
+            Wait  20`
+            Call  ShowMessageBox        ( 00000011 0000003C )
+            Call  WaitForMessageBoxDone
+        Else
+            Wait  30`
+        EndIf
+   C0:  Return
+   C8:  End
+}
+
+#new:Script:Battle $Script_RandomEffect_Sleep % Script_802A2D10
+{
+        Call  GetOwnerTarget    ( *Var4 .False )
+        Switch *Var4
+            Case == .Actor:Player
+                Call  SetAnimation      ( .Actor:Player 00000000 00030004 ) % sleeping
+            Case == .Actor:Partner
+            Default
+        EndSwitch
+   18:  Call  SetGoalToTarget   ( *Var4 )
+   28:  Call  GetGoalPos        ( *Var4 *Var0 *Var1 *Var2 )
+   44:  Exec  DoSleepHit
+        Call  $Function_TryToInflictStatus ( *Var4 .Status:Sleep 3 )
+        If *Var4 == .Actor:Player
+            Wait  20`
+            Call  ShowMessageBox        ( 0000000B 0000003C )
+            Call  WaitForMessageBoxDone
+        Else
+            Wait  30`
+        EndIf
+   88:  Return
+   90:  End
+}
+
+#new:JumpTable $JumpTable_802A2DB0_StrangeCake
+{
+	$Function_StrangeCake_Roulette[50] $Function_StrangeCake_Roulette[EC] $Function_StrangeCake_Roulette[230] $Function_StrangeCake_Roulette[2B4]
+	$Function_StrangeCake_Roulette[350] $Function_StrangeCake_Roulette[370]
+}
+
+#new:Function $Function_IceStorm_ChangeBreathColor {
+    0:  ADDIU     SP, SP, FFE8
+    4:  SW        RA, 10 (SP)
+    8:  LW        V0, C (A0)
+    C:  JAL       ~Func:get_variable
+   10:  LW        A1, 0 (V0)
+   14:  LW        V1, C (V0)
+   18:  LI        A0, F8
+   1C:  SW        A0, 18 (V1)
+   20:  LW        V1, C (V0)
+   24:  SW        A0, 1C (V1)
+   28:  LW        V1, C (V0)
+   2C:  LI        A1, FF
+   30:  SW        A1, 20 (V1)
+   34:  LW        A0, C (V0)
+   38:  LI        V1, 80
+   3C:  SW        V1, 28 (A0)
+   40:  LW        A0, C (V0)
+   44:  LI        V1, E0
+   48:  SW        V1, 2C (A0)
+   4C:  LW        V1, C (V0)
+   50:  SW        A1, 30 (V1)
+   54:  LW        RA, 10 (SP)
+   58:  LI        V0, 2
+   5C:  JR        RA
+   60:  ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_IceStorm_Rumble {
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S1, 14 (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 18 (SP)
+   10:  SW        S0, 10 (SP)
+   14:  LW        S0, C (S1)
+   18:  LW        A1, 0 (S0)
+   1C:  JAL       ~Func:get_variable
+   20:  ADDIU     S0, S0, 4
+   24:  COPY      A0, S1
+   28:  LW        A1, 0 (S0)
+   2C:  JAL       ~Func:get_variable
+   30:  COPY      S0, V0
+   34:  COPY      A0, S0
+   38:  JAL       ~Func:start_rumble
+   3C:  COPY      A1, V0
+   40:  LW        RA, 18 (SP)
+   44:  LW        S1, 14 (SP)
+   48:  LW        S0, 10 (SP)
+   4C:  LI        V0, 2
+   50:  JR        RA
+   54:  ADDIU     SP, SP, 20
+}
+
+%==============================
+% Throw projectile items code
+%==============================
+
+#new:Data $Image_CoconutBomb
+{ ~RasterFile:CI-4:battle_items/coconutbomb.png }
+
+#new:Data $Palette_CoconutBomb
+{ ~PaletteFile:CI-4:battle_items/coconutbomb.png }
+
+#new:Data $Image_CourageMeal
+{ ~RasterFile:CI-4:battle_items/couragemeal.png }
+
+#new:Data $Palette_CourageMeal
+{ ~PaletteFile:CI-4:battle_items/couragemeal.png }
+
+#new:Data $Image_ZessDynamite
+{ ~RasterFile:CI-4:battle_items/zessdynamite.png }
+
+#new:Data $Palette_ZessDynamite
+{ ~PaletteFile:CI-4:battle_items/zessdynamite.png }
+
+#new:VertexTable $VertexTable_802A2150
+{
+	%    X        Y        Z                 U        V         R   G   B   A     pos
+	   -16`s    -16`s      0`s    0000s       0`s      0`s      00b 00b 00b FFb   %  0
+	    15`s    -16`s      0`s    0000s    1024`s      0`s      00b 00b 00b FFb   %  1
+	    15`s     15`s      0`s    0000s    1024`s   1024`s      00b 00b 00b FFb   %  2
+	   -16`s     15`s      0`s    0000s       0`s   1024`s      00b 00b 00b FFb   %  3
+}
+
+#new:DisplayList $DisplayList_CoconutBomb
+{
+	G_RDPPIPESYNC
+	G_TEXTURE        (G_TX_RENDERTILE, 0.999985, 0.999985, 0, true)
+	G_SETCOMBINE     (G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_0, G_ACMUX_0, G_ACMUX_0, G_ACMUX_TEXEL0, ...
+	                  G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_0, G_ACMUX_0, G_ACMUX_0, G_ACMUX_TEXEL0)
+	G_SetOtherMode_H (G_MDSFT_TEXTPERSP, 1)
+	G_SetOtherMode_H (G_MDSFT_TEXTDETAIL, G_TD_CLAMP)
+	G_SetOtherMode_H (G_MDSFT_TEXTLOD, G_TL_TILE)
+	G_SetOtherMode_H (G_MDSFT_TEXTLUT, G_TT_NONE)
+	G_SetOtherMode_H (G_MDSFT_TEXTFILT, G_TF_AVERAGE)
+	G_SetOtherMode_H (G_MDSFT_TEXTCONV, G_TC_FILT)
+	G_SetOtherMode_H (G_MDSFT_TEXTLUT, G_TT_RGBA16)
+	G_SETIMG         (RGBA-16, 1`, $Palette_CoconutBomb )
+	G_RDPTILESYNC
+	G_SETTILE        (G_TX_LOADTILE, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0) % invalid format (0:0)
+	G_RDPLOADSYNC
+	G_LOADTLUT       (G_TX_LOADTILE, 16`)
+	G_RDPPIPESYNC
+	G_SETIMG         (CI-8, 16`, $Image_CoconutBomb )
+	G_SETTILE        (G_TX_LOADTILE, CI-8, 2, 0, 0, 0, 0, 0, 0, 0, 0)
+	G_RDPLOADSYNC
+	G_LOADTILE       (G_TX_LOADTILE, 0.000000, 0.000000, 15.500000, 31.000000)
+	G_RDPPIPESYNC
+	G_SETTILE        (G_TX_RENDERTILE, CI-4, 2, 0, 0, 0, 0, 0, 0, 0, 0)
+	G_SETTILESIZE    (G_TX_RENDERTILE, 0, 0, 32`, 32`)
+	G_GEOMETRYMODE   (Clear, G_LIGHTING)
+	G_GEOMETRYMODE   (Clear, G_SHADING_SMOOTH)
+	G_VTX            ( $VertexTable_802A2150 , 4`, 0)
+	G_TRI1           ( 0`,  1`,  2`)
+	G_TRI1           ( 0`,  2`,  3`)
+	G_RDPPIPESYNC
+	G_ENDDL
+}
+
+#new:EntityModelScript $EntityModelScript_CoconutBomb
+{
+	SetRenderMode   ( .RenderMode:AlphaTest )
+	SetDisplayList  ( 2` $DisplayList_CoconutBomb )
+	Restart
+}
+
+#new:DisplayList $DisplayList_CourageMeal
+{
+	G_RDPPIPESYNC
+	G_TEXTURE        (G_TX_RENDERTILE, 0.999985, 0.999985, 0, true)
+	G_SETCOMBINE     (G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_0, G_ACMUX_0, G_ACMUX_0, G_ACMUX_TEXEL0, ...
+	                  G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_0, G_ACMUX_0, G_ACMUX_0, G_ACMUX_TEXEL0)
+	G_SetOtherMode_H (G_MDSFT_TEXTPERSP, 1)
+	G_SetOtherMode_H (G_MDSFT_TEXTDETAIL, G_TD_CLAMP)
+	G_SetOtherMode_H (G_MDSFT_TEXTLOD, G_TL_TILE)
+	G_SetOtherMode_H (G_MDSFT_TEXTLUT, G_TT_NONE)
+	G_SetOtherMode_H (G_MDSFT_TEXTFILT, G_TF_AVERAGE)
+	G_SetOtherMode_H (G_MDSFT_TEXTCONV, G_TC_FILT)
+	G_SetOtherMode_H (G_MDSFT_TEXTLUT, G_TT_RGBA16)
+	G_SETIMG         (RGBA-16, 1`, $Palette_CourageMeal )
+	G_RDPTILESYNC
+	G_SETTILE        (G_TX_LOADTILE, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0) % invalid format (0:0)
+	G_RDPLOADSYNC
+	G_LOADTLUT       (G_TX_LOADTILE, 16`)
+	G_RDPPIPESYNC
+	G_SETIMG         (CI-8, 16`, $Image_CourageMeal )
+	G_SETTILE        (G_TX_LOADTILE, CI-8, 2, 0, 0, 0, 0, 0, 0, 0, 0)
+	G_RDPLOADSYNC
+	G_LOADTILE       (G_TX_LOADTILE, 0.000000, 0.000000, 15.500000, 31.000000)
+	G_RDPPIPESYNC
+	G_SETTILE        (G_TX_RENDERTILE, CI-4, 2, 0, 0, 0, 0, 0, 0, 0, 0)
+	G_SETTILESIZE    (G_TX_RENDERTILE, 0, 0, 32`, 32`)
+	G_GEOMETRYMODE   (Clear, G_LIGHTING)
+	G_GEOMETRYMODE   (Clear, G_SHADING_SMOOTH)
+	G_VTX            ( $VertexTable_802A2150 , 4`, 0)
+	G_TRI1           ( 0`,  1`,  2`)
+	G_TRI1           ( 0`,  2`,  3`)
+	G_RDPPIPESYNC
+	G_ENDDL
+}
+
+#new:EntityModelScript $EntityModelScript_CourageMeal
+{
+	SetRenderMode   ( .RenderMode:AlphaTest )
+	SetDisplayList  ( 2` $DisplayList_CourageMeal )
+	Restart
+}
+
+#new:DisplayList $DisplayList_Dynamite
+{
+	G_RDPPIPESYNC
+	G_TEXTURE        (G_TX_RENDERTILE, 0.999985, 0.999985, 0, true)
+	G_SETCOMBINE     (G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_0, G_ACMUX_0, G_ACMUX_0, G_ACMUX_TEXEL0, ...
+	                  G_CCMUX_0, G_CCMUX_0, G_CCMUX_0, G_CCMUX_TEXEL0, ...
+	                  G_ACMUX_0, G_ACMUX_0, G_ACMUX_0, G_ACMUX_TEXEL0)
+	G_SetOtherMode_H (G_MDSFT_TEXTPERSP, 1)
+	G_SetOtherMode_H (G_MDSFT_TEXTDETAIL, G_TD_CLAMP)
+	G_SetOtherMode_H (G_MDSFT_TEXTLOD, G_TL_TILE)
+	G_SetOtherMode_H (G_MDSFT_TEXTLUT, G_TT_NONE)
+	G_SetOtherMode_H (G_MDSFT_TEXTFILT, G_TF_AVERAGE)
+	G_SetOtherMode_H (G_MDSFT_TEXTCONV, G_TC_FILT)
+	G_SetOtherMode_H (G_MDSFT_TEXTLUT, G_TT_RGBA16)
+	G_SETIMG         (RGBA-16, 1`, $Palette_ZessDynamite )
+	G_RDPTILESYNC
+	G_SETTILE        (G_TX_LOADTILE, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0) % invalid format (0:0)
+	G_RDPLOADSYNC
+	G_LOADTLUT       (G_TX_LOADTILE, 16`)
+	G_RDPPIPESYNC
+	G_SETIMG         (CI-8, 16`, $Image_ZessDynamite )
+	G_SETTILE        (G_TX_LOADTILE, CI-8, 2, 0, 0, 0, 0, 0, 0, 0, 0)
+	G_RDPLOADSYNC
+	G_LOADTILE       (G_TX_LOADTILE, 0.000000, 0.000000, 15.500000, 31.000000)
+	G_RDPPIPESYNC
+	G_SETTILE        (G_TX_RENDERTILE, CI-4, 2, 0, 0, 0, 0, 0, 0, 0, 0)
+	G_SETTILESIZE    (G_TX_RENDERTILE, 0, 0, 32`, 32`)
+	G_GEOMETRYMODE   (Clear, G_LIGHTING)
+	G_GEOMETRYMODE   (Clear, G_SHADING_SMOOTH)
+	G_VTX            ( $VertexTable_802A2150 , 4`, 0)
+	G_TRI1           ( 0`,  1`,  2`)
+	G_TRI1           ( 0`,  2`,  3`)
+	G_RDPPIPESYNC
+	G_ENDDL
+}
+
+#new:EntityModelScript $EntityModelScript_Dynamite
+{
+	SetRenderMode   ( .RenderMode:AlphaTest )
+	SetDisplayList  ( 2` $DisplayList_Dynamite )
+	Restart
+}
+
+#new:Function $Function_802A123C_Projectile
+{
+    0:  ADDIU     SP, SP, FFD0
+    4:  SW        S1, 14 (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 1C (SP)
+   10:  SW        S2, 18 (SP)
+   14:  SW        S0, 10 (SP)
+   18:  SDC1      F22, 28 (SP)
+   1C:  SDC1      F20, 20 (SP)
+   20:  LW        S0, C (S1)
+   24:  LW        A1, 0 (S0)
+   28:  JAL       ~Func:get_variable
+   2C:  ADDIU     S0, S0, 4
+   30:  LW        A1, 0 (S0)
+   34:  ADDIU     S0, S0, 4
+   38:  COPY      A0, S1
+   3C:  JAL       ~Func:get_variable
+   40:  COPY      S2, V0
+   44:  COPY      A0, S1
+   48:  LW        A1, 0 (S0)
+   4C:  JAL       ~Func:get_variable
+   50:  COPY      S0, V0
+   54:  MTC1      S2, F22
+   58:  NOP
+   5C:  CVT.S.W   F22, F22
+   60:  MTC1      V0, F20
+   64:  NOP
+   68:  CVT.S.W   F20, F20
+   6C:  MTC1      S0, F0
+   70:  NOP
+   74:  CVT.S.W   F0, F0
+   78:  MFC1      A1, F22
+   7C:  MFC1      A3, F20
+   80:  MFC1      A2, F0
+   84:  JAL       ~Func:playFX_17
+   88:  CLEAR     A0
+   8C:  ADDIU     S0, S0, 14
+   90:  MTC1      S0, F0
+   94:  NOP
+   98:  CVT.S.W   F0, F0
+   9C:  MFC1      A1, F22
+   A0:  MFC1      A3, F20
+   A4:  MFC1      A2, F0
+   A8:  JAL       ~Func:playFX_19
+   AC:  CLEAR     A0
+   B0:  LW        RA, 1C (SP)
+   B4:  LW        S2, 18 (SP)
+   B8:  LW        S1, 14 (SP)
+   BC:  LW        S0, 10 (SP)
+   C0:  LDC1      F22, 28 (SP)
+   C4:  LDC1      F20, 20 (SP)
+   C8:  LI        V0, 2
+   CC:  JR        RA
+   D0:  ADDIU     SP, SP, 30
+}
+
+% From `Item_SuperSoda.bpat`
+#new:Function:Battle $Function_ClearDebuffs
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        RA, 18 (SP)
+    8:  SW        S1, 14 (SP)
+    C:  SW        S0, 10 (SP)
+   10:  LW        V0, C (A0)
+   14:  JAL       ~Func:get_variable
+   18:  LW        A1, 0 (V0)
+   1C:  JAL       ~Func:get_actor
+   20:  COPY      A0, V0
+   24:  COPY      S0, V0
+   28:  LHU       V0, 192 (S0)
+   2C:  LB        V1, 210 (S0)
+   30:  BEQ       V1, R0, .o48
+   34:  ANDI      S1, V0, 700
+   38:  LH        A0, 436 (S0)
+   3C:  SB        R0, 211 (S0)
+   40:  JAL       80047898 % remove debuff icon
+   44:  SB        R0, 210 (S0)
+        .o48
+   48:  LB        V0, 216 (S0)
+   4C:  BEQ       V0, R0, .o80
+   50:  NOP
+   54:  SB        R0, 217 (S0)
+   58:  BEQ       S1, R0, .o74
+   5C:  SB        R0, 216 (S0)
+   60:  LI        V0, 100
+   64:  BNE       S1, V0, .o74
+   68:  NOP
+        % Clear extra data
+        JAL      $GetPartnerExtraBattleData_Pointer
+        NOP
+        SH       R0, 0 (V0) % clear status debuffs
+   6C:  JAL       ~Func:dispatch_event_partner
+   70:  LI        A0, 31
+        .o74
+   74:  LW        V0, 440 (S0)
+   78:  LW        V0, C (V0)
+   7C:  SW        R0, 3C (V0)
+        .o80
+   80:  JAL       ~Func:btl_update_ko_status
+   84:  NOP
+   88:  LW        RA, 18 (SP)
+   8C:  LW        S1, 14 (SP)
+   90:  LW        S0, 10 (SP)
+   94:  LI        V0, 2
+   98:  JR        RA
+   9C:  ADDIU     SP, SP, 20
+}
+
+% From Item_StrangeCake.bpat
+
+#new:Data $StrangeCake_Data
+{
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000
+}
+
+#new:Function $Function_StrangeCake_Roulette % Function_802A13E4
+{
+    0:  ADDIU     SP, SP, FFD8
+    4:  COPY      A2, A0
+    8:  SW        RA, 20 (SP)
+    C:  SW        S3, 1C (SP)
+   10:  SW        S2, 18 (SP)
+   14:  SW        S1, 14 (SP)
+   18:  BEQ       A1, R0, .o28
+   1C:  SW        S0, 10 (SP)
+   20:  SAW       R0, $StrangeCake_Data[1C]
+        .o28
+   28:  LAW       V1, $StrangeCake_Data[1C]
+   30:  SLTIU     V0, V1, 6
+   34:  BEQ       V0, R0, .o414
+   38:  SLL       V0, V1, 2
+   3C:  LTW       V0, V0 ($JumpTable_802A2DB0_StrangeCake)
+   48:  JR        V0
+   4C:  NOP
+	% LBL: from $JumpTable_802A2DB0_StrangeCake , entry 0`
+   50:  LA        A1, $Function_802A123C_StrangeCake
+   58:  JAL       ~Func:create_generic_entity_frontUI
+   5C:  CLEAR     A0
+   60:  SAW       V0, $StrangeCake_Data[30]
+   68:  JAL       ~Func:rand_int
+   6C:  LI        A0, 32C8
+   70:  CLEAR     S0
+   74:  LA        S3, $???_802A2848
+   7C:  LA        S2, $StrangeCake_Data[8]
+   84:  LA        S1, $ShortTable_802A285A
+   8C:  SAW       V0, $StrangeCake_Data[24]
+   94:  LI        V0, 3E8
+   98:  SAW       V0, $StrangeCake_Data[28]
+        .oA0
+   A0:  LW        V0, 0 (S1)
+   A4:  ADDIU     S1, S1, 4
+   A8:  SLL       V0, V0, 2
+   AC:  ADDU      V0, V0, S3
+   B0:  LW        A0, 0 (V0)
+   B4:  JAL       ~Func:create_hud_element
+   B8:  ADDIU     S0, S0, 1
+   BC:  COPY      A0, V0
+   C0:  LI        A1, 80
+   C4:  JAL       ~Func:set_hud_element_flags
+   C8:  SW        A0, 0 (S2)
+   CC:  SLTI      V0, S0, 5
+   D0:  BNE       V0, R0, .oA0
+   D4:  ADDIU     S2, S2, 4
+   D8:  LI        V0, 1
+   DC:  SAW       V0, $StrangeCake_Data[1C]
+   E4:  BEQ       R0, R0, .o418
+   E8:  CLEAR     V0
+	% LBL: from $JumpTable_802A2DB0_StrangeCake , entry 1`
+   EC:  LUI       V1, 51EB
+   F0:  LA        A2, $StrangeCake_Data[24]
+   F8:  LA        A3, $StrangeCake_Data[28]
+  100:  LW        V0, 0 (A2)
+  104:  LW        A1, 0 (A3)
+  108:  ORI       V1, V1, 851F
+  10C:  ADDU      A0, V0, A1
+  110:  MULT      A0, V1
+  114:  SRA       V1, A0, 1F
+  118:  MFHI      T0
+  11C:  SRA       V0, T0, 5
+  120:  SUBU      V0, V0, V1
+  124:  SLTI      V0, V0, 82
+  128:  BNE       V0, R0, .o138
+  12C:  SW        A0, 0 (A2)
+  130:  ADDIU     V0, A0, CD38
+  134:  SW        V0, 0 (A2)
+        .o138
+  138:  COPY      V1, A1
+  13C:  SLTI      V0, V1, 191
+  140:  BNE       V0, R0, .o150
+  144:  SLTI      V0, V1, 65
+  148:  BEQ       R0, R0, .o15C
+  14C:  ADDIU     V0, V1, FFF6
+        .o150
+  150:  BNE       V0, R0, .o15C
+  154:  ADDIU     V0, A1, FFFF
+  158:  ADDIU     V0, V1, FFFB
+        .o15C
+  15C:  SW        V0, 0 (A3)
+  160:  LAW       V0, $StrangeCake_Data[28]
+  168:  SLTI      V0, V0, A
+  16C:  BEQ       V0, R0, .o414
+  170:  LUI       V1, 51EB
+  174:  LAW       V0, $StrangeCake_Data[24]
+  17C:  ORI       V1, V1, 851F
+  180:  MULT      V0, V1
+  184:  LI        A0, 4EC4EC4F
+  18C:  SRA       V0, V0, 1F
+  190:  MFHI      T0
+  194:  SRA       V1, T0, 5
+  198:  SUBU      V1, V1, V0
+  19C:  MULT      V1, A0
+  1A0:  SRA       V0, V1, 1F
+  1A4:  SAW       V1, $StrangeCake_Data[20]
+  1AC:  MFHI      T0
+  1B0:  SRA       A0, T0, 3
+  1B4:  SUBU      A0, A0, V0
+  1B8:  SLL       V0, A0, 1
+  1BC:  ADDU      V0, V0, A0
+  1C0:  SLL       V0, V0, 2
+  1C4:  ADDU      V0, V0, A0
+  1C8:  SLL       V0, V0, 1
+  1CC:  SUBU      V1, V1, V0
+  1D0:  SLTI      V1, V1, D
+  1D4:  BEQ       V1, R0, .o1F8
+  1D8:  NOP
+  1DC:  JAL       ~Func:rand_int
+  1E0:  LI        A0, 64
+  1E4:  SLTI      V0, V0, 50
+  1E8:  BNE       V0, R0, .o220
+  1EC:  LI        V0, 2
+  1F0:  BEQ       R0, R0, .o20C
+  1F4:  LI        V0, 3
+        .o1F8
+  1F8:  JAL       ~Func:rand_int
+  1FC:  LI        A0, 64
+  200:  SLTI      V0, V0, 3C
+  204:  BEQ       V0, R0, .o21C
+  208:  LI        V0, 3
+        .o20C
+  20C:  SAW       V0, $StrangeCake_Data[1C]
+  214:  BEQ       R0, R0, .o418
+  218:  CLEAR     V0
+        .o21C
+  21C:  LI        V0, 2
+        .o220
+  220:  SAW       V0, $StrangeCake_Data[1C]
+  228:  BEQ       R0, R0, .o418
+  22C:  CLEAR     V0
+	% LBL: from $JumpTable_802A2DB0_StrangeCake , entry 2`
+  230:  LUI       V0, 4EC4
+  234:  LA        A2, $StrangeCake_Data[20]
+  23C:  LW        A1, 0 (A2)
+  240:  ORI       V0, V0, EC4F
+  244:  MULT      A1, V0
+  248:  SRA       V0, A1, 1F
+  24C:  MFHI      T0
+  250:  SRA       V1, T0, 3
+  254:  SUBU      A0, V1, V0
+  258:  SLL       V0, A0, 1
+  25C:  ADDU      V0, V0, A0
+  260:  SLL       V0, V0, 2
+  264:  ADDU      V0, V0, A0
+  268:  SLL       V0, V0, 1
+  26C:  SUBU      A0, A1, V0
+  270:  ADDIU     V0, A0, 3
+  274:  BLTZL     V0, .o27C
+  278:  ADDIU     V0, A0, 6
+        .o27C
+  27C:  SRA       A0, V0, 2
+  280:  SUBU      V1, A1, A0
+  284:  SLL       V0, V1, 1
+  288:  ADDU      V0, V0, V1
+  28C:  SLL       V0, V0, 3
+  290:  ADDU      V0, V0, V1
+  294:  SLL       V0, V0, 2
+  298:  SW        V1, 0 (A2)
+  29C:  SAW       V0, $StrangeCake_Data[24]
+  2A4:  BNE       A0, R0, .o418
+  2A8:  CLEAR     V0
+  2AC:  BEQ       R0, R0, .o300
+  2B0:  LI        V0, 4
+	% LBL: from $JumpTable_802A2DB0_StrangeCake , entry 3`
+  2B4:  LUI       V0, 4EC4
+  2B8:  LA        A2, $StrangeCake_Data[20]
+  2C0:  LW        A1, 0 (A2)
+  2C4:  ORI       V0, V0, EC4F
+  2C8:  MULT      A1, V0
+  2CC:  SRA       V0, A1, 1F
+  2D0:  MFHI      T0
+  2D4:  SRA       V1, T0, 3
+  2D8:  SUBU      V1, V1, V0
+  2DC:  SLL       V0, V1, 1
+  2E0:  ADDU      V0, V0, V1
+  2E4:  SLL       V0, V0, 2
+  2E8:  ADDU      V0, V0, V1
+  2EC:  SLL       V0, V0, 1
+  2F0:  SUBU      V1, A1, V0
+  2F4:  BNE       V1, R0, .o310
+  2F8:  LI        V0, 1A
+  2FC:  LI        V0, 4
+        .o300
+  300:  SAW       V0, $StrangeCake_Data[1C]
+  308:  BEQ       R0, R0, .o418
+  30C:  CLEAR     V0
+        .o310
+  310:  SUBU      A0, V0, V1
+  314:  ADDIU     V0, A0, 3
+  318:  BLTZL     V0, .o320
+  31C:  ADDIU     V0, A0, 6
+        .o320
+  320:  SRA       A0, V0, 2
+  324:  ADDU      V1, A1, A0
+  328:  SLL       V0, V1, 1
+  32C:  ADDU      V0, V0, V1
+  330:  SLL       V0, V0, 3
+  334:  ADDU      V0, V0, V1
+  338:  SLL       V0, V0, 2
+  33C:  SW        V1, 0 (A2)
+  340:  SAW       V0, $StrangeCake_Data[24]
+  348:  BEQ       R0, R0, .o418
+  34C:  CLEAR     V0
+	% LBL: from $JumpTable_802A2DB0_StrangeCake , entry 4`
+  350:  LI        V0, 14
+  354:  SAW       V0, $StrangeCake_Data[2C]
+  35C:  LI        V0, 5
+  360:  SAW       V0, $StrangeCake_Data[1C]
+  368:  BEQ       R0, R0, .o418
+  36C:  CLEAR     V0
+	% LBL: from $JumpTable_802A2DB0_StrangeCake , entry 5`
+  370:  LA        V1, $StrangeCake_Data[2C]
+  378:  LW        V0, 0 (V1)
+  37C:  BEQ       V0, R0, .o38C
+  380:  ADDIU     V0, V0, FFFF
+  384:  BEQ       R0, R0, .o414
+  388:  SW        V0, 0 (V1)
+        .o38C
+  38C:  LUI       V1, 4EC4
+  390:  LAW       V0, $StrangeCake_Data[20]
+  398:  ORI       V1, V1, EC4F
+  39C:  MULT      V0, V1
+  3A0:  LA        S1, $StrangeCake_Data[8]
+  3A8:  LAW       A0, $StrangeCake_Data[30]
+  3B0:  SRA       V0, V0, 1F
+  3B4:  MFHI      T0
+  3B8:  SRA       V1, T0, 3
+  3BC:  SUBU      S0, V1, V0
+  3C0:  SLL       V0, S0, 2
+  3C4:  CLEAR     S0
+  3C8:  LTHU      V0, V0 ($ShortTable_802A285A[2])
+  3D4:  LA        V1, 800DC070
+  3DC:  SH        V0, 17A (V1)
+  3E0:  SLL       V0, V0, 10
+  3E4:  SRA       V0, V0, 10
+  3E8:  JAL       ~Func:free_generic_entity
+  3EC:  SW        V0, 84 (A2)
+        .o3F0
+  3F0:  LW        A0, 0 (S1)
+  3F4:  ADDIU     S1, S1, 4
+  3F8:  JAL       ~Func:free_hud_element
+  3FC:  ADDIU     S0, S0, 1
+  400:  SLTI      V0, S0, 5
+  404:  BNE       V0, R0, .o3F0
+  408:  LI        V0, 2
+  40C:  BEQ       R0, R0, .o418
+  410:  NOP
+        .o414
+  414:  CLEAR     V0
+        .o418
+  418:  LW        RA, 20 (SP)
+  41C:  LW        S3, 1C (SP)
+  420:  LW        S2, 18 (SP)
+  424:  LW        S1, 14 (SP)
+  428:  LW        S0, 10 (SP)
+  42C:  JR        RA
+  430:  ADDIU     SP, SP, 28
+}
+
+% Origin: HINT
+#new:Function $Function_802A123C_StrangeCake
+{
+    0:  LAW       V1, $StrangeCake_Data[1C]
+    8:  ADDIU     SP, SP, FF98
+    C:  SW        RA, 64 (SP)
+   10:  SW        S4, 60 (SP)
+   14:  SW        S3, 5C (SP)
+   18:  SW        S2, 58 (SP)
+   1C:  SW        S1, 54 (SP)
+   20:  SLTI      V0, V1, 6
+   24:  BEQ       V0, R0, .o188
+   28:  SW        S0, 50 (SP)
+   2C:  BLEZ      V1, .o188
+   30:  LI        A1, 7
+   34:  CLEAR     A0
+   38:  LI        A2, 6A
+   3C:  LI        V0, 24
+   40:  SW        V0, 14 (SP)
+   44:  SW        V0, 18 (SP)
+   48:  LI        V0, FF
+   4C:  SW        V0, 1C (SP)
+   50:  LI        V0, 140
+   54:  SW        V0, 44 (SP)
+   58:  LI        V0, F0
+   5C:  LI        A3, 56
+   60:  SW        R0, 10 (SP)
+   64:  SW        R0, 20 (SP)
+   68:  SW        R0, 24 (SP)
+   6C:  SW        R0, 28 (SP)
+   70:  SW        R0, 2C (SP)
+   74:  SW        R0, 30 (SP)
+   78:  SW        R0, 34 (SP)
+   7C:  SW        R0, 38 (SP)
+   80:  SW        R0, 3C (SP)
+   84:  SW        R0, 40 (SP)
+   88:  SW        V0, 48 (SP)
+   8C:  JAL       ~Func:draw_box
+   90:  SW        R0, 4C (SP)
+   94:  LI        A2, ED1B0168
+   9C:  LI        A1, 0022C1D8
+   A4:  CLEAR     S1
+   A8:  LI        S4, 51EB851F
+   B0:  COPY      S3, S1
+   B4:  LA        A0, 8009A66C
+   BC:  LW        V0, 0 (A0)
+   C0:  LA        S2, $StrangeCake_Data[8]
+   C8:  COPY      V1, V0
+   CC:  ADDIU     V0, V0, 8
+   D0:  SW        V0, 0 (A0)
+   D4:  SW        A2, 0 (V1)
+   D8:  SW        A1, 4 (V1)
+        .oDC
+   DC:  LI        A1, 7C
+   E0:  LAW       V0, $StrangeCake_Data[24]
+   E8:  LW        S0, 0 (S2)
+   EC:  MULT      V0, S4
+   F0:  ADDIU     S2, S2, 4
+   F4:  ADDIU     S1, S1, 1
+   F8:  COPY      A0, S0
+   FC:  SRA       V0, V0, 1F
+  100:  MFHI      T0
+  104:  SRA       A2, T0, 5
+  108:  SUBU      A2, A2, V0
+  10C:  ADDIU     A2, A2, FF98
+  110:  JAL       ~Func:set_hud_element_render_pos
+  114:  SUBU      A2, S3, A2
+  118:  JAL       ~Func:draw_hud_element_2
+  11C:  COPY      A0, S0
+  120:  SLTI      V0, S1, 5
+  124:  BNE       V0, R0, .oDC
+  128:  ADDIU     S3, S3, 1A
+  12C:  LI        V0, 51EB851F
+  134:  LI        A1, 7C
+  138:  SLL       A2, S1, 1
+  13C:  ADDU      A2, A2, S1
+  140:  SLL       A2, A2, 2
+  144:  LAW       V1, $StrangeCake_Data[24]
+  14C:  ADDU      A2, A2, S1
+  150:  MULT      V1, V0
+  154:  LAW       S0, $StrangeCake_Data[8]
+  15C:  SLL       A2, A2, 1
+  160:  COPY      A0, S0
+  164:  SRA       V1, V1, 1F
+  168:  MFHI      T0
+  16C:  SRA       V0, T0, 5
+  170:  SUBU      V0, V0, V1
+  174:  ADDIU     V0, V0, FF98
+  178:  JAL       ~Func:set_hud_element_render_pos
+  17C:  SUBU      A2, A2, V0
+  180:  JAL       ~Func:draw_hud_element_2
+  184:  COPY      A0, S0
+        .o188
+  188:  LW        RA, 64 (SP)
+  18C:  LW        S4, 60 (SP)
+  190:  LW        S3, 5C (SP)
+  194:  LW        S2, 58 (SP)
+  198:  LW        S1, 54 (SP)
+  19C:  LW        S0, 50 (SP)
+  1A0:  JR        RA
+  1A4:  ADDIU     SP, SP, 68
+}
+
+#new:Data $Image_Sleep
+{
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 000FFFFF FFFFF000 00000000 00000000 0FFFFFFF FFFFFFF0 00000000
+	00000000 FFF42211 11224FFF 00000000 0000000F F5211111 1111125F F0000000
+	000000FF 41111111 11111115 FF000000 00000FF5 11111999 99911111 5FF00000
+	00000FF2 11199999 99999111 2FF00000 0000FF41 11999999 99999911 14FF0000
+	0000FF21 19999999 99977777 72FF0000 0000FF21 19999999 999AAA77 92FF0000
+	0000FF11 99999777 77999779 91FF0000 0000FF11 99999AAA 77997799 11FF0000
+	0000FF11 99999997 79977AAA A1FF0000 0000FF19 99999977 99977777 71FF0000
+	0000FF17 7788977A AA999999 12FF0000 0000FF11 96A99777 77999991 12FF0000
+	0000FF19 6A999999 99999991 14FF0000 0000FF18 87779999 99999911 2FF00000
+	0000FF19 99999999 99999111 5FF00000 0000FF11 11111999 99911115 FF000000
+	0000FF11 11111111 1111125F F0000000 0000FF21 11111111 11224FFF 00000000
+	0000FFFF FFFFFFFF FFFFFFF0 00000000 00000FFF FFFFFFFF FFFFF000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $Palette_Sleep
+{
+    8420DEF7 B5AD94A5 52954211 886F6867 481FDD3D A3330001 00010001 00012109
+}
+
+#new:Data $Image_Static
+{   
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 000FFFFF FFFFF000 00000000 00000000 0FFFFFFF FFFFFFF0 00000000
+	00000000 FFF42211 19924FFF 00000000 0000000F F5211111 9C91625F F0000000
+	000000FF 41111119 CC966115 FF000000 00000FF5 1111119C CA666111 5FF00000
+	00000FF2 111119CC 8A661111 2FF00000 0000FF41 11119CCC A6661111 14FF0000
+	0000FF21 1119CCC8 A6611111 12FF0000 0000FF21 119CCC8A 66611111 12FF0000
+	0000FF11 1898CCC8 A6111111 11FF0000 0000FF11 11898CCC 9A611111 11FF0000
+	0000FF11 11189CCC 89761111 11FF0000 0000FF11 111189CC C8961111 11FF0000
+	0000FF11 1111199C CCC96111 12FF0000 0000FF11 111119CC CC8A6611 12FF0000
+	0000FF11 11119CCC 8A766611 14FF0000 0000FF11 1119CC8A 76666111 2FF00000
+	0000FF11 119C9A76 66611111 5FF00000 0000FF11 1AAA7666 61111115 FF000000
+	0000FF11 11116661 1111125F F0000000 0000FF21 11666111 11224FFF 00000000
+	0000FFFF FFFFFFFF FFFFFFF0 00000000 00000FFF FFFFFFFF FFFFF000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $Palette_Static
+{
+    8420DEF1 B5A9949D 5AD3420D C4F5BC1D EDC7DC85 C383B241 FE87F801 F8012109
+}
+
+#new:Data $Image_Trans
+{   
+    00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 000FFFFF FFFFF000 00000000 00000000 0FFFFFFF FFFFFFF0 00000000
+	00000000 FFF56666 66665FFF 00000000 0000000F F5666666 6666665F F0000000
+	000000FF 56666911 11966665 FF000000 00000FF5 66691111 11119666 5FF00000
+	00000FF6 66111111 11111166 6FF00000 0000FF56 69111196 69111196 65FF0000
+	0000FF66 61119666 66691116 66FF0000 0000FF66 91116666 66661119 66FF0000
+	0000FF66 11196666 66669111 66FF0000 0000FF66 11166666 66666111 66FF0000
+	0000FF11 66691111 11119666 11FF0000 0000FF11 66691111 11119666 11FF0000
+	0000FF11 66661111 11116666 19FF0000 0000FF11 96669111 11196669 19FF0000
+	0000FF11 16666691 19666661 16FF0000 0000FF11 11666666 66666611 9FF00000
+	0000FF11 11166666 66666111 6FF00000 0000FF11 11119666 66691116 FF000000
+	0000FF11 11111111 1111196F F0000000 0000FF91 11111111 11996FFF 00000000
+	0000FFFF FFFFFFFF FFFFFFF0 00000000 00000FFF FFFFFFFF FFFFF000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+}
+
+#new:Data $Palette_Trans
+{
+    8420E731 CFBB2F31 05E74211 5295F3BB ED67B5A7 BB6F0001 00010001 00012109
+}
+
+#new:Unknown $???_802A27D0
+{
+	00000008 00000005 00000003 00000004 00000002 0000003C $Image_Sleep $Palette_Sleep
+	00000003 00000000
+}
+
+#new:Unknown $???_802A27F8
+{
+	00000008 00000005 00000003 00000004 00000002 0000003C $Image_Static $Palette_Static
+	00000003 00000000
+}
+
+#new:Unknown $???_802A2820
+{
+	00000008 00000005 00000003 00000004 00000002 0000003C $Image_Trans $Palette_Trans
+	00000003 00000000
+}
+
+#new:Unknown $???_802A2848
+{
+	$???_802A27F8 $???_802A2820 $???_802A27D0 $???_802A27F8
+}
+
+#new:ShortTable $ShortTable_802A285A
+{
+	0000s 0000s 0000s 0001s 0000s 0002s 0000s 0000s 0000s 0001s 0000
+}

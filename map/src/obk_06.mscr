@@ -1,0 +1,152 @@
+% Script File: obk_06.mscr
+% Decoded from: 0 to 560 (obk_06)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %    0.0  200.0    0.0    0.0
+	~Vec4f:Entry1 % -220.0    0.0   50.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  00000000
+	[MapTattle]   001900B7
+}
+
+#new:Script $Script_80240060
+{
+    0:  If  *GB_StoryProgress  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+   10:  	Call  SetMusicTrack ( 00000000 .Song:BoosMansion 00000000 00000008 )
+   2C:  Else
+   34:  	Call  SetMusicTrack ( 00000000 .Song:CheerfulBoosMansion 00000000 00000008 )
+   50:  EndIf
+   58:  Return
+   60:  End
+}
+
+PADDING: 802400C8 to 802400D0 (000000C8 to 000000D0)
+00000000 00000000
+
+#new:Script $Script_ExitWalk_802400D0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240550 00000002 ) % obk_02
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_8024012C
+{
+    0:  Bind  $Script_ExitWalk_802400D0 .Trigger:FloorAbove ~Collider:_deili 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_EnterWalk_80240158
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Bind  $Script_ExitWalk_802400D0 .Trigger:FloorTouch ~Collider:_deili 00000001 00000000
+   44:  	Case  ==  ~Entry:Entry1
+   50:  		Set   *Var0  $Script_8024012C
+   60:  		Exec  EnterWalk
+   6C:  EndSwitch
+   74:  Return
+   7C:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:BoosMansion
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   84:  ExecWait  $Script_MakeEntities
+   90:  Exec  $Script_802403B0
+   9C:  Exec  $Script_80240060
+   A8:  Exec  $Script_EnterWalk_80240158
+   B4:  Return
+   BC:  End
+}
+
+#new:TriggerCoord $TriggerCoord_802402A0
+{
+	~BombPos:Bomb_802402A0 % -237.000000 0.000000 50.000000 0.000000
+}
+
+#new:Script $Script_802402B0
+{
+    0:  Call  PlayEffect    ( 00000042 00000001 00000017 0000001A 00000001 0000000A 0000001E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+   44:  Loop  0000000A
+   50:  	Call  EnableModel   ( ~Model:bom_ato .False )
+   64:  	Call  EnableModel   ( ~Model:bom1 .True )
+   78:  	Wait  1`
+   84:  	Call  EnableModel   ( ~Model:bom_ato .True )
+   98:  	Call  EnableModel   ( ~Model:bom1 .False )
+   AC:  	Wait  1`
+   B8:  EndLoop
+   C0:  Call  ModifyColliderFlags   ( 00000000 ~Collider:tt1 7FFFFE00 )
+   D8:  Set   *GF_OBK06_BombedWall  .True
+   E8:  Unbind
+   F0:  Return
+   F8:  End
+}
+
+#new:Script $Script_802403B0
+{
+    0:  If  *GF_OBK06_BombedWall  ==  .False
+   10:  	Bind  $Script_802402B0 .Trigger:PointBomb $TriggerCoord_802402A0 00000001 00000000
+   2C:  	Call  EnableModel   ( ~Model:bom_ato .False )
+   40:  Else
+   48:  	Call  EnableModel   ( ~Model:bom1 .False )
+   5C:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:tt1 7FFFFE00 )
+   74:  EndIf
+   7C:  Return
+   84:  End
+}
+
+PADDING: 8024043C to 80240440 (0000043C to 00000440)
+00000000
+
+#new:Script $Script_MakeEntities
+{
+    0:  If  *GF_OBK06_Item_BoosPortrait  ==  .False
+   10:  	Call  MakeItemEntity    ( .Item:BooPortrait ~Vec3d:Item80240450 .ItemSpawnMode:Fixed_NeverVanish *GF_OBK06_Item_BoosPortrait )
+   34:  	Thread
+   3C:  		Loop
+   48:  			If  *GF_OBK06_Item_BoosPortrait  !=  .False
+   58:  				Set   *GB_StoryProgress  .Story:Ch3_GotBooPortrait
+   68:  				BreakLoop
+   70:  			EndIf
+   78:  			Wait  1`
+   84:  		EndLoop
+   8C:  	EndThread
+   94:  EndIf
+   9C:  Call  MakeEntity        ( .Entity:WoodenCrate ~Vec4d:Entity802404DC FFFFFFFF 80000000 )
+   C4:  Call  MakeEntity        ( .Entity:WoodenCrate ~Vec4d:Entity80240504 .Item:StarPiece 80000000 )
+   EC:  Call  AssignCrateFlag   ( *GF_OBK06_Crate_StarPiece )
+   FC:  Return
+  104:  End
+}
+
+PADDING: 8024054C to 80240550 (0000054C to 00000550)
+00000000
+
+#new:ASCII $ASCII_80240550
+{
+	"obk_02"
+}
+
+PADDING: 80240558 to 80240560 (00000558 to 00000560)
+00000000 00000000
+

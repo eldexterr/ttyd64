@@ -1,0 +1,395 @@
+% Player team only swap positions when Z is pressed like in TTYD
+
+% Battle Flags - 800DC070
+%
+% 00[00] 0000
+% bit3=Current Command Wheel (0=Mario / 1=Partner)
+% bit4=Current Turn (0=Mario / 1=Partner)
+
+% Mario - Don't swap positions when he uses his turn
+%
+% ~Func:btl_state_update_begin_partner_turn
+@Hook 171574 % 80242C94
+{
+    PUSH    RA, A0, A1, V0
+    % Check if Player has a Partner
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0,.End
+    LUI	    V1, 0018 % don't swap positions
+    % Check if Partner is Dazed
+    LIO     A0, 800DC14C % partner data (pointer)
+    LW      A0, 0 (A0)
+    LBU     V0, 210 (A0) % load debuffID
+    BEQ     V0, R0, .End
+    LUI	    V1, 0018 % don't swap positions
+    % check if debuff is poison or shrink
+    ORI     A0, R0, 9 % .Status:Poison
+    BEQ     V0, A0, .End
+    LUI	    V1, 0018
+    ORI     A0, R0, A % .Status:Shrink
+    BEQ     V0, A0, .End
+    LUI	    V1, 0018
+    % Partner has a debuff
+    LUI	    V1, 0008 % don't swap positions (yeah you need to use 0008 for this)
+    .End
+    POP     RA, A0, A1, V0
+    J       80242C9C
+    OR	    V0, V0, V1
+}
+
+% Partner - Don't swap positions when he uses his turn
+@Function 175B30 % 80247250
+{
+    LUI	V1, FFE7
+}
+
+% Don't swap positions when partner is dazed
+@Function 171CE0 % 80243400
+{
+    LUI	V1, 0000
+}
+
+% The game doesn't use something as simple as a byteflag to know
+% if the player or a partner are in front or not, it uses bitflags,
+% but patching to not get swapped anymore make using the bitflags to
+% know if the player is on front or not, not a reliable way anymore.
+%
+% So I just make this byteflag to make everything easier.
+%
+% 00 = Mario is on the left
+%
+% 01 = Mario is on the right
+#new:Data $MarioPos
+{ 00 }
+
+#export $MarioPos
+
+% Patch ~load_battle_section
+%
+% Always set $MarioPos as 1 when a battle starts
+@Hook 4E074 % 80072C74
+{
+    ORI     S1, R0, 1
+    SAB     S1, $MarioPos
+    % restore vanilla code
+    LW	    RA, 0018 (SP)
+    J       80072C7C
+    LW	    S1, 0014 (SP)
+}
+
+% Patch ~Func:btl_state_update_player_menu
+%
+% Toogle $MarioPos when player swap to Mario
+@Hook 41A7EC % 802A5A5C
+{
+    PUSH    T0, AT
+    LABU    T0, $MarioPos
+    BEQ     T0, R0, .SetMarioPos
+    ORI     T0, R0, 1
+    CLEAR   T0
+    .SetMarioPos
+    SAB     T0, $MarioPos
+    POP     T0, AT
+    % restore vanilla code
+    SW	    V0, 0000 (S0)
+    J       802A5A64
+    SWC1	F0, 0018 (S1)
+}
+
+% Patch ~Func:btl_state_update_partner_menu
+%
+% Toogle $MarioPos when player swap to Partner
+@Hook 41D054 % 802A82C4
+{
+    PUSH    T0, AT
+    LABU    T0, $MarioPos
+    BEQ     T0, R0, .SetMarioPos
+    ORI     T0, R0, 1
+    CLEAR   T0
+    .SetMarioPos
+    SAB     T0, $MarioPos
+    POP     T0, AT
+    % restore vanilla code
+    SW	    V0, 0000 (S1)
+    J       802A82CC
+    SWC1	F0, 0018 (S0)
+}
+
+% Use idle animations once again after run away failed.
+%
+% ~Func:btl_state_update_run_away
+@Hook:Battle 8024540C
+{
+    % S1=battleStatus
+    LW      A0, 4 (S1) % battleFlags2
+    LIO     V0, FFFFFFE7 % disable (0x03(bit3&4)), DontUseIdleAnimations Player & Partner
+    AND     A0, A0, V0
+    SW      A0, 4 (S1)
+    % restore vanilla code
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0009 % .BattleState:NextPlayer
+    J       80245414
+    NOP
+}
+
+#new:Data $EnemiesTurnEnded
+{ 00 }
+
+% Patch ~Func:btl_state_update_begin_player_turn
+%
+% Set $EnemiesTurnEnded as True when the enemies stopped attacking
+@Hook:Battle 171340 % 80242A60
+{
+    ORI     A0, R0, 1
+    SAB     A0, $EnemiesTurnEnded
+    % restore vanilla code
+    JAL	    ~Func:btl_set_state
+    ADDIU	A0, R0, 000A % enemies turn has ended?
+    J       80242A68
+    NOP
+}
+
+% Start Mario turn - Check if the enemies stopped attacking to start the heroes turn with the guy most in front, instead of always Mario.
+@Hook 1713E0 % 80242B00
+{
+    PUSH    RA, A0, A1, R0
+    % Only run this code after enemies made his turn
+    LABU    V1, $EnemiesTurnEnded
+    BEQ     V1, R0, .Mario
+    NOP
+    SAB     R0, $EnemiesTurnEnded
+    % V0 = BattleFlags(800DC070)
+    LABU    V1, $MarioPos
+    BNE     V1, R0, .Mario
+    NOP
+    .Partner
+    % Check if Partner's turn is already used, means Bow's Spook was used, so use Mario turn instead
+    LABU    V1, 800DC077 % BattleFlags2[4th Byte]
+    ANDI    V1, V1, 4 % bit2 = Partner turn used
+    BNE     V1, R0, .Mario
+    NOP
+    % Set current turn as partner
+    %
+    % Before trying to do this check if partner has a debuff to skip partner's turn
+    % check if current status is Poison
+    SW      V0, 1C (SP)
+    JAL     $GetPartnerExtraBattleData
+    ORI     A0, R0, 0 % load status
+    COPY    A0, V0
+    LW      V0, 1C (SP)
+    ORI     A1, R0, 9 % .Status:Poison
+    BEQ     A0, A1 .SetTurnPartner_Flags
+    NOP
+    ORI     A1, R0, A % .Status:Shrink
+    BEQ     A0, A1 .SetTurnPartner_Flags
+    NOP
+    % Partner has a debuff
+    BNEL    A0, R0, .SetTurnPartner_End
+    LUI     V1, 0028 % don't set turn as partner
+    .SetTurnPartner_Flags
+    LUI     V1, 0038 % set current turn as partner, enable BattleFlags[2nd byte]'s bit3 & 4
+    .SetTurnPartner_End
+    BEQ     R0, R0, .End
+    OR	    V0, V0, V1
+    .Mario
+    LIO     V1, FFF7FFFF % set current turn as Mario, disable BattleFlags[2nd byte]'s bit3 & 4
+    AND	    V0, V0, V1
+    .End
+    POP     RA, A0, A1, R0
+    J       80242B08
+    NOP
+}
+
+% Patch ~Func:btl_check_enemies_defeated
+%
+% Battle Won - Don't move Mario in front when the battle ends.
+% Also force partner's X rotation to be zero (needed if the current partner is dead)
+@Hook:Battle 191D2C % 8026344C
+{
+    PUSH    T0
+    JAL	    ~Func:btl_set_state
+    ADDIU	A0, R0, 001A % .BattleState:Victory
+    % nuke "turn used" Mario & Partner flags
+    LAW     T0, 800DC074 % load battleFlags2
+    LIO     V0, FFFFFFF9 % bit1 = Mario, bit2 = Partner
+    AND     T0, T0, V0
+    SAW     T0, 800DC074 % disable flags
+    LIO     T0, 800DC148
+    JAL     $ClearPlayerStatusData
+    NOP
+    LW      T0, 4 (T0) % load partner's actor data
+    % Player doesn't have any partner in battle
+    BEQ     T0, R0, .End
+    NOP
+    JAL     $ClearPartnerStatusData
+    SW      R0, 15C (T0) % set X rotation as 0.0
+    .End
+    POP     T0
+    J       80263454
+    NOP
+}
+
+
+% Call  $SetTargetActorInFront ( .Actor:Self )
+%
+% Set enemy's target as actor most in front from player's team (Only used by enemies)
+%
+% base code grabbed from SetTargetActor
+#export:Function:Battle $SetTargetActorInFront
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S2, 18 (SP)
+    8:  COPY      S2, A0
+    C:  SW        RA, 1C (SP)
+   10:  SW        S1, 14 (SP)
+   14:  SW        S0, 10 (SP)
+   18:  LW        S1, C (S2)
+   1C:  LW        A1, 0 (S1)
+   20:  JAL       ~Func:get_variable
+   24:  ADDIU     S1, S1, 4
+   28:  COPY      S0, V0
+   2C:  ADDIU     V0, R0, FF81
+   30:  BNE       S0, V0, .o3C
+   34:  NOP
+   38:  LW        S0, 148 (S2) % get selfActorID
+        .o3C
+        % get actor most in front (player team)
+        LABU      V0, $MarioPos
+        BEQL      V0, R0, .getActor
+        ORI       V0, R0, 100 % .Actor:Partner
+        CLEAR     V0 % .Actor:Player
+        .getActor
+   48:  COPY      A0, S0
+   4C:  JAL       ~Func:get_actor
+   50:  COPY      S0, V0
+   54:  COPY      A0, V0
+   58:  ADDIU     V1, R0, 1
+   5C:  SH        S0, 428 (A0) % set targetActorID
+   60:  SB        V1, 426 (A0) % set targetPartIndex
+   64:  LW        RA, 1C (SP)
+   68:  LW        S2, 18 (SP)
+   6C:  LW        S1, 14 (SP)
+   70:  LW        S0, 10 (SP)
+   74:  ADDIU     V0, R0, 2
+   78:  JR        RA
+   7C:  ADDIU     SP, SP, 20
+}
+
+% `Call  $SetTargetActorInTheBack ( .Actor:Self )`
+%
+% Set enemy's target as actor in the back from player's team (Only used by enemies)
+%
+% Set target as Player if partner is dead or isn't HP compatible.
+#export:Function:Battle $SetTargetActorInTheBack
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S2, 18 (SP)
+    8:  COPY      S2, A0
+    C:  SW        RA, 1C (SP)
+   10:  SW        S1, 14 (SP)
+   14:  SW        S0, 10 (SP)
+   18:  LW        S1, C (S2)
+   1C:  LW        A1, 0 (S1)
+   20:  JAL       ~Func:get_variable
+   24:  ADDIU     S1, S1, 4
+   28:  COPY      S0, V0
+   2C:  ADDIU     V0, R0, FF81
+   30:  BNE       S0, V0, .o3C
+   34:  NOP
+   38:  LW        S0, 148 (S2) % get selfActorID
+        .o3C
+        % get actor most in the back (player team)
+        LABU      V0, $MarioPos
+        BEQ       V0, R0, .getActor
+        CLEAR     V0 % .Actor:Player
+        % check if partner is alive
+        JAL       $GetPartnerHP
+        ORI       A0, R0, 100 % .Actor:Partner
+        COPY      V1, V0
+        COPY      V0, A0
+        BLEZL     V1, .getActor % Partner is dead, or current partner isn't HP compatible
+        CLEAR     V0 % .Actor:Player
+        .getActor
+   48:  COPY      A0, S0
+   4C:  JAL       ~Func:get_actor
+   50:  COPY      S0, V0
+   54:  COPY      A0, V0
+   58:  ADDIU     V1, R0, 1
+   5C:  SH        S0, 428 (A0) % set targetActorID
+   60:  SB        V1, 426 (A0) % set targetPartIndex
+   64:  LW        RA, 1C (SP)
+   68:  LW        S2, 18 (SP)
+   6C:  LW        S1, 14 (SP)
+   70:  LW        S0, 10 (SP)
+   74:  ADDIU     V0, R0, 2
+   78:  JR        RA
+   7C:  ADDIU     SP, SP, 20
+}
+
+% Call    $GetMarioPos ( *out )
+%
+% 00 = Mario is on the left
+%
+% 01 = Mario is on the right
+#export:Function $GetMarioPos
+{
+    PUSH    RA, A0, A1, A2, A3, S0
+    % get arg0
+    COPY    S0, A0
+    LW      A1, C (S0)
+    LABU    A2, $MarioPos
+    JAL     ~Func:set_variable
+    LW      A1, 0 (A1) % get arg0
+    POP     RA, A0, A1, A2, A3, S0
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Always return .HitResult:Miss % 6
+% If the actor tried to attack partner while she/he was dead
+%
+% from ~Func:calc_enemy_test_target
+@Hook 1A5CF0 % 80277410
+{
+    LW	    S2, 0018 (SP) % load $actor
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % check if current target is partner
+    LH      A0, 428 (S2) % load targetActorID
+    ORI     A1, R0, 100 % .Actor:Partner
+    BNE     A0, A1, .End
+    NOP
+    % target is partner
+    % check if is alive
+    JAL     $GetPartnerHP
+    NOP
+    BGTZ    V0, .End % partner is alive and is HP compatible
+    NOP
+    % partner is dead (or isn't HP compatible)
+    ORI     V0, R0, 6 % .HitResult:Miss
+    SW      V0, 24 (SP) % save in pushed V0
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    % restore vanilla code
+    LW	    RA, 0020 (SP)
+    J       80277418
+    LW	    S3, 001C (SP)
+}
+
+% Peach - Kammy Fight
+%
+% Don't swap positions with Twink
+%
+% ~Func:btl_state_update_end_player_turn
+@Hook:Battle 802466F4
+{
+    LABU    V1, 800740A2 % Peach's Byte
+    BNE     V1, R0, .DontSwapPositions
+    LUI	    V1, 0010
+    AND	    V0, V0, V1
+    J       802466FC
+    NOP
+    .DontSwapPositions
+    J       80246700
+    NOP
+}

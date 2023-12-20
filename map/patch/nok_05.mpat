@@ -1,0 +1,623 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 80200000
+	[EntryList] $EntryList
+	[EntryCount] 6
+    [MapTattle] $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+    ~Vec4f:Entry1
+    ~Vec4f:Entry2
+    ~Vec4f:Entry3
+    ~Vec4f:Entry4
+    ~Vec4f:Entry5
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:PleasantPath
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Set   *MapVar[0] 0
+	Exec  $Script_SetupMusic
+    Call  MakeNpcs ( .False $NpcGroupList_Fuzzy )
+    Exec  $Script_MakeEntities
+	Set   *Var0 $Script_CreateExitTriggers
+	Exec  EnterWalk
+    Exec  $Script_UpdateModelsAndCollisions
+    %Exec  $Script_FuzzyStart
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  SetMusicTrack ( 00000000 .Song:PleasantPath 00000000 00000008 )
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_MakeEntities
+{
+    Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+    Set   *MapVar[2] *Var0
+    Call  AssignBlockFlag   ( *GF_NOK05_Shine )
+    Call  AssignScript 	    ( $Script_Entity_Shine1 )
+    Call  $GetEntityPointer ( *MapVar[2] *Var1 )
+    Call  $WriteAddress ( *Var1 2 0000.0 48 .False ) % posX
+    Call  $WriteAddress ( *Var1 2 -1000.0 4C .False ) % posY
+    Call  $WriteAddress ( *Var1 2 0000.0 50 .False ) % posZ
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[2] % entityID
+    SetConst *Var1 *GF_NOK05_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+%%%
+
+#new:Script $Script_UpdateModelsAndCollisions
+{
+    ExecWait $Script_DisableAllModelsAndCols
+    Call    EnableGroup ( ~Model:default .True )
+    Switch *MapVar[0]
+        Case == 0
+            Call    EnableGroup ( ~Model:singleRoute .True )
+            Call    ModifyColliderFlags 	( .True ~Collider:singleEntrance_walls 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:singleRoute_walls 7FFFFE00 )
+        Case == 1
+            Call    EnableGroup ( ~Model:multipleRoutes .True )
+            %
+            Call    EnableGroup ( ~Model:tree .True )
+            Call    EnableModel ( ~Model:candyCane2 .True )
+            Call    EnableModel ( ~Model:cerco2 .True )
+            Call    ModifyColliderFlags 	( .True ~Collider:tree1 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:candyCane2 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:cerco2 7FFFFE00 )
+        Case == 2
+            Call    EnableGroup ( ~Model:multipleRoutes .True )
+            %
+            Call    EnableGroup ( ~Model:trunk1 .True )
+            Call    EnableModel ( ~Model:candyCane3 .True )
+            Call    ModifyColliderFlags 	( .True ~Collider:trunk1 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:candyCane3 7FFFFE00 )
+        Case == 3
+            Call    EnableGroup ( ~Model:multipleRoutes .True )
+            %
+            Call    EnableGroup ( ~Model:tree .True )
+            Call    EnableModel ( ~Model:cerco1 .True )
+            Call    ModifyColliderFlags 	( .True ~Collider:tree1 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:cerco1 7FFFFE00 )
+        Case == 4
+            Call    EnableGroup ( ~Model:multipleRoutes .True )
+            %
+            Call    EnableGroup ( ~Model:trunk1 .True )
+            Call    EnableGroup ( ~Model:trunk2 .True )
+            Call    EnableGroup ( ~Model:trunk3 .True )
+            Call    ModifyColliderFlags 	( .True ~Collider:trunk1 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:trunk2 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:trunk3 7FFFFE00 )
+        Case == 5
+            Call    EnableGroup ( ~Model:lastRoom .True )
+            Call    EnableGroup ( ~Model:default .False )
+            %
+            Call    ModifyColliderFlags 	( .True ~Collider:tree2 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:tree3 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:lastRoom_walls 7FFFFE00 )
+            Call    ModifyColliderFlags 	( .True ~Collider:singleEntrance_walls 7FFFFE00 )
+    EndSwitch
+    Return
+    End
+}
+
+#new:Script $Script_DisableAllModelsAndCols
+{
+    Call    EnableGroup ( ~Model:Main .False )
+    Call    ModifyColliderFlags 	( .False ~Collider:singleEntrance_walls 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:singleRoute_walls 7FFFFE00 )
+    %
+    Call    ModifyColliderFlags 	( .False ~Collider:lastRoom_walls 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:trunk1 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:trunk2 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:trunk3 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:candyCane1 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:candyCane2 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:candyCane3 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:tree1 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:cerco1 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:cerco2 7FFFFE00 )
+    %
+    Call    ModifyColliderFlags 	( .False ~Collider:tree2 7FFFFE00 )
+    Call    ModifyColliderFlags 	( .False ~Collider:tree3 7FFFFE00 )
+    Return
+    End
+}
+
+%===================
+% Fuzzy's Code
+%===================
+
+#new:Script $Script_FuzzyStart
+{
+
+    Return
+    End
+}
+
+
+#new:NpcGroupList $NpcGroupList_Fuzzy
+{
+00000001 $NpcGroup_Fuzzy 00000000
+00000000 00000000 00000000 
+}
+
+#new:NpcGroup $NpcGroup_Fuzzy {
+00000000 $NpcSettings_Fuzzy ~Vec3f:NPC_Fuzzy
+19700F01 $Script_Init_Fuzzy 00000000 00000000 00000000
+~NoDrops
+~Movement:NPC_Fuzzy
+~AnimationTable:NPC_Fuzzy % .Sprite:Fuzzy
+00000000 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcSettings $NpcSettings_Fuzzy {
+00000000 00140016 00000000 00000000 00000000 80077F70 00000000 8007809C
+00000000 00000000 00060000
+}
+
+#new:Script $Script_Init_Fuzzy {
+    Call  BindNpcIdle   ( .Npc:Self $Script_Idle_FuzzyPath )
+    Return
+    End
+}
+
+#new:Script $Script_Idle_FuzzyPath {
+    Call    SetNpcJumpscale ( .Npc:Self *Fixed[1.0] )
+    Exec    $Script_Fuzzy_UpdateVisibility
+    Set *Var8 .False % Loop count
+    Loop
+        Call    $ReadAddress ( $IntTable_Paths 2 *VarE *Var7 .False )
+        If *VarE == -1
+            BreakLoop
+        EndIf
+        UseIntBuffer  *VarE
+        Get3Int  *Var4 *Var5 *Var6
+        If *MapVar[1] == 0
+            Call    SetNpcPos ( .Npc:Self *Var4 *Var5 *Var6 )
+        EndIf
+        Loop
+            Get3Int  *Var4 *Var5 *Var6
+            If *Var4 == -1
+                Add *Var8 1
+                If *Var8 >= 3 % Don't do it in Path0
+                    Add *MapVar[1] 1
+                EndIf
+                Add *Var7 4 % read next path
+                BreakLoop
+            EndIf
+            If *MapVar[0] == *MapVar[1] % If Mario and Fuzzy are in the "same room"
+                Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+            EndIf
+            Call  NpcJump0  ( .Npc:Self *Var4 *Var5 *Var6 20` )
+        EndLoop
+        Call  SetNpcPos ( .Npc:Self 0 -1000` 0 )
+    EndLoop
+    % Last Path
+    %
+    % If Mario arrived first skip all this
+    If *MapVar[0] == 5
+        Call    SetNpcPos ( .Npc:Self 0 -1000` 0 )
+        Return
+    EndIf
+    % Wait until Mario arrives
+    Loop
+        If *MapVar[0] == 5
+            BreakLoop
+        EndIf
+        Wait    1
+    EndLoop
+    % Fuzzy leaves - cutscene
+    Set     *Var7 .False
+    Set     *Var8 .False
+    Loop
+        Call    $ReadAddress ( $IntTable_Paths_Final 2 *VarE *Var7 .False )
+        If *VarE == -1
+            BreakLoop
+        EndIf
+        UseIntBuffer  *VarE
+        Get3Int  *Var4 *Var5 *Var6
+        Loop
+            Add *Var8 1
+            Get3Int  *Var4 *Var5 *Var6
+            If *Var4 == -1
+                Add *Var7 4 % read next path
+                BreakLoop
+            EndIf
+            If *MapVar[0] == *MapVar[1] % If Mario and Fuzzy are in the "same room"
+                If *Var8 == 12` % Last jump
+                    Call  PlaySoundAtNpc    ( .Npc:Self 015E 00000000 ) % run away sfx
+                Else
+                    Call  PlaySoundAtNpc    ( .Npc:Self 0332 00000000 )
+                EndIf
+            EndIf
+            Call  NpcJump0  ( .Npc:Self *Var4 *Var5 *Var6 20` )
+        EndLoop
+    EndLoop
+    Call  SetNpcPos ( .Npc:Self 0 -1000` 0 )
+    Return
+    End
+}
+
+% hide fuzzy if mario isn't in the "same room"
+%
+% Also hide or unhide block
+#new:Script $Script_Fuzzy_UpdateVisibility
+{
+    SetGroup 0
+    Loop
+        If *MapVar[0] != *MapVar[1]
+            Call    SetNpcFlagBits ( .Npc:Self 01000000 .True ) % Hide NPC
+            Call    SetNpcFlagBits ( .Npc:Self 00400000 .False ) % Don't generate any dust FXs
+            Call    EnableNpcShadow ( .Npc:Self .False )
+        Else
+            Call    SetNpcFlagBits ( .Npc:Self 01000000 .False )
+            Call    SetNpcFlagBits ( .Npc:Self 00400000 .True )
+            Call    EnableNpcShadow ( .Npc:Self .True )
+        EndIf
+        % Update block
+        If *MapVar[0] != 5
+            Call    $GetEntityPointer ( *MapVar[2] *Var1 )
+            Call    $WriteAddress ( *Var1 2 0000.0 48 .False ) % posX
+            Call    $WriteAddress ( *Var1 2 -1000.0 4C .False ) % posY
+            Call    $WriteAddress ( *Var1 2 0000.0 50 .False ) % posZ
+        Else
+            Call    $GetEntityPointer ( *MapVar[2] *Var1 )
+            Call    $WriteAddress ( *Var1 2 ~PosXf:Entity_Shine 48 .False ) % posX
+            Call    $WriteAddress ( *Var1 2 ~PosYf:Entity_Shine 4C .False ) % posY
+            Call    $WriteAddress ( *Var1 2 ~PosZf:Entity_Shine 50 .False ) % posZ
+        EndIf
+        Wait    1
+    EndLoop
+    Return
+    End
+}
+
+#new:IntTable $IntTable_Paths
+{
+    $VectorList_Path0_0
+    $VectorList_Path0_1
+    $VectorList_Path0_2
+    %
+    $VectorList_Path1
+    $VectorList_Path2
+    $VectorList_Path3
+    $VectorList_Path4
+    FFFFFFFF
+}
+
+#new:IntTable $IntTable_Paths_Final
+{
+    $VectorList_Path_Final1
+    $VectorList_Path_Final2
+    FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path0_0
+{
+	~Path3d:Path0_0
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path0_1
+{
+	~Path3d:Path0_1
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path0_2
+{
+	~Path3d:Path0_2
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path1
+{
+	~Path3d:Path1
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path2
+{
+	~Path3d:Path2
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path3
+{
+	~Path3d:Path3
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path4
+{
+	~Path3d:Path4
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path_Final1
+{
+	~Path3d:Path_Final1
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+#new:VectorList $VectorList_Path_Final2
+{
+	~Path3d:Path_Final2
+    FFFFFFFF FFFFFFFF FFFFFFFF
+}
+
+%===========
+% Exits
+%===========
+
+#new:Script $Script_CreateExitTriggers
+{
+	Bind  $Script_Exit0 .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+    Bind  $Script_Exit1 .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+    Bind  $Script_Exit3 .Trigger:FloorAbove ~Collider:Exit3 00000001 00000000
+    Bind  $Script_Exit4 .Trigger:FloorAbove ~Collider:Exit4 00000001 00000000
+    Bind  $Script_Exit5 .Trigger:FloorAbove ~Collider:Exit5 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry0 )
+    Set      *Var0 0
+    ExecWait $Script_GoToNewMap
+	%Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit1
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry1 )
+    Set      *Var0 1
+    ExecWait $Script_GoToNewMap
+	%Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit2
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry2 )
+    Set      *Var0 2
+    ExecWait $Script_GoToNewMap
+	%Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit3
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry3 )
+    Set      *Var0 3
+    ExecWait $Script_GoToNewMap
+	%Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit4
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry4 )
+    Set      *Var0 4
+    ExecWait $Script_GoToNewMap
+	%Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit5
+{
+	SetGroup 0000001B
+	Call     UseExitHeading ( 60` ~Entry:Entry5 )
+    Set      *Var0 5
+    ExecWait $Script_GoToNewMap
+	%Wait  100`
+	Return
+	End
+}
+
+#new:Script $Script_GoToNewMap
+{
+    Set *Var7 *Var0
+    % Check if is time to leave this map
+    If *Var0 == ~Entry:Entry1
+        Switch *MapVar[0]
+            CaseOR == 0
+            CaseOR == 5
+                Exec    ExitWalk
+                Call    GotoMap ( "nok_11" 2 )
+                Wait  100`
+                Return
+            EndCaseGroup
+        EndSwitch
+    EndIf
+    Switch *Var0
+        % Bottom exits
+        CaseOR == ~Entry:Entry0
+        CaseOR == ~Entry:Entry1
+        CaseOR == ~Entry:Entry2
+            Set *Var5 .False
+            % Get "new map" to return
+            Switch *MapVar[0]
+                Case == 1
+                    If *Var0 == ~Entry:Entry1
+                        Set *Var6 ~Entry:Entry4
+                        Set *Var5 .True
+                    EndIf
+                Case == 2
+                    If *Var0 == ~Entry:Entry2
+                        Set *Var6 ~Entry:Entry3
+                        Set *Var5 .True
+                    EndIf
+                Case == 3
+                    If *Var0 == ~Entry:Entry1
+                        Set *Var6 ~Entry:Entry4
+                        Set *Var5 .True
+                    EndIf
+                Case == 4
+                    If *Var0 == ~Entry:Entry2
+                        Set *Var6 ~Entry:Entry3
+                        Set *Var5 .True
+                    EndIf
+            EndSwitch
+            If *Var5 == .False % Wrong exit
+                Exec    ExitWalk
+                Call    GotoMap ( "nok_11" 2 )
+                Wait  100`
+                Return
+            EndIf
+        EndCaseGroup
+        % Top exits
+        CaseOR == ~Entry:Entry3
+        CaseOR == ~Entry:Entry4
+        CaseOR == ~Entry:Entry5
+            Set *Var5 .False
+            % Get "new map" to enter
+            Switch *MapVar[0]
+                Case == 0
+                    If *Var0 == ~Entry:Entry4
+                        Set *Var6 ~Entry:Entry1
+                        Set *Var5 .True
+                    EndIf
+                Case == 1
+                    If *Var0 == ~Entry:Entry3
+                        Set *Var6 ~Entry:Entry2
+                        Set *Var5 .True
+                    EndIf
+                Case == 2
+                    If *Var0 == ~Entry:Entry4
+                        Set *Var6 ~Entry:Entry1
+                        Set *Var5 .True
+                    EndIf
+                Case == 3
+                    If *Var0 == ~Entry:Entry3
+                        Set *Var6 ~Entry:Entry2
+                        Set *Var5 .True
+                    EndIf
+                Case == 4
+                    If *Var0 == ~Entry:Entry3
+                        Set *Var6 ~Entry:Entry1
+                        Set *Var5 .True
+                    EndIf
+            EndSwitch
+            If *Var5 == .False % Wrong exit
+                Exec    ExitWalk
+                Call    GotoMap ( "nok_11" 2 )
+                Wait  100`
+                Return
+            EndIf
+        EndCaseGroup
+    EndSwitch
+    SetGroup 0
+    SuspendAll 2
+    Exec     ExitWalk *Var9
+    SetF	*Var0 *Fixed[25.0] % speed
+    SetF	*Var1 *Fixed[255.0]  % dark
+    ExecWait $Script_FadeScreenOut
+    Switch *Var7
+        % Bottom exits
+        CaseOR == ~Entry:Entry0
+        CaseOR == ~Entry:Entry1
+        CaseOR == ~Entry:Entry2
+            Sub     *MapVar[0] 1
+        EndCaseGroup
+        % Top exits
+        CaseOR == ~Entry:Entry3
+        CaseOR == ~Entry:Entry4
+        CaseOR == ~Entry:Entry5
+            Add     *MapVar[0] 1
+        EndCaseGroup
+    EndSwitch
+    % appear in new entry
+    ExecWait $Script_UpdateModelsAndCollisions
+    Switch *Var6
+        Case == ~Entry:Entry0
+            Call    SetPlayerPos ( ~Vec3d:Entry0 )
+        Case == ~Entry:Entry1
+            Call    SetPlayerPos ( ~Vec3d:Entry1 )
+        Case == ~Entry:Entry2
+            Call    SetPlayerPos ( ~Vec3d:Entry2 )
+        Case == ~Entry:Entry3
+            Call    SetPlayerPos ( ~Vec3d:Entry3 )
+        Case == ~Entry:Entry4
+            Call    SetPlayerPos ( ~Vec3d:Entry4 )
+        Case == ~Entry:Entry5
+            Call    SetPlayerPos ( ~Vec3d:Entry5 )
+    EndSwitch
+    Kill    *Var9 % kill ExitWalk
+    Call    GetPlayerActionState ( *Var0 )
+    If *Var0 == .ActionState:Spin
+        Call    SetPlayerActionState ( .ActionState:Idle )
+        Call    $WriteAddress ( 8010EFC8 0 .ActionState:Idle B3 .False ) % ActionState2?
+    EndIf
+    Call    SetPlayerFlagBits ( 04000000 .False ) % camera follow Mario once again
+    Call    $WriteBitFlag ( 8010EFCC .False 1 4 .False ) % playerFlags2, make partner able to follow you once again.
+    Call    ResetCam ( .Cam:Default *Fixed[100.0] )
+    Call    WaitForCam ( .Cam:Default *Fixed[0.0] )
+    Call    TeleportPartnerToPlayer
+    Call    ResetPartnerTetherDistance
+	SetF	*Var0 *Fixed[50.0] % speed
+    SetF	*Var1 *Fixed[5.0]  % fully bright
+    ExecWait $Script_FadeScreenIn
+    ResumeAll 2
+    Call    DisablePlayerInput ( .False )
+    Return
+    End
+}
+
+#new:Script $Script_Nothing
+{
+    Return
+    End
+}
+
+%%%
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+We should try following that[BR]
+Fuzzy, Mario hurry!
+[Wait][End]      
+}

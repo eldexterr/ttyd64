@@ -1,0 +1,127 @@
+% Get actor data from /formation/import
+% to make easier to grab the enemies code from this mod to future projects
+
+#import enemy/08_GoombarioTutor2.bpat
+
+/%MISSING: 802181B4 to 80218220 (004CF364 to 004CF3D0)
+3C06800E 24C6C070 10A00002 2402000A AC820070 8CC20004 2403FFFB 00431024
+ACC20004 8C820070 14400003 2442FFFF 03E00008 24020002 AC820070 03E00008
+0000102D 3C038011 2463F290 94620290 24420020 A4620290 03E00008 24020002
+00000000 00000000 00000000%/
+
+#new:Formation $Formation_00
+{
+	$08_GoombarioTutor2 00000006 0000000A 00000000 00000000 00000000 00000000
+}
+
+#new:FormationTable $FormationTable
+{
+	$SJIS_80218FF0 00000001 $Formation_00 $Stage_80218FC0 00000000
+	00000000 00000000 00000000 00000000 00000000
+}
+
+#new:StageTable $StageTable
+{
+	$ASCII_80219008 $Stage_80218FC0
+	00000000 00000000
+}
+
+
+#new:Script $Script_80218DD0
+{
+    0:  Set   *VarA  *Var0
+   10:  Label  0
+   1C:  Call  TranslateModel    ( *VarA 00000000 00000002 00000000 )
+   38:  Wait  5`
+   44:  Call  TranslateModel    ( *VarA 00000000 00000000 00000000 )
+   60:  Wait  5`
+   6C:  Call  TranslateModel    ( *VarA 00000000 00000002 00000000 )
+   88:  Wait  5`
+   94:  Call  TranslateModel    ( *VarA 00000000 00000000 00000000 )
+   B0:  Wait  5`
+   BC:  Call  RandInt   ( 0000001E *Var0 )
+   D0:  Add   *Var0  0000001E
+   E0:  Wait  *Var0
+   EC:  Goto  0
+   F8:  Return
+  100:  End
+}
+
+#new:Script $Script_BeforeBattle_80218ED8
+{
+    0:  Call  SetSpriteShading  ( FFFFFFFF )
+   10:  Set   *Var0  00000013
+   20:  Exec  $Script_80218DD0
+   2C:  Set   *Var0  00000014
+   3C:  Exec  $Script_80218DD0
+   48:  Set   *Var0  00000015
+   58:  Exec  $Script_80218DD0
+   64:  Set   *Var0  00000016
+   74:  Exec  $Script_80218DD0
+   80:  Set   *Var0  00000017
+   90:  Exec  $Script_80218DD0
+   9C:  Set   *Var0  00000018
+   AC:  Exec  $Script_80218DD0
+   B8:  Return
+   C0:  End
+}
+
+#new:Script $Script_AfterBattle_80218FA0
+{
+    0:  Return
+    8:  End
+}
+
+#new:ForegroundModelList $ForegroundModelList_80218FB0
+{
+	~Model:nok_bt01:ha3
+	~Model:nok_bt01:hap
+	~Model:nok_bt01:kusa3
+	00000000
+}
+
+#new:Stage $Stage_80218FC0
+{
+	$ASCII_80219038  % nok_tex
+	$ASCII_80219028  % nok_bt01_shape
+	$ASCII_80219018  % nok_bt01_hit
+	$Script_BeforeBattle_80218ED8
+	$Script_AfterBattle_80218FA0
+	$ASCII_80219010  % nok_bg
+	$ForegroundModelList_80218FB0
+	00000000
+	00000000
+	00000000
+}
+
+
+
+#new:SJIS $SJIS_80218FF0
+{
+	ほしのせい レクチャー % hoshinosei rekucha-
+}
+
+#new:ASCII $ASCII_80219008
+{
+	"nok_01"
+}
+
+#new:ASCII $ASCII_80219010
+{
+	"nok_bg"
+}
+
+#new:ASCII $ASCII_80219018
+{
+	"nok_bt01_hit"
+}
+
+#new:ASCII $ASCII_80219028
+{
+	"nok_bt01_shape"
+}
+
+#new:ASCII $ASCII_80219038
+{
+	"nok_tex"
+}

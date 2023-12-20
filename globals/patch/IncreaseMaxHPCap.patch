@@ -1,0 +1,212 @@
+% Patch by Clover (from PM Pro Mode)
+% Zap-Tap fix by Rain
+
+% =================================
+% Draw Extra Digit for 100s Place
+% =================================
+
+@Hook 16EA88 % [802401A8]
+{
+% check for invisibility and halve damage if necessary
+ADDIU	T0, R0, C8
+SUB		T1, S4, T0
+BLTZ	T1, .LessThan200
+NOP
+ADDIU	T2, R0, 1FF8
+BEQ		R0, R0, .PrintDigit
+NOP
+.LessThan200
+ADDIU	T0, R0, 64
+SUB		T1, S4, T0
+BLTZ	T1, .Return
+NOP
+ADDIU	T2, R0, 1FD0
+.PrintDigit
+ADD		S4, T1, R0
+LUI		V0, 6666
+ORI		V0, V0, 6667
+MULT	S4, V0
+SRA		V0, S4, 1F
+MFHI	T0
+SRA		V1, T0, 2
+SUBU	S1, V1, V0
+SLL		S2, S1, 2
+ADDU	V0, S2, S1
+SLL		V0, V0, 1
+SUBU	S4, S4, V0
+LUI		S0, 802A
+LW		S0, EFBC (S0)
+ADDIU	A1, R0, A
+JAL		801449DC
+DADDU	A0, S0, R0
+SLL		V0, S4, 2
+LUI		T0, 8028
+ADDIU	T0, T0, 9FC
+LUI		A1, 8029
+OR		A1, A1, T2
+JAL		801447FC
+DADDU	A0, S0, R0
+DADDU	A0, R0, R0
+DADDU	A1, A0, R0
+LHU		V0, 2 (S6)
+DADDU	A2, A0, R0
+ADDIU	V0, V0, 6
+ANDI	V0, V0, FFFF
+SW		V0, 10 (SP)
+LHU		V0, 2 (S5)
+DADDU	A3, A0, R0
+SW		S8, 18 (SP)
+SW		S8, 1C (SP)
+ADDIU	V0, V0, 2
+ANDI	V0, V0, FFFF
+JAL		80267A3C
+SW		V0, 14 (SP)
+DADDU	A0, S0, R0
+LW		A1, 20 (SP)
+LW		A2, 24 (SP)
+ADDIU	A1, A1, FFFE
+JAL		80144984
+ADDIU	A2, A2, 6
+JAL		801447C4
+DADDU	A0, S0, R0
+J		802401D8
+NOP
+.Return
+LUI		V0, 6666
+ORI		V0, V0, 6667
+J		802401B0
+NOP
+}
+
+% =================================
+% Fix health bar calculation
+% =================================
+
+@Function 16E8FC % [8024001C]
+{
+LBU		S4, 1B8 (S3)
+LBU		V1, 1B9 (S3)
+}
+
+% =================================
+% Fix kill checks after taking damage
+% =================================
+
+@Function 180378 % [80251A98]
+{
+NOP
+}
+
+@Function 1A0CB8 % [802723D8]
+{
+NOP
+}
+
+@Function 1AD44C % [8027EB6C]
+{
+NOP
+}
+
+% =================================
+% Fix others
+% =================================
+
+/% Placed in Battle_EnemiesCanUseItems.patch - Hook 180444
+@Function 180444 % [80251B64]
+{
+LBU		V0, 1B8 (S3)
+}%/
+
+@Function 1A0B7C % [8027229C]
+{
+LBU		S0, 1B8 (S3)
+}
+
+@Function 1A0C34 % [80272354]
+{
+LBU		V0, 1B8 (S3)
+}
+
+@Function 1A0E9C % [802725BC]
+{
+LBU		V0, 1B8 (S3)
+}
+
+@Function 1A63B0 % [80277AD0]
+{
+LBU		V0, 1B8 (S3)
+}
+
+/%@Function 1A6428 % [80277B48] % Ignored due to making Mario's HP go negative when being beated by an enemy
+LBU		V0, 1B8 (S3)%/
+
+@Function 1A6494 % [80277BB4]
+{
+LBU		V0, 1B8 (S3)
+}
+
+@Function 1AD3C4 % [8027EAE4]
+{
+LBU		V0, 1B8 (S3)
+}
+
+@Function 1AD574 % [8027EC94]
+{
+LBU		V0, 1B8 (S3)
+}
+
+% =================================
+% HealActor			(func_80270CA4)
+% =================================
+
+@Function 19F90C % [8027102C]
+{
+LBU		V1, 1B9 (S0)
+}
+
+% =================================
+% SetEnemyHP		(func_8027C5C8)
+% =================================
+
+@Function 1AAF04	% [8027C624] change bit-shifting by 18 to ANDI mask	
+{
+ANDI	S0, S0, 00FF	
+NOP
+}
+
+@Function 1AAF14	% [8027C634] compare with unsigned max HP
+{
+SLT		V0, V1, S0
+}
+
+@Function 1AAF20	% [8027C640] load unsigned for HP bar calculation
+{
+LBU		V0, 1B8 (A1)
+LBU		A0, 1B9 (A1)
+}
+
+% =================================
+% GetActorHP		(func_8027C6A0)
+% =================================
+
+@Function 1AAFFC	% [8027C71C] load unsigned
+{
+LBU		A2, 1B8 (A2)	
+}
+
+% =================================
+% GetEnemyMaxHP		(func_8027C748)
+% =================================
+
+@Function 1AB06C % [8027C78C] load unsigned
+{
+LBU		A2, 1B9 (V0)
+}
+
+@Function 1A702C % Fix by Rain
+{
+%Original code: SRA    V1, V0, 24`
+%since enemy hp is now unsigned, we need to fix this to also do unsigned
+%fixes zap tap, volt shroom, and chill out crashes on enemies with 129 or more hp
+SRL    V1, V0, 18
+}

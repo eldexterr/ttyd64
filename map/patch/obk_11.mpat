@@ -1,0 +1,100 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 1
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:BoosMansion
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Call  MakeItemEntity ( .Item:PowerPlusP ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_OBK11_Item )
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+    Exec  $Script_CreateExitTriggers
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	If  *GB_StoryProgress  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+        Call  SetMusicTrack ( 00000000 .Song:BoosMansion 00000000 00000008 )
+    Else
+        Call  SetMusicTrack ( 00000000 .Song:CheerfulBoosMansion 00000000 00000008 )
+    EndIf
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_EnterMap
+{
+    Call    SetPlayerPos ( ~Vec3d:JumpPos_EnterMap )
+    Wait    1
+    Call    DisablePlayerPhysics ( .True )
+    % hide partner
+    Call	DisablePartnerAI ( 0 )
+	Call	SetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+    Wait    1
+    % jump from the chandelier
+    Call    SetPlayerJumpscale ( *Fixed[1.0] )
+    Call    PlayerJump ( ~Vec3d:JumpPos_EnterMap 15` )
+    Call    SetNpcPos ( .Npc:Partner ~Vec3d:JumpPos_EnterMap )
+    Call    EnablePartnerAI
+    Wait    10`
+    Call    DisablePlayerPhysics ( .False )
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind     $Script_Exit0 .Trigger:WallPressA ~Collider:Exit0 00000001 00000000 
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+    Call    DisablePlayerPhysics ( .True )
+    Call    DisablePartnerAI ( 0 )
+    % jump inside the chandelier
+    Call    SetPlayerJumpscale ( *Fixed[1.0] )
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( 00010006 ) % prepare to jump
+    Wait    10`
+    Call    PlayerJump ( ~Vec3d:JumpPos_Exit0 22` )
+    Wait    5
+    Call    GotoMap ( "obk_02" 3 )
+	Return
+	End
+}
+
+#new:Function $Function_GetTattle
+{
+    LIO       V0, $String_Tattle
+    JR        RA
+    RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle]
+[EnableCDownNext]Wow, this mansion is filled with a[BR]
+bunch of secret passages.[BR]
+[Wait][Next]
+I hope there's at least something[BR]
+good around here Mario.[BR]
+[Wait][End]
+}

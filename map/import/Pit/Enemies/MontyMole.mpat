@@ -1,0 +1,99 @@
+% This is the Monty Mole that pops from the floor and follows you
+
+#new:Npc $Npc_MontyMole {
+00000000 $NpcSettings_80241E98_iwa_03 ~Vec3f:NPC_MontyMole 
+00000400 00000000 00000000 00000000 00000000 
+~Items:10:HoneySyrup:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+~Movement:NPC_MontyMole
+~AnimationTable:NPC_MontyMole % .Sprite:MontyMole
+00000001 00000000 00000000 00000000 % no tattle string
+% Npc_MontyMole[1F0]
+00000001 $NpcSettings_80241EC4_iwa_03 ~Vec3f:NPC_Hole
+00000F21 00000000 00000000 00000000 00000000 
+~NoDrops
+~Movement:NPC_Hole
+~AnimationTable:NPC_Hole % .Sprite:MontyMole
+00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:Script $Script_80241B00_iwa_03 {
+    0:  Call  EnableNpcShadow   ( .Npc:Self .False )
+   14:  Call  SetNpcFlagBits    ( .Npc:Self 00000004 .True )
+   2C:  Call  SetNpcFlagBits    ( .Npc:Self 00000200 .True )
+   44:  Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+   60:  Sub   *Var1  0000001E 
+   70:  Call  SetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+   8C:  Return
+   94:  End
+}
+
+#new:AISettings $AISettings_80241C1C_iwa_03 {
+    1.8 % move speed
+    30` % move time
+    30` % wait time
+   90.0 % alert radius
+   70.0
+    2`
+    3.0 % chase speed
+    90`
+    25`
+  120.0 % chase radius
+   70.0
+    1`
+}
+
+#new:Script $Script_NpcAI_80241C4C_iwa_03 {
+        Wait  5
+    0:  Call  800445D4  ( *Var0 )
+   10:  If  *Var0  ==  00000064 
+   20:  	Call  SetSelfEnemyFlagBits  ( 00000020 00000001 )
+   34:  	Label  A
+   40:  	Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+   5C:  	Call  IsPlayerWithin        ( *Var0 *Var2 00000050 *Var3 )
+   78:  	If  *Var3  !=  00000001 
+   88:  		Wait  1`
+   94:  		Goto  A
+   A0:  	EndIf
+   A8:  	Call  GetSelfNpcID      ( *Var0 )
+   B8:  	Add   *Var0  00000001 
+   C8:  	Call  GetNpcPos ( *Var0 *Var1 *Var2 *Var3 )
+   E4:  	Add   *Var2  0000001E 
+   F4:  	Call  SetNpcPos ( *Var0 *Var1 *Var2 *Var3 )
+  110:  	Wait  1`
+  11C:  	Call  SetNpcFlagBits    ( .Npc:Self 00000004 .False )
+  134:  	Call  EnableNpcShadow   ( .Npc:Self .True )
+  148:  	Call  SetNpcAnimation   ( .Npc:Self 002F000E )
+  15C:  	Call  GetNpcPos ( .Npc:Self *Var4 *Var5 *Var6 )
+  178:  	Add   *Var5  0000001E 
+  188:  	Call  SetNpcJumpscale   ( .Npc:Self *Fixed[1.0] )
+  19C:  	Call  PlaySoundAtNpc    ( .Npc:Self .Sound:MolePop 00000000 )
+  1B4:  	Call  NpcJump0  ( .Npc:Self *Var4 *Var5 *Var6  20` )
+  1D4:  	Call  SetNpcPos ( *Var0  0`  -1000`  0` )
+  1F0:  	Call  SetSelfEnemyFlagBits  ( 00000020 00000000 )
+  204:  	Call  NpcFacePlayer     ( .Npc:Self 00000000 )
+  218:  	Call  SetSelfEnemyFlagBits  ( 40000000 00000001 )
+  22C:  	Call  DoBasicAI ( $AISettings_80241C1C_iwa_03 )
+        EndIf % wtf???
+  23C:  	Return
+  244:  	End
+}
+
+#new:NpcSettings $NpcSettings_80241E98_iwa_03 {
+00000000 00180016 $Script_80241B00_iwa_03 00000000 $Script_NpcAI_80241C4C_iwa_03 80077F70 00000000 8007809C 
+00000000 00000000 00080001 
+}
+
+#new:Script $Script_80241B9C_iwa_03 {
+  0:  Call  EnableNpcShadow   ( .Npc:Self .False )
+ 14:  Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+ 30:  Sub   *Var1  0000001E 
+ 40:  Call  SetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+ 5C:  Call  SetNpcAnimation   ( .Npc:Self 002F0012 )
+ 70:  Return
+ 78:  End
+}
+
+#new:NpcSettings $NpcSettings_80241EC4_iwa_03 {
+00000000 00180016 $Script_80241B9C_iwa_03 00000000 00000000 00000000 00000000 00000000 
+00000000 00000000 00080001 
+}

@@ -1,0 +1,417 @@
+% Script File: flo_15.mscr
+% Decoded from: 0 to 1770 (flo_15)
+
+#define .NpcID:Sun_10               0A
+#define .NpcID:Sun_11               0B
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 %  320.0    0.0    0.0  270.0
+	~Vec4f:Entry1 % -170.0    0.0   55.0    0.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  80200000
+	[MapTattle]   0019011F
+}
+
+#new:Script $Script_80240060
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  If  *Var0  ==  ~Entry:Entry1
+   20:  	Call  SetMusicTrack ( 00000000 .Song:SunshineReturns 00000000 00000008 )
+   3C:  Else
+   44:  	Switch  *GB_StoryProgress
+   50:  		Case  <  .Story:Ch6_DestroyedPuffPuffMachine % 35
+   5C:  			Call  SetMusicTrack ( 00000000 .Song:SunTowerCloudy 00000000 00000008 )
+   78:  		Default
+   80:  			Call  SetMusicTrack ( 00000000 .Song:SunTowerSunny 00000000 00000008 )
+   9C:  	EndSwitch
+   A4:  EndIf
+   AC:  Return
+   B4:  End
+}
+
+PADDING: 8024011C to 80240120 (0000011C to 00000120)
+00000000
+
+#new:Script $Script_ExitWalk_80240120
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80241760 00000001 ) % flo_13
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_8024017C
+{
+    0:  Bind  $Script_ExitWalk_80240120 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   1C:  Return
+   24:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:FlowerFields
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   34:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   54:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   70:  Call  SetCamEnabled     ( .Cam:Default .True )
+   84:  Call  MakeNpcs  ( .False $NpcGroupList_802412C0 )
+   98:  ExecWait  $Script_MakeEntities
+   A4:  Call  GetEntryID        ( *Var0 )
+   B4:  If  *Var0  ==  ~Entry:Entry1
+   C4:  	Exec  $Script_802404D8
+   D0:  Else
+   D8:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:deilite 7FFFFE00 )
+   F0:  	Set   *Var0  $Script_8024017C
+  100:  	Exec  EnterWalk
+  10C:  EndIf
+  114:  Call  ModifyColliderFlags   ( 00000000 ~Collider:g58 7FFFFE00 )
+  12C:  Exec  $Script_802413B0
+  138:  ExecWait  $Script_80240060
+  144:  Return
+  14C:  End
+}
+
+PADDING: 802402FC to 80240300 (000002FC to 00000300)
+00000000
+
+#new:NpcSettings $NpcSettings_80240300
+{
+	00000000 00180018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_8024032C
+{
+    0:  If  *GB_StoryProgress  <  .Story:Ch6_DestroyedPuffPuffMachine % 35
+   10:  	Set   *Var3  00000007
+   20:  	Set   *Var4  00000005
+   30:  Else
+   38:  	Set   *Var3  0000000F
+   48:  	Set   *Var4  00000001
+   58:  EndIf
+   60:  Loop
+   6C:  	Set   *Var5  *Var3
+   7C:  	Loop  *Var5
+   88:  		Call  GetNpcPos ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+   A4:  		Add   *Var1  00000001
+   B4:  		Call  SetNpcPos ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+   D0:  		Call  SetNpcPos ( .NpcID:Sun_11 *Var0 *Var1 *Var2 )
+   EC:  		Wait  *Var4
+   F8:  	EndLoop
+  100:  	Set   *Var5  *Var3
+  110:  	Loop  *Var5
+  11C:  		Call  GetNpcPos ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+  138:  		Add   *Var1  FFFFFFFF
+  148:  		Call  SetNpcPos ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+  164:  		Call  SetNpcPos ( .NpcID:Sun_11 *Var0 *Var1 *Var2 )
+  180:  		Wait  *Var4
+  18C:  	EndLoop
+  194:  EndLoop
+  19C:  Return
+  1A4:  End
+}
+
+#new:Script $Script_802404D8
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  DisablePlayerPhysics  ( .True )
+   20:  Call  SetNpcPos     ( .NpcID:Sun_10  0`  270`  0` )
+   3C:  Call  SetNpcPos     ( .NpcID:Sun_11  0`  -1000`  0` )
+   58:  Wait  1`
+   64:  Call  GetNpcPos     ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+   80:  Call  UseSettingsFrom   ( .Cam:Default *Var0 *Var1 *Var2 )
+   9C:  Call  SetPanTarget  ( .Cam:Default *Var0 *Var1 *Var2 )
+   B8:  Call  SetCamDistance    ( .Cam:Default  1050` )
+   CC:  Call  SetCamPitch   ( .Cam:Default *Fixed[10.0] *Fixed[4.0] )
+   E4:  Call  SetCamSpeed   ( .Cam:Default *Fixed[90.0] )
+   F8:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  110:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  124:  Call  SetCamDistance    ( .Cam:Default  300` )
+  138:  Call  SetCamPitch   ( .Cam:Default *Fixed[15.0] *Fixed[-10.0] )
+  150:  Call  SetCamSpeed   ( .Cam:Default *Fixed[6.5] )
+  164:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  17C:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  190:  Call  SpeakToPlayer ( .NpcID:Sun_10 00CB0009 00CB0009 00000205 001100C3 ) % Wow!!!!!!!!!!!! The clouds are gone! It's time for ...
+  1B0:  Call  SetNpcAnimation   ( .NpcID:Sun_10 00CB0009 )
+  1C4:  Thread
+  1CC:  	Call  SetCamDistance    ( .Cam:Default  1000` )
+  1E0:  	Call  SetCamSpeed   ( .Cam:Default *Fixed[5.0] )
+  1F4:  	Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  20C:  	Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  220:  EndThread
+  228:  Wait  15`
+  234:  Call  SetNpcJumpscale   ( .NpcID:Sun_10 *Fixed[0.0] )
+  248:  Call  GetNpcPos ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+  264:  Add   *Var1  00000190
+  274:  Call  NpcJump0  ( .NpcID:Sun_10 *Var0 *Var1 *Var2  40` )
+  294:  Call  GotoMap   ( $ASCII_80241768 00000009 ) % flo_00
+  2A8:  Wait  70`
+  2B4:  Return
+  2BC:  End
+}
+
+#new:Script $Script_Aux_8024079C
+{
+    0:  Call  802CDE68  ( 0000000B 00000030 )
+   14:  Loop
+   20:  	Call  MakeLerp  ( FFFFFFE2 0000001E 00000014 .Easing:SinOut )
+   3C:  	Loop
+   48:  		Call  UpdateLerp ( )
+   54:  		Call  SetNpcRotation    ( .NpcID:Sun_11 00000000 00000000 *Var0 )
+   70:  		Call  GetNpcPos ( .NpcID:Sun_10 *Var2 *Var3 *Var4 )
+   8C:  		Call  SetNpcPos ( .NpcID:Sun_11 *Var2 *Var3 *Var4 )
+   A8:  		Wait  1`
+   B4:  		If  *Var1  ==  00000000
+   C4:  			BreakLoop
+   CC:  		EndIf
+   D4:  	EndLoop
+   DC:  	Call  MakeLerp  ( 0000001E FFFFFFE2 00000014 .Easing:SinOut )
+   F8:  	Loop
+  104:  		Call  UpdateLerp ( )
+  110:  		Call  SetNpcRotation    ( .NpcID:Sun_11 00000000 00000000 *Var0 )
+  12C:  		Call  GetNpcPos ( .NpcID:Sun_10 *Var2 *Var3 *Var4 )
+  148:  		Call  SetNpcPos ( .NpcID:Sun_11 *Var2 *Var3 *Var4 )
+  164:  		Wait  1`
+  170:  		If  *Var1  ==  00000000
+  180:  			BreakLoop
+  188:  		EndIf
+  190:  	EndLoop
+  198:  EndLoop
+  1A0:  Return
+  1A8:  End
+}
+
+#new:Script $Script_8024094C
+{
+    0:  Loop
+    C:  	Wait  1`
+   18:  	Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+   30:  	If  *Var1  >  000000DC
+   40:  		BreakLoop
+   48:  	EndIf
+   50:  EndLoop
+   58:  Thread
+   60:  	Wait  15`
+   6C:  	Call  PlayerFaceNpc ( .NpcID:Sun_10 .False )
+   80:  EndThread
+   88:  Call  SetNpcJumpscale   ( .NpcID:Sun_10 *Fixed[0.0] )
+   9C:  Call  GetNpcPos ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+   B8:  Sub   *Var1  00000190
+   C8:  Call  NpcJump0  ( .NpcID:Sun_10 *Var0  275` *Var2  30` )
+   E8:  Exec  $Script_8024032C *Var9
+   F8:  Loop
+  104:  	Wait  1`
+  110:  	If  *AreaFlag[026]  ==  .True
+  120:  		BreakLoop
+  128:  	EndIf
+  130:  EndLoop
+  138:  Call  DisablePlayerInput    ( .True )
+  148:  Wait  10`
+  154:  Kill  *Var9
+  160:  Call  SetNpcFlagBits        ( .NpcID:Sun_10 00000100 .True )
+  178:  Call  GetNpcPos ( .NpcID:Sun_10 *Var0 *Var1 *Var2 )
+  194:  Call  NpcJump0  ( .NpcID:Sun_10 *Var0  450` *Var2  30` )
+  1B4:  Call  DisablePlayerInput    ( .False )
+  1C4:  Unbind
+  1CC:  Return
+  1D4:  End
+}
+
+#new:Script $Script_Interact_80240B28
+{
+    0:  Switch  *GB_StoryProgress
+    C:  	Case  <  .Story:Ch6_SpokeWithTheSun % 32
+   18:  		Call  SpeakToPlayer ( .NpcID:Sun_10 00CB0007 00CB0001 00000205 0011009A ) % Hey... Hello. I never thought anybody would come a ...
+   38:  		Call  SetPlayerAnimation    ( .PlayerAnim:Thinking )
+   48:  		Wait  20`
+   54:  		Call  SetPlayerAnimation    ( 00080007 )
+   64:  		Wait  20`
+   70:  		Call  SetPlayerAnimation    ( 00010002 )
+   80:  		Call  SpeakToPlayer ( .NpcID:Sun_10 00CB0007 00CB0001 00000205 0011009B ) % Where is it? You mean the Puff Puff Machine? I thi ...
+   A0:  		Set   *GB_StoryProgress  .Story:Ch6_SpokeWithTheSun
+   B0:  	Case  <  .Story:Ch6_DestroyedPuffPuffMachine % 35
+   BC:  		Call  SpeakToPlayer ( .NpcID:Sun_10 00CB0007 00CB0001 00000205 0011009C ) % Where is it? You mean the Puff Puff Machine? I thi ...
+   DC:  	Case  <  .Story:Ch6_StarSpiritRescued % 39
+   E8:  		If  *GF_FLO15_SunThankedPlayer  ==  .False
+   F8:  			Call  SpeakToPlayer ( .NpcID:Sun_10 00CB0007 00CB0001 00000205 0011009D ) % Hey!!! I heard that you're the guy who broke the P ...
+  118:  			Set   *GF_FLO15_SunThankedPlayer  .True
+  128:  		Else
+  130:  			Call  SpeakToPlayer ( .NpcID:Sun_10 00CB0007 00CB0001 00000205 0011009E ) % Thanks to you, Flower Fields has blue skies again. ...
+  150:  		EndIf
+  158:  	Default
+  160:  		Call  SpeakToPlayer ( .NpcID:Sun_10 00CB0007 00CB0001 00000205 0011009F ) % Hey... We meet again! Hey, did you know? The sun i ...
+  180:  EndSwitch
+  188:  Set   *AreaFlag[026]  .True
+  198:  Return
+  1A0:  End
+}
+
+#new:Script $Script_Init_80240CD0
+{
+    0:  Call  SetNpcCollisionSize   ( .NpcID:Sun_10  64`  40` )
+   18:  Call  EnableNpcShadow       ( .NpcID:Sun_10 .False )
+   2C:  If  *GB_StoryProgress  <  .Story:Ch6_DestroyedPuffPuffMachine % 35
+   3C:  	Call  SetNpcPos ( .NpcID:Sun_10  0`  270`  0` )
+   58:  	Call  BindNpcInteract   ( .Npc:Self $Script_Interact_80240B28 )
+   6C:  	Exec  $Script_8024032C
+   78:  Else
+   80:  	Call  SetNpcPos ( .NpcID:Sun_10  0`  450`  0` )
+   9C:  	Call  BindNpcInteract   ( .Npc:Self $Script_Interact_80240B28 )
+   B0:  	Set   *AreaFlag[026]  .False
+   C0:  	Exec  $Script_8024094C
+   CC:  EndIf
+   D4:  Return
+   DC:  End
+}
+
+#new:Script $Script_Init_80240DB4
+{
+    0:  Call  EnableNpcShadow       ( .NpcID:Sun_11 .False )
+   14:  Call  SetNpcAnimation       ( .NpcID:Sun_11 00CB0002 )
+   28:  Call  SetNpcPaletteSwapMode ( .NpcID:Sun_10 00000003 )
+   3C:  Call  SetNpcPaletteSwapMode ( .NpcID:Sun_11 00000003 )
+   50:  Call  SetNpcPaletteSwapping ( .NpcID:Sun_10 00000000 00000001 00000005 00000005 0000000D 00000005 00000000 00000000 )
+   80:  Call  SetNpcPaletteSwapping ( .NpcID:Sun_11 00000000 00000001 00000005 00000005 0000000D 00000005 00000000 00000000 )
+   B0:  If  *GB_StoryProgress  <  .Story:Ch6_DestroyedPuffPuffMachine % 35
+   C0:  	Call  SetNpcPos ( .NpcID:Sun_11  0`  270`  -5` )
+   DC:  Else
+   E4:  	Call  SetNpcPos     ( .NpcID:Sun_11  0`  450`  -5` )
+  100:  	Call  BindNpcAux    ( .Npc:Self $Script_Aux_8024079C )
+  114:  EndIf
+  11C:  Return
+  124:  End
+}
+
+#new:NpcGroup $NpcGroup_80240EE0
+{
+	.NpcID:NPC_Sun_10 $NpcSettings_80240300 ~Vec3f:NPC_Sun_10 % 0 250 0
+	00400D01 $Script_Init_80240CD0 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_Sun_10
+	~AnimationTable:NPC_Sun_10 % .Sprite:Sun
+	00000000 00000000 00000000 001A00E1 % It's the sun. Some people call it the "Blessed Sun ...
+	%
+	% $NpcGroup_80240EE0[1F0]
+	.NpcID:NPC_Sun_11 $NpcSettings_80240300 ~Vec3f:NPC_Sun_11 % 0 250 0
+	00008F01 $Script_Init_80240DB4 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_Sun_11
+	~AnimationTable:NPC_Sun_11 % .Sprite:Sun
+	00000000 00000000 00000000 001A00E1 % It's the sun. Some people call it the "Blessed Sun ...
+}
+
+#new:NpcGroupList $NpcGroupList_802412C0
+{
+	00000002 $NpcGroup_80240EE0 00000000
+	00000000 00000000 00000000
+}
+
+PADDING: 802412D8 to 802412E0 (000012D8 to 000012E0)
+00000000 00000000
+
+#new:Script $Script_802412E0
+{
+    0:  Set   *GF_FLO15_BombedRock  .True
+   10:  Return
+   18:  End
+}
+
+#new:Script $Script_MakeEntities
+{
+    0:  If  *GF_FLO15_BombedRock  ==  .False
+   10:  	Call  MakeEntity    ( .Entity:BombableRock1 ~Vec4d:Entity80241310 80000000 )
+   34:  	Call  AssignScript  ( $Script_802412E0 )
+   44:  EndIf
+   4C:  Return
+   54:  End
+}
+
+PADDING: 8024135C to 80241360 (0000135C to 00001360)
+00000000
+
+#new:IntTable $IntTable_80241360
+{
+	0000000A F24A7CE7 0000000D F24A7D80 00000010 F24A7E1A 00000013 F24A7EB4
+	00000016 F24A7F4D 00000019 F24A7EB4 00000018 F24A7E1A 00000019 F24A7D80
+	00000018 F24A7CE7 0000000A F24A814D
+}
+
+#new:Script $Script_802413B0
+{
+    0:  If  *GF_FLO15_BombedRock  ==  .False
+   10:  	Label  0
+   1C:  	If  *GF_FLO15_BombedRock  ==  .False
+   2C:  		Wait  1`
+   38:  		Goto  0
+   44:  	EndIf
+   4C:  	Call  DisablePlayerInput    ( .True )
+   5C:  	Thread
+   64:  		UseIntBuffer  $IntTable_80241360
+   70:  		Loop  0000000A
+   7C:  			Get2Int  *Var1 *Var2
+   8C:  			Call  ShakeCam  ( .Cam:Default 00000000 *Var1 *Var2 )
+   A8:  		EndLoop
+   B0:  	EndThread
+   B8:  	Call  UseSettingsFrom   ( .Cam:Default  -170`  0`  35` )
+   D4:  	Call  SetPanTarget  ( .Cam:Default  -170`  0`  35` )
+   F0:  	Call  SetCamDistance    ( .Cam:Default  600` )
+  104:  	Call  SetCamPitch   ( .Cam:Default *Fixed[25.0] *Fixed[-9.0] )
+  11C:  	Call  SetCamPosA    ( .Cam:Default *Fixed[-50.0] *Fixed[25.0] )
+  134:  	Call  SetCamSpeed   ( .Cam:Default *Fixed[1.5] )
+  148:  	Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+  160:  	Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+  174:  	Thread
+  17C:  		Wait  100`
+  188:  		Call  PlayEffect    ( ~FX:Steam:LargeOutward FFFFFF4C 00000000 FFFFFFF1 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  1CC:  		Call  PlayEffect    ( ~FX:Steam:LargeOutward FFFFFF42 00000000 FFFFFFDD 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  210:  	EndThread
+  218:  	Thread
+  220:  		Loop  00000006
+  22C:  			Call  PlaySoundAtCollider   ( ~Collider:o175 00000187 00000000 )
+  244:  			Wait  20`
+  250:  		EndLoop
+  258:  	EndThread
+  260:  	Call  MakeLerp  ( 00000000 FFFFFFCE 00000078 .Easing:CubicIn )
+  27C:  	Loop
+  288:  		Call  UpdateLerp ( )
+  294:  		Call  TranslateGroup    ( ~Model:g20 00000000 *Var0 00000000 )
+  2B0:  		Wait  1`
+  2BC:  		If  *Var1  ==  00000000
+  2CC:  			BreakLoop
+  2D4:  		EndIf
+  2DC:  	EndLoop
+  2E4:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:g54 7FFFFE00 )
+  2FC:  	Call  ModifyColliderFlags   ( 00000001 ~Collider:g58 7FFFFE00 )
+  314:  	Wait  15`
+  320:  	Call  ResetCam  ( .Cam:Default *Fixed[90.0] )
+  334:  	Call  DisablePlayerInput    ( .False )
+  344:  Else
+  34C:  	Call  ModifyColliderFlags   ( 00000000 ~Collider:g54 7FFFFE00 )
+  364:  	Call  ModifyColliderFlags   ( 00000001 ~Collider:g58 7FFFFE00 )
+  37C:  	Call  TranslateGroup        ( ~Model:g20 00000000 FFFFFFCE 00000000 )
+  398:  EndIf
+  3A0:  Return
+  3A8:  End
+}
+
+#new:ASCII $ASCII_80241760
+{
+	"flo_13"
+}
+
+#new:ASCII $ASCII_80241768
+{
+	"flo_00"
+}
+

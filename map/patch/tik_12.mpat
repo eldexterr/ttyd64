@@ -1,0 +1,274 @@
+% Add new hidden item
+
+@ $Script_802422A0
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:ToadTownTunnels 00000000 00000008 )
+        Exec  $Script_InitNewStuff
+   1C:  Return
+   24:  End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Exec    $Script_UpdateWall
+    Exec    $Script_InitMovingPlatforms
+    Return
+    End
+}
+
+@ $Script_MakeEntities
+{
+    0:  Call  MakeEntity        ( .Entity:SuperBlock ~Vec4d:Entity80244334 80000000 )
+   24:  Set   *MapVar[0]  *Var0
+   34:  Call  AssignBlockFlag   ( *GF_TIK02_SuperBlock )
+        Call  AssignScript      ( $Script_Entity_Shine1 )
+   54:  If  *GF_TIK12_Hammer3BlockA  ==  .False
+   64:  	Call  MakeEntity    ( .Entity:Hammer3Block ~Vec4d:Entity80244398 80000000 )
+   88:  	Call  AssignScript  ( $Script_802442F4 )
+   98:  EndIf
+   A0:  If  *GF_TIK12_Hammer3BlockB  ==  .False
+   B0:  	Call  MakeEntity    ( .Entity:Hammer3Block ~Vec4d:Entity802443E4 80000000 )
+   D4:  	Call  AssignScript  ( $Script_80244314 )
+   E4:  EndIf
+        %
+        Call  MakeEntity  	    ( .Entity:SuperBlock ~Vec4d:Entity_Shine 80000000 )
+        Set   *MapVar[1] *Var0
+        Call  AssignBlockFlag   ( *GF_TIK12_Shine )
+        Call  AssignScript 	    ( $Script_Entity_Shine2 )
+   EC:  Return
+   F4:  End
+}
+
+%============================================================
+% Patch super block to give a shine sprite instead
+
+#delete $Script_80243E74 % original super block script
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 *MapVar[0] % entityID
+    SetConst *Var1 *GF_TIK02_SuperBlock % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+#new:Script $Script_Entity_Shine2
+{
+    Set *Var0 *MapVar[1] % entityID
+    SetConst *Var1 *GF_TIK12_Shine % flag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+% Crack
+
+#new:Script $Script_UpdateWall {
+    If *GF_TIK12_Crack == .False
+        Bind     $Script_BlastWall .Trigger:PointBomb $TriggerCoord_Wall 00000001 00000000
+    Else
+        Call     EnableGroup ( ~Model:cracked_wall .False )
+        Call     ModifyColliderFlags 	( .False ~Collider:pseudoWall 7FFFFE00 )
+    EndIf
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Wall
+{
+	~BombPos:bombPos
+}
+
+#new:Script $Script_BlastWall
+{
+    Call     PlayEffect  	( 66` 0 ~Model:pseudoWall ~Model:pseudoWall 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Call     EnableGroup ( ~Model:cracked_wall .False )
+    Call     ModifyColliderFlags 	( .False ~Collider:pseudoWall 7FFFFE00 )
+    Set      *GF_TIK12_Crack .True
+    Unbind
+    Return
+    End
+}
+
+% Moving platforms
+
+#new:Script $Script_InitMovingPlatforms
+{
+    Call    ParentColliderToModel ( ~Collider:p1 ~Model:p1 )
+    Call    ParentColliderToModel ( ~Collider:p2 ~Model:p2 )
+    Call    ParentColliderToModel ( ~Collider:p3 ~Model:p3 )
+    Call    ParentColliderToModel ( ~Collider:p4 ~Model:p4 )
+    Call    ParentColliderToModel ( ~Collider:p5 ~Model:p5 )
+    Call    ParentColliderToModel ( ~Collider:p6 ~Model:p6 )
+    Exec    $Script_InitHorizontalPlatforms
+    Wait    20`
+    Exec    $Script_VerticalPlatform
+    Return
+    End
+}
+
+#new:Script $Script_InitHorizontalPlatforms
+{
+    Wait    400`
+    Exec    $Script_InitPlatform_2
+    Wait    5
+    Exec    $Script_InitPlatform_3
+    Wait    5
+    Exec    $Script_InitPlatform_4
+    Wait    5
+    Exec    $Script_InitPlatform_5
+    Wait    5
+    Exec    $Script_InitPlatform_6
+    Return
+    End
+}
+
+#new:Script $Script_InitPlatform_2
+{
+    Set *Var0 ~Model:p2
+    Set *Var1 ~Collider:p2
+    Exec $Script_UpdatePlatform_Z
+    Return
+    End
+}
+
+#new:Script $Script_InitPlatform_3
+{
+    Set *Var0 ~Model:p3
+    Set *Var1 ~Collider:p3
+    Exec $Script_UpdatePlatform_Z
+    Return
+    End
+}
+
+#new:Script $Script_InitPlatform_4
+{
+    Set *Var0 ~Model:p4
+    Set *Var1 ~Collider:p4
+    Exec $Script_UpdatePlatform_Z
+    Return
+    End
+}
+
+#new:Script $Script_InitPlatform_5
+{
+    Set *Var0 ~Model:p5
+    Set *Var1 ~Collider:p5
+    Exec $Script_UpdatePlatform_X
+    Return
+    End
+}
+
+#new:Script $Script_InitPlatform_6
+{
+    Set *Var0 ~Model:p6
+    Set *Var1 ~Collider:p6
+    Exec $Script_UpdatePlatform_X
+    Return
+    End
+}
+
+#new:Script $Script_UpdatePlatform_Z
+{
+    Set *Var8 *Var0
+    Set *Var9 *Var1
+    Loop
+        % hide
+        Call    PlaySoundAtCollider ( *Var9 00DD .False )
+        Call    MakeLerp ( 0 -114` 5 .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    TranslateGroup ( *Var8 0 0 *Var0 )
+            Call    UpdateColliderTransform ( *Var9 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait    40`
+        % unhide
+        Call    PlaySoundAtCollider ( *Var9 007B .False )
+        Call    MakeLerp ( -114` 0 10` .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    TranslateGroup ( *Var8 0 0 *Var0 )
+            Call    UpdateColliderTransform ( *Var9 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait    30`
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_UpdatePlatform_X
+{
+    Set *Var8 *Var0
+    Set *Var9 *Var1
+    Loop
+        % hide
+        Call    PlaySoundAtCollider ( *Var9 00DD .False )
+        Call    MakeLerp ( 0 -103` 5 .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    TranslateGroup ( *Var8 *Var0 0 0 )
+            Call    UpdateColliderTransform ( *Var9 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait    40`
+        % unhide
+        Call    PlaySoundAtCollider ( *Var9 007B .False )
+        Call    MakeLerp ( -103` 0 10` .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    TranslateGroup ( *Var8 *Var0 0 0 )
+            Call    UpdateColliderTransform ( *Var9 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait    30`
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_VerticalPlatform
+{
+    Loop
+        % up
+        Call    MakeLerp ( 0 125` 125` .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    TranslateGroup ( ~Model:p1 0 *Var0 0 )
+            Call    UpdateColliderTransform ( ~Collider:p1 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait   40`
+        % down
+        Call    MakeLerp ( 125` 0 125` .Easing:Linear )
+        Loop
+            Call    UpdateLerp
+            Call    TranslateGroup ( ~Model:p1 0 *Var0 0 )
+            Call    UpdateColliderTransform ( ~Collider:p1 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Wait   40` 
+    EndLoop
+    Return
+    End
+}

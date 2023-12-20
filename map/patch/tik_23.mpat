@@ -1,0 +1,79 @@
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  00000000
+    [MapTattle]   00190036
+}
+
+@ $EntryList
+{
+	~Vec4f:Entry0 % -270.0  -20.0  -20.0   90.0
+	~Vec4f:Entry1 %  107.0  -20.0 -115.0  270.0
+    ~Vec4f:Entry2
+}
+
+@ $Script_80242080
+{
+    0:  Bind  $Script_ExitWalk_80241F9C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   1C:  Bind  $Script_80242028 .Trigger:WallPush ~Collider:ttd 00000001 00000000
+        Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_Exit2
+{
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "tik_28" 00000000 )
+    Wait  100`
+    Return
+    End
+}
+
+%
+
+@ $Script_802411A0
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:ToadTownTunnels 00000000 00000008 )
+        Exec  $InitNewStuff
+   1C:  Return
+   24:  End
+}
+
+#new:Script $InitNewStuff
+{
+    Exec $Script_UpdateDoor
+    Return
+    End
+}
+
+#new:Script $Script_UpdateDoor {
+    If *GF_TIK23_Wall == .False
+        Bind     $Script_BlastDoor .Trigger:PointBomb $TriggerCoord_Door 00000001 00000000
+    Else
+        Call    EnableGroup ( ~Model:crack_group .False )
+        Call    ModifyColliderFlags ( .False ~Collider:crack 7FFFFE00 )    
+    EndIf
+    Call    StopSound ( 0021 )
+    Return
+    End
+}
+
+#new:Script $Script_BlastDoor
+{
+    Call     PlayEffect  	( 66` 0 ~Model:cracked_wall ~Model:cracked_wall 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Call    EnableGroup ( ~Model:crack_group .False )
+    Call    ModifyColliderFlags ( .False ~Collider:crack 7FFFFE00 )    
+    Set     *GF_TIK23_Wall .True
+    Unbind
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Door
+{
+	~BombPos:bombPos
+}

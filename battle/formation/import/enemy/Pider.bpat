@@ -1,0 +1,421 @@
+#new:Actor $3B_Pider
+{
+% stats
+[Index]        66b 
+[Level]        13`b 
+[MaxHP]        5`b 
+[Coins]         0`b 
+[Flags]       00000000
+[StatusTable] $StatusTable_Pider
+% ai
+[PartsCount]   2`s 
+[PartsTable]  $PartsTable_Pider
+[Script]      $Script_Init_Pider
+% move effectiveness
+[Escape]       70`b 
+[Item]         0`b 
+[AirLift]      70`b 
+[Hurricane]   100`b % Bow's "Spook" as well
+[UpAndAway]    95`b 
+[PowerBounce] 100`b 
+[SpinSmash]     0`b % weight (0-4)
+% ui positions
+[Size]         36`b  40`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  20`b % dx dy
+[StatusIcon]   10`b  32`b % dx dy
+}
+
+#new:PartsTable $PartsTable_Pider {
+00800000 01000000 FE2700FF $IdleAnimations_Pider $DefenseTable_Pider 00000000 00000000 00FC0000 00000000 
+00120001 02000000 000000FF $IdleAnimations_Rock $DefenseTable_Pider 00000000 00000000 00000000 00000000 
+}
+
+#new:IdleAnimations $IdleAnimations_Pider {
+.Status:Normal    00EB0001
+.Status:Frozen    00EB0006
+.Status:Sleep     00EB0008
+.Status:Poison    00EB0008
+.Status:Stop      00EB0000
+.Status:Static    00EB0000
+.Status:Paralyze  00EB0000
+.Status:Dizzy     00EB0009
+.Status:Fear      00EB0000
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_Rock {
+.Status:Normal    00EB000A
+.Status:End
+}
+
+#new:StatusTable $StatusTable_Pider
+{
+.Status:Normal            0`
+.Status:Sleep            90`
+.Status:Poison          100`
+.Status:Frozen           90`
+.Status:Dizzy            50`
+.Status:Static           90`
+.Status:Paralyze         90`
+.Status:Shrink           90`
+.Status:Stop             90`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:DefenseTable $DefenseTable_Pider {
+.Element:Normal 00000000
+.Element:End
+}
+
+#new:Script $Script_Init_Pider
+{
+    Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_Pider )
+    Call  BindHandleEvent   ( .Actor:Self $Script_HandleEvent_Pider )
+    Call  BindNextTurn ( .Actor:Self $Script_NextTurn_Pider )
+    % get spawn pos
+    Call    RandInt ( 100` *Var0 )
+    If *Var0 < 50`
+        % spawn high
+        Call    GetHomePos ( .Actor:Self *Var0 .False *Var1 )
+        Set     *Var1 65`
+        Call    SetHomePos ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call    SetActorVar ( .Actor:Self 00000002 .True )
+    Else
+        % spawn low
+        Call    GetHomePos ( .Actor:Self *Var0 .False *Var1 )
+        Set     *Var1 9
+        Call    SetHomePos ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call    SetActorVar ( .Actor:Self 00000002 .False )
+    EndIf
+    Call    HPBarToHome ( .Actor:Self )
+    Return
+    End
+}
+
+#new:Script $Script_TakeTurn_Pider
+{
+    Call    UseIdleAnimation ( .Actor:Self .False )
+	Call    EnableIdleScript ( .Actor:Self 0 )
+    % get rock direction
+    Call    RandInt ( 100` *Var0 )
+    If *Var0 < 60` % shoot downwards
+        Call    SetActorVar ( .Actor:Self 00000000 .False )
+        Call    $SetTargetActorInFront ( .Actor:Self )
+        Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+    Else % shoot upwards
+        Call    SetActorVar ( .Actor:Self 00000000 .True )
+        Call    $SetTargetActorInTheBack ( .Actor:Self )
+        Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+    EndIf
+    Call    GetActorVar ( .Actor:Self 00000000 *VarA )
+    % move the head for a little bit or instantly shoot?
+    Call    RandInt ( 100` *Var0 )
+    If *Var0 < 50`
+        If *VarA == .False
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+        Else
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+            Wait    15`
+            Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+        EndIf
+    EndIf
+    Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+    Call    SetActorVar ( .Actor:Self 00000001 .True )
+    % attack target
+    Call    RandInt ( 100` *Var0 )
+    If *Var0 < 50` % shoot a single time
+        Set     *Var9 2
+        Set     *VarD 1
+    Else % shoot multiple times
+        Set     *Var9 1
+        Set     *VarD 3
+    EndIf
+    Loop *VarD
+        Call    GetActorVar ( .Actor:Self 00000000 *VarA )
+        Call    GetAnimation ( .Actor:Self 00000001 *Var7 )
+        If *VarA == .False % shoot actor in front
+            % is this one the first shoot?
+            Call    GetActorVar ( .Actor:Self 00000001 *Var3 )
+            If *Var3 == .False
+                Call    RandInt ( 100` *Var3 )
+                If *Var3 < 60`
+                    Call    SetActorVar ( .Actor:Self 00000000 .False )
+                    Call    $SetTargetActorInFront ( .Actor:Self )
+                    Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+                Else
+                    Call    SetActorVar ( .Actor:Self 00000000 .True )
+                    Call    $SetTargetActorInTheBack ( .Actor:Self )
+                    Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+                EndIf
+            Else
+                Call    SetActorVar ( .Actor:Self 00000000 .False )
+                Call    $SetTargetActorInFront ( .Actor:Self )
+                Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+            EndIf
+        Else % shoot actor in the back
+            %
+            % is this one the first shoot?
+            Call    GetActorVar ( .Actor:Self 00000001 *Var3 )
+            If *Var3 == .False
+                Call    RandInt ( 100` *Var3 )
+                If *Var3 < 60`
+                    Call    SetActorVar ( .Actor:Self 00000000 .True )
+                    Call    $SetTargetActorInTheBack ( .Actor:Self )
+                    Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+                Else
+                    Call    SetActorVar ( .Actor:Self 00000000 .False )
+                    Call    $SetTargetActorInFront ( .Actor:Self )
+                    Call    SetAnimation ( .Actor:Self 00000001 00EB0004 )
+                EndIf
+            Else
+                Call    SetActorVar ( .Actor:Self 00000000 .True )
+                Call    $SetTargetActorInTheBack ( .Actor:Self )
+                Call    SetAnimation ( .Actor:Self 00000001 00EB0005 )
+            EndIf
+        EndIf
+        Call    GetAnimation ( .Actor:Self 00000001 *Var0 )
+        If *Var0 != *Var7
+            Call    PlaySoundAtActor ( .Actor:Self 02D5 )
+        EndIf
+        Wait    10`
+        Call    GetActorVar ( .Actor:Self 00000000 *Var3 )
+        Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+        If *Var3 == .False % shoot actor in front
+            Sub     *Var0 18`
+            Add     *Var1 4`
+        Else
+            % shoot actor in the back
+            Sub     *Var0 19`
+            Add     *Var1 29`
+        EndIf
+        Call    SetPartPos ( .Actor:Self 00000002 *Var0 *Var1 *Var2 )
+        Call    SetPartFlagBits   ( .Actor:Self 00000002 00000001 .False )
+        Call    PlaySoundAtPart   ( .Actor:Self 00000002 .Sound:MoleThrow )
+        Call    SetPartMoveSpeed  ( .Actor:Self 00000002 *Fixed[12.0] )
+        Call    SetPartJumpGravity    ( .Actor:Self 00000002 *Fixed[0.1] )
+        Call    SetGoalToTarget ( .Actor:Self )
+        Call    SetActorVar ( .Actor:Self 00000001 .False )
+        Call    GetGoalPos ( .Actor:Self *Var0 *Var1 *Var2 )
+        Call    SetAnimation ( .Actor:Self 00000002 00EB000A )
+        Call    EnemyTestTarget   ( .Actor:Self *Var3 ~Flags:DamageType:0 00000000 00000001 00000010 )
+        Switch  *Var3
+            CaseOR  ==  .HitResult:Miss % 6
+            CaseOR  ==  .HitResult:Lucky % 5
+                If  *Var3  ==  .HitResult:Lucky % 5
+                    Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                EndIf
+                Set *Var1 .False
+            EndCaseGroup
+        EndSwitch
+        Call    FlyPartTo ( .Actor:Self 00000002 *Var0 *Var1 *Var2 00000000 00000014 .Easing:Linear )
+        Call    SetPartFlagBits   ( .Actor:Self 00000002 00000001 .True )
+        Wait    1
+        Switch  *Var3
+            CaseOR  ==  .HitResult:Miss % 6
+            CaseOR  ==  .HitResult:Lucky % 5
+                % do nothing
+            EndCaseGroup
+            Default
+                Call    EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:NoContact 0000FFFF 00000000 *Var9 00000020 )
+        EndSwitch
+        % check if target died
+        Call    GetOwnerTarget ( *Var0 .False )
+        If *Var0 == .Actor:Player
+            Call    GetPlayerHP ( *Var0 )
+        Else
+            Call    $GetPartnerHP_API ( *Var0 )
+        EndIf
+        If *Var0 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Call    EnableIdleScript  ( .Actor:Self 00000001 )
+    Call    UseIdleAnimation  ( .Actor:Self .True )
+    Return
+    End
+}
+
+#new:Script $Script_HandleEvent_Pider {
+    Call  UseIdleAnimation  ( .Actor:Self .False )
+    Call  EnableIdleScript  ( .Actor:Self 00000000 )
+    Call  GetLastEvent      ( .Actor:Self *Var0 )
+    Switch  *Var0 
+    	CaseOR  ==  .Event:HitCombo % 9
+    	CaseOR  ==  .Event:Hit % A
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoNormalHit 
+    	EndCaseGroup
+    	Case  ==  .Event:BurnHit % E
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0007 
+    		SetConst  *Var2  00EB0007 
+    		ExecWait  DoBurnHit 
+    	Case  ==  .Event:BurnDeath % 24
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0007 
+    		SetConst  *Var2  00EB0007 
+    		ExecWait  DoBurnHit 
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0007 
+    		ExecWait  DoDeath 
+    		Return
+    	Case  ==  .Event:SpinSmashHit % B
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoSpinSmashHit 
+    	Case  ==  .Event:SpinSmashDeath % 21
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoSpinSmashHit 
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoDeath 
+    		Return
+    	Case  ==  .Event:ShockHit % 2F
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoShockHit 
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoJumpBack 
+    		Call  JumpToGoal    ( .Actor:Self 00000005 .False .True .False )
+    		Call  SetAnimationRate      ( .Actor:Self 00000001 *Fixed[2.0] )
+    		Call  SetAnimation  ( .Actor:Self 00000001 00EB0001 )
+    		Call  SetGoalToHome ( .Actor:Self )
+    		Call  SetActorSpeed ( .Actor:Self *Fixed[8.0] )
+    		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    		Call  SetAnimationRate      ( .Actor:Self 00000001 *Fixed[1.0] )
+    		Wait  5`
+    		Call  SetAnimation  ( .Actor:Self 00000001 00EB0001 )
+    		Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.6] )
+    		Call  JumpToGoal    ( .Actor:Self 00000005 .False .True .False )
+    	Case  ==  .Event:ShockDeath % 26
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoShockHit 
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoDeath 
+    		Return
+    	Case  ==  .Event:StarBeam % 13
+    	CaseOR  ==  00000017 % 17
+    	CaseOR  ==  .Event:Immune % 19
+    	CaseOR  ==  .Event:AirLiftFailed % 1F
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0001 
+    		ExecWait  DoImmune 
+    	EndCaseGroup
+    	Case  ==  .Event:Death % 20
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoNormalHit 
+    		Wait  10`
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoDeath 
+    		Return
+    	Case  ==  .Event:RecoverStatus % 31
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0001 
+    		ExecWait  DoRecover 
+    	Case  ==  .Event:ScareAway % 39
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0001 
+    		SetConst  *Var2  00EB0006 
+    		ExecWait  DoScareAway 
+    		Return
+    	Case  ==  .Event:BeginAirLift % 3A
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoAirLift 
+    	Case  ==  .Event:BlowAway % 16
+    		SetConst  *Var0  00000001 
+    		SetConst  *Var1  00EB0006 
+    		ExecWait  DoBlowAway 
+    		Return
+    	Default
+    EndSwitch
+    Call  SetAnimation      ( .Actor:Self 00000001 00EB0001 )
+    Call  EnableIdleScript  ( .Actor:Self 00000001 )
+    Call  UseIdleAnimation  ( .Actor:Self .True )
+    Return
+    End
+}
+
+% Change Pider position every turn
+#new:Script $Script_NextTurn_Pider
+{
+    Call    GetBattlePhase    ( *Var0 )
+    If *Var0 == .Phase:PlayerBegin % A
+        Call    UseIdleAnimation  ( .Actor:Self .False )
+        Call    EnableIdleScript  ( .Actor:Self 00000000 )
+        Call    GetStatusFlags    ( .Actor:Self *Var1 )
+        If  *Var1  &  ~Flags:StatusFlags:Sleep|Frozen|Fear|Paralyze|Dizzy|Stone|Stop % 35D000
+            Return
+        EndIf
+        Call    GetActorVar ( .Actor:Self 00000002 *Var0 )
+        If *Var0 == .False
+            % move higher
+            Call    GetHomePos ( .Actor:Self *Var0 .False *Var1 )
+            Set     *Var1 65`
+            Call    SetHomePos ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call    SetActorVar ( .Actor:Self 00000002 .True )        
+        Else
+            % move lower
+            Call    GetHomePos ( .Actor:Self *Var0 .False *Var1 )
+            Set     *Var1 9
+            Call    SetHomePos ( .Actor:Self *Var0 *Var1 *Var2 )
+            Call    SetActorVar ( .Actor:Self 00000002 .False )
+        EndIf
+        % move
+        Call    PlaySoundAtActor ( .Actor:Self 032D )
+        Call    GetActorPos ( .Actor:Self .False *Var6 .False )
+        Call    GetHomePos ( .Actor:Self *Var3 *Var4 *Var5 )
+        Call    MakeLerp ( *Var6 *Var4 15` .Easing:QuadraticOut )
+        Loop
+            Call    UpdateLerp
+            Call    SetActorPos ( .Actor:Self *Var3 *Var0 *Var5 )
+            Wait    1
+            If *Var1 == .False
+                BreakLoop
+            EndIf
+        EndLoop
+        Call    EnableIdleScript  ( .Actor:Self 00000001 )
+        Call    UseIdleAnimation  ( .Actor:Self .True )
+        Call    HPBarToHome ( .Actor:Self )
+    EndIf
+    Return
+    End
+}

@@ -1,0 +1,780 @@
+% Script File: kpa_83.mscr
+% Decoded from: 0 to 3320 (kpa_83)
+
+#define .NpcID:Toad_00              00
+#define .NpcID:KoopaBros_01         01
+#define .NpcID:KoopaBros_02         02
+#define .NpcID:KoopaBros_03         03
+#define .NpcID:KoopaBros_04         04
+#define .NpcID:JrTroopa_05          05
+
+#new:Function_Init $Function_Init
+{
+    0:  ADDIU     SP, SP, FFE8
+    4:  LA        A0, 800D9230
+    C:  LA        A1, $ASCII_802432F0
+   14:  SW        RA, 10 (SP)
+   18:  JAL       ~Func:sprintf
+   1C:  NOP
+   20:  LA        A0, 800D91E0
+   28:  LA        A1, $ASCII_80243300
+   2C:  JAL       ~Func:sprintf
+   30:  RESERVED
+   34:  LW        RA, 10 (SP)
+   38:  CLEAR     V0
+   3C:  JR        RA
+   40:  ADDIU     SP, SP, 18
+}
+
+PADDING: 80240044 to 80240050 (00000044 to 00000050)
+00000000 00000000 00000000
+
+#new:Function $Function_80240050
+{
+    0:  LWC1      F0, 84 (A0)
+    4:  CVT.S.W   F0, F0
+    8:  SAF       F0, 8010F070
+   10:  JR        RA
+   14:  LI        V0, 2
+}
+
+PADDING: 80240068 to 80240070 (00000068 to 00000070)
+00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -210.0    0.0  150.0   90.0
+	~Vec4f:Entry1 %  150.0    0.0  150.0  270.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000002
+	[Background]  00000000
+	[MapTattle]   00190170
+}
+
+#new:Script $Script_802400D0
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000007 )
+   50:  EndThread
+   58:  Return
+   60:  End
+}
+
+PADDING: 80240138 to 80240140 (00000138 to 00000140)
+00000000 00000000
+
+#new:Unknown $???_80240140
+{
+	0000002D 0000002E 0000002F 00000034 00000035 00000037 FFFFFFFF
+}
+
+#new:Unknown $???_8024015C
+{
+	00000039 0000003A 0000003B 00000040 00000041 00000043 FFFFFFFF
+}
+
+#new:Script $Script_ExitDoubleDoor_80240178
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  ~Entry:Entry0
+   2C:  Set   *Var1  00000014
+   3C:  Set   *Var2  0000004E
+   4C:  Set   *Var3  0000004C
+   5C:  Exec  ExitDoubleDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_8024330C 00000001 ) % kpa_53
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_8024021C
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  00000001
+   2C:  Set   *Var1  00000010
+   3C:  Set   *Var2  $???_80240140
+   4C:  Set   *Var3  $???_8024015C
+   5C:  Exec  BaseExitDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_80243314 00000000 ) % kpa_121
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_802402C0
+{
+    0:  Bind  $Script_ExitDoubleDoor_80240178 .Trigger:WallPressA 00000014 00000001 00000000
+   1C:  Bind  $Script_8024021C .Trigger:WallPressA 00000010 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script $Script_EnterDoubleDoor_80240308
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Set   *Var0  00000000
+   38:  		Set   *Var2  0000004E
+   48:  		Set   *Var3  0000004C
+   58:  		Exec  EnterDoubleDoor
+   64:  		Exec  $Script_802402C0
+   70:  	Case  ==  ~Entry:Entry1
+   7C:  		Set   *Var0  00000001
+   8C:  		Set   *Var2  $???_8024015C
+   9C:  		Set   *Var3  $???_80240140
+   AC:  		ExecWait  BaseEnterDoor
+   B8:  		Exec  $Script_802402C0
+   C4:  EndSwitch
+   CC:  Return
+   D4:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   70:  Call  SetCamEnabled ( .Cam:Default .True )
+   84:  Call  MakeNpcs      ( .True $NpcGroupList_802432D0 )
+   98:  Call  EnableModel   ( 0000000C .False )
+   AC:  Call  EnableModel   ( 00000052 .False )
+   C0:  Call  EnableModel   ( 00000054 .False )
+   D4:  Call  EnableModel   ( 0000005A .False )
+   E8:  Call  EnableModel   ( 0000005B .False )
+   FC:  Call  EnableModel   ( 0000005C .False )
+  110:  Call  EnableModel   ( 0000005D .False )
+  124:  Call  EnableModel   ( 0000005E .False )
+  138:  Call  EnableModel   ( 0000005F .False )
+  14C:  Call  EnableModel   ( 00000060 .False )
+  160:  Call  EnableModel   ( 00000057 .False )
+  174:  Call  EnableModel   ( 00000055 .False )
+  188:  Call  EnableModel   ( 00000061 .False )
+  19C:  Call  EnableModel   ( 00000062 .False )
+  1B0:  Call  EnableModel   ( 00000063 .False )
+  1C4:  Call  EnableModel   ( 00000064 .False )
+  1D8:  Call  EnableModel   ( 00000065 .False )
+  1EC:  Call  EnableModel   ( 00000066 .False )
+  200:  Call  EnableModel   ( 00000067 .False )
+  214:  Exec  $Script_EnterDoubleDoor_80240308
+  220:  Wait  1`
+  22C:  Exec  $Script_802400D0
+  238:  Return
+  240:  End
+}
+
+PADDING: 8024062C to 80240630 (0000062C to 00000630)
+00000000
+
+#new:NpcSettings $NpcSettings_80240630
+{
+	00000000 001E0018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+MISSING: 8024065C to 80240688 (0000065C to 00000688)
+00000000 00170013 00000000 00000000 00000000 00000000 00000000 00000000
+00000000 00000000 00630000
+
+#new:NpcSettings $NpcSettings_80240688
+{
+	00000000 00230018 00000000 00000000 00000000 80077F70 00000000 8007809C
+	00000000 00000000 00060000
+}
+
+#new:NpcSettings $NpcSettings_802406B4
+{
+	00000000 00200018 00000000 00000000 00000000 00000000 00000000 00000000
+	00000000 00000000 00630000
+}
+
+#new:Script $Script_802406E0
+{
+    0:  Call  SetCamType    ( .Cam:Default 00000004 .False )
+   18:  Call  SetCamSpeed   ( .Cam:Default *Var6 )
+   2C:  Call  SetCamPitch   ( .Cam:Default *Fixed[15.0] *Fixed[-10.0] )
+   44:  Call  SetCamDistance    ( .Cam:Default *Fixed[500.0] )
+   58:  Call  SetCamPosA    ( .Cam:Default *Fixed[88.0] *Fixed[256.6] )
+   70:  Call  SetCamPosB    ( .Cam:Default *Fixed[195.0] *Fixed[142.0] )
+   88:  Call  SetCamPosC    ( .Cam:Default *Fixed[0.0] *Fixed[0.0] )
+   A0:  Call  PanToTarget   ( .Cam:Default 00000000 00000001 )
+   B8:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+   CC:  Return
+   D4:  End
+}
+
+#new:Script $Script_802407BC
+{
+    0:  Call  UseSettingsFrom   ( .Cam:Default *Var3 *Var4 *Var5 )
+   1C:  Call  SetCamSpeed   ( .Cam:Default *Var6 )
+   30:  Call  SetCamPitch   ( .Cam:Default *Fixed[22.5] *Fixed[-13.0] )
+   48:  Call  SetCamDistance    ( .Cam:Default *Fixed[300.0] )
+   5C:  Call  SetPanTarget  ( .Cam:Default *Var3 *Var4 *Var5 )
+   78:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+   8C:  Return
+   94:  End
+}
+
+#new:Script $Script_80240858
+{
+    0:  Call  UseSettingsFrom   ( .Cam:Default *Var3 *Var4 *Var5 )
+   1C:  Call  SetCamSpeed   ( .Cam:Default *Var6 )
+   30:  Call  SetCamPitch   ( .Cam:Default *Fixed[22.5] *Fixed[-11.5] )
+   48:  Call  SetCamDistance    ( .Cam:Default *Fixed[300.0] )
+   5C:  Call  SetPanTarget  ( .Cam:Default *Var3 *Var4 *Var5 )
+   78:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+   8C:  Return
+   94:  End
+}
+
+#new:Script $Script_802408F4
+{
+    0:  Call  UseSettingsFrom   ( .Cam:Default *Var3 *Var4 *Var5 )
+   1C:  Call  SetCamSpeed   ( .Cam:Default *Var6 )
+   30:  Call  SetCamPitch   ( .Cam:Default *Fixed[22.5] *Fixed[-10.0] )
+   48:  Call  SetCamDistance    ( .Cam:Default *Fixed[350.0] )
+   5C:  Call  SetPanTarget  ( .Cam:Default *Var3 *Var4 *Var5 )
+   78:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+   8C:  Return
+   94:  End
+}
+
+#new:Script $Script_80240990
+{
+    0:  Call  UseSettingsFrom   ( .Cam:Default *Var3 *Var4 *Var5 )
+   1C:  Call  SetCamSpeed   ( .Cam:Default *Var6 )
+   30:  Call  SetCamPitch   ( .Cam:Default *Fixed[22.5] *Fixed[-13.0] )
+   48:  Call  SetCamDistance    ( .Cam:Default *Fixed[175.0] )
+   5C:  Call  SetPanTarget  ( .Cam:Default *Var3 *Var4 *Var5 )
+   78:  Call  WaitForCam    ( .Cam:Default *Fixed[1.0] )
+   8C:  Return
+   94:  End
+}
+
+#new:Script $Script_80240A2C
+{
+    0:  Switch  *Var0
+    C:  	Case  ==  00000002
+   18:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_02 *Fixed[1.0] )
+   2C:  		Call  GetNpcPos ( .NpcID:KoopaBros_02 *Var1 *Var2 *Var3 )
+   48:  		Call  NpcJump0  ( .NpcID:KoopaBros_02 *Var1 *Var2 *Var3  10` )
+   68:  	Case  ==  00000001
+   74:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_01 *Fixed[1.0] )
+   88:  		Call  GetNpcPos ( .NpcID:KoopaBros_01 *Var1 *Var2 *Var3 )
+   A4:  		Call  NpcJump0  ( .NpcID:KoopaBros_01 *Var1 *Var2 *Var3  10` )
+   C4:  	Case  ==  00000003
+   D0:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_03 *Fixed[1.0] )
+   E4:  		Call  GetNpcPos ( .NpcID:KoopaBros_03 *Var1 *Var2 *Var3 )
+  100:  		Call  NpcJump0  ( .NpcID:KoopaBros_03 *Var1 *Var2 *Var3  10` )
+  120:  	Case  ==  00000004
+  12C:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_04 *Fixed[1.0] )
+  140:  		Call  GetNpcPos ( .NpcID:KoopaBros_04 *Var1 *Var2 *Var3 )
+  15C:  		Call  NpcJump0  ( .NpcID:KoopaBros_04 *Var1 *Var2 *Var3  10` )
+  17C:  EndSwitch
+  184:  Return
+  18C:  End
+}
+
+#new:Script $Script_80240BC0
+{
+    0:  Set   *VarA  *Var0
+   10:  Call  MakeLerp  ( 00000000 000007BC 00000032 .Easing:QuadraticOut )
+   2C:  Loop
+   38:  	Call  UpdateLerp ( )
+   44:  	Call  SetNpcRotation    ( *VarA 00000000 *Var0 00000000 )
+   60:  	If  *Var1  ==  00000000
+   70:  		BreakLoop
+   78:  	EndIf
+   80:  	Wait  1`
+   8C:  EndLoop
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_80240C64
+{
+    0:  Thread
+    8:  	Call  PlaySoundAtNpc    ( *Var0 000000E9 00000000 )
+   20:  	Call  ShakeCam  ( .Cam:Default 00000000  5` *Fixed[0.6] )
+   3C:  EndThread
+   44:  Switch  *Var0
+   50:  	Case  ==  00000002
+   5C:  		Call  SetNpcAnimation   ( .NpcID:KoopaBros_02 0066011E )
+   70:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_02 *Fixed[0.7] )
+   84:  		Call  NpcJump0  ( .NpcID:KoopaBros_02  -50`  200`  170`  40` )
+   A4:  		Call  SetNpcFlagBits    ( .NpcID:KoopaBros_02 00000200 .False )
+   BC:  		Call  SetNpcPos ( .NpcID:KoopaBros_02  0`  -1000`  0` )
+   D8:  	Case  ==  00000001
+   E4:  		Call  SetNpcAnimation   ( .NpcID:KoopaBros_01 0066001E )
+   F8:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_01 *Fixed[0.7] )
+  10C:  		Call  NpcJump0  ( .NpcID:KoopaBros_01  0`  200`  127`  40` )
+  12C:  		Call  SetNpcFlagBits    ( .NpcID:KoopaBros_02 00000200 .False )
+  144:  		Call  SetNpcPos ( .NpcID:KoopaBros_01  0`  -1000`  0` )
+  160:  	Case  ==  00000003
+  16C:  		Call  SetNpcAnimation   ( .NpcID:KoopaBros_03 0066021E )
+  180:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_03 *Fixed[0.7] )
+  194:  		Call  NpcJump0  ( .NpcID:KoopaBros_03  100`  200`  200`  40` )
+  1B4:  		Call  SetNpcFlagBits    ( .NpcID:KoopaBros_03 00000200 .False )
+  1CC:  		Call  SetNpcPos ( .NpcID:KoopaBros_03  0`  -1000`  0` )
+  1E8:  	Case  ==  00000004
+  1F4:  		Call  SetNpcAnimation   ( .NpcID:KoopaBros_04 0066031E )
+  208:  		Call  SetNpcJumpscale   ( .NpcID:KoopaBros_04 *Fixed[0.7] )
+  21C:  		Call  NpcJump0  ( .NpcID:KoopaBros_04  150`  200`  150`  40` )
+  23C:  		Call  SetNpcFlagBits    ( .NpcID:KoopaBros_04 00000200 .False )
+  254:  		Call  SetNpcPos ( .NpcID:KoopaBros_04  0`  -1000`  0` )
+  270:  EndSwitch
+  278:  Return
+  280:  End
+}
+
+#new:Script $Script_Idle_80240EEC
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+   28:  Call  SetPlayerSpeed    ( *Fixed[3.0] )
+   38:  Call  PlayerMoveTo      (  -150` *Var2  0` )
+   50:  Call  SetCamType        ( .Cam:Default 00000006 .False )
+   68:  Set   *Var6  *Fixed[3.0]
+   78:  ExecWait  $Script_802406E0
+   84:  Set   *MapFlag[00]  .False
+   94:  Thread
+   9C:  	Call  SetMusicTrack ( 00000000 .Song:FinalBowserBattle 00000001 00000008 )
+   B8:  	Wait  150`
+   C4:  	If  *MapFlag[00]  !=  .False
+   D4:  		Goto  5
+   E0:  	EndIf
+   E8:  	Call  FadeOutMusic  ( 00000000 000000FA )
+   FC:  	Wait  15`
+  108:  	If  *MapFlag[00]  !=  .False
+  118:  		Goto  5
+  124:  	EndIf
+  12C:  	Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+  148:  	Wait  30`
+  154:  	If  *MapFlag[00]  !=  .False
+  164:  		Goto  5
+  170:  	EndIf
+  178:  	Call  802D5FA4  ( 00000007 )
+  188:  	Label  5
+  194:  EndThread
+  19C:  Call  SpeakToPlayer ( .Npc:Self 00830001 00830001 00000000 00130053 ) % Bleeeaaaargh!! How in the world did you get this f ...
+  1BC:  Set   *MapFlag[00]  .True
+  1CC:  Wait  2`
+  1D8:  Call  SetMusicTrack ( 00000000 .Song:KoopaBrosTheme 00000002 00000008 )
+  1F4:  Set   *Var3  00000041
+  204:  Set   *Var4  00000000
+  214:  Set   *Var5  00000096
+  224:  Set   *Var6  *Fixed[90.0]
+  234:  ExecWait  $Script_80240858
+  240:  Call  ModifyColliderFlags   ( 00000000 00000010 7FFFFE00 )
+  258:  Thread
+  260:  	Call  SetNpcPos ( .NpcID:KoopaBros_02  220`  180`  160` )
+  27C:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_02 00660111 )
+  290:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_02 .True )
+  2A4:  	Call  SetNpcJumpscale   ( .NpcID:KoopaBros_02 *Fixed[1.0] )
+  2B8:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_02 00000200 .True )
+  2D0:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_02 00000008 .False )
+  2E8:  	Call  NpcMoveTo ( .NpcID:KoopaBros_02  20`  160`  20` )
+  304:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_02 000003E9 00000000 )
+  31C:  	Call  PlayEffect        ( ~FX:Steam:SmallOutward 00000014 00000000 000000A0 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  360:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_02 .False )
+  374:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_02 00660105 )
+  388:  	Call  SetNpcYaw ( .NpcID:KoopaBros_02  270` )
+  39C:  EndThread
+  3A4:  Thread
+  3AC:  	Wait  5`
+  3B8:  	Call  SetNpcPos ( .NpcID:KoopaBros_01  248`  180`  185` )
+  3D4:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_01 00660011 )
+  3E8:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_01 .True )
+  3FC:  	Call  SetNpcJumpscale   ( .NpcID:KoopaBros_01 *Fixed[1.0] )
+  410:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_01 00000200 .True )
+  428:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_01 00000008 .False )
+  440:  	Call  NpcMoveTo ( .NpcID:KoopaBros_01  48`  185`  20` )
+  45C:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_01 000003E9 00000000 )
+  474:  	Call  PlayEffect        ( ~FX:Steam:SmallOutward 00000030 00000000 000000B9 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  4B8:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_01 .False )
+  4CC:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_01 00660005 )
+  4E0:  	Call  SetNpcYaw ( .NpcID:KoopaBros_01  270` )
+  4F4:  EndThread
+  4FC:  Thread
+  504:  	Wait  10`
+  510:  	Call  SetNpcPos ( .NpcID:KoopaBros_03  260`  180`  110` )
+  52C:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_03 00660211 )
+  540:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_03 .True )
+  554:  	Call  SetNpcJumpscale   ( .NpcID:KoopaBros_03 *Fixed[1.0] )
+  568:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_03 00000200 .True )
+  580:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_03 00000008 .False )
+  598:  	Call  NpcMoveTo ( .NpcID:KoopaBros_03  60`  110`  20` )
+  5B4:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_03 000003E9 00000000 )
+  5CC:  	Call  PlayEffect        ( ~FX:Steam:SmallOutward 0000003C 00000000 0000006E 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  610:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_03 .False )
+  624:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_03 00660205 )
+  638:  	Call  SetNpcYaw ( .NpcID:KoopaBros_03  270` )
+  64C:  EndThread
+  654:  Thread
+  65C:  	Wait  15`
+  668:  	Call  SetNpcPos ( .NpcID:KoopaBros_04  288`  180`  155` )
+  684:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_04 00660311 )
+  698:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_04 .True )
+  6AC:  	Call  SetNpcJumpscale   ( .NpcID:KoopaBros_04 *Fixed[1.0] )
+  6C0:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_04 00000200 .True )
+  6D8:  	Call  SetNpcFlagBits    ( .NpcID:KoopaBros_04 00000008 .False )
+  6F0:  	Call  NpcMoveTo ( .NpcID:KoopaBros_04  88`  155`  20` )
+  70C:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_04 000003E9 00000000 )
+  724:  	Call  PlayEffect        ( ~FX:Steam:SmallOutward 00000058 00000000 0000009B 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  768:  	Call  EnableNpcBlur     ( .NpcID:KoopaBros_04 .False )
+  77C:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_04 00660305 )
+  790:  	Call  SetNpcYaw ( .NpcID:KoopaBros_04  270` )
+  7A4:  EndThread
+  7AC:  Wait  65`
+  7B8:  Call  ModifyColliderFlags   ( 00000001 00000010 7FFFFE00 )
+  7D0:  Thread
+  7D8:  	Call  GetNpcPos ( .NpcID:KoopaBros_02 *Var0 *Var1 *Var2 )
+  7F4:  	Add   *Var0  00000005
+  804:  	Add   *Var1  0000001E
+  814:  	Call  PlayEffect        ( ~FX:LensFlare:Rotating *Var0 *Var1 *Var2 00000028 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  858:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_02 000020F3 00000000 )
+  870:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_02 0066011A )
+  884:  EndThread
+  88C:  Thread
+  894:  	Wait  5`
+  8A0:  	Call  GetNpcPos ( .NpcID:KoopaBros_01 *Var0 *Var1 *Var2 )
+  8BC:  	Add   *Var0  00000005
+  8CC:  	Add   *Var1  0000001E
+  8DC:  	Call  PlayEffect        ( ~FX:LensFlare:Rotating *Var0 *Var1 *Var2 00000028 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  920:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_01 000020F3 00000000 )
+  938:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_01 0066001A )
+  94C:  EndThread
+  954:  Thread
+  95C:  	Wait  10`
+  968:  	Call  GetNpcPos ( .NpcID:KoopaBros_03 *Var0 *Var1 *Var2 )
+  984:  	Add   *Var0  00000005
+  994:  	Add   *Var1  0000001E
+  9A4:  	Call  PlayEffect        ( ~FX:LensFlare:Rotating *Var0 *Var1 *Var2 00000028 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  9E8:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_03 000020F3 00000000 )
+  A00:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_03 0066021A )
+  A14:  EndThread
+  A1C:  Thread
+  A24:  	Wait  15`
+  A30:  	Call  GetNpcPos ( .NpcID:KoopaBros_04 *Var0 *Var1 *Var2 )
+  A4C:  	Add   *Var0  00000005
+  A5C:  	Add   *Var1  0000001E
+  A6C:  	Call  PlayEffect        ( ~FX:LensFlare:Rotating *Var0 *Var1 *Var2 00000028 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  AB0:  	Call  PlaySoundAtNpc    ( .NpcID:KoopaBros_04 000020F3 00000000 )
+  AC8:  	Call  SetNpcAnimation   ( .NpcID:KoopaBros_04 0066031A )
+  ADC:  EndThread
+  AE4:  Wait  45`
+  AF0:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_02 0066011A )
+  B04:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_01 0066001A )
+  B18:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_03 0066021A )
+  B2C:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_04 0066031A )
+  B40:  Thread
+  B48:  	Call  SetPlayerSpeed    ( *Fixed[3.0] )
+  B58:  	Call  PlayerMoveTo      (  -50`  150`  0` )
+  B70:  EndThread
+  B78:  Call  SpeakToPlayer     ( .NpcID:KoopaBros_02 0066011A 0066011A 00000000 00130054 ) % Here come the Koopa Bros.!!
+  B98:  Set   *Var3  00000000
+  BA8:  Set   *Var4  00000000
+  BB8:  Set   *Var5  00000096
+  BC8:  Set   *Var6  *Fixed[3.0]
+  BD8:  ExecWait  $Script_802408F4
+  BE4:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_02 00660104 )
+  BF8:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_01 00660004 )
+  C0C:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_03 00660204 )
+  C20:  Call  SetNpcAnimation   ( .NpcID:KoopaBros_04 00660304 )
+  C34:  Call  SpeakToPlayer     ( .NpcID:KoopaBros_02 00660114 00660104 00000000 00130055 ) % I bet you never thought you'd see us again, huh, M ...
+  C54:  Call  ShowChoice        ( 001E0013 ) % Yes No
+  C64:  If  *Var0  ==  00000000
+  C74:  	Call  ContinueSpeech    ( .NpcID:KoopaBros_02 00660114 00660104 00000000 00130056 ) % Yeah, that's right! We were too cool to forget! A  ...
+  C94:  Else
+  C9C:  	Call  ContinueSpeech    ( .NpcID:KoopaBros_02 00660114 00660104 00000000 00130057 ) % What!!!??? I just said we were the Koopa Bros., Ma ...
+  CBC:  EndIf
+  CC4:  Set   *Var6  *Fixed[3.0]
+  CD4:  ExecWait  $Script_802406E0
+  CE0:  Call  SpeakToPlayer ( .Npc:Self 00830001 00830001 00000000 00130058 ) % Now they're going to beat you within an inch of yo ...
+  D00:  Set   *Var3  00000000
+  D10:  Set   *Var4  00000000
+  D20:  Set   *Var5  00000096
+  D30:  Set   *Var6  *Fixed[90.0]
+  D40:  ExecWait  $Script_802408F4
+  D4C:  Call  SpeakToPlayer ( .NpcID:KoopaBros_02 00660114 00660104 00000000 00130059 ) % Don't think we're like before! We've increased our ...
+  D6C:  Call  SetMusicTrack ( 00000000 .Song:JrTroopaTheme 00000001 00000008 )
+  D88:  Call  ShowMessageAtScreenPos    ( 0013005A  0`  150` ) % Uaaaaaaghhhh!!! I found you, Mario!!!!!
+  DA0:  Call  InterpPlayerYaw   (  270`  0` )
+  DB4:  Wait  10`
+  DC0:  Call  SetNpcPos     ( .NpcID:JrTroopa_05  -150`  0`  140` )
+  DDC:  Call  SetNpcAnimation   ( .NpcID:JrTroopa_05 0021000B )
+  DF0:  Call  SetNpcSpeed   ( .NpcID:JrTroopa_05 *Fixed[8.0] )
+  E04:  Thread
+  E0C:  	Call  SetPlayerAnimation    ( 0001002B )
+  E1C:  	Loop
+  E28:  		Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+  E40:  		Call  GetNpcPos     ( .NpcID:JrTroopa_05 *Var3 *Var4 *Var5 )
+  E5C:  		If  *Var0  <=  *Var3
+  E6C:  			BreakLoop
+  E74:  		EndIf
+  E7C:  		Wait  1`
+  E88:  	EndLoop
+  E90:  	Call  SetPlayerFlagBits ( 10101000 .True )
+  EA4:  	Call  MakeLerp  ( 00000000 000007BC 00000032 .Easing:QuadraticOut )
+  EC0:  	Loop
+  ECC:  		Call  UpdateLerp ( )
+  ED8:  		Call  InterpPlayerYaw   ( *Var0  0` )
+  EEC:  		Call  $Function_80240050 ( )
+  EF8:  		Wait  1`
+  F04:  		If  *Var1  ==  00000000
+  F14:  			BreakLoop
+  F1C:  		EndIf
+  F24:  	EndLoop
+  F2C:  	Call  SetPlayerFlagBits     ( 10101000 .False )
+  F40:  	Call  InterpPlayerYaw       (  90`  0` )
+  F54:  	Call  SetPlayerAnimation    ( 00010002 )
+  F64:  EndThread
+  F6C:  Set   *Var0  00000002
+  F7C:  Exec  $Script_80240A2C *MapVar[0]
+  F8C:  Set   *Var0  00000001
+  F9C:  Exec  $Script_80240A2C *MapVar[1]
+  FAC:  Set   *Var0  00000003
+  FBC:  Exec  $Script_80240A2C *MapVar[2]
+  FCC:  Set   *Var0  00000004
+  FDC:  Exec  $Script_80240A2C *MapVar[3]
+  FEC:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  22`  140`  0` )
+ 1008:  Set   *Var0  00000002
+ 1018:  Exec  $Script_80240BC0
+ 1024:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  50`  140`  0` )
+ 1040:  Set   *Var0  00000001
+ 1050:  Exec  $Script_80240BC0
+ 105C:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  62`  140`  0` )
+ 1078:  Set   *Var0  00000003
+ 1088:  Exec  $Script_80240BC0
+ 1094:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  90`  140`  0` )
+ 10B0:  Set   *Var0  00000004
+ 10C0:  Exec  $Script_80240BC0
+ 10CC:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  100`  140`  0` )
+ 10E8:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  98`  140`  0` )
+ 1104:  Kill  *MapVar[3]
+ 1110:  Set   *Var0  00000004
+ 1120:  Exec  $Script_80240C64
+ 112C:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  25`  140`  0` )
+ 1148:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  70`  140`  0` )
+ 1164:  Kill  *MapVar[2]
+ 1170:  Set   *Var0  00000003
+ 1180:  Exec  $Script_80240C64
+ 118C:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  75`  140`  0` )
+ 11A8:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  30`  140`  0` )
+ 11C4:  Kill  *MapVar[0]
+ 11D0:  Set   *Var0  00000002
+ 11E0:  Exec  $Script_80240C64
+ 11EC:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  25`  140`  0` )
+ 1208:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  58`  140`  0` )
+ 1224:  Kill  *MapVar[1]
+ 1230:  Set   *Var0  00000001
+ 1240:  Exec  $Script_80240C64
+ 124C:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  75`  140`  0` )
+ 1268:  Call  InterpNpcYaw      ( .NpcID:JrTroopa_05  270`  0` )
+ 1280:  Wait  5`
+ 128C:  Call  GetNpcPos ( .NpcID:JrTroopa_05 *Var0 *Var1 *Var2 )
+ 12A8:  Call  NpcMoveTo ( .NpcID:JrTroopa_05  100`  140`  0` )
+ 12C4:  Call  SetNpcAnimation   ( .NpcID:JrTroopa_05 00210003 )
+ 12D8:  Call  SetNpcYaw ( .NpcID:JrTroopa_05  270` )
+ 12EC:  Call  ShowMessageAtScreenPos    ( 0013005B  160`  40` ) % Dwahhhhhhhhh!!!
+ 1304:  Wait  10`
+ 1310:  Set   *Var3  00000064
+ 1320:  Set   *Var4  00000000
+ 1330:  Set   *Var5  00000096
+ 1340:  Set   *Var6  *Fixed[3.0]
+ 1350:  ExecWait  $Script_80240990
+ 135C:  Call  SpeakToPlayer     ( .NpcID:JrTroopa_05 00210016 00210003 00000000 0013005C ) % At last! You're mine! It was a pain finding you, y ...
+ 137C:  Set   *Var3  00000000
+ 138C:  Set   *Var4  00000000
+ 139C:  Set   *Var5  00000096
+ 13AC:  Set   *Var6  *Fixed[3.0]
+ 13BC:  ExecWait  $Script_802407BC
+ 13C8:  Call  SetNpcAnimation   ( .NpcID:JrTroopa_05 0021000B )
+ 13DC:  Thread
+ 13E4:  	Wait  5`
+ 13F0:  	Call  SetNpcSpeed   ( .NpcID:JrTroopa_05 *Fixed[5.0] )
+ 1404:  	Call  NpcMoveTo     ( .NpcID:JrTroopa_05  -30`  140`  0` )
+ 1420:  EndThread
+ 1428:  Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+ 1440:  Add   *Var0  0000003C
+ 1450:  Call  SetNpcPos     ( .Npc:Self *Var0 *Var1 *Var2 )
+ 146C:  Call  StartBossBattle   ( .Song:JrTroopaBattle )
+ 147C:  Call  SpeakToPlayer ( .NpcID:JrTroopa_05 0021001D 0021001D 00000000 00130061 ) % Darn it!! Darn it, darn it! Don't think you've won ...
+ 149C:  Set   *MapVar[4]  00000000
+ 14AC:  Thread
+ 14B4:  	Set   *Var3  00000000
+ 14C4:  	Set   *Var4  00000000
+ 14D4:  	Set   *Var5  00000096
+ 14E4:  	Set   *Var6  *Fixed[3.0]
+ 14F4:  	ExecWait  $Script_802407BC
+ 1500:  	Call  ShowMessageAtScreenPos    ( 00130062  160`  40` ) % Gosh!!
+ 1518:  	Set   *MapVar[4]  00000001
+ 1528:  EndThread
+ 1530:  Call  SetNpcAnimation   ( .NpcID:JrTroopa_05 0021000B )
+ 1544:  Call  SetNpcSpeed   ( .NpcID:JrTroopa_05 *Fixed[8.0] )
+ 1558:  Call  NpcMoveTo     ( .NpcID:JrTroopa_05  -50`  140`  0` )
+ 1574:  Call  InterpPlayerYaw   (  270`  0` )
+ 1588:  Call  NpcMoveTo     ( .NpcID:JrTroopa_05  -200`  140`  0` )
+ 15A4:  Call  SetNpcPos     ( .NpcID:JrTroopa_05  0`  -1000`  0` )
+ 15C0:  Exec  $Script_802400D0
+ 15CC:  Loop
+ 15D8:  	If  *MapVar[4]  ==  00000001
+ 15E8:  		BreakLoop
+ 15F0:  	EndIf
+ 15F8:  	Wait  1`
+ 1604:  EndLoop
+ 160C:  Set   *Var6  *Fixed[3.0]
+ 161C:  ExecWait  $Script_802406E0
+ 1628:  Call  SpeakToPlayer ( .Npc:Self 00830001 00830001 00000000 00130063 ) % Ummmmmmmmmm........ So, since you beat the guy tha ...
+ 1648:  Call  PanToTarget   ( .Cam:Default 00000000 00000000 )
+ 1660:  Set   *GB_KPA83_BowserDoorState  00000001
+ 1670:  Call  DisablePlayerInput    ( .False )
+ 1680:  Return
+ 1688:  End
+}
+
+#new:Script $Script_Defeat_8024257C
+{
+    0:  Call  GetBattleOutcome  ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  .Outcome:PlayerWon % 0
+   28:  		Set   *Var3  00000064
+   38:  		Set   *Var4  00000000
+   48:  		Set   *Var5  00000096
+   58:  		Set   *Var6  *Fixed[90.0]
+   68:  		ExecWait  $Script_80240990
+   74:  		Call  SetNpcAnimation   ( .NpcID:JrTroopa_05 0021001D )
+   88:  		Call  SetNpcPos ( .NpcID:JrTroopa_05  100`  0`  140` )
+   A4:  		Call  SetNpcPos ( .Npc:Self  184`  20`  150` )
+   C0:  EndSwitch
+   C8:  Return
+   D0:  End
+}
+
+#new:Script $Script_Init_80242654
+{
+    0:  If  *GB_KPA83_BowserDoorState  ==  00000000
+   10:  	Call  BindNpcIdle       ( .Npc:Self $Script_Idle_80240EEC )
+   24:  	Call  BindNpcDefeat     ( .Npc:Self $Script_Defeat_8024257C )
+   38:  	Call  SetNpcFlagBits    ( .Npc:Self 10000102 .True )
+   50:  	Call  SetNpcPos ( .Npc:Self  184`  20`  150` )
+   6C:  	Call  EnableNpcShadow   ( .Npc:Self .False )
+   80:  EndIf
+   88:  Return
+   90:  End
+}
+
+#new:Script $Script_Init_802426EC
+{
+    0:  Return
+    8:  End
+}
+
+#new:Script $Script_Init_802426FC
+{
+    0:  Return
+    8:  End
+}
+
+#new:ExtraAnimationList $ExtraAnimationList_8024270C
+{
+	0066001E 00660004 00660005 00660011 0066001A 00660014 00660010 00660015
+	FFFFFFFF
+}
+
+#new:NpcGroup $NpcGroup_80242730
+{
+	.NpcID:NPC_KoopaBros_01 $NpcSettings_80240688 ~Vec3f:NPC_KoopaBros_01 % 0 -1000 0
+	03700F08 $Script_Init_802426EC 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_KoopaBros_01
+	~AnimationTable:NPC_KoopaBros_01 % .Sprite:KoopaBros
+	00000000 00000000 $ExtraAnimationList_8024270C 00000000 % no tattle string
+	%
+	% $NpcGroup_80242730[1F0]
+	.NpcID:NPC_KoopaBros_02 $NpcSettings_80240688 ~Vec3f:NPC_KoopaBros_02 % 0 -1000 0
+	03700F08 $Script_Init_802426EC 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_KoopaBros_02
+	~AnimationTable:NPC_KoopaBros_02 % .Sprite:KoopaBros
+	00000000 00000000 $ExtraAnimationList_8024270C 00000000 % no tattle string
+	%
+	% $NpcGroup_80242730[3E0]
+	.NpcID:NPC_KoopaBros_03 $NpcSettings_80240688 ~Vec3f:NPC_KoopaBros_03 % 0 -1000 0
+	03700D08 $Script_Init_802426EC 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_KoopaBros_03
+	~AnimationTable:NPC_KoopaBros_03 % .Sprite:KoopaBros
+	00000000 00000000 $ExtraAnimationList_8024270C 00000000 % no tattle string
+	%
+	% $NpcGroup_80242730[5D0]
+	.NpcID:NPC_KoopaBros_04 $NpcSettings_80240688 ~Vec3f:NPC_KoopaBros_04 % 0 -1000 0
+	03700F08 $Script_Init_802426EC 00000000 00000000 0000010E
+	~NoDrops
+	~Movement:NPC_KoopaBros_04
+	~AnimationTable:NPC_KoopaBros_04 % .Sprite:KoopaBros
+	00000000 00000000 $ExtraAnimationList_8024270C 00000000 % no tattle string
+	%
+	% $NpcGroup_80242730[7C0]
+	.NpcID:NPC_JrTroopa_05 $NpcSettings_802406B4 ~Vec3f:NPC_JrTroopa_05 % 0 -1000 0
+	03700F08 $Script_Init_802426FC 00000000 00000000 0000005A
+	~NoDrops
+	~Movement:NPC_JrTroopa_05
+	~AnimationTable:NPC_JrTroopa_05 % .Sprite:JrTroopa
+	00000000 00000000 00000000 00000000 % no tattle string
+	%
+	% $NpcGroup_80242730[9B0]
+	.NpcID:NPC_Toad_00 $NpcSettings_80240630 ~Vec3f:NPC_Toad_00 % 0 -1000 0
+	03704F0C $Script_Init_80242654 00000000 00000000 00000000
+	~NoDrops
+	~Movement:NPC_Toad_00
+	~AnimationTable:NPC_Toad_00 % .Sprite:Toad
+	00000000 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroupList $NpcGroupList_802432D0
+{
+	00000006 $NpcGroup_80242730 02070000
+	00000000 00000000 00000000
+}
+
+PADDING: 802432E8 to 802432F0 (000032E8 to 000032F0)
+00000000 00000000
+
+#new:ASCII $ASCII_802432F0
+{
+	"kpa_80_shape"
+}
+
+#new:ASCII $ASCII_80243300
+{
+	"kpa_80_hit"
+}
+
+#new:ASCII $ASCII_8024330C
+{
+	"kpa_53"
+}
+
+#new:ASCII $ASCII_80243314
+{
+	"kpa_121"
+}
+
+PADDING: 8024331C to 80243320 (0000331C to 00003320)
+00000000
+

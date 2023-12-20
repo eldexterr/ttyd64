@@ -1,0 +1,21 @@
+% This file patch Tidal Wave's action command to show the
+% buttons icons in another position when using the Tornado Jump.
+
+#export:Data $TornadoJumpByte
+{ 00 }
+
+% from func_802A9000_tidalWave % ~func:create_actionCommandIcons_tidalWave (something like this)
+@Hook 42C788 % 802A9098
+{
+    LH	    A1, 0056 (S1) % load icon x pos
+    ADDI    A1, A1, 75` % x
+    % check if Tornado's byte is true
+    LABU    A2, $TornadoJumpByte
+    BNEL    A2, R0, .End
+    SH	    A1, 0056 (S1) % save new icons pos
+    .End
+    LH	    A1, 0056 (S1) % load icon x pos
+    % restore vanilla code
+    J       802A90A0
+    LH	    A2, 0058 (S1) % load icons y pos
+}

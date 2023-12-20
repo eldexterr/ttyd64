@@ -1,0 +1,52 @@
+% Make the rock breakable, and add 2 new items
+
+@ $Script_Main_EnterWalk {
+    Set   *GB_WorldLocation  .Location:JadeJungle
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  MakeNpcs  ( .False $NpcGroupList_80242820 )
+    Exec  $Script_80240890
+    Set   *Var0  $Script_80241F38
+    Exec  EnterWalk
+    Exec  $Script_InitNewItems
+    ExecWait  $Script_80241E84
+    Return
+    End
+}
+
+#new:Script $Script_InitNewItems {
+    If *GF_JAN11_Rock == .True
+        Call    EnableModel ( ~Model:o81 .False )
+        Call    EnableModel ( ~Model:crack .False )
+        Call    ModifyColliderFlags 	( .False ~Collider:o144 7FFFFE00 )
+    Else
+        Bind    $Script_BlastRock .Trigger:PointBomb $TriggerCoord_Rock 00000001 00000000
+    EndIf
+    Call    MakeItemEntity ( .Item:Multibounce ~Vec3d:bombTrigger .ItemSpawnMode:Fixed_NeverVanish *GF_JAN11_RockItem )
+    %
+    Call    MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemPos .ItemSpawnMode:Fixed_NeverVanish *GF_JAN11_Item )
+    %
+    Exec  $Script_80240850 % set music track
+    Return
+    End
+}
+
+#new:TriggerCoord $TriggerCoord_Rock
+{
+	~BombPos:bombTrigger
+}
+
+#new:Script $Script_BlastRock
+{
+    Call     PlayEffect  	( 66` 0 ~Model:o81 ~Model:o81 1 10` 30` .False .False .False .False .False .False ) % fxID ParticlesFxID ModelIDforPos ModelIDforParticles size ? time
+    Call     EnableModel 	( ~Model:o81 .False )
+    Call     EnableModel 	( ~Model:crack .False )
+    Call     ModifyColliderFlags 	( .False ~Collider:o144 7FFFFE00 )
+    Set     *GF_JAN11_Rock .True
+    Unbind
+    Return
+    End
+}

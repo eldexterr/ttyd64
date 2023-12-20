@@ -1,0 +1,196 @@
+% Enable chandelier's exit to new map
+
+@ $Header {
+    [MainScript]  $Script_Main
+    [EntryList]   $EntryList
+    [EntryCount]  00000004
+    [Background]  80200000
+    [MapTattle]   001900B3
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 %   67.0    0.0  235.0    0.0
+    ~Vec4f:Entry1 %    0.0 -210.0  235.0    0.0
+    ~Vec4f:Entry2 %  220.0 -210.0   65.0  270.0
+    ~Vec4f:Entry3
+}
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:BoosMansion
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  MakeNpcs  ( .False $NpcGroupList_80241198 )
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_8024067C
+    Exec  $Script_802412C0
+    Exec  $Script_80241350
+    Exec  $Script_80241360
+    Exec  $Script_80240320
+    Exec  $Script_TrackEntry
+    Exec  $Script_80240A1C
+    Exec  $Script_InitChest
+    Return
+    End
+}
+
+#new:Script $Script_InitChest
+{
+    % Disable chest's trigger
+    Call    $WriteAddress ( *MapVar[2] 2 .False 1C .False ) % entity(0x1C)
+    Call    $WriteBitFlag ( *MapVar[2] .False 2 4 .False ) % entity (0x00[2]'s bit4)
+    %
+    Call    ParentColliderToModel ( ~Collider:si ~Model:o405 )
+    Call    ParentColliderToModel ( ~Collider:chandelierBottom ~Model:o405 )
+    Call    ParentColliderToModel ( ~Collider:exit3 ~Model:o405 )    
+    %
+    Bind    $Script_ActivateChandelier .Trigger:FloorPressA ~Collider:chestTrigger 00000001 00000000
+    Bind    $Script_Exit3 .Trigger:CeilingTouch ~Collider:exit3 00000001 00000000
+    Exec    $Script_DisableChandelierColliders
+    Return
+    End
+}
+
+#new:Script $Script_DisableChandelierColliders {
+    Call  ModifyColliderFlags   ( .False ~Collider:si 7FFFFE00 )
+    Call  ModifyColliderFlags   ( .False ~Collider:chandelierBottom 7FFFFE00 )
+    Call  ModifyColliderFlags   ( .False ~Collider:exit3 7FFFFE00 )
+    Call  ModifyColliderFlags   ( .False ~Collider:chestTrigger_hide 7FFFFE00 )
+    Return
+    End
+}
+
+#new:Script $Script_EnableChandelierColliders {
+    Call  ModifyColliderFlags   ( .True ~Collider:si 7FFFFE00 )
+    Call  ModifyColliderFlags   ( .True ~Collider:chandelierBottom 7FFFFE00 )
+    Call  ModifyColliderFlags   ( .True ~Collider:exit3 7FFFFE00 )
+    Call  ModifyColliderFlags   ( .True ~Collider:chestTrigger_hide 7FFFFE00 )
+    Return
+    End
+}
+
+@ $Script_MakeEntities {
+    Call  MakeEntity    ( .Entity:Chest ~Vec4d:Entity80241738 00000000 80000000 )
+    Call  $GetEntityPointer ( *Var0 *MapVar[2] ) % save entity pointer in mapVar[2]
+    %Call  AssignFlag    ( *GF_OBK02_Chest_Trap ) % unneccesary
+    Call  AssignScript  ( $Script_802416FC )
+    Call  MakeEntity    ( .Entity:HiddenPanel ~Vec4d:Entity80241780 ~Model:yuka_b1 80000000 )
+    Call  AssignPanelFlag   ( *GF_OBK02_HiddenPanel )
+    Return
+    End
+}
+
+% chandelier's script
+#new:Script $Script_ActivateChandelier % Script_802414D0
+{
+        Exec  $Script_EnableChandelierColliders
+        Call  ModifyColliderFlags   ( .False ~Collider:chestTrigger 7FFFFE00 )
+        Call  DisablePlayerInput    ( .True )
+    0:  Wait  15`
+    C:  Thread
+   14:  	Call  PlaySoundAt   ( 0000212A 00000000 00000004 0000001A FFFFFFF4 )
+   34:  	Call  MakeLerp      ( 00000000 FFFFFFB0 0000000A .Easing:QuadraticIn )
+   50:  	Loop
+   5C:  		Call  UpdateLerp ( )
+   68:  		Call  TranslateGroup    ( ~Model:shiyan 00000000 *Var0 00000000 )
+                Call  UpdateColliderTransform ( ~Collider:si )
+                Call  UpdateColliderTransform ( ~Collider:chandelierBottom )
+                Call  UpdateColliderTransform ( ~Collider:exit3 )
+   84:  		Wait  1`
+   90:  		If  *Var1  ==  00000000
+   A0:  			BreakLoop
+   A8:  		EndIf
+   B0:  	EndLoop
+   B8:  	Call  PlaySoundAt   ( 0000212B 00000000 00000004 0000001A FFFFFFF4 )
+   D8:  	Call  ShakeCam      ( .Cam:Default 00000000  10` *Fixed[1.5] )
+   F4:  	Wait  40`
+            Set   *MapFlag[00] .True % chandelier is going up (needed by exit3's script)
+            Call  ModifyColliderFlags  ( .False ~Collider:exit3 7FFFFE00 ) % disable exit3 if the chandelier is going up
+  100:  	Call  PlaySoundAt   ( 0000212C 00000000 00000004 0000001A FFFFFFF4 )
+  120:  	Call  MakeLerp      ( FFFFFFB0 00000000 00000014 .Easing:Linear )
+  13C:  	Loop
+  148:  		Call  UpdateLerp ( )
+  154:  		Call  TranslateGroup    ( ~Model:shiyan 00000000 *Var0 00000000 )
+                Call  UpdateColliderTransform ( ~Collider:si )
+                Call  UpdateColliderTransform ( ~Collider:chandelierBottom )
+                Call  UpdateColliderTransform ( ~Collider:exit3 )
+  170:  		Wait  1`
+  17C:  		If  *Var1  ==  00000000
+  18C:  			BreakLoop
+  194:  		EndIf
+  19C:  	EndLoop
+            Set   *MapFlag[00] .False
+            Call  ModifyColliderFlags   ( .True ~Collider:chestTrigger 7FFFFE00 )
+            Exec $Script_DisableChandelierColliders
+  1A4:  EndThread
+  1AC:  Wait  2`
+  1B8:  Call  SetPlayerAnimation    ( 0008001F )
+  1C8:  Wait  20`
+        Call  DisablePlayerInput    ( .False )
+        Call  PlaySoundAtPlayer     ( 0262 0 ) % !
+        Call  ShowEmote             ( 0 .Emote:Exclamation -45` 20` 0 0 0 0 0 )
+  1D4:  Call  SetPlayerAnimation    ( 00010002 )
+  200:  Set   *GF_OBK02_TriggeredChestTrap  .True
+  210:  Wait  5`
+  21C:  Return
+  224:  End
+}
+
+#new:Script $Script_Exit3
+{
+    Unbind
+    Call    PlaySound ( 009D )
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePlayerPhysics ( .True )
+    Call    SetPlayerActionState ( .ActionState:Falling )
+    Loop % wait until the chandelier goes up
+        If *MapFlag[00] == .True
+            BreakLoop
+        EndIf
+        Call    SetPlayerAnimation ( 00010002 )
+        Call    SetPlayerAnimation ( 00080005 )
+        Wait    1
+    EndLoop
+    Call    GotoMap ( "obk_11" 0 )
+    Loop % attach mario to the chandelier
+        Call    GetModelCenter ( ~Model:r6 )
+        Sub     *Var1 52` % y
+        Call    GetPlayerPos ( *Var0 .False *Var2 )
+        Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+        Call    SetPlayerAnimation ( 00010002 )
+        Call    SetPlayerAnimation ( 00080005 )
+        Wait    1
+    EndLoop
+    Return
+    End
+}
+
+
+#new:Script $Script_TrackEntry
+{
+    Call  GetEntryID    ( *Var0 )
+    Switch  *Var0
+    	Case  ==  ~Entry:Entry0
+    		Set   *Var2  ~Model:door1b
+    		Set   *Var3  .DoorSwing:In % 1
+    		ExecWait  EnterSingleDoor
+    		ExecWait  $Script_80240534
+    	Case  ==  ~Entry:Entry1
+    		Set   *Var2  ~Model:door2
+    		Set   *Var3  .DoorSwing:In % 1
+    		ExecWait  EnterSingleDoor
+    		ExecWait  $Script_80240534
+    	Case  ==  ~Entry:Entry2
+    		Set   *Var0  $Script_80240534
+    		Exec  EnterWalk
+        Case  ==  ~Entry:Entry3 % new chandelier exit
+            Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+            Add     *Var1 70` % y
+            Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+            ExecWait  $Script_80240534
+    EndSwitch
+    Return
+    End
+}

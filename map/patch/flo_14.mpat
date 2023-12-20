@@ -1,0 +1,58 @@
+% Add new exit.
+
+@ $Header {
+    [MainScript]  $Script_Main_EnterWalk
+    [EntryList]   $EntryList
+    [EntryCount]  00000003
+    [Background]  80200000
+    [MapTattle]   0019011E
+}
+
+@ $EntryList {
+    ~Vec4f:Entry0 %  720.0    0.0    0.0  270.0
+    ~Vec4f:Entry1 % -720.0    0.0    0.0   90.0
+    ~Vec4f:Entry2
+}
+
+@ $Script_Main_EnterWalk {
+    [4DC]  Set   *Var0  $Script_MakeExits % Script_802425B4
+}
+
+@ $LavaResetList_802425FC
+{
+	~Collider:o129 ~Vec3f:LavaReset_802425FC_o129 % -500.0 0.0 -90.0
+	~Collider:o137 ~Vec3f:LavaReset_802425FC_o137 % -510.0 0.0 0.0
+	~Collider:o155 ~Vec3f:LavaReset_802425FC_o155 % -500.0 0.0 110.0
+	~Collider:o156 ~Vec3f:LavaReset_802425FC_o156 % -250.0 0.0 -90.0
+	~Collider:o140 ~Vec3f:LavaReset_802425FC_o140 % -240.0 0.0 0.0
+	~Collider:o157 ~Vec3f:LavaReset_802425FC_o157 % -250.0 0.0 110.0
+	~Collider:o151 ~Vec3f:LavaReset_802425FC_o151 % -50.0 0.0 25.0
+	~Collider:o152 ~Vec3f:LavaReset_802425FC_o152 % 70.0 60.0 -95.0
+	~Collider:o153 ~Vec3f:LavaReset_802425FC_o153 % 410.0 60.0 -95.0
+	~Collider:o154 ~Vec3f:LavaReset_802425FC_o154 % 550.0 0.0 50.0
+	~Collider:o158 ~Vec3f:LavaReset_802425FC_o158 % -50.0 0.0 110.0
+    ~Collider:reset1 ~Vec3f:Entry2
+	FFFFFFFF 00000000 00000000 00000000
+}
+
+#delete $Script_802425B4
+
+#new:Script $Script_MakeExits % Script_802425B4
+{
+    Bind  $Script_ExitWalk_80242558 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+    Bind  $Script_ExitWalk_802424FC .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+    % New stuff
+    Bind  $Script_Exit2 .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+    Return
+    End
+}
+
+#new:Script $Script_Exit2 {
+    SetGroup  0000001B
+    Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+    Exec  ExitWalk
+    Call  GotoMap   ( "flo_26" 00000000 )
+    Wait  100`
+    Return
+    End
+}

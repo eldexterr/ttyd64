@@ -1,0 +1,134 @@
+% Script File: kpa_40.mscr
+% Decoded from: 0 to 430 (kpa_40)
+
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -490.0    0.0  -80.0   90.0
+	~Vec4f:Entry1 %  490.0    0.0  -30.0  270.0
+	~Vec4f:Entry2 %  490.0  120.0 -130.0  270.0
+	~Vec4f:Entry3 % -430.0  133.0  -80.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000004
+	[Background]  00000000
+	[MapTattle]   00190174
+}
+
+#new:Script $Script_80240080
+{
+    0:  Call  SetMusicTrack ( 00000000 .Song:BowsersCastle 00000000 00000008 )
+   1C:  Call  UseDoorSounds ( .DoorSounds:Metal )
+   2C:  Thread
+   34:  	Wait  30`
+   40:  	Call  802D5FA4  ( 00000007 )
+   50:  EndThread
+   58:  Return
+   60:  End
+}
+
+PADDING: 802400E8 to 802400F0 (000000E8 to 000000F0)
+00000000 00000000
+
+#new:Script $Script_ExitDoubleDoor_802400F0
+{
+    0:  SetGroup  0000001B
+    C:  Call  DisablePlayerInput    ( .True )
+   1C:  Set   *Var0  ~Entry:Entry0
+   2C:  Set   *Var1  ~Collider:ttw
+   3C:  Set   *Var2  ~Model:o526
+   4C:  Set   *Var3  ~Model:o525
+   5C:  Exec  ExitDoubleDoor
+   68:  Wait  17`
+   74:  Call  GotoMap   ( $ASCII_80240410 00000001 ) % kpa_52
+   88:  Wait  100`
+   94:  Return
+   9C:  End
+}
+
+#new:Script $Script_ExitWalk_80240194
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240418 00000003 ) % kpa_40
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_802401F0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+   20:  Exec  ExitWalk
+   2C:  Set   *AreaByte[B]  00000001
+   3C:  Call  GotoMap   ( $ASCII_80240420 00000003 ) % kpa_41
+   50:  Wait  100`
+   5C:  Return
+   64:  End
+}
+
+#new:Script $Script_8024025C
+{
+    0:  Bind  $Script_ExitDoubleDoor_802400F0 .Trigger:WallPressA ~Collider:ttw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_80240194 .Trigger:FloorAbove ~Collider:deilie2 00000001 00000000
+   38:  Bind  $Script_ExitWalk_802401F0 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   54:  Return
+   5C:  End
+}
+
+#new:Script $Script_EnterWalk_802402C0
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry0
+   28:  		Set   *Var0  00000000
+   38:  		Set   *Var2  ~Model:o526
+   48:  		Set   *Var3  ~Model:o525
+   58:  		Exec  EnterDoubleDoor
+   64:  		Exec  $Script_8024025C
+   70:  	Default
+   78:  		Set   *Var0  $Script_8024025C
+   88:  		Exec  EnterWalk
+   94:  EndSwitch
+   9C:  Return
+   A4:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:BowsersCastle
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   40:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   5C:  Call  SetCamEnabled     ( .Cam:Default .True )
+   70:  Exec  $Script_EnterWalk_802402C0
+   7C:  Wait  1`
+   88:  Exec  $Script_80240080
+   94:  Return
+   9C:  End
+}
+
+#new:ASCII $ASCII_80240410
+{
+	"kpa_52"
+}
+
+#new:ASCII $ASCII_80240418
+{
+	"kpa_40"
+}
+
+#new:ASCII $ASCII_80240420
+{
+	"kpa_41"
+}
+
+PADDING: 80240428 to 80240430 (00000428 to 00000430)
+00000000 00000000
+

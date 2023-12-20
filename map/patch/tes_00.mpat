@@ -1,0 +1,314 @@
+% I use this map to test a bunch of stuff
+
+#new:Header $Header
+{
+[MainScript] $Script_Main
+[Background] 80200000
+[EntryList] $EntryList
+[EntryCount] 4
+}
+
+#new:EntryList $EntryList
+{
+~Vec4f:Entry0
+~Vec4f:Entry1
+~Vec4f:Entry2
+~Vec4f:Entry3
+~Vec4f:Entry4
+}
+
+% Override texture package
+#new:Function_Init $Function_Init
+{
+PUSH 	RA, A0, A1
+LIA 	A0, 800B0CF0
+LIA 	A1, "tst_tex"
+JAL 	~Func:sprintf
+RESERVED
+CLEAR   V0
+JPOP 	RA, A0, A1
+}
+
+#new:Script_Main $Script_Main
+{
+Call    SetSpriteShading  ( .Shading:None )
+Call    SetCamPerspective 	( .Cam:Default 00000003 00000019 00000010 00001000 )
+Call    SetCamBGColor     	( .Cam:Default 0 0 0 ) % black
+Call    SetCamEnabled       	( .Cam:Default .True )
+Call    SetCamLeadPlayer       	( .Cam:Default .False )
+Exec 	$Script_MakeEntities
+Call    MakeNpcs ( 0 $NpcGroupList_tes00 )
+Call    GetEntryID ( *Var0 )
+If *Var0 != 4
+    Set     *Var0 $Script_MakeExits
+    Exec    EnterWalk
+Else
+    Exec    $Script_MakeExits
+EndIf
+Bind     $P1Trigger .Trigger:WallPressA ~Collider:cube 00000001 00000000 
+Return
+End
+}
+
+#new:Script $P1Trigger
+{
+    SetConst *MapVar[0] *Fixed[1.0]
+    Loop
+        Call    $Function_ConvertFixedToFloat ( *MapVar[0] *MapVar[1] )
+        Wait    1
+    EndLoop
+    Call    $Function_Test
+    Call    GetPlayerPos ( *Var0 *Var1 *Var2 )
+    Loop
+        Call    PlayEffect ( ~FX:StatChange:AttackPlus2 *Var0 *Var1 *Var2 *Fixed[1.0] 30` .False .False .False .False .False .False .False )
+        Wait    29`
+    EndLoop
+    Return
+    End
+}
+
+#new:Function $Function_ConvertIntToFixed
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    MTC1    V0, F12
+    CVT.S.W F12, F12
+    NOP
+    JAL     ~Func:float_to_fixed_var
+    NOP
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 4 (A1)
+    JAL     ~Func:set_variable
+    COPY    A2, V0
+    POP     RA, A0, A1, A2, A3, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+#new:Function $Function_ConvertFloatToFixed
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    MTC1    V0, F12
+    JAL     ~Func:float_to_fixed_var
+    NOP
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 4 (A1)
+    JAL     ~Func:set_variable
+    COPY    A2, V0
+    POP     RA, A0, A1, A2, A3, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+#new:Function $Function_ConvertFixedToFloat
+{
+    PUSH    RA, A0, A1, A2, A3, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_float_variable
+    LW      A1, 0 (A1)
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 4 (A1)
+    JAL     ~Func:set_variable
+    MFC1    A2, F0
+    POP     RA, A0, A1, A2, A3, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+#new:Function $Function_Test
+{
+    LIF         F0, 4.5
+    TRUNC.W.S   F1, F0
+    MFC1        V0, F1
+    JR          RA
+    ORI         V0, R0, 2
+}
+
+% Entities
+
+#new:Script $Script_MakeEntities
+{
+%Call     MakeEntity  	( .Entity:HealingBlock ~Vec4d:HealBlock 80000000 )
+Call     MakeEntity  	( .Entity:SuperBlock ~Vec4d:HealBlock 80000000 )
+Call     AssignBlockFlag ( *Flag_EVT_11 )
+Call     AssignScript 	( $Script_Entity_Shine1 )
+Return
+End
+}
+
+#new:Script $Script_Entity_Shine1
+{
+    Set *Var0 0 % EntityID
+    SetConst *Var1 *Flag_EVT_11 % EntityFlag
+    ExecWait $Script_ShineBlock
+    Return
+    End
+}
+
+% Npcs
+
+#new:NpcGroupList $NpcGroupList_tes00
+{
+00000001 $NpcGroup_Cheato 	3C000000
+00000001 $NpcGroup_Goomba 	2F010000
+00000000 00000000 00000000 
+}
+
+#new:NpcGroup $NpcGroup_Cheato
+{
+00000001 $NpcSettings_Cheato ~vec3f:Npc_cheato
+00A40D01 $NpcScript_Init_Cheato 00000000 00000000 00000000 
+~NoItems ~NoHP ~NoFP ~NoCoinBonus ~NoMovement
+00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 
+00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 00AE0001 
+00000000 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Cheato
+{
+00000000 00200025 00000000 00000000 00000000 00000000 00000000 00000000
+00000000 00000000 00630000 
+}
+
+#new:Script $NpcScript_Init_Cheato
+{
+	Call     BindNpcInteract	( .Npc:Self $NpcScript_Interact_Cheato )
+	Return
+	End
+}
+
+#new:Script $NpcScript_Interact_Cheato
+{
+    %Call    SpeakToPlayer ( .Npc:Self 00AE0004 00AE0001 00000000 $String_Cheato_1 )
+    Call	StartBossBattle ( .Song:SpecialBattle ) % Testing Purposes
+	Return%/
+    Return
+    End
+}
+
+#string $String_Cheato_1
+{
+[Style Right]
+Hi!
+[Wait][End]
+}
+
+#new:NpcGroup $NpcGroup_Goomba
+{
+00000000 $NpcSettings_Enemy1 ~Vec3f:Npc_enemy
+00000400 $Script_Init_EnemyNPC 00000000 00000000 0000005A 
+~Items:5:Mushroom:A
+~HP:20:80:2:60 ~HP:30:70:2:50 ~HP:50:60:2:50 ~HP:80:50:2:40 ~HP:100:30:2:30 ~HP:None ~HP:None ~HP:None 
+~FP:20:70:2:50 ~FP:30:60:2:50 ~FP:50:50:2:40 ~FP:80:40:2:40 ~FP:100:30:2:40 ~FP:None ~FP:None ~FP:None 
+~NoCoinBonus
+~Vec3d:Npc_enemy 000000FF 00000014 FFFF8001 00000001 % defines the wandering volume 
+~Vec3d:Npc_enemy 00000078 00000082 FFFF8001 00000000 % defines the detection volume
+00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 
+00000000 00000000
+%animations
+00260001 00260002 00260003 00260003 00260001 00260001 00260005 00260005 
+00260003 00260003 00260003 00260003 00260003 00260003 00260003 00260003 
+00000000 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NpcSettings_Enemy1
+{
+00000000 00140017 00000000 00000000 $Script_EnemyAI 80077F70
+00000000 00000000 00050000 
+}
+
+#new:Script $Script_Init_EnemyNPC
+{
+	Return
+	End
+}
+
+#new:Script $Script_EnemyAI
+{
+Call     DoBasicAI   	( $AISettings_Enemy )
+Return
+End
+}
+	
+#new:AISettings $AISettings_Enemy
+{
+0.1 % move speed
+300` % move time
+30` % wait time
+0.0 % alert radius
+0.0
+1`
+0.1 % chase speed
+180` % max turn rate (0 = enemy rushes at position where the player was detected and keeps going)
+3`
+0.0 % chase radius
+0.0
+1`
+}
+
+% Exits
+
+#new:Script $Script_MakeExits
+{
+Bind     $Script_Exit0 ( .Trigger:FloorAbove ~Collider:deilis 00000001 00000000 ) % 0
+Bind     $Script_Exit1 ( .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000 ) % 1
+Bind     $Script_Exit2 ( .Trigger:FloorAbove ~Collider:deilin 00000001 00000000 ) % 2
+Bind     $Script_Exit3 ( .Trigger:FloorAbove ~Collider:deilie 00000001 00000000 ) % 3
+Return
+End	
+}
+
+#new:Script $Script_Exit0
+{
+    Call    UseExitHeading  	( 60` 0 )
+    Exec    $Script_Exit
+    Return
+    End
+}
+
+#new:Script $Script_Exit1
+{
+    Call    UseExitHeading  	( 60` 1 )
+    Exec    $Script_Exit
+    Return
+    End
+}
+
+#new:Script $Script_Exit2
+{
+    Call    UseExitHeading  	( 60` 2 )
+    Exec    $Script_Exit
+    Return
+    End
+}
+
+#new:Script $Script_Exit3
+{
+    Call    UseExitHeading  	( 60` 3 )
+    Exec    $Script_Exit
+    Return
+    End
+}
+
+#new:Script $Script_Exit
+{
+	Exec     ExitWalk
+	Call     GotoMap	( "mac_01" 1 )
+	Wait     100`
+	Return
+	End
+}

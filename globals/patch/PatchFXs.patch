@@ -1,0 +1,512 @@
+%==============================================
+% Code ported from Black Pit
+%
+% Change the flame color (used by Poison Puff)
+%
+% Call  PlayEffect 	( ~FX:FireBreath ... )
+%==============================================
+
+% 0 = Orange (Default)
+%
+% 1 = Green
+%
+% 2 = Purple
+%
+% 3 = White
+%
+% 4 = Blue
+%
+% 5 = Black and White
+#export:Data $Data_FireBreathColor
+{ 00000000 }
+
+% Flames are divided in 2 colors one for the outlines 
+% and the other one for the body, each one use
+% 3 bytes as RGB values.
+@Function 373158 % E006E9C8
+{
+LIO  T7 $Function_PlayFX_Flame_Color1 % Flame color 1 (body)
+JR   T7
+NOP
+}
+
+@Function 373198 % E006EA08
+{
+LIO  T7 $Function_PlayFX_Flame_Color2 % Flame color 2 (outline)
+JR   T7
+NOP
+}
+
+#new:Function $Function_PlayFX_Flame_Color1
+{
+PUSH    V0, V1, A0, A1, A2, A3, RA
+LAW     T7, $Data_FireBreathColor
+POP     V0, V1, A0, A1, A2, A3, RA
+BNE     T7, R0, .Green
+NOP
+.Orange
+% vanilla code
+% Flame Body Color
+LBU	    V0, 0067 (S4)
+LBU	    A1, 006B (S4)
+LBU	    A3, 006F (S4)
+BEQ     R0, R0, .End
+NOP
+.Green
+ORI     T1, R0, 1
+BNE     T7, T1, .Purple
+NOP
+% Flame Body Color
+ORI     V0, R0, 50 % R
+ORI     A1, R0, 87 % G
+ORI     A3, R0, 63 % B
+BEQ     R0, R0, .End
+NOP
+.Purple
+ORI     T1, R0, 2
+BNE     T7, T1, .White
+NOP
+% Flame Body Color
+ORI     V0, R0, 87 % R
+ORI     A1, R0, 50 % G
+ORI     A3, R0, 87 % B
+BEQ     R0, R0, .End
+NOP
+.White
+ORI     T1, R0, 3
+BNE     T7, T1, .Blue
+NOP
+% Flame Body Color
+ORI     V0, R0, E0 % R
+ORI     A1, R0, E0 % G
+ORI     A3, R0, E0 % B
+BEQ     R0, R0, .End
+NOP
+.Blue
+ORI     T1, R0, 4
+BNE     T7, T1, .BW
+NOP
+% Flame Body Color
+ORI     V0, R0, 35 % R
+ORI     A1, R0, E1 % G
+ORI     A3, R0, EE % B
+BEQ     R0, R0, .End
+NOP
+.BW
+% Flame Body Color
+ORI     V0, R0, 0 % R
+ORI     A1, R0, 0 % G
+ORI     A3, R0, 0 % B
+.End
+LIO     T7, E006E9D8
+JR      T7
+LBU	    T0, 0043 (S4) % flame alpha color?
+}
+
+#new:Function $Function_PlayFX_Flame_Color2
+{
+PUSH    V0, V1, A0, A1, A2, A3, RA
+LAW     T7, $Data_FireBreathColor
+POP     V0, V1, A0, A1, A2, A3, RA
+BNE     T7, R0, .Green
+NOP
+.Orange
+% vanilla code
+% Flame Outline Color
+LBU	    A3, 0073 (S4)
+LBU	    T0, 0077 (S4)
+LBU	    T1, 007B (S4)
+BEQ     R0, R0, .End
+NOP
+.Green
+ORI     T1, R0, 1
+BNE     T7, T1, .Purple
+NOP
+% Flame Outline Color
+ORI     A3, R0, 1D % R
+ORI     T0, R0, 41 % G
+ORI     T1, R0, 3D % B
+BEQ     R0, R0, .End
+NOP
+.Purple
+ORI     T1, R0, 2
+BNE     T7, T1, .White
+NOP
+% Flame Outline Color
+ORI     A3, R0, 41 % R
+ORI     T0, R0, 1D % G
+ORI     T1, R0, 40 % B
+BEQ     R0, R0, .End
+NOP
+.White
+ORI     T1, R0, 3
+BNE     T7, T1, .Blue
+NOP
+% Flame Outline Color
+ORI     A3, R0, 76 % R
+ORI     T0, R0, 76 % G
+ORI     T1, R0, 76 % B
+BEQ     R0, R0, .End
+NOP
+.Blue
+ORI     T1, R0, 4
+BNE     T7, T1, .BW
+NOP
+% Flame Outline Color
+ORI     A3, R0, 26 % R
+ORI     T0, R0, 77 % G
+ORI     T1, R0, 7D % B
+BEQ     R0, R0, .End
+NOP
+.BW
+% Flame Outline Color
+ORI     A3, R0, FF % R
+ORI     T0, R0, FF % G
+ORI     T1, R0, FF % B
+.End
+LIO     T7, E006EA18
+JR      T7
+ADDIU	V0, A2, 0018 % vanilla code
+}
+
+%===================================================================
+% Poison Drive - Change the fire FX color to green when this move
+% is being used in battle.
+%===================================================================
+
+% The fire FX uses 3 colors in total
+
+% Red Fire - Colors
+% Color 1 - FF123B % RGB
+% Color 2 - FF3518
+% Color 3 - D3FFD8
+
+% Green Fire - Colors
+% Color 1 - 49FF12
+% Color 2 - 38522A
+% Color 3 - D3FFD8
+
+#export:Data $PoisonDrive
+{ 00 }
+
+#new:Data $FlameColors
+{
+%   Color1   Color2   Color 3
+    FF123B00 FF351800 D3FFD800 % Red flame
+    58E82C00 1F2E1600 FF4F0000 % Green flame
+%   R G B
+}
+
+%==========
+% Color 1
+%==========
+
+% Color 1 - R
+%
+% From func_E0048218
+@Function 356DF0 % E0048470
+{
+    LIO     AT, $E0048470
+    JR      AT
+    NOP       
+}
+
+#new:Function $E0048470
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 0 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 0 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    LIF     F2, 2.14748
+    LIO     A0, E0048480
+    JR      A0
+    NOP
+}
+
+% Color 1 - G
+%
+% From func_E0048218
+@Function 356E54 % E00484D4
+{
+    LIO     AT, $E00484D4
+    JR      AT
+    NOP       
+}
+
+#new:Function $E00484D4
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 1 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 1 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    MUL.S	F0, F4, F0
+    NOP
+    LIO     AT, E00484E8
+    JR      AT
+    NOP
+}
+
+% Color 1 - B
+%
+% From func_E0048218
+@Function 356EAC % E004852C
+{
+    LIO     AT, $E004852C
+    JR      AT
+    NOP       
+}
+
+#new:Function $E004852C
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 2 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 2 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    MUL.S	F0, F4, F0
+    NOP
+    LIO     AT, E0048540
+    JR      AT
+    NOP
+}
+
+%==========
+% Color 2
+%==========
+
+% Color 2 - R
+%
+% From func_E0048218
+@Function 356F2C % E00485AC
+{
+    LIO     AT, $E00485AC
+    JR      AT
+    NOP       
+}
+
+#new:Function $E00485AC
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 4 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 4 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    LIF     F2, 2.14748
+    LIO     A0, E00485BC
+    JR      A0
+    NOP
+}
+
+% Color 2 - G
+%
+% From func_E0048218
+@Function 356F8C % E004860C
+{
+    LIO     AT, $E004860C
+    JR      AT
+    NOP       
+}
+
+#new:Function $E004860C
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 5 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 5 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    MUL.S	F0, F4, F0
+    NOP
+    LIO     AT, E0048620
+    JR      AT
+    NOP
+}
+
+% Color 2 - B
+%
+% From func_E0048218
+@Function 356FE4 % E0048664
+{
+    LIO     AT, $E0048664
+    JR      AT
+    NOP       
+}
+
+#new:Function $E0048664
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 6 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 6 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    MUL.S	F0, F4, F0
+    NOP
+    LIO     AT, E0048678
+    JR      AT
+    NOP
+}
+
+%==========
+% Color 3
+%==========
+
+% Color 3 - R
+%
+% From func_E0048218
+@Function 35706C % E00486EC
+{
+    LIO     AT, $E00486EC
+    JR      AT
+    NOP       
+}
+
+#new:Function $E00486EC
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 8 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 8 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    LIF     F2, 2.14748
+    LIO     V1, E00486FC
+    JR      V1
+    NOP
+}
+
+% Color 3 - G
+%
+% From func_E0048218
+@Function 3570E8 % E0048768
+{
+    LIO     AT, $E0048768
+    JR      AT
+    NOP       
+}
+
+#new:Function $E0048768
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, 9 (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, 9 (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    LIF     F2, 2.14748
+    LIO     A1, E0048778
+    JR      A1
+    NOP
+}
+
+% Color 3 - B
+%
+% From func_E0048218
+@Function 357148 % E00487C8
+{
+    LIO     AT, $E00487C8
+    JR      AT
+    NOP       
+}
+
+#new:Function $E00487C8
+{
+    PUSH    A1, A2
+    LABU    AT, $PoisonDrive
+    % load color from colors table
+    LIO     A1, $FlameColors
+    BEQL    AT, R0, .End
+    LBU     A1, A (A1) % red
+    % green flame
+    ADDIU   A1, A1, C
+    LBU     A1, A (A1) % green
+    .End
+    % convert to float
+    MTC1    A1, F0
+    CVT.S.W F0, F0
+    POP     A1, A2
+    % restore vanilla code
+    MUL.S	F0, F4, F0
+    NOP
+    LIO     AT, E00487DC
+    JR      AT
+    NOP
+}

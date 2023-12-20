@@ -1,0 +1,111 @@
+@ $Function_80241A4C
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_80241A4C[1E4]
+}
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:KoopaVillage
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Exec  $Script_KoloradoHouseItem % New
+    Call  GetEntryID        ( *Var0 )
+    If  *Var0  ==  ~Entry:Entry3
+        Call  MakeNpcs      ( .False $NpcGroupList_80251B24 )
+        ExecWait  $Script_MakeEntities
+        Exec  $Script_802456E0
+        Exec  $Script_802543B0
+        Call  FadeInMusic   ( 00000000 .Song:KoopaVillage 00000000 00000BB8 00000000 0000007F )
+        Wait  1`
+        Return
+    EndIf
+    Set   *AreaFlag[00F]  .False
+    Set   *AreaFlag[010]  .False
+    Set   *AreaFlag[012]  .False
+    Set   *GF_NOK02_Bush1_KoopaLeaf  .False
+    Set   *GF_NOK02_Bush6 .False
+    Set   *AreaFlag[013]  .False
+    If  *GB_StoryProgress  >=  .Story:Ch1_KooperJoinedParty % FFFFFFA4
+        Set   *GF_NOK02_RecoveredShellA  .True
+        Set   *GF_NOK02_RecoveredShellB  .True
+    EndIf
+    If  *GB_StoryProgress  <  .Story:Ch1_KooperJoinedParty % FFFFFFA4
+        Call  MakeNpcs  ( .False $NpcGroupList_80251AAC )
+    Else
+        Call  MakeNpcs  ( .False $NpcGroupList_80251AE8 )
+    EndIf
+    Call  ClearDefeatedEnemies ( )
+    ExecWait  $Script_MakeEntities
+    ExecWait  $Script_8025422C
+    Exec  $Script_802456E0
+    Bind  $Script_80246E20 .Trigger:WallPressA ~Collider:o236 00000001 00000000
+    ExecWait  $Script_80246B50
+    Call  GetDemoState  ( *Var0 )
+    If  *Var0  !=  00000000
+        ExecWait  $Script_802523B8
+        Return
+    EndIf
+    Exec  $Script_80244630
+    Call  ModifyColliderFlags   ( 00000000 ~Collider:deilitw 7FFFFE00 )
+    Call  ModifyColliderFlags   ( 00000000 ~Collider:deilitn 7FFFFE00 )
+    Exec  $Script_EnterWalk_80245868
+    Wait  1`
+    Return
+    End
+}
+
+% Toggle item visibility
+@ $Script_ToggleVis_80246A2C
+{
+    0:  Switch  *Var0
+    C:  	Case  ==  00000000
+   18:  		Call  SetGroupEnabled   ( ~Model:g45 00000001 )
+                If *GF_NOK02_KoloradoHouseItem == .False
+                    Call  SetItemFlags ( *MapVar[B] 00000001 .True )
+                EndIf
+   2C:  	Case  ==  00000001
+   38:  	Case  ==  00000002
+   44:  	Case  ==  00000003
+   50:  		Call  SetGroupEnabled   ( ~Model:g45 00000000 )
+                If *GF_NOK02_KoloradoHouseItem == .False
+                    Call  SetItemFlags ( *MapVar[B] 00000001 .False ) % hide item
+                EndIf
+   64:  EndSwitch
+   6C:  Return
+   74:  End
+}
+
+#new:Script $Script_KoloradoHouseItem
+{
+    Bind    $Script_ItemShelf .Trigger:FloorAbove ~Collider:KolarodoItem 00000001 00000000
+    Call    MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemEntity_KolaradoHouse .ItemSpawnMode:Fixed_NeverVanish *GF_NOK02_KoloradoHouseItem )
+    Set     *MapVar[B] *Var0 % itemIndex
+    Return
+    End
+}
+
+#new:Script $Script_ItemShelf
+{
+    Call    SetCamSpeed ( .Cam:Default *Fixed[4.0] )
+    Return
+    End
+}
+
+% Bush 1 now always drop a Golden Leaf
+
+@ $TreeDropList_Bush1
+{
+	00000001
+	.Item:GoldenLeaf ~Vec3d:Bush1_Drop1 .ItemSpawnMode:Toss_SpawnOnce *GF_NOK02_Bush1_KoopaLeaf *MapFlag[0A]
+}
+
+% Bush 6 now always drop a Dried Bouquet
+
+@ $TreeDropList_Bush6
+{
+	00000001
+	.Item:DriedBouquet ~Vec3d:Bush6_Drop1 .ItemSpawnMode:Toss_SpawnOnce *GF_NOK02_Bush6 *MapFlag[0A]
+}

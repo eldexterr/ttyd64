@@ -1,0 +1,1252 @@
+% The file that makes possible for enemies to spawn with items or badges
+% is globals/patch/Battle_EnemiesCanUseItems.patch
+
+/% This file make the following badges compatible with enemies:
+Chill-Out
+Close Call
+Lucky Day
+Pretty Lucky
+D-Down Jump
+Piercing Blow (formerly D-Down Pound)
+Defend Plus
+Power Plus
+Sleep Stomp
+Shrink Stomp
+Feeling Fine
+Happy Heart
+HP Drain
+HP Plus
+P Down D Up
+P Up D Down
+Power Rush
+Mega Rush
+Last Stand
+Zap Tab
+%===TTYD Badges====
+Lucky Start
+Return Postage
+Head Rattle (formerly Dizzy Stomp)
+Soft Stomp
+Charge
+%/
+
+% A0 = $actorPointer
+%
+% A1 = itemID
+%
+% *out = V0 (bool)
+#new:Function $EnemyHasItem
+{
+    % If actor data is empty
+    BEQ     A0, R0, .End
+    CLEAR   V0
+    LHU     V0, 4 (A0) % load itemID
+    BNE     V0, A1, .End
+    CLEAR   V0
+    ORI     V0, R0, 1 % Enemy is holding this item
+    .End
+    JR      RA
+    NOP
+}
+
+% Chill Out
+%
+% Patch ~Func:btl_state_update_normal_start
+@Hook 1701A8 % 802418C8
+{
+    PUSH    RA, A0, A1, A2, A3
+    % Check if any Enemy has a Chill Out
+    LIO     A2, 800DC150 % Enemy0 Data
+    CLEAR   A3 % init enemy counter
+    LW      A0, 0 (A2)
+    .Loop
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00FE % .Item:ChillOut
+    BNE     V0, R0, .Breakloop
+    ADDIU   A2, A2, 4
+    % There's more enemies in the battle?
+    %
+    % Check enemies cap
+    ADDIU   A3, A3, 1
+    SLTIU   A0, A3, 24` % because the max amount of enemies in battle is 24`
+    BEQ     A0, R0, .End
+    NOP
+    % check next enemy
+    LW      A0, 0 (A2)
+    BNE     A0, R0, .Loop
+    NOP
+    .Breakloop
+    POP     RA, A0, A1, A2, A3
+    LB	    V1, 0004 (FP) % load first strike state / 0=nothing, 1=player, 2=enemy
+    ORI     A0, R0, 1
+    BNE     V1, A0, .End
+    NOP
+    % The player landed a first strike, check if this enemy have
+    % a Chill Out badge
+    BNEL    V0, R0, .End
+    CLEAR   V1 % don't first strike
+    .End
+    J       802418D0
+    ADDIU	V0, R0, 0001
+}
+
+%===============
+% Close Call, Pretty Lucky & Lucky Day
+%===============
+
+% Close Call, Pretty Lucky & Lucky Day - Mario
+%
+% Patch ~Func:calc_player_test_enemy
+@Hook 1A01E4 % 80271904
+{
+    % S3 = Enemy Data
+    COPY    A0, S3
+    %======Close Call=======
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0112 % .Item:CloseCall
+    BNE     V0, R0, .CloseCall
+    NOP
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 017E % .Item:CloseCallP
+    BEQ     V0, R0, .PrettyLucky
+    NOP
+    .CloseCall
+    % Enemy has Close Call
+    %
+    % Check if Enemy has below 6HP
+    LBU     A0, 1B8 (S3) % load current HP
+    SLTIU   A0, A0, 6
+    BEQ     A0, R0, .PrettyLucky
+    NOP
+    % Enemy is in danger state
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 33` % 33% chances to miss the attack
+    BNEL    V0, R0, .End
+    ORI     V0, R0, 6 % .HitResult:Miss
+    BEQ     R0, R0, .SkipBadges
+    NOP
+    .PrettyLucky
+    COPY    A0, S3
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00F1 % .Item:PrettyLucky
+    BEQ     V0, R0, .LuckyDay
+    NOP
+    % Enemy has Pretty Lucky
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 10` % 10% chances to miss the attack
+    BNEL    V0, R0, .End
+    ORI     V0, R0, 6 % .HitResult:Miss
+    BEQ     R0, R0, .SkipBadges
+    NOP
+    .LuckyDay
+    COPY    A0, S3
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0114 % .Item:LuckyDay
+    BEQ     V0, R0, .SkipBadges
+    NOP
+    % Enemy has Lucky Day
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 20` % 20% chances to miss the attack
+    BNEL    V0, R0, .End
+    ORI     V0, R0, 6 % .HitResult:Miss
+    .SkipBadges
+    LB	    V0, 0212 (S4)
+    ADDIU	A0, R0, 000B
+    BEQ	    V0, A0, .End
+    CLEAR   V0 % .HitResult:Hit
+    LB	    V1, 0212 (S3) % load actor's static status
+    BEQ	    V1, A0, .End
+    ADDIU	V0, R0, 0007 % .HitResult:HitStatic
+    CLEAR   V0 % .HitResult:Hit
+    .End
+    J       80271924
+    NOP
+}
+
+% Close Call, Pretty Lucky & Lucky Day - Partner
+%
+% Patch ~Func:calc_partner_test_enemy
+@Function 1ACBE4 % 8027E304
+{
+    J       $EnemyBadge_MissBadges_Partner
+}
+
+#new:Function $EnemyBadge_MissBadges_Partner
+{
+    PUSH    RA, A0, A1, A2
+    % S3 = Enemy Data
+    COPY    A0, S3
+    %======Close Call=======
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0112 % .Item:CloseCall
+    BEQ     V0, R0, .PrettyLucky
+    NOP
+    % Enemy has Close Call
+    %
+    % Check if Enemy has below 6HP
+    LBU     A0, 1B8 (S3) % load current HP
+    SLTIU   A0, A0, 6
+    BEQ     A0, R0, .PrettyLucky
+    NOP
+    % Enemy is in danger state
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 33` % 33% chances to miss the attack
+    BNEL    V0, R0, .End
+    ORI     V0, R0, 6 % .HitResult:Miss
+    BEQ     R0, R0, .SkipBadges
+    NOP
+    .PrettyLucky
+    COPY    A0, S3
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00F1 % .Item:PrettyLucky
+    BNE     V0, R0, .PrettyLucky_Code
+    NOP
+    COPY    A0, S3
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 017F % .Item:PrettyLuckyP
+    BEQ     V0, R0, .LuckyDay
+    NOP
+    .PrettyLucky_Code
+    % Enemy has Pretty Lucky
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 10` % 10% chances to miss the attack
+    BNEL    V0, R0, .End
+    ORI     V0, R0, 6 % .HitResult:Miss
+    BEQ     R0, R0, .SkipBadges
+    NOP
+    .LuckyDay
+    COPY    A0, S3
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0114 % .Item:LuckyDay
+    BEQ     V0, R0, .SkipBadges
+    NOP
+    % Enemy has Lucky Day
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 20` % 20% chances to miss the attack
+    BNEL    V0, R0, .End
+    ORI     V0, R0, 6 % .HitResult:Miss
+    .SkipBadges
+    CLEAR   V0 % .HitResult:Hit
+    .End
+    POP     RA, A0, A1, A2
+    J       8027E308
+    NOP
+}
+
+%==============================
+% D-Down Jump & D-Down Pound
+%==============================
+
+#export:Data $PierceDefenseFlag
+{ 00 }
+
+% Check if the enemy have one of those badges
+% if is the case, set $PierceDefenseFlag as true
+%
+% Patch EnemyDamageTarget (API)
+@Hook 1AB5E8 % 8027CD08
+{
+    PUSH    T0, V0, S0, S1
+    % V0 = actor data
+    COPY    S1, V0
+    LIO     S0, $PierceDefenseFlag
+    /% D Down Jump, D Down Jump got replaced by Soft Stomp
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 012E % .Item:DDownJump
+    ORI     T0, R0, 1
+    BNEL    V0, R0, .End
+    SB      T0, 0 (S0)%/
+    % D Down Pound
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00EE % .Item:DDownPound
+    ORI     T0, R0, 1
+    BNEL    V0, R0, .End
+    SB      T0, 0 (S0)
+    .End
+    POP     T0, V0, S0, S1
+    % restore vanilla code
+    LW	    S4, 0000 (S0)
+    J       8027CD10
+    ADDIU	S0, S0, 0004
+    
+}
+
+%===============
+% Defend Plus
+%
+% It has part of code for the following badges too:
+% P-Down D-Up, P-Up D-Down
+%===============
+
+% Defend Plus - Mario
+%
+% Patch ~Func:calc_player_damage_enemy
+@Hook 1A0848 % 80271F68
+{
+    PUSH    RA, A0, A1, T0, S0
+    LIO     A0, 800DC070
+    LW      A0, 188 (A0) % currentAttackElement
+    LUI     A1, 0800 % IgnoreDefense
+    AND     A0, A0, A1 % ignore all badges, buffs, debuffs.
+    BNE     A0, R0, .End
+    NOP
+    % load defense from extraData instead
+    %
+    %LB	    S0, 0222 (S3) % load actor's defense boosts
+    % S3 - target's actor data
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S3) % actorID
+    LB      S0, 4 (V0) % load actor's defense boosts
+    % Defend Plus
+    ORI     A1, R0, 00FB % .Item:DefendPlusA
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End    
+    ADDI    S0, S0, 1
+    % Defend Plus P
+    ORI     A1, R0, 0181 % .Item:DefendPlusP
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End    
+    ADDI    S0, S0, 1
+    % P-Down D-Up
+    ORI     A1, R0, 0116 % .Item:PDownDUp
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End    
+    ADDI    S0, S0, 1
+    % P-Down D-Up P
+    ORI     A1, R0, 0186 % .Item:PDownDUpP
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End    
+    ADDI    S0, S0, 1
+    % P-Up D-Down
+    ORI     A1, R0, 0113 % .Item:PUpDDown
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End
+    ADDI    S0, S0, FFFF % sub 1
+    % P-Up D-Down P
+    ORI     A1, R0, 0187 % .Item:PUpDDownP
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End
+    ADDI    S0, S0, FFFF % sub 1
+    .End
+    COPY    V0, S0
+    POP     RA, A0, A1, T0, S0
+    J       80271F70
+    ADDU	S5, S5, V0
+}
+
+% Defend Plus - Partner
+%
+% Patch ~Func:calc_partner_damage_enemy
+@Hook 1AD290 % 8027E9B0
+{
+    PUSH    RA, A0, A1, T0, S0
+    LIO     A0, 800DC070
+    LW      A0, 188 (A0) % currentAttackElement
+    LUI     A1, 0800 % IgnoreDefense
+    AND     A0, A0, A1 % ignore all badges, buffs, debuffs.
+    BNE     A0, R0, .End
+    NOP
+    % load defense from extraData instead
+    %
+    %LB	    S0, 0222 (S3) % load actor's defense boosts
+    % S3 - target's actor data
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU	    A0, 192 (S3) % actorID
+    LB      S0, 4 (V0) % load actor's defense boosts
+    % Defend Plus
+    ORI     A1, R0, 00FB % .Item:DefendPlusA
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End    
+    ADDI    S0, S0, 1
+    % P-Down D-Up
+    ORI     A1, R0, 0116 % .Item:PDownDUp
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End    
+    ADDI    S0, S0, 1
+    % P-Up D-Down
+    ORI     A1, R0, 0113 % .Item:PUpDDown
+    JAL     $EnemyHasItem
+    COPY    A0, S3 % S3 = $actor
+    BNEL    V0, R0, .End
+    ADDI    S0, S0, FFFF % sub 1
+    .End
+    COPY    V0, S0
+    POP     RA, A0, A1, T0, S0
+    J       8027E9B8
+    ADDU	S0, S0, V0
+}
+
+%===============
+% Power Plus
+%
+% It has part of code for the following badges too:
+% HP Drain, P-Down D-Up, P-Up D-Down, Power Rush, Mega Rush
+%===============
+
+% Patch ~Func:calc_enemy_damage_target
+@Hook 1A6134 % 80277854
+{
+    PUSH    RA, A0, A1, V0
+    LH	    S0, 017E (S4) % load currentAttackDamage
+    % S1 = Actor Pointer(+C)
+    %
+    % Power Plus A
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00E2 % .Item:PowerPlusA
+    BNEL    V0, R0, .GetTargetDef
+    ADDIU   S0, S0, 1
+    % Power Plus B
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 013C % .Item:PowerPlusB
+    BNEL    V0, R0, .GetTargetDef
+    ADDIU   S0, S0, 1
+    % Power Plus P
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0183 % .Item:PowerPlusP
+    BNEL    V0, R0, .GetTargetDef
+    ADDIU   S0, S0, 1
+    % HP Drain
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00F5 % .Item:HPDrain
+    BNEL    V0, R0, .GetTargetDef
+    ADDI    S0, S0, FFFF % sub 1
+    % HP Drain P
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 018C % .Item:HPDrainP
+    BNEL    V0, R0, .GetTargetDef
+    ADDI    S0, S0, FFFF % sub 1
+    % P-Down D-Up
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0116 % .Item:PDownDUp
+    BNEL    V0, R0, .GetTargetDef
+    ADDI    S0, S0, FFFF % sub 1
+    % P-Up D-Down
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0113 % .Item:PUpDDown
+    BNEL    V0, R0, .GetTargetDef
+    ADDI    S0, S0, 1
+    % Power Rush
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 010D % .Item:PowerRush
+    BNE     V0, R0, .PowerRush
+    NOP
+    % Power Rush P
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0184 % .Item:PowerRushP
+    BEQ     V0, R0, .MegaRush
+    NOP
+    .PowerRush
+    % Enemy has Power Rush
+    %
+    % Check if he is in Danger
+    ADDI    A0, S1, FFF4 % actor pointer
+    LBU     A0, 1B8 (A0) % load HP
+    SLTIU   A0, A0, 6
+    BEQ     A0, R0, .GetTargetDef
+    NOP
+    % Activate Power Rush
+    BEQ     R0, R0, .GetTargetDef
+    ADDIU   S0, S0, 2
+    .MegaRush
+    % Mega Rush
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00F9 % .Item:MegaRush
+    BNE     V0, R0, .MegaRush_Code
+    NOP
+    % Mega Rush P
+    ADDI    A0, S1, FFF4 % sub C
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0185 % .Item:MegaRushP
+    BEQ     V0, R0, .GetTargetDef
+    NOP
+    .MegaRush_Code
+    % Enemy has Mega Rush
+    %
+    % Check if he is in Danger
+    ADDI    A0, S1, FFF4 % actor pointer
+    LBU     A0, 1B8 (A0) % load HP
+    SLTIU   A0, A0, 2
+    BEQ     A0, R0, .GetTargetDef
+    NOP
+    % Activate Mega Rush
+    BEQ     R0, R0, .GetTargetDef
+    ADDIU   S0, S0, 4
+    .GetTargetDef
+    JAL     $EnemyCalcDamage_Defense % check if Mario/Partner is using the defense command
+    NOP
+    % get target buffs/debuffs
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S3) % target's actorID
+    BEQ     V0, R0, .End
+    NOP
+    LB      V0, 4 (V0) % load actor's defense boosts
+    % check if the IgnoreDefense flag was used
+    LIO     A0, 800DC070
+    LW      A0, 188 (A0) % currentAttackElement
+    LUI     A1, 0800 % IgnoreDefense
+    AND     A0, A0, A1 % ignore all badges, buffs, debuffs.
+    BNE     A0, R0, .End
+    NOP
+    SUB     S0, S0, V0
+    .End
+    POP     RA, A0, A1, V0
+    % restore vanilla code
+    J       8027785C
+    ADDIU	V0, R0, 0100
+}
+
+%===============
+% Sleep Stomp, Shrink Stomp, Dizzy Stomp, Head Rattle & Soft Stomp
+%===============
+
+% Patch EnemyDamageTarget(API)
+@Hook 1AB614 % 8027CD34
+{
+    PUSH    RA, A0, A1, A2, V0, V1
+    % Check if this attack was already about to inflict an status
+    % V1 = statusFlags for this attack
+    BNE     V1, R0, .End % skip badges if this attack wasn't statusless
+    NOP
+    % Sleep Stomp
+    COPY    A0, S2 % S2 = Actor Pointer
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00EB % .Item:SleepStomp
+    LIO     A1, 80001250 % Sleep
+    BNEL    V0, R0, .End
+    COPY    V1, A1
+    % Shrink Stomp
+    COPY    A0, S2 % S2 = Actor Pointer
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 012F % .Item:ShrinkStomp
+    BEQ     V0, R0, .DizzyStomp
+    NOP
+    CLEAR	A2
+    LIA		A0, $Script_ApplyDebuff_Attack
+    JAL		~Func:start_script
+    ADDIU	A1, R0, 1
+    % save self actorID in Evt(0x148)
+    LW      A2, 1C (SP) % pop A2 (battleStatus)
+    LHU     A2, 172 (A2) % actorID
+    SW      A2, 148 (V0) % save actorID
+    LW      V1, 24 (SP) % pop V1
+    .DizzyStomp
+    COPY    A0, S2 % S2 = Actor Pointer
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00EF % .Item:DizzyStomp
+    LIO     A1, 80040250 % Dizzy
+    BNEL    V0, R0, .End
+    COPY    V1, A1
+    % Head Rattle
+    COPY    A0, S2 % S2 = Actor Pointer
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 017A % .Item:HeadRattle
+    LIO     A1, 80040250 % Dizzy
+    BNEL    V0, R0, .End
+    COPY    V1, A1
+    % Soft Stomp
+    COPY    A0, S2 % S2 = Actor Pointer
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 012E % .Item:SoftStomp
+    BEQ     V0, R0, .End
+    NOP
+    CLEAR	A2
+    LIA		A0, $Script_ApplyDebuff_Defense
+    JAL		~Func:start_script
+    ADDIU	A1, R0, 1
+    % save self actorID in Evt(0x148)
+    LW      A2, 1C (SP) % pop A2 (battleStatus)
+    LHU     A2, 172 (A2) % actorID
+    SW      A2, 148 (V0) % save actorID
+    LW      V1, 24 (SP) % pop V1
+    .End
+    POP     RA, A0, A1, A2, V0, R0
+    % restore vanilla code
+    ADDIU	S0, S0, 0004
+    J       8027CD3C
+    SW	    V1, 0190 (S1) % save lastAttackStatus
+}
+
+% Used by Shrink Stomp
+#export:Script:Battle $Script_ApplyDebuff_Attack
+{
+    Call  GetBattleFlags ( *Var0 )
+    If *Var0 & 80000000 % attack guarded
+        Return
+    EndIf
+    Call  GetOwnerTarget ( *Var4 .False )
+    Set   *VarC 3
+    Call  $AddAttackBoost ( *Var4 -1 *VarC )
+    Call  $MakeActorTiny ( *Var4 )
+    %
+    Call    PlaySoundAtActor ( *Var4 2106 )
+    % Show arrow
+    Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+    Sub     *Var0  15` % x
+    Add     *Var1  35` % y
+    Set     *Var2  6 % z
+    Call    PlayEffect    ( ~FX:StatChange:AttackMinus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+    % set arrowFx's number
+    Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+    Call    $WriteAddress ( *Var0 2 -1 20 .False  ) % set amount inside the arrow
+    % show wave fx
+    Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+    Add     *Var1 15` % y
+    Add     *Var2 2 % z
+    Call    802712A0 % ShowDebuffFX_Yellow, reads var0/1/2 > FXpos
+    Return
+    End
+}
+
+% Used by Soft Stomp
+#export:Script:Battle $Script_ApplyDebuff_Defense
+{
+    Call  GetBattleFlags ( *Var0 )
+    If *Var0 & 80000000 % attack guarded
+        Return
+    EndIf
+    Call  GetOwnerTarget ( *Var4 .False )
+    Set   *VarC 3
+    Call  $AddDefenseBoost ( *Var4 -3 *VarC )
+    %
+    Call    PlaySoundAtActor ( *Var4 2106 )
+    % Show arrow
+    Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+    Add     *Var0  15` % x
+    Add     *Var1  35` % y
+    Set     *Var2  6 % z
+    Call    PlayEffect    ( ~FX:StatChange:DefensePlus1 *Var0 *Var1 *Var2 *Fixed[1.5] 60` .False .False .False .False .False .False .False )
+    % set arrowFx's number
+    Call    $ReadAddress ( $Data_LastFX 2 *Var0 C .True  )
+    Call    $WriteAddress ( *Var0 2 -3 20 .False  ) % set amount inside the arrow
+    % show wave fx
+    Call    GetActorPos   ( *Var4 *Var0 *Var1 *Var2 )
+    Add     *Var1 15` % y
+    Add     *Var2 2 % z
+    Call    $ReadAddress ( $Data_LastFX 2 *Var6 C .True  )
+    Call    $WriteAddress ( *Var6 2 3 1C .False  ) % set arrowType as 0x03 (Blue upside-down)
+    Call    PlayEffect    ( ~FX:Debuff:Blue *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+    Return
+    End
+}
+
+%===============
+% Feeling Fine
+%===============
+
+% Patch ~Func:try_inflict_status
+@Hook 195488 % 80266BA8
+{
+    PUSH    RA, A0, A1, V0
+    % Check if current actor is an enemy
+    % A0 = target actor data
+    LHU     A1, 192 (A0) % load actorID
+    SLTIU   A1, A1, 200 % .Actor:Enemy0
+    BNE     A1, R0, .End
+    NOP
+    % Actor is an enemy
+    %
+    % Check if has Feeling Fine
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00F2 % .Item:FeelingFine
+    BNEL    V0, R0, .End
+    SB	    R0, 0194 (S3) % clear any chances to get inflict by the status
+    % Feeling Fine P
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0189 % .Item:FeelingFineP
+    BNEL    V0, R0, .End
+    SB	    R0, 0194 (S3) % clear any chances to get inflict by the status
+    .End
+    POP     RA, A0, A1, V0
+    % restore vanilla code
+    LBU	    V1, 0194 (S3) % load chances to inflict
+    J       80266BB0
+    ADDIU	V0, R0, 00FE
+}
+
+
+%===============
+% Happy Heart
+%
+% It has part of code for the following badges too: HP Drain
+%===============
+
+% Also nuke charge byte extraData(0x0F) if enemy tried to attack the target.
+%
+% Patch ~Func:btl_state_update_enemy_move
+@Hook:Battle 1763AC % 80247ACC
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S1, S2, T0
+    LAHU    A0, 800DC218 % load lastAttacker actorID
+    JAL     ~Func:get_actor
+    RESERVED
+    BEQ     V0, R0, .SkipChargeByte % Last attacker already died
+    NOP
+    COPY    S1, V0
+    COPY    A0, S1
+    CLEAR   S2
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00FF % .Item:HappyHeartA
+    BNE     V0, R0, .HappyHeart
+    NOP
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0136 % .Item:HappyHeartB
+    BNE     V0, R0, .HappyHeart
+    NOP
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 018B % .Item:HappyHeartP
+    BNE     V0, R0, .HappyHeart
+    NOP
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00F5 % .Item:HPDrain
+    BNEL    V0, R0, .HealActor
+    ADDI    S2, S2, 1
+    BEQ     V0, R0, .HealActor
+    NOP
+    .HappyHeart
+    % Actor has a Happy Heart
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    SLTIU   V0, V0, 33` % 33% chances to heal
+    BNEL    V0, R0, .HealActor
+    ADDI    S2, S2, 1
+    .HealActor
+    BEQ     S2, R0, .End
+    NOP
+    LBU     A0, 1B8 (S1) % load current hp % ActorData(0x1B8) = HP
+    LBU     A2, 1B9 (S1) % load max hp % ActorData(0x1B9) = Max HP
+    ADD     A0, A0, S2
+    SLTU    A3, A0, A2 % check hp cap
+    BEQL    A3, R0, .MaxHP
+    COPY    A0, A2 % if the new amount is >= to max HP just set the HP as Max HP
+    % check if HP is below to zero
+    BLTZL   A0, .MaxHP
+    CLEAR   A0
+    .MaxHP
+    SB      A0, 1B8 (S1) % save new HP
+    % play sfx
+    JAL     ~Func:sfx_play_sound
+    ORI     A0, R0, 0213 % heal
+    .FlyingHeart
+    % show flying heart
+    COPY    T0, S2
+    JAL     $ShowFlyingStat
+    CLEAR   A0 % show a heart
+    .End
+    %==============
+    % Charge Byte
+    %
+    % Clear charge byte if enemy tried to attack
+    %==============
+    LIO     A0, 800DC070 % battleStatus
+    LHU     A0, 180 (A0) % lastAttackDamage
+    BEQ     A0, R0, .SkipChargeByte
+    NOP
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S1) % actorID
+    SB      R0, F (V0) % charge byte
+    .SkipChargeByte
+    POP     RA, A0, A1, A2, A3, V0, V1, S1, S2, T0
+    % restore vanilla code
+    JAL     ~Func:btl_set_state
+    ADDIU	A0, R0, 0014 % .BattleState:NextEnemy
+    J       80247AD4
+    NOP
+}
+
+% S1 = $actorPointer
+%
+% A0 = type (0 = Heart, 1 = Flower)
+%
+% T0 = amount inside the heart
+#export:Function $ShowFlyingStat
+{
+    PUSH    R0, R0, R0, R0, R0, R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, S1, T0, F0, F2, F4, F6
+    MTC1	R0, F2
+    LWC1	F4, 0144 (S1) % load x pos
+    LWC1	F0, 014C (S1) % load z pos
+    TRUNC.W.S	F6, F0
+    MFC1	A3, F6
+    NOP
+    MTC1	A3, F6
+    NOP
+    CVT.S.W	F6, F6
+    ADD.S	F4, F4, F2
+    LWC1	F0, 0148 (S1) % load y pos
+    LUI	    AT, 420C
+    MTC1	AT, F2
+    MFC1	A3, F6
+    ADD.S	F0, F0, F2
+    TRUNC.W.S F6, F4
+    MFC1	V1, F6
+    NOP
+    MTC1	V1, F6
+    NOP
+    CVT.S.W	F6, F6
+    MFC1	A1, F6
+    TRUNC.W.S F6, F0
+    MFC1	V0, F6
+    NOP
+    MTC1	V0, F6
+    NOP
+    CVT.S.W	F6, F6
+    MFC1	A2, F6
+    SW	    V1, 0028 (SP)
+    SW	    V0, 002C (SP)
+    JAL	    80071090 % show flying Heart
+    SW	    T0, 0010 (SP)
+    POP     R0, R0, R0, R0, R0, R0, R0, R0, RA, A0, A1, A2, A3, V0, V1, S1, T0, F0, F2, F4, F6
+    JR      RA
+    NOP
+}
+
+%===============
+% HP Plus, Zap Tap & Lucky Start
+%===============
+
+% Patch ~Func:create_actor
+@Hook 19459C % 80265CBC
+{
+    PUSH    RA, A0, V0, T0
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 00E7 % .Item:HPPlusA
+    BNE     V0, R0, .RiseHP
+    NOP
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0134 % .Item:HPPlusB
+    BNE     V0, R0, .RiseHP
+    NOP
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 014A % .Item:HPPlusC
+    BNE     V0, R0, .RiseHP
+    NOP
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 018D % .Item:HPPlusP
+    BEQ     V0, R0, .ZapTab
+    NOP
+    .RiseHP
+    LBU     V0, 1B8 (S1) % load HP
+    ADDIU   V0, V0, 5
+    % check HP cap
+    SLTIU   A0, V0, FF
+    BEQL    A0, R0, .SetNewHP
+    ORI     V0, R0, FF
+    .SetNewHP
+    SB      V0, 1B8 (S1) % save HP
+    BEQ     R0, R0, .End
+    SB      V0, 1B9 (S1) % save max HP
+    .ZapTab
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0100 % .Item:ZapTap
+    BEQ     V0, R0, .LuckyStart
+    NOP
+    % Enemy has Zap Tap
+    %
+    % Make enemy static
+    ORI     A0, R0, B % .Status:Static
+    SB      A0, 212 (S1) % staticStatus
+    ORI     A0, R0, 99` % turns
+    BEQ     R0, R0, .End
+    SB      A0, 213 (S1) % static duration
+    .LuckyStart
+    COPY    A0, S1
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0175 % .Item:LuckyStart
+    BEQ     V0, R0, .End
+    NOP
+    % Enemy has Lucky Start
+    %
+    % get random status
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 3
+    BEQ     V0, R0, .LuckyStart_HP
+    ORI     A0, R0, 1
+    BEQ     V0, A0, .LuckyStart_FP
+    ORI     A0, R0, 2
+    BEQ     V0, A0, .LuckyStart_Inv
+    ORI     A0, R0, 3
+    BEQ     V0, A0, .LuckyStart_Elec
+    NOP
+    .LuckyStart_HP
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S1) % load actorID
+    ORI     A0, R0, 2 % amount to heal
+    SB      A0, 8 (V0)
+    ORI     A0, R0, 4 % buff's turns
+    BEQ     R0, R0, .End
+    SB      A0, 9 (V0)
+    .LuckyStart_FP
+    JAL     $GetActorExtraBattleData_Pointer
+    LHU     A0, 192 (S1) % load actorID
+    ORI     A0, R0, 2 % amount to heal
+    SB      A0, A (V0)
+    ORI     A0, R0, 4 % buff's turns
+    BEQ     R0, R0, .End
+    SB      A0, B (V0)
+    .LuckyStart_Inv
+    % Make enemy invicible
+    ORI     A0, R0, E % .Status:Transparent
+    SB      A0, 218 (S1) % transStatus
+    ORI     A0, R0, 3 % turns
+    BEQ     R0, R0, .End
+    SB      A0, 219 (S1) % transparent duration
+    .LuckyStart_Elec
+    % Make enemy static
+    ORI     A0, R0, B % .Status:Static
+    SB      A0, 212 (S1) % staticStatus
+    ORI     A0, R0, 3 % turns
+    BEQ     R0, R0, .End
+    SB      A0, 213 (S1) % static duration
+    .End
+    POP     RA, A0, V0, T0
+    % restore vanilla code
+    LW	    S5, 002C (SP)
+    J       80265CC4
+    LW	    S4, 0028 (SP)
+}
+
+%===============
+% Last Stand
+%===============
+
+% Last Stand - Mario
+%
+% Patch ~Func:calc_player_damage_enemy
+@Hook 1A0C58 % 80272378
+{
+    PUSH    RA, A0, A1, V0
+    % S0 = damage to dealt
+    COPY    A0, S3 % S3 = actor being attacked data poiner
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0111 % .Item:LastStand
+    BNE     V0, R0, .LastStand
+    NOP
+    COPY    A0, S3
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0182 % .Item:LastStandP
+    BEQ     V0, R0, .End
+    NOP
+    .LastStand
+    % Enemy has Last Stand
+    %
+    % Check if enemy is in Danger
+    LBU     A0, 1B8 (S3) % load HP
+    SLTIU   A0, A0, 6
+    BEQ     A0, R0, .End
+    NOP
+    % Divide damage by 2
+    ORI     A0, R0, 2
+    DIV     S0, A0
+    MFLO    S0
+    .End
+    POP     RA, A0, A1, V0
+    % restore vanilla code
+    ADDU	V0, V0, S0
+    J       80272380
+    SUBU	V1, V1, S0
+}
+
+% Last Stand - Partner
+%
+% Patch ~Func:calc_partner_damage_enemy
+@Hook 1AD3E4 % 8027EB04
+{
+    % A0 = damage to dealt
+    PUSH    RA, A0, A1, V0
+    COPY    A0, S3 % S3 = actor being attacked data poiner
+    JAL     $EnemyHasItem
+    ORI     A1, R0, 0111 % .Item:LastStand
+    BEQ     V0, R0, .End
+    NOP
+    % Enemy has Last Stand
+    %
+    % Check if enemy is in Danger
+    LBU     A0, 1B8 (S3) % load HP
+    SLTIU   A0, A0, 6
+    BEQ     A0, R0, .End
+    NOP
+    % Divide damage by 2
+    LW      A0, 14 (SP) % load damage to dealt
+    ORI     A1, R0, 2
+    DIV     A0, A1
+    MFLO    A0
+    SW      A0, 14 (SP) % save damage to dealt
+    .End
+    POP     RA, A0, A1, V0
+    % restore vanilla code
+    ADDU	V0, V0, A0
+    J       8027EB0C
+    SUBU	V1, V1, A0
+}
+
+%========================%
+%                        %
+%  NEW BADGES FROM TTYD  %
+%                        %
+%========================%
+
+%===============
+% Head Rattle
+%
+% Is in Hook 1AB614 % 8027CD34
+%===============
+
+%===============
+% Lucky Start
+%
+% Is in Hook 19459C % 80265CBC
+%===============
+
+%===============
+% Return Postage
+%===============
+
+% Return Postage - Mario
+%
+% From ~Func:calc_player_damage_enemy
+@Hook 1A0CD4 % 802723F4 % Mario's Hook
+{
+SH	    V0, 0180 (S4) % set lastAttackDamage
+SH	    V0, 01F8 (S3) % set actor's lastDamageTaken
+PUSH    RA, A0, A1, A2, A3, V0, V1
+COPY    A0, S3 % S3 = actor being attacked data poiner
+JAL     $EnemyHasItem
+ORI     A1, R0, 0176 % .Item:ReturnPostage
+BEQ     V0, R0, .End % Enemy doesnt have Return Postage
+NOP
+.ReturnPostage
+CLEAR	A2
+LIA		A0, $Script_Dispatch_ReturnPostage_Mario
+JAL		~Func:start_script
+ADDIU	A1, R0, 1
+.End
+POP     RA, A0, A1, A2, A3, V0, V1
+J       802723FC
+NOP
+}
+
+% Return Postage - Partner
+%
+% From ~Func:calc_partner_damage_enemy
+@Hook 1AD468 % 8027EB88 % Partners Hook
+{
+SH	    V0, 0180 (S4) % set lastAttackDamage
+SH	    V0, 01F8 (S3) % set actor's lastDamageTaken
+PUSH    RA, A0, A1, A2, A3, V0, V1
+COPY    A0, S3 % S3 = actor being attacked data poiner
+JAL     $EnemyHasItem
+ORI     A1, R0, 0176 % .Item:ReturnPostage
+BEQ     V0, R0, .End % Enemy doesnt have Return Postage
+NOP
+.ReturnPostage
+% Enemy have Return Postage
+CLEAR	A2
+LIA		A0, $Script_Dispatch_ReturnPostage_Partner
+JAL		~Func:start_script
+ADDIU	A1, R0, 1
+.End
+POP     RA, A0, A1, A2, A3, V0, V1
+J       8027EB90
+NOP
+}
+
+#new:Script:Battle $Script_Dispatch_ReturnPostage_Mario
+{
+    ExecWait $Script_ReturnPostage_HurtMario
+    Return
+    End
+}
+
+#new:Script:Battle $Script_Dispatch_ReturnPostage_Partner
+{
+    ExecWait $Script_ReturnPostage_HurtPartner
+    Return
+    End
+}
+
+% PlayEffect save last FX pointer
+@Hook FE040 % 802D9690
+{
+    BEQ     V0, R0, .DontUpdate_LastFX
+    NOP
+    SAW     V0, $Data_LastFX % V0 = FX pointer
+    .DontUpdate_LastFX
+    BEQ 	S5, R0, .End
+    NOP
+    % SaveFX in VarF too
+    J       802D9698
+    LUI	    A1, FE36
+    .End
+    % Don't save FX in VarF
+    J       802D96A8
+    LUI	    A1, FE36
+}
+
+#export:Data $Data_LastFX
+{ 00000000 }
+
+#new:Script:Battle $Script_ReturnPostage_HurtMario
+{
+    Call    GetActorPos  ( .Actor:Player *Var0 *Var1 *Var2 )
+    Call 	$ReadAddress ( 800DC1F1 0 *Var3 .False .False ) % get damage to dealt
+    If *Var3 <= 0
+        Return
+    EndIf
+    Call    PlayEffect   ( ~FX:ShowDamageAmount *Var0 *Var1 *Var2 10` 50` *Var3 0 0 0 0 0 0 )
+    Call    $ReadAddress ( $Data_LastFX 2 *VarE .False .False ) % load FX pointer
+    % Hurt Player
+    Set     *Var4 *Var3
+    Mul     *Var4 -1
+    Call    $Heal_PlayerTeam ( .Actor:Player *Var4 )
+    Call    GetAnimation ( .Actor:Player 0 *Var4 )
+    SetGroup 0
+    SuspendAll 2
+    Set *Var3 .Actor:Player
+    ExecWait $DoReturnPostageHit
+    ResumeAll 2
+    Call    SetAnimation ( .Actor:Player 0 *Var4 )
+    Thread
+        Wait    20`
+        Call    RemoveEffect ( *VarE )
+    EndThread
+    Return
+    End
+}
+
+#new:Script:Battle $Script_ReturnPostage_HurtPartner
+{
+    Call    GetActorPos  ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call 	$ReadAddress ( 800DC1F1 0 *Var3 .False .False ) % get damage to dealt
+    If *Var3 <= 0
+        Return
+    EndIf
+    Call    PlayEffect   ( ~FX:ShowDamageAmount *Var0 *Var1 *Var2 10` 50` *Var3 0 0 0 0 0 0 )
+    Call    $ReadAddress ( $Data_LastFX 2 *VarE .False .False ) % load FX pointer
+    % Hurt Partner
+    Set     *Var4 *Var3
+    Mul     *Var4 -1
+    Call    $Heal_PlayerTeam ( .Actor:Partner *Var4 )
+    Call    GetAnimation ( .Actor:Partner -1 *Var4 )
+    SetGroup 0
+    SuspendAll 2
+    Set *Var3 .Actor:Partner
+    ExecWait $DoReturnPostageHit
+    ResumeAll 2
+    Call    SetAnimation ( .Actor:Partner -1 *Var4 )
+    Thread
+        Wait    20`
+        Call    RemoveEffect ( *VarE )
+    EndThread
+    Call    8026777C % ~Func:btl_update_ko_status % update status icons
+    Return
+    End
+}
+
+% var3 = ActorID
+%
+% Only used by Mario & Partners, Enemies use another method in TTYDBadges.patch
+#export:Script:Battle $DoReturnPostageHit
+{
+    Switch *Var3
+        Case == .Actor:Player
+            Call    SetAnimation ( *Var3 0 00010017 ) % hurt
+        Case == .Actor:Partner
+            Call $ReadAddress ( 8010F2A2 0 *Var0 .False .False ) % load current partner
+            Switch *Var0
+                Case == .Partner:Goombario
+                    Call    SetAnimation ( *Var3 -1 0009000A )
+                Case == .Partner:Kooper
+                    Call    SetAnimation ( *Var3 -1 000A0011 )
+                Case == .Partner:Bombette
+                    Call    SetAnimation ( *Var3 -1 000B0012 )
+                Case == .Partner:Parakarry
+                    Call    SetAnimation ( *Var3 -1 000C000E )
+                Case == .Partner:Bow
+                    Call    SetAnimation ( *Var3 -1 000D0015 )
+                Case == .Partner:Watt
+                    Call    SetAnimation ( *Var3 -1 000E000C )
+                Case == .Partner:Sushie
+                    Call    SetAnimation ( *Var3 -1 000F0010 )
+                Case == .Partner:Lakilester
+                    Call    SetAnimation ( *Var3 -1 0010000A )
+            EndSwitch
+    EndSwitch
+    Call    GetActorPos  ( *Var3 *Var0 *Var1 *Var2 )
+    Add     *Var1 13` % y
+    Call    PlayEffect   ( ~FX:Firework:White *Var0 *Var1 *Var2 *Fixed[0.7] 0 0 0 0 0 0 0 0 )
+    Call    PlaySoundAtActor ( *Var3 00E9 ) % Hit
+    Call    GetActorPos  ( *Var3 *Var0 *Var1 *Var2 )
+    Loop 2
+        Sub *Var1 2
+        Call SetActorPos ( *Var3 *Var0 *Var1 *Var2 )
+        Wait 5
+        Add *Var1 2
+        Call SetActorPos ( *Var3 *Var0 *Var1 *Var2 )
+        Wait 5
+    EndLoop
+    Return
+    End
+}
+
+%============
+% Charge
+%============
+
+% Check if is time to use Charge
+% Enemies have a 70% chance to charge once, and a 20% twice.
+%
+% Script called in Battle_EnemiesCanUseItems.patch - Hook 175FD4 % 802476F4
+#export:Script:Battle $EnemyUseCharge
+{
+    % check if actor has any attack boost
+    Call    GetActorAttackBoost ( .Actor:Self *Var0 )
+    If *Var0 == 0 % Zero
+        Set *Var1 70` % 70% chance to charge if actor has zero attack boosts
+    Else
+        Set *Var1 20` % 20% chance to charge if actor already has an attack boost
+    EndIf
+    Call    RandInt ( 100` *Var0 )
+    If *Var0 < *Var1
+        ExecWait $Script_ChargeCommand
+    Else
+        % Run former TakeTurn script and finish
+        Call    $ReadAddress ( $Stack_TakeTurnScript 2 *Var0 .False .False )
+        ExecWait *Var0
+        Return
+    EndIf
+    Return
+    End
+}

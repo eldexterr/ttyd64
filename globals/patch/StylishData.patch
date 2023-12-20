@@ -1,0 +1,163 @@
+% This file has all global data used for the stylish mechanic
+%
+% Grabbed from Black Pit.
+
+% Display "Super" and add SP to the player
+%
+% writes in vars0-5
+%
+% [!] VarA = Don't give SP (bool)
+#new:Script:Battle $Script_DoStylishFX
+{
+    If *Flag_DisableFanfare == .False
+        Call	PlaySound		( 008A ) % Fan Fare
+    EndIf
+    Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+    Set     *Var4 *Var0 % copy x cords in var4
+    Set     *Var3 *Var2 % copy z cords in var3
+    Sub		*Var4 20` % "super" x pos
+    Sub		*Var3 5   % "super" z pos
+    Add		*Var1 20` % star fx y pos
+    Call    $ReadAddress   ( $Data_Inputs 0 *Var5 2 .False ) % Load Amount of Stylish made on this move
+    Switch *Var5
+        Case <= 1 % Nice
+            Call    PlayEffect  	( ~FX:TextPopup:Nice *Var4 *Var1 *Var3 7 20` )
+        Case == 2 % Good
+            Call    PlayEffect  	( ~FX:TextPopup:Good *Var4 *Var1 *Var3 7 20` )
+        Case >= 3 % Super
+            Call    PlayEffect  	( ~FX:TextPopup:Super *Var4 *Var1 *Var3 7 20` )
+    EndSwitch
+    % Sound
+    Switch  *Var5
+        Case <= 1
+            Call	PlaySound ( 0251 )
+        Case == 2
+            Call	PlaySound ( 0252 )
+        Case == 3
+            Call	PlaySound ( 0253 )
+        Case == 4
+            Call	PlaySound ( 0254 )
+        Case == 5
+            Call	PlaySound ( 0255 )
+        Case == 6
+            Call	PlaySound ( 0256 )
+        Case >= 7
+            Call	PlaySound ( 0257 )
+    EndSwitch
+    % Show Star FX?
+    % Check if this move gave enough SP already
+    If *VarA == .True
+        Return
+    EndIf
+    Call    $ReadAddress   ( 8010F51E 0 *Var3 .False .False ) % Load Star Spirits Rescued
+    If *Var3 != 0 % Don't show if the player doesn't even have any Star Spirit rescued
+        Call $ReadAddress ( 8010F520 1 *Var4 .False .False ) % Load Star Power (2 Bytes)
+        Set  *Var5 *Var4
+        Add *Var4 20 % give SP
+        % Check if the player will get max sp
+        /%
+        Var3 = Star Spirits
+        Var4 = Star Power (New value to save)
+        Var5 = Star Power
+        %/
+        Switch *Var3 % star spirits
+            Case == 1
+                If *Var4 >= 100
+                    Set *Var4 100
+                EndIf
+            Case == 2
+                If *Var4 >= 200
+                    Set *Var4 200
+                EndIf
+            Case == 3
+                If *Var4 >= 300
+                    Set *Var4 300
+                EndIf
+            Case == 4
+                If *Var4 >= 400
+                    Set *Var4 400
+                EndIf
+            Case == 5
+                If *Var4 >= 500
+                    Set *Var4 500
+                EndIf
+            Case == 6
+                If *Var4 >= 600
+                    Set *Var4 600
+                EndIf
+            Case == 7
+                If *Var4 >= 700
+                    Set *Var4 700
+                EndIf
+        EndSwitch
+        % Add Star Power
+        If *Var4 != *Var5 % only show the fx if the player actually got more sp
+            Call    PlayEffect  	( ~FX:Sparkles:Star *Var0 *Var1 *Var2 20` )
+        EndIf
+        Call    $WriteAddress ( 8010F520 1 *Var4 .False .False ) % save star power
+    EndIf
+    Return
+    End
+}
+
+% TRACK A BUTTON
+% Save a bool as true if the input got pressed at any time
+/%
+Why not just using ReadBitFlag? to track the A button?
+
+Can be done in this approach too, but i have found some frames
+always get lost when you track when using scripting
+
+I think is good to use when isn't really crucial stuff, like
+when skipping a cutscene for example, but I think for this
+will be better to track all inputs perfectly.
+%/
+#new:Script:Battle $Script_InitTracker
+{
+    % Init Tracker
+    % Nuke All tracker Data* , Except Input Bool and Stylish Moves landed in a row counter
+    Call $WriteAddress ( $Data_Inputs 0 0 1 .False )
+    Call $WriteAddress ( $Data_Inputs 0 0 3 .False )
+    Call $WriteAddress ( $Data_Inputs 2 0 4 .False )
+    % Set Data to Track
+    Call $WriteAddress ( $Data_Inputs 0 80 1 .False ) % 80 = A button
+    Call $WriteAddress ( $Data_Inputs 2 80074036 4 .False ) % Track one time inputs
+    Set *TrackInput .True % start tracker
+    Return
+    End
+}
+
+% Nuke ALL data related to the tracker
+#new:Script:Battle $Script_NukeTracker
+{
+    Set  *TrackInput .False
+    Call $WriteAddress ( $Data_Inputs 2 0 0 .False )
+    Call $WriteAddress ( $Data_Inputs 2 0 4 .False )
+    Return
+    End
+}
+
+% Timing Tutor Badge - Show some particles when the player can do an stylish move
+% [!] Writes in Vars 0,1,2
+#new:Script:Battle $Script_TimingTutor
+{
+    Set *Var0 012D % Badge ID
+    ExecWait $IsBadgeEquipped_Script
+    % The player is in the stylish tutorial?
+    If *Flag_StylishTutorial == .True
+        Set *Var0 .True % always show the ! bubbles
+    EndIf
+    If *Var0 == .True % Badge Equipped
+        Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+        Add     *Var1 18`
+        Call    PlayEffect  ( ~FX:EmoteIcon:Exclaim 0 *Var0 *Var1 *Var2 16` 85` 3 ) % npcID, dX/dY/dZ, radius, pitch, duration
+        %Call    PlayEffect  ( ~FX:RedShimmer:Burst *Var0 *Var1 *Var2 -45` 20` 2 ) % X/Y/Z, emitter radius, emitter height, num particles
+    EndIf
+    Return
+    End
+}
+
+#export $Script_DoStylishFX
+#export $Script_InitTracker
+#export $Script_NukeTracker
+#export $Script_TimingTutor

@@ -1,0 +1,580 @@
+@ $Function_80240EA4
+{
+   [BC]  CLEAR		V0 % never spawn chuck
+   [1B8] J          $Function_80240EA4[1E4]
+}
+
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:KoopaVillage
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Set   *GF_Map_KoopaVillage  .True
+    Set   *AreaFlag[009]  .False
+    Set   *AreaFlag[00A]  .False
+    Set   *AreaFlag[00C]  .False
+    Set   *AreaFlag[00E]  .False
+    Set   *GF_NOK01_Bush4_KoopaLeaf  .False
+    If  *GB_StoryProgress  >=  .Story:Ch1_KooperJoinedParty % FFFFFFA4
+        Set   *GF_NOK01_RecoveredShellA  .True
+        Set   *GF_NOK01_RecoveredShellB  .True
+        Set   *GF_NOK01_RecoveredShellC  .True
+    EndIf
+    If  *GB_StoryProgress  <  .Story:Ch1_KooperJoinedParty % FFFFFFA4
+        Call  MakeNpcs  ( .False $NpcGroupList_8024FAA8 )
+    Else
+        Call  MakeNpcs  ( .False $NpcGroupList_8024FAE4 )
+    EndIf
+    Call  ClearDefeatedEnemies ( )
+    Exec  $Script_8024FCF0
+    Exec  $Script_80250B70
+    Exec  $Script_802431CC
+    ExecWait  $Script_MakeEntities
+    Exec  $Script_802506C0
+    Wait  1`
+    ExecWait  $Script_80251840
+    Exec  $Script_80242BD0
+    Set   *AreaByte[0]  00000000
+    Exec  $Script_EnterWalk_802430B8
+    Exec  $Script_ShopItem
+    Return
+    End
+}
+
+#new:Script $Script_ShopItem
+{
+    Call    MakeItemEntity ( .Item:StarPiece ~Vec3d:EntityShopItem .ItemSpawnMode:Fixed_NeverVanish *GF_NOK01_ItemShopItem )
+    Return
+    End
+}
+
+%==========%
+% Bob-ombs %
+%==========%
+
+@ $Script_Init_8024D1AC % Right Bomb
+{
+        Call  BindNpcInteract   ( .Npc:Self $Script_Interact_8024CD08_NEW )
+   14:  If  *GB_StoryProgress  <  .Story:Ch1_StarSpritDeparted % FFFFFFB5
+   24:  	Call  RemoveNpc ( .Npc:Self )
+   34:  EndIf
+        If *GF_NOK01_BombsGame == .False
+            Call    SetNpcAnimation ( .Npc:Self 00910103 ) % running
+        EndIf
+   3C:  Return
+   44:  End
+}
+
+@ $Script_Init_8024D164 % Middle Bomb
+{
+        Call  BindNpcInteract   ( .Npc:Self $Script_Interact_8024C694_NEW )
+   14:  Return
+   1C:  End
+}
+
+@ $Script_Init_8024D188 % Left Bomb
+{
+        Call  BindNpcInteract   ( .Npc:Self $Script_Interact_8024C868_NEW )
+   14:  Return
+   1C:  End
+}
+
+#new:Script $Script_Interact_8024CD08_NEW
+{
+    If *GF_NOK01_BombsGame == .False
+        % Is game active?
+        Call GetSelfVar ( 00000000 *Var0 )
+        If *Var0 == .False
+            ExecWait $Script_Bombs_Minigame_Init
+        Else
+            ExecWait $Script_BombGame_PickBomb
+        EndIf
+        Return
+    EndIf
+    Switch  *GB_StoryProgress
+        Case  <  .Story:Ch4_StarSpritDeparted % 7
+            If  *AreaFlag[00E]  ==  .False
+                Set   *AreaFlag[00E]  .True
+                Call  NpcFacePlayer ( .Npc:Self 00000000 )
+                Call  NpcFacePlayer ( 0000000C 00000000 )
+                Call  NpcFacePlayer ( 0000000D 00000000 )
+                Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 000C004E ) % Thank you, thank you, thank you! Way to beat the K ...
+                Call  PlayerFaceNpc ( 0000000C .False )
+                Call  SpeakToPlayer ( 0000000C 00910104 00910101 00000000 000C004F ) % I feel...so very happy... ...surrounded by friends ...
+                Call  PlayerFaceNpc ( 0000000D .False )
+                Call  SpeakToPlayer ( 0000000D 00910104 00910101 00000000 000C0050 ) % We salute you! Buh-bomb!
+                Thread
+                    Call  SetNpcAnimation   ( 0000000D 00910103 )
+                    Wait  10`
+                    Call  SetNpcAnimation   ( 0000000D 00910101 )
+                    Wait  3`
+                    Call  GetNpcPos ( 0000000D *Var0 *Var1 *Var2 )
+                    Call  PlaySoundAtNpc    ( 0000000D .Sound:Cannon1 00000000 )
+                    Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+                EndThread
+                Wait  20`
+                Thread
+                    Call  PlayerFaceNpc     ( 0000000C .False )
+                    Call  SetNpcAnimation   ( 0000000C 00910103 )
+                    Wait  10`
+                    Call  SetNpcAnimation   ( 0000000C 00910101 )
+                    Wait  3`
+                    Call  GetNpcPos ( 0000000C *Var0 *Var1 *Var2 )
+                    Call  PlaySoundAtNpc    ( 0000000C .Sound:Cannon1 00000000 )
+                    Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+                EndThread
+                Wait  20`
+                Thread
+                    Call  PlayerFaceNpc     ( .Npc:Self .False )
+                    Call  SetNpcAnimation   ( .Npc:Self 00910103 )
+                    Wait  10`
+                    Call  SetNpcAnimation   ( .Npc:Self 00910101 )
+                    Wait  3`
+                    Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+                    Call  PlaySoundAtNpc    ( .Npc:Self .Sound:Cannon1 00000000 )
+                    Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+                EndThread
+            Else
+                Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 000C0051 ) % Some of our other friends who were also in the for ...
+            EndIf
+        Case  <  .Story:Ch7_StarSpritDeparted % 59
+            Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 000C0052 ) % Oh, yeah... the air out here is so wonderfully cle ...
+        Case  >=  .Story:Ch7_StarSpritDeparted % 59
+            Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 000C0053 ) % It's not fair that bad guys' wishes always come tr ...
+    EndSwitch
+    Return
+    End
+}
+
+#new:IntTable $Data_BombMinigame_Level1_Order
+{
+ .Npc:Bomb_Left
+ .Npc:Bomb_Right
+ .Npc:Bomb_Left
+ .Npc:Bomb_Middle
+ FFFFFFFF
+}
+
+#new:IntTable $Data_BombMinigame_Level2_Order
+{
+ .Npc:Bomb_Right
+ .Npc:Bomb_Middle
+ .Npc:Bomb_Right
+ .Npc:Bomb_Left
+ .Npc:Bomb_Left
+ FFFFFFFF
+}
+
+#new:IntTable $Data_BombMinigame_Level3_Order
+{
+ .Npc:Bomb_Left
+ .Npc:Bomb_Left
+ .Npc:Bomb_Right
+ .Npc:Bomb_Left
+ .Npc:Bomb_Middle
+ .Npc:Bomb_Right
+ FFFFFFFF
+}
+
+% Main code
+
+#define .Npc:Bomb_Middle C
+#define .Npc:Bomb_Left D
+#define .Npc:Bomb_Right E
+#define .Npc:WorldBombomb_14 E
+
+#new:Script $Script_Bombs_Minigame_Init
+{
+    Call  SpeakToPlayer ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_1 )
+    Call  ShowChoice    ( 001E001D ) % yes no
+    If *Var0 != 0 % no
+        Call  ContinueSpeech ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_Cancel )
+        Call  SetSelfVar ( 00000000 .False )
+        Return
+    Else
+        Call  ContinueSpeech ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_2 )
+        ExecWait $Script_Bombs_Minigame
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_Bombs_Minigame
+{
+    Switch *Byte_NOK_02
+        Case == 0 % Level 1
+            Set     *Var0 .Npc:Bomb_Left
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    20`
+            Set     *Var0 .Npc:Bomb_Right
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    20`
+            Set     *Var0 .Npc:Bomb_Left
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    20`
+            Set     *Var0 .Npc:Bomb_Middle
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    20`
+            Set     *MapVar[0] $Data_BombMinigame_Level1_Order
+        Case == 1 % Level 2
+            Set     *Var0 .Npc:Bomb_Right
+            Set     *Var1 15`
+            Exec    $Script_DoBombExplotion
+            Wait    15`
+            Set     *Var0 .Npc:Bomb_Middle
+            Set     *Var1 15`
+            Exec    $Script_DoBombExplotion
+            Wait    15`
+            Set     *Var0 .Npc:Bomb_Right
+            Set     *Var1 15`
+            Exec    $Script_DoBombExplotion
+            Wait    15`
+            Set     *Var0 .Npc:Bomb_Left
+            Set     *Var1 15`
+            Exec    $Script_DoBombExplotion
+            Wait    15`
+            Set     *Var0 .Npc:Bomb_Left
+            Set     *Var1 15`
+            Exec    $Script_DoBombExplotion
+            Wait    15`
+            Set     *MapVar[0] $Data_BombMinigame_Level2_Order
+        Case >= 2 % Level 3
+            Set     *Var0 .Npc:Bomb_Left
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    10`
+            Set     *Var0 .Npc:Bomb_Left
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    10`
+            Set     *Var0 .Npc:Bomb_Right
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    10`
+            Set     *Var0 .Npc:Bomb_Left
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    10`
+            Set     *Var0 .Npc:Bomb_Middle
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    10`
+            Set     *Var0 .Npc:Bomb_Right
+            Set     *Var1 10`
+            Exec    $Script_DoBombExplotion
+            Wait    10`
+            Set     *MapVar[0] $Data_BombMinigame_Level3_Order
+    EndSwitch
+    Call    SetNpcAnimation ( .Npc:Bomb_Left 00910101 )
+    Call    SetNpcAnimation ( .Npc:Bomb_Middle 00910101 )
+    Call    SetNpcAnimation ( .Npc:Bomb_Right 00910101 )
+    Call    SpeakToPlayer ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_3 )
+    Set     *MapVar[1] .False
+    Set     *MapVar[2] .False
+    Call    SetSelfVar ( 00000000 .True ) % start game
+    Return
+    End
+}
+
+#new:Script $Script_BombGame_PickBomb
+{
+    Switch *Byte_NOK_02
+        Case == 0
+            UseIntBuffer $Data_BombMinigame_Level1_Order
+        Case == 1
+            UseIntBuffer $Data_BombMinigame_Level2_Order
+        Case >= 2
+            UseIntBuffer $Data_BombMinigame_Level3_Order
+    EndSwitch 
+    GetIntN *Var0 *MapVar[1]
+    Call    GetSelfNpcID ( *Var1 )
+    If *Var0 == *Var1 % correct!
+        Call PlaySound ( 021C ) % correct
+        % check if this one was the last entry
+        Set *Var0 *MapVar[1]
+        Add *Var0 1
+        GetIntN *Var1 *Var0
+        If *Var1 == -1 % level won!
+            Add *Byte_NOK_02 1
+            Set *MapVar[1] .False
+            Switch *Byte_NOK_02
+                CaseOR == 0
+                CaseOR == 1
+                CaseOR == 2
+                    Call  SpeakToPlayer ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_5 )
+                    ExecWait $Script_Bombs_Minigame
+                EndCaseGroup
+                Case >= 3
+                    Call  SetMusicTrack ( 00000000 .Song:YoshiKidsFound 00000000 00000008 )
+                    Call  SpeakToPlayer ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_6 )
+                    Exec  $Script_RestoreMusicTrack
+                    Set   *Var0 .Item:StarPiece
+                    Call  ShowGotItem ( *Var0 .True 00000000 )
+                    Call  AddStarPieces ( 1 )
+                    Set   *GF_NOK01_BombsGame .True
+            EndSwitch
+        Else
+            Add *MapVar[1] 1 % check next entry
+        EndIf
+    Else % Wrong!
+        Call PlaySound ( 021D ) % wrong
+        Call SpeakToPlayer ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_4 )
+        Call SpeakToPlayer ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_Ask )
+        Call ShowChoice    ( 001E001D ) % yes no
+        If *Var0 != 0 % no
+            Call    ContinueSpeech ( .Npc:Bomb_Right 00910104 00910101 00000000 $String_BobOmb_Cancel )
+            Call    SetNpcVar ( .Npc:Bomb_Right 00000000 .False )
+            Return
+        Else % yes
+            Call CloseMessage
+            ExecWait $Script_Bombs_Minigame
+        EndIf
+    EndIf
+    Return
+    End
+}
+
+#new:Script $Script_RestoreMusicTrack
+{
+    If  *GB_StoryProgress  <  .Story:Ch1_KooperJoinedParty % FFFFFFA4
+    	Call  SetMusicTrack ( 00000000 .Song:FuzzyAttack 00000000 00000008 )
+    Else
+    	Call  SetMusicTrack ( 00000000 .Song:KoopaVillage 00000000 00000008 )
+    EndIf
+    Call  ClearAmbientSounds    ( 000000FA )
+    Return
+    End
+}
+
+% var0 = npcID
+%
+% var1 = waitFrames
+#new:Script $Script_DoBombExplotion
+{
+    Call  SetNpcAnimation   ( *Var0 00910103 )
+    Wait  *Var1
+    Call  SetNpcAnimation   ( *Var0 00910101 )
+    Wait  3`
+    Call  GetNpcPos ( *Var0 *Var2 *Var3 *Var4 )
+    Call  PlaySoundAtNpc    ( *Var0 .Sound:Cannon1 00000000 )
+    Call  $Function_802426A4    ( *Var2 *Var3 *Var4 )
+    Return
+    End
+}
+
+% Middle Bomb
+#new:Script $Script_Interact_8024C694_NEW
+{
+        If  *GB_StoryProgress  >  .Story:Ch1_StarSpritDeparted % FFFFFFB5
+            Call GetNpcVar ( .Npc:WorldBombomb_14 00000000 *Var0 )
+            If *Var0 == .True % Bombs game is active
+                ExecWait $Script_BombGame_PickBomb
+                Return
+            EndIf
+        EndIf
+    0:  Switch  *GB_StoryProgress
+    C:  	Case  <  .Story:Ch1_StarSpritDeparted % FFFFFFB5
+   18:  		If  *AreaFlag[00B]  ==  .False
+   28:  			Set   *AreaFlag[00B]  .True
+   38:  			Set   *Var0  000C003F
+   48:  		Else
+   50:  			Set   *AreaFlag[00B]  .False
+   60:  			Set   *Var0  000C0040
+   70:  		EndIf
+   78:  		Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 *Var0 ) % variable string ID
+   98:  	Case  <  .Story:Ch4_StarSpritDeparted % 7
+   A4:  		Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 000C0041 ) % I decided to stay here with my friends for a while ...
+   C4:  	Case  <  .Story:Ch7_StarSpritDeparted % 59
+   D0:  		Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 000C0042 ) % Bombette will be victorious! You can bet your bomb ...
+   F0:  	Case  >=  .Story:Ch7_StarSpritDeparted % 59
+   FC:  		Call  NpcFacePlayer     ( .Npc:Self 00000000 )
+  110:  		Call  SpeakToPlayer     ( .Npc:Self 00910104 00910101 00000000 000C0043 ) % I'm a Bob-omb. I love to bomb-bomb!
+  130:  		Call  SetNpcAnimation   ( .Npc:Self 00910103 )
+  144:  		Wait  10`
+  150:  		Call  SetNpcAnimation   ( .Npc:Self 00910101 )
+  164:  		Wait  3`
+  170:  		Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+  18C:  		Call  PlaySoundAtNpc    ( .Npc:Self .Sound:Cannon1 00000000 )
+  1A4:  		Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+  1BC:  EndSwitch
+  1C4:  Return
+  1CC:  End
+}
+
+% Far Left Bomb
+#new:Script $Script_Interact_8024C868_NEW
+{
+        If  *GB_StoryProgress  >  .Story:Ch1_StarSpritDeparted % FFFFFFB5
+            Call GetNpcVar ( .Npc:WorldBombomb_14 00000000 *Var0 )
+            If *Var0 == .True % Bombs game is active
+                ExecWait $Script_BombGame_PickBomb
+                Return
+            EndIf
+        EndIf
+    0:  Switch  *GB_StoryProgress
+    C:  	Case  <  .Story:Ch1_StarSpritDeparted % FFFFFFB5
+   18:  		If  *AreaFlag[00C]  ==  .False
+   28:  			Set   *AreaFlag[00C]  .True
+   38:  			Set   *Var0  000C0046
+   48:  		Else
+   50:  			Set   *AreaFlag[00C]  .False
+   60:  			Set   *Var0  000C0047
+   70:  		EndIf
+   78:  		Call  SpeakToPlayer ( .Npc:Self 00910104 00910101 00000000 *Var0 ) % variable string ID
+   98:  	Case  <  .Story:Ch4_StarSpritDeparted % 7
+   A4:  		If  *AreaFlag[00C]  ==  .False
+   B4:  			Set   *AreaFlag[00C]  .True
+   C4:  			Call  NpcFacePlayer     ( .Npc:Self 00000000 )
+   D8:  			Call  BringPartnerOut   ( .Partner:Bombette )
+   E8:  			Call  NpcFaceNpc        ( .Npc:Partner .Npc:Self 00000000 )
+  100:  			Call  SpeakToPlayer     ( .Npc:Self 00910104 00910101 00000000 000C0048 ) % Bombette! You're safe!? Oh, joy!! I was so worried ...
+  120:  			Call  DisablePartnerAI  ( 00000000 )
+  130:  			Call  SpeakToPlayer     ( .Npc:Partner 0003000E 00030003 00000000 000C0049 ) % Mario rescued me. So I figured the least I could d ...
+  150:  			Call  EnablePartnerAI ( )
+  15C:  			Call  SpeakToPlayer     ( .Npc:Self 00910104 00910101 00000000 000C004A ) % Good luck, Bombette! We Bob-ombs will all be wishi ...
+  17C:  			Call  SetNpcAnimation   ( .Npc:Self 00910103 )
+  190:  			Wait  10`
+  19C:  			Call  SetNpcAnimation   ( .Npc:Self 00910101 )
+  1B0:  			Wait  3`
+  1BC:  			Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+  1D8:  			Call  PlaySoundAtNpc    ( .Npc:Self .Sound:Cannon1 00000000 )
+  1F0:  			Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+  208:  			Wait  30`
+  214:  			Call  PutPartnerAway ( )
+  220:  		Else
+  228:  			Call  NpcFacePlayer     ( .Npc:Self 00000000 )
+  23C:  			Call  SpeakToPlayer     ( .Npc:Self 00910104 00910101 00000000 000C004B ) % Here's a little something I put together to wish M ...
+  25C:  			Call  SetNpcAnimation   ( .Npc:Self 00910103 )
+  270:  			Wait  10`
+  27C:  			Call  SetNpcAnimation   ( .Npc:Self 00910101 )
+  290:  			Wait  3`
+  29C:  			Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+  2B8:  			Call  PlaySoundAtNpc    ( .Npc:Self .Sound:Cannon1 00000000 )
+  2D0:  			Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+  2E8:  		EndIf
+  2F0:  	Case  <  .Story:Ch7_StarSpritDeparted % 59
+  2FC:  		Call  NpcFacePlayer     ( .Npc:Self 00000000 )
+  310:  		Call  SpeakToPlayer     ( .Npc:Self 00910104 00910101 00000000 000C004C ) % Explosion is a fine art! Bomb-bomb!
+  330:  		Call  SetNpcAnimation   ( .Npc:Self 00910103 )
+  344:  		Wait  10`
+  350:  		Call  SetNpcAnimation   ( .Npc:Self 00910101 )
+  364:  		Wait  3`
+  370:  		Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+  38C:  		Call  PlaySoundAtNpc    ( .Npc:Self .Sound:Cannon1 00000000 )
+  3A4:  		Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+  3BC:  	Case  >=  .Story:Ch7_StarSpritDeparted % 59
+  3C8:  		Call  NpcFacePlayer     ( .Npc:Self 00000000 )
+  3DC:  		Call  SpeakToPlayer     ( .Npc:Self 00910104 00910101 00000000 000C004D ) % Bombs away, Mario! We wish you the best of luck! B ...
+  3FC:  		Call  SetNpcAnimation   ( .Npc:Self 00910103 )
+  410:  		Wait  10`
+  41C:  		Call  SetNpcAnimation   ( .Npc:Self 00910101 )
+  430:  		Wait  3`
+  43C:  		Call  GetNpcPos ( .Npc:Self *Var0 *Var1 *Var2 )
+  458:  		Call  PlaySoundAtNpc    ( .Npc:Self .Sound:Cannon1 00000000 )
+  470:  		Call  $Function_802426A4    ( *Var0 *Var1 *Var2 )
+  488:  EndSwitch
+  490:  Return
+  498:  End
+}
+
+% = Shop =========
+
+@ $ShopInventory_8024FB6C
+{
+	.Item:CourageShell   00000005 00230133
+	.Item:POWBlock       00000004 00240027 % Flips shell enemies and inflicts 2 damage points o ...
+	.Item:FireFlower     00000008 00240000 % A flower that burns all enemies with fireballs. At ...
+	.Item:GradualSyrup   0000000F 0023013A
+	.Item:MrSoftener     00000008 00230141
+	.Item:SlowShroom     0000000F 00230147
+	00000000 00000000 00000000
+}
+
+% = Strings ======
+
+#string $String_BobOmb_1
+{
+[Style Right]
+Hey Mario do you want to play[BR]
+a game with us?[BR]
+[Yield][End]
+}
+
+#string $String_BobOmb_2
+{
+[Next]
+Awesome![BR]
+[Wait][Next]
+Try to remember the order of[BR]
+each explosion.
+[Wait][End]
+}
+
+#string $String_BobOmb_3
+{
+[Style Right]
+Who was the first one?
+[Wait][End]
+}
+
+#string $String_BobOmb_4
+{
+[Style Right]
+[Volume percent=100][Wave][Size 32]WRONG![/fx][SizeReset]
+[BR]
+[BR]
+[BR]
+[Wait][Next]
+[Volume percent=75]Hey, put a little more attention,[BR]
+we know you can do it!
+[Wait][End]
+}
+
+#string $String_BobOmb_5
+{
+[Style Right]
+That was just a warm-up...[BR]
+[Wait][Next]
+Get ready!
+[Wait][End]
+}
+
+#string $String_BobOmb_6
+{
+[Style Right]
+[InputOff][Volume percent=100][Wave][Size 32]FINISH!!![/fx][SizeReset]
+[BR]
+[BR]
+[BR]
+[Pause 20]
+[Next]
+[InputOn]
+[Volume percent=75]Wow, Mario you actually did it![BR]
+[Wait][Next]
+Well you aren't the one and only[BR]
+Mario just for nothing, this was[BR]
+fun, take this!
+[Wait][End]
+}
+
+#string $String_BobOmb_Ask
+{
+[Style Right]
+Do you want to try it one[BR]
+more time?[BR]
+[Yield][End]
+}
+
+#string $String_BobOmb_Cancel
+{
+[Next]
+Well, your loss.
+[Wait][End]
+}
+

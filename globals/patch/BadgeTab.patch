@@ -1,0 +1,1007 @@
+% This file move everything to have more space for the 99 max BP in the Badge Tab from the Pause Menu.
+%
+% Base code tooked from Black Pit, it has the belts code too, but is unused in this mod.
+
+% Move everything to make space for the belts icons
+
+% Mario Coin - Y Pos
+@Function 13B6EC % 802483AC
+{
+    ADDIU	A2, T2, 002D
+}
+
+% BP and Total BP (Strings) - Y Pos
+@Function 13B72C % 802483EC
+{
+    ADDI	A2, S0, FFDD % -35
+    ADDI	A2, S0, FFDD % -35
+}
+
+% Orange Dots (when the cursor is outside the badge list) - Y Pos
+@Function 13BBB0 % 80248870
+{
+    ADDIU	A2, A2, 0035
+}
+
+% Orange Dots (when the cursor is inside the badge list) - Y Pos
+@Function 13B99C % 8024865C
+{
+    ADDIU	A2, A2, 0035
+}
+
+% Fading Orange Dots
+@Function 13BB0C % 802487CC
+{
+    ADDIU	A2, A2, 0035
+}
+
+% White Dots - Y Pos
+@Function 13B8C8 % 80248588
+{
+    ADDIU	A2, A2, 0035
+}
+
+% "Available:" - Y Pos
+@Function 13B7C0 % 80248480
+{
+    ADDI	A2, S0, FFDA % -38
+}
+
+% Available BP
+@Function 13B7CC % 8024848C
+{
+    ADDI	A2, S0, FFDA % -38
+}
+
+% "All Badges" - Box Data
+@Hook 13BBFC % 802488BC
+{
+    LW	    A2, 00C4 (SP)
+    BEQL	V1, R0, .CurrentList
+    NOP     % ADDIU	A2, A2, 0009 % x pos (when list is active)
+    .CurrentList
+    LW	    T2, 00C8 (SP)
+    ADDIU   V0, R0, 005B % x size
+    SW      V0, 0014 (SP)
+    ADDIU   V0, R0, 0020 % y size
+    SW      V0, 0018 (SP)
+    ADDIU   V0, R0, 0000 % pos z
+    SW      V0, 0010 (SP)
+    ADDIU   V0, R0, 00FF % opacity
+    SW      V0, 001C (SP)
+    ADDIU	A3, T2, 0007 % y pos
+    ADDIU   V0, R0, 0080 % fogRGB
+    SW      V0, 0020 (SP)
+    ADDIU   A0, R0, 0004 % ?
+    LIO     A1, 8026FBD8
+    ADDIU   V0, R0, 0140 % txShiftY
+    SW      V0, 0044 (SP)
+    ADDIU   V0, R0, 00F0 % txShiftX
+    SW      R0, 0024 (SP)
+    SW      R0, 0028 (SP)
+    SW      R0, 002C (SP)
+    SW      R0, 0030 (SP)
+    SW      R0, 0034 (SP)
+    SW      R0, 0038 (SP)
+    SW      R0, 003C (SP)
+    SW      R0, 0040 (SP)
+    SW      V0, 0048 (SP)
+    J       80248940
+    NOP
+}
+
+% "Active Badges" - Box Data
+@Hook 13BCD8 % 80248998
+{
+    LW	    A2, 00C4 (SP)
+    BEQL	V1, S0, .CurrentList
+    ADDIU	A2, A2, 28 % x pos (when list is active)
+    .CurrentList
+    LW	    T3, 00C8 (SP)
+    ADDIU   V0, R0, 0033 % x size
+    SW      V0, 0014 (SP)
+    ADDIU   V0, R0, 0020 % y size
+    SW      V0, 0018 (SP)
+    ADDIU   V0, R0, 0000 % pos z
+    SW      V0, 0010 (SP)
+    ADDIU   V0, R0, 00FF % opacity
+    SW      V0, 001C (SP)
+    ADDIU   A3, T3, 0007 % y pos
+    ADDIU   V0, R0, 0000 % fogRGB
+    SW      V0, 0020 (SP)
+    ADDIU   A0, R0, 0004 % ?
+    LIO     A1, 8026FBD8
+    ADDIU   V0, R0, 0140 % txShiftY
+    SW      V0, 0044 (SP)
+    ADDIU   V0, R0, 00F0 % txShiftX
+    SW      R0, 0024 (SP)
+    SW      R0, 0028 (SP)
+    SW      R0, 002C (SP)
+    SW      R0, 0030 (SP)
+    SW      R0, 0034 (SP)
+    SW      R0, 0038 (SP)
+    SW      R0, 003C (SP)
+    SW      R0, 0040 (SP)
+    SW      V0, 0048 (SP)
+    JAL     ~Func:draw_box
+    SW	    R0, 004C (SP)
+    J       80248A20
+    NOP
+}
+
+#string $String_All
+{
+All[End]
+}
+
+#string $String_On
+{
+On[End]
+}
+
+% Disable "All Badges" (String)
+@Function 13BCCC % 8024898C
+{
+    NOP
+}
+
+% Disable "Active" (String)
+@Function 13BDA4 % 80248A64
+{
+    NOP
+}
+
+% Draw each string for each box
+@Hook 13BDB4 % 80248A74
+{
+    LW	    T2, 00C4 (SP)
+    LW      V1, 0 (S1) % current list / 0 = all , 1 = active badges
+    BNE     V1, R0, .Active
+    NOP
+    LIO     A0, $String_All
+    ADDIU	A1, T2, 0010 % x pos
+    LW	    T3, 00C8 (SP)
+    ADDIU	A2, T3, 000F % y pos
+    ORI     A3, R0, 00FF % opacity
+    BEQ     R0, R0, .DrawString
+    NOP
+    .Active
+    LIO     A0, $String_On
+    ADDIU	A1, T2, 0039 % x pos
+    LW	    T3, 00C8 (SP)
+    ADDIU	A2, T3, 000E % y pos
+    ORI     A3, R0, 00FF % opacity
+    .DrawString
+    SW	    R0, 0010 (SP) % ?
+    JAL     ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    J       80248AAC
+    NOP
+}
+
+% Hand Cursor - Move the cursor horizontally instead of vertically
+@Function 13BE10 % 80248AD0
+{
+    LW	    A1, 0000 (S1)
+    LW	    T2, 00C4 (SP)
+    LW	    T3, 00C8 (SP)
+    ADDIU	A2, T2, 002D
+    SLL	    A1, A1, 5
+    ADDI	A1, A1, FFF3
+    J	    80248BF4
+    ADDU	A1, T3, A1
+}
+
+% Hand Cursor - List Navigation - Change the list if the joystick was moved to the Left or Right, not Up or Down
+@Function 13C5AC % 8024926C
+{
+    LUI	V1, 000C % bit2 and 3 (Left and Right)
+}
+
+%===========
+% D-Pad + Belts Icons
+%===========
+
+% Store the iconIndex from the first icon created on below hook
+#new:Data $Data_BeltsIcons_FirstIndex
+{ 00000000 }
+
+#export $Data_BeltsIcons_FirstIndex % needed by PartnersHP.patch
+
+% Create all new icons for the pause menu
+% The DPad Icon plus belts icons + the animated heart for the Party tab
+@Hook 1419C8 % 8024E688
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     A0, $IconScript_DPad
+    JAL     $CreateIcon
+    RESERVED
+    SAW     S0, $Data_BeltsIcons_FirstIndex
+    LIO     A0, $IconScript_LeftBelt
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_RightBelt
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_DownBelt
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_BumpAttack
+    JAL     $CreateIcon
+    RESERVED
+    % Party Tab
+    LIO     A0, $IconScript_HealBoxHeart
+    JAL     $CreateIcon
+    RESERVED
+    % Stats Tab
+    LIO     A0, $IconScript_Shine_Pause
+    JAL     $CreateIcon
+    RESERVED
+    %==========
+    % Extra Tab
+    %
+    % Create Icons - Menu0
+    %==========
+    LIO     A0, $IconScript_Compass
+    JAL     $CreateIcon
+    RESERVED
+    SAW     S0, $ExtraTab_FirstIconIndex
+    % save indexes in the menu data
+    LIO     A0, $ExtraTab_Menu0_MenuData_SubMenu0
+    JAL     $ExtraTab_SetMenuIconsIndexes
+    COPY    A1, S0
+    LIO     A0, $IconScript_EmptyBook
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_gear_boots_1
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_screwdriver
+    JAL     $CreateIcon
+    RESERVED
+    % Save the current equipped badges in to the top belt
+    JAL     $Function_Save_UpBelt
+    NOP
+    % restore vanilla code
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    LUI	    A1, F5DE
+    J       8024E690
+    CLEAR   A0
+}
+
+%==============
+% Image files
+%==============
+
+% battle shorcuts
+#new:Data $Icon_DPad
+{ ~RasterFile:CI-4:belts/dpad.png }
+
+#new:Data $Palette_DPad
+{ ~PaletteFile:CI-4:belts/dpad.png }
+
+#new:Data $Icon_LeftB
+{ ~RasterFile:CI-4:belts/0A8.png }
+
+#new:Data $Palette_LeftB
+{ ~PaletteFile:CI-4:belts/0A8.png }
+
+#new:Data $Icon_RightB
+{ ~RasterFile:CI-4:belts/0AE.png }
+
+#new:Data $Palette_RightB
+{ ~PaletteFile:CI-4:belts/0AE.png }
+
+#new:Data $Icon_DownB
+{ ~RasterFile:CI-4:belts/0B9.png }
+
+#new:Data $Palette_DownB
+{ ~PaletteFile:CI-4:belts/0B9.png }
+
+#new:Data $Icon_BumpAttack
+{ ~RasterFile:CI-4:belts/0C8.png }
+
+#new:Data $Palette_BumpAttack
+{ ~PaletteFile:CI-4:belts/0C8.png }
+
+%==============
+% Icon Scripts
+%==============
+
+#new:Data $IconScript_DPad
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_DPad $Palette_DPad
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_LeftBelt
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_LeftB $Palette_LeftB
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_RightBelt
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_RightB $Palette_RightB
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_DownBelt
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_DownB $Palette_DownB
+00000000 00000000 00000003 00000000
+}
+
+#new:Data $IconScript_BumpAttack
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000004
+00000002 0000003C $Icon_BumpAttack $Palette_BumpAttack
+00000000 00000000 00000003 00000000
+}
+
+#new:Function $Function_Save_UpBelt
+{
+    PUSH    RA, T0, T1, T2, T3
+    % Nuke Up belt entire data
+    LIO     T0, $Data_TopBelt
+    COPY    T1, T0
+    .NukeWord
+    SW      R0, 0 (T1)
+    ADDIU   T1, T1, 4 % nuke next word
+    ADDIU   T2, T0, 40 % amount of bytes to nuke
+    BNE     T1, T2, .NukeWord
+    NOP
+    % Save Badges 1 - 30
+    LIO     T0, $Data_TopBelt
+    LIO     T1, 8010F498 % 1st Activated Badge
+    .Loop
+    LIO     T3, 8010F4D4 % 31th Activated Badge
+    BEQ     T1, T3, .End
+    NOP
+    LHU     T2, 0 (T1)
+    SH      T2, 0 (T0)
+    ADDIU   T0, T0, 2
+    BEQ     R0, R0, .Loop
+    ADDIU   T1, T1, 2
+    .End
+    POP     RA, T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+#new:Function $Function_Load_UpBelt
+{
+    PUSH    RA, T0, T1, T2, T3
+    LIO     T0, $Data_TopBelt
+    LIO     T1, 8010F498 % 1st Activated Badge
+    .Loop
+    LIO     T3, 8010F4D4 % 31th Activated Badge
+    BEQ     T1, T3, .End
+    NOP
+    LHU     T2, 0 (T0)
+    SH      T2, 0 (T1)
+    ADDIU   T0, T0, 2
+    BEQ     R0, R0, .Loop
+    ADDIU   T1, T1, 2
+    .End
+    POP     RA, T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+#new:Data $Data_TopBelt
+{
+    00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000 00000000
+}
+
+% Automatically duplicate an icon script to make possible
+% to modify the script without altering the original one.
+%
+%
+% The new copy will have support for modifing the icon size.
+%
+%
+% The script get copied in the next available script.
+%
+%
+% You can clone up to 5 scripts.
+%
+%
+% a0 = script to clone : a0 = cloned script address , v0= cloned script index
+%
+%
+% [ ! ] Writes in T0-T3
+#new:Function $CloneIconScript % unused
+{
+    PUSH    RA, T0, T1, T2, T3
+    % Get next script to be free
+    LIO     T0, $DuplicatedScript0
+    LW      T1, 0 (T0)
+    BEQL    T1, R0, .CloneScript
+    ORI     V0, R0, 0
+    LIO     T0, $DuplicatedScript1
+    LW      T1, 0 (T0)
+    BEQL    T1, R0, .CloneScript
+    ORI     V0, R0, 1
+    LIO     T0, $DuplicatedScript2
+    LW      T1, 0 (T0)
+    BEQL    T1, R0, .CloneScript
+    ORI     V0, R0, 2
+    LIO     T0, $DuplicatedScript3
+    LW      T1, 0 (T0)
+    BEQL    T1, R0, .CloneScript
+    ORI     V0, R0, 3
+    LIO     T0, $DuplicatedScript4
+    LW      T1, 0 (T0)
+    BEQL    T1, R0, .CloneScript
+    ORI     V0, R0, 4
+    % if there no more available script just end the function
+    BEQ     R0, R0, .End
+    ORI     V0, R0, FFFF
+    .CloneScript
+    COPY    T3, T0
+    % save 1st word
+    LW      T1, 0 (A0)
+    SW      T1, 0 (T0)
+    ADDIU   T0, T0, 4
+    ADDIU   A0, A0, 4 % copy next word
+    .Loop
+    LW      T1, 0 (A0)
+    ORI     T2, R0, 00000008 % 00000008 = Start of a new iconScript
+    BEQ     T1, T2, .MakeAResizableIcon
+    NOP
+    SW      T1, 0 (T0)
+    ADDIU   T0, T0, 4
+    BEQ     R0, R0, .Loop
+    ADDIU   A0, A0, 4 % copy next word
+    .MakeAResizableIcon
+    ORI     T0, R0, 7 % SetIconSize
+    SW      T0, 4 (T3)
+    COPY    A0, T3 % save cloned iconScript address in A0
+    .End
+    POP     RA, T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Nuke a duplicated script
+%
+% a0 = duplicatedScript Index (0-4)
+#new:Function $FreeDuplicatedIconScript % unused
+{
+    PUSH    RA
+    BEQ     A0, R0, .Script0
+    ORI     T0, R0, 1
+    BEQ     A0, T0, .Script1
+    ORI     T0, R0, 2
+    BEQ     A0, T0, .Script2
+    ORI     T0, R0, 3
+    BEQ     A0, T0, .Script3
+    ORI     T0, R0, 4
+    BEQ     A0, T0, .Script4
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .Script0
+    LIO     A0, $DuplicatedScript0
+    BEQ     R0, R0, .NukeScript
+    RESERVED
+    .Script1
+    LIO     A0, $DuplicatedScript1
+    BEQ     R0, R0, .NukeScript
+    RESERVED
+    .Script2
+    LIO     A0, $DuplicatedScript2
+    BEQ     R0, R0, .NukeScript
+    RESERVED
+    .Script3
+    LIO     A0, $DuplicatedScript3
+    BEQ     R0, R0, .NukeScript
+    RESERVED
+    .Script4
+    LIO     A0, $DuplicatedScript4
+    .NukeScript
+    ADDIU   T0, A0, 2C % Amount of bytes to nuke
+    .Clear
+    SW      R0, 0 (A0)
+    ADDIU   A0, A0, 4 % nuke next word
+    BNE     A0, T0, .Clear
+    NOP
+    SW      R0, 0 (A0) % nuke last word
+    .End
+    POP     RA
+    JR      RA
+    NOP
+}
+
+#new:Data $DuplicatedScript0
+{
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+}
+
+#new:Data $DuplicatedScript1
+{
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+}
+
+#new:Data $DuplicatedScript2
+{
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+}
+
+#new:Data $DuplicatedScript3
+{
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+}
+
+#new:Data $DuplicatedScript4
+{
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+    00000000 00000000 00000000 00000000
+}
+
+/% Print Dpad and Belts Icons, plus track the DPad to load a belt
+@Hook 13B704 % 802483C4
+{
+    LW	    T3, 00C4 (SP) % load x
+    LW	    T2, 00C8 (SP) % load y
+    PUSH    A0, A1, A2, A3, V0, V1, S0, S1, S2
+    COPY    S1, T3
+    COPY    S2, T2
+    %===========
+    % DPad Icon
+    LAW     S0, $Data_BeltsIcons_FirstIndex
+    ADDIU	A1, S1, 002A % x
+    ADDIU	A2, S2, 003F % y
+    JAL     ~Func:set_hud_element_render_pos
+    COPY    A0, S0
+    % Change Size
+    LIO     A1, 41F00000 % 30.0 % Width
+    LIO     A2, 41F00000 % 30.0 % Lenght
+    JAL     $SetIconSize
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %===========
+    % Left Belt
+    ADDIU	A1, S1, 0016 % x
+    ADDIU	A2, S2, 003F % y
+    ADDIU   S0, S0, 1
+    JAL     ~Func:set_hud_element_render_pos
+    COPY    A0, S0
+    % Change Size
+    LIO     A1, 41900000 % 18.0 % Width
+    LIO     A2, 41900000 % 18.0 % Lenght
+    JAL     $SetIconSize
+    COPY    A0, S0
+    % Set Palette
+    LIO     T0, $DPad_HoldedFrames
+    LBU     T0, 1 (T0)
+    ORI     A0, R0, 1
+    LUI     A1, FFFF
+    BEQL    T0, A0, .SetPaletteLEFT
+    ADDIU   A1, A1, FF00
+    LIO     A1, 60606000 % Belt not active palette
+    .SetPaletteLEFT
+    JAL     $SetIconPalette
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %===========
+    % Right Belt
+    ADDIU	A1, S1, 003D % x
+    ADDIU	A2, S2, 003F % y
+    COPY    A0, S0
+    ADDIU   S0, S0, 1
+    JAL     ~Func:set_hud_element_render_pos
+    COPY    A0, S0
+    % Change Size
+    LIO     A1, 41900000 % 18.0 % Width
+    LIO     A2, 41900000 % 18.0 % Lenght
+    JAL     $SetIconSize
+    COPY    A0, S0
+    % Set Palette
+    LIO     T0, $DPad_HoldedFrames
+    LBU     T0, 1 (T0)
+    ORI     A0, R0, 2
+    LUI     A1, FFFF
+    BEQL    T0, A0, .SetPaletteRIGHT
+    ADDIU   A1, A1, FF00
+    LIO     A1, 60606000 % Belt not active palette
+    .SetPaletteRIGHT
+    JAL     $SetIconPalette
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %===========
+    % Bottom Belt
+    ADDIU	A1, S1, 002A % x
+    ADDIU	A2, S2, 0052 % y
+    ADDIU   S0, S0, 1
+    JAL     ~Func:set_hud_element_render_pos
+    COPY    A0, S0
+    % Change Size
+    LIO     A1, 41900000 % 18.0 % Width
+    LIO     A2, 41900000 % 18.0 % Lenght
+    JAL     $SetIconSize
+    COPY    A0, S0
+    % Set Palette
+    LIO     T0, $DPad_HoldedFrames
+    LBU     T0, 1 (T0)
+    ORI     A0, R0, 3
+    LUI     A1, FFFF
+    BEQL    T0, A0, .SetPaletteDOWN
+    ADDIU   A1, A1, FF00
+    LIO     A1, 60606000 % Belt not active palette
+    .SetPaletteDOWN
+    JAL     $SetIconPalette
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %===========
+    % Restore
+    ADDIU	A1, S1, 002A % x
+    ADDIU	A2, S2, 002C % y
+    ADDIU   S0, S0, 1
+    JAL     ~Func:set_hud_element_render_pos
+    COPY    A0, S0
+    % Change Size
+    LIO     A1, 41900000 % 18.0 % Width
+    LIO     A2, 41900000 % 18.0 % Lenght
+    JAL     $SetIconSize
+    COPY    A0, S0
+    % Set Palette
+    LIO     T0, $DPad_HoldedFrames
+    LBU     T0, 1 (T0)
+    LUI     A1, FFFF
+    ORI     A0, R0, 4
+    BEQL    T0, A0, .SetPaletteUP
+    ADDIU   A1, A1, FF00
+    LIO     A1, 60606000 % Belt not active palette
+    .SetPaletteUP
+    JAL     $SetIconPalette
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    %=============
+    % Track DPad Inputs and load each belt
+    %=============
+    .TrackDPad
+    JAL     $Function_TrackDPad
+    NOP
+    % restore vanilla code
+    .End
+    POP     A0, A1, A2, A3, V0, V1, S0, S1, S2
+    ADDIU	A3, R0, 00FF
+    J       802483CC
+    COPY    A0, V0
+}%/
+
+% 80074056 - DPad Input
+% bit0 = 1 = Right
+% bit1 = 2 = Left
+% bit2 = 4 = Down
+% bit3 = 8 = Up
+
+#new:Data $DPad_HoldedFrames
+{ 00000000 }
+% XX000000 = Frames
+% 00XX0000 = Belt
+% 0000XX00 = Belt Saved Bool
+% 000000XX = unused
+
+#new:Function $Function_TrackDPad
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LABU    T3, 80074056 % DPad Inputs
+    LIO     T1, $DPad_HoldedFrames
+    COPY    T0, T3
+    ANDI    T0, T0, 2 % bit1
+    BEQ     T0, R0, .CheckRight
+    NOP
+    %===================
+    % Left Belt
+    ORI     T0, R0, 1 % save belt index
+    SAW     T0, $BadgeTab_CurrentBelt
+    SB      T0, 1 (T1)
+    % advance timer
+    LBU     T0, 0 (T1)
+    ADDIU   T0, T0, 1
+    SB      T0, 0 (T1)
+    % save belt?
+    % The player already saved a belt and he is still holding the dpad?
+    LBU     T2, 2 (T1)
+    BNE     T2, R0, .End
+    NOP
+    ORI     T2, R0, 15` % hold for 15 frames to save the belt
+    BNE     T0, T2, .End
+    NOP
+    JAL     $Function_Save_LeftBelt
+    NOP
+    % turn belt saved bool as true
+    ORI     T0, R0, 1
+    SB      T0, 2 (T1)
+    SB      R0, 1 (T1) % make the icon blink
+    % Play Sound
+    ADDIU	A0, R0, 0010 % Sound ID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    BEQ     R0, R0, .End
+    NOP
+    .CheckRight
+    COPY    T0, T3
+    ANDI    T0, T0, 1 % bit0
+    BEQ     T0, R0, .CheckBottom
+    NOP
+    %===================
+    % Right Belt
+    ORI     T0, R0, 2 % save belt index
+    SAW     T0, $BadgeTab_CurrentBelt
+    SB      T0, 1 (T1)
+    % advance timer
+    LBU     T0, 0 (T1)
+    ADDIU   T0, T0, 1
+    SB      T0, 0 (T1)
+    % save belt?
+    % The player already saved a belt and he is still holding the dpad?
+    LBU     T2, 2 (T1)
+    BNE     T2, R0, .End
+    NOP
+    ORI     T2, R0, 15` % hold for 15 frames to save the belt
+    BNE     T0, T2, .End
+    NOP
+    JAL     $Function_Save_RightBelt
+    NOP
+    % turn belt saved bool as true
+    ORI     T0, R0, 2
+    SB      T0, 2 (T1)
+    SB      R0, 1 (T1) % make the icon blink
+    % Play Sound
+    ADDIU	A0, R0, 0010 % Sound ID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    BEQ     R0, R0, .End
+    NOP
+    .CheckBottom
+    COPY    T0, T3
+    ANDI    T0, T0, 4 % bit2
+    BEQ     T0, R0, .CheckUp
+    NOP
+    %===================
+    % Bottom Belt
+    ORI     T0, R0, 3 % save belt index
+    SAW     T0, $BadgeTab_CurrentBelt
+    SB      T0, 1 (T1)
+    % advance timer
+    LBU     T0, 0 (T1)
+    ADDIU   T0, T0, 1
+    SB      T0, 0 (T1)
+    % save belt?
+    % The player already saved a belt and he is still holding the dpad?
+    LBU     T2, 2 (T1)
+    BNE     T2, R0, .End
+    NOP
+    ORI     T2, R0, 15` % hold for 15 frames to save the belt
+    BNE     T0, T2, .End
+    NOP
+    JAL     $Function_Save_BottomBelt
+    NOP
+    % turn belt saved bool as true
+    ORI     T0, R0, 3
+    SB      T0, 2 (T1)
+    SB      R0, 1 (T1) % make the icon blink
+    % Play Sound
+    ADDIU	A0, R0, 0010 % Sound ID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    BEQ     R0, R0, .End
+    NOP
+    .CheckUp
+    COPY    T0, T3
+    ANDI    T0, T0, 8 % bit3
+    BEQ     T0, R0, .LoadBelt
+    NOP
+    %===================
+    % Restore / Up
+    ORI     T0, R0, 4 % save belt index
+    SAW     T0, $BadgeTab_CurrentBelt
+    SB      T0, 1 (T1)
+    % advance timer
+    LBU     T0, 0 (T1)
+    ADDIU   T0, T0, 1
+    SB      T0, 0 (T1)
+    BEQ     R0, R0, .End
+    NOP
+    %===================
+    .LoadBelt
+    LBU     T0, 1 (T1) % Load Belt to Load
+    ORI     T2, R0, 1
+    BNE     T0, T2, .LoadRightBelt
+    NOP
+    % Load Left belt
+    % Play Sound
+    ADDIU	A0, R0, 0005 % Sound ID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    JAL     $Function_DisableActivatedBadges
+    NOP
+    JAL     $Function_Load_LeftBelt
+    NOP
+    JAL     $Function_UpdateBadgeList
+    NOP
+    BEQ     R0, R0, .ResetFrames
+    NOP
+    .LoadRightBelt
+    ORI     T2, R0, 2
+    BNE     T0, T2, .LoadBottomBelt
+    NOP
+    % Load Right belt
+    % Play Sound
+    ADDIU	A0, R0, 0005 % Sound ID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    JAL     $Function_DisableActivatedBadges
+    NOP
+    JAL     $Function_Load_RightBelt
+    NOP
+    JAL     $Function_UpdateBadgeList
+    NOP
+    BEQ     R0, R0, .ResetFrames
+    NOP
+    .LoadBottomBelt
+    ORI     T2, R0, 3
+    BNE     T0, T2, .LoadUpBelt
+    NOP
+    % Load Bottom belt
+    % Play Sound
+    ADDIU	A0, R0, 0005 % Sound ID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    JAL     $Function_DisableActivatedBadges
+    NOP
+    JAL     $Function_Load_BottomBelt
+    NOP
+    JAL     $Function_UpdateBadgeList
+    NOP
+    BEQ     R0, R0, .ResetFrames
+    NOP
+    .LoadUpBelt
+    ORI     T2, R0, 4
+    BNE     T0, T2, .ResetFrames
+    NOP
+    % Restore Badges
+    % Play Sound
+    ADDIU	A0, R0, 0006 % Sound ID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_adjust_env_sound_pos
+    COPY 	A3, A1
+    JAL     $Function_DisableActivatedBadges
+    NOP
+    JAL     $Function_Load_UpBelt
+    NOP
+    JAL     $Function_UpdateBadgeList
+    NOP
+    .ResetFrames
+    SAW     R0, $DPad_HoldedFrames
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+#new:Function $Function_UpdateBadgeList
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Only do it if the player is inside the Activated Badges list
+    LABU    V0, 8027039F
+    BEQ     V0, R0, .End % 0 = All Badges List
+    NOP
+    JAL	    80248D8C % ~Func:UpdateBadgesList
+    ORI     A0 , R0, 1 % update badge list with the activated list
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% Free all new icons from the badge tab after the pause menu get closed
+@Hook 142190 % 8024EE50
+{
+    % vanilla code
+    JAL     ~Func:free_hud_element
+    ADDIU	S1, S1, 0001
+    PUSH    A0, A1, A2, A3, V0, V1, S0
+    % free icons
+    % Belts Icons
+    LAW     S0, $Data_BeltsIcons_FirstIndex
+    JAL     ~Func:free_hud_element
+    COPY    A0, S0
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 1
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 2
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 3
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 4
+    % Partner HP Icon
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 5
+    % Shine Sprite Icon
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 6
+    % Pause Menu - Extra tab icons
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 7 % compass
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 8 % emptyBook
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, 9 % boots1
+    JAL     ~Func:free_hud_element
+    ADDIU   A0, S0, A % screwDriver
+    SAW     R0, $BadgeTab_CurrentBelt
+    POP     A0, A1, A2, A3, V0, V1, S0
+    J       8024EE58
+    NOP
+}
+
+% Display a Zero when the available BP becomes negative
+@Hook 13B7C4 % 80248484
+{
+    % S1 = Amount to display
+    SLTI    T3, S1, 0
+    BNEL    T3, R0, .NegativeBP
+    CLEAR   S1
+    % vanilla code
+    .NegativeBP
+    COPY    A0, S1
+    J       8024848C
+    ADDIU	A1, S2, 0049
+
+}
+
+#new:Data $BadgeTab_CurrentBelt
+{ 00000000 }

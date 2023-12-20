@@ -1,0 +1,654 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 2
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:ToadTownTunnels
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Set   *AreaByte[0] 100`
+	Call  MakeNpcs ( .True $NpcGroupList_pit12 )
+	Exec  $Script_MakeEntities
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+	Return
+	End
+}
+
+#new:Function_Init $Function_Init
+{
+	PUSH    RA
+	LIA     A0, 800B0CF0
+	LIA     A1, "tik_tex"
+	JAL     800654F0 % sprintf
+	RESERVED
+	CLEAR  V0
+	JPOP   RA
+}
+
+#new:Script $Script_MakeEntities
+{
+	Call  MakeEntity    ( .Entity:Signpost ~Vec4d:Entity_Sign 80000000 )
+	Call  AssignScript    ( $Script_ReadSign_Entity_Sign )
+    Call  MakeEntity 	( .Entity:GiantChest ~Vec4d:Entity_GiantChest 80000000 )
+    Set   *MapVar[0] .Item:ReturnPostage
+    Set   *MapVar[1] 00000002 % Badge
+    Call  AssignFlag ( *GF_PIT11_Chest10 )
+	Call  AssignScript 	( $Script_OpenChest )
+	Return
+	End
+}
+
+#new:Script $Script_ShowGotItem
+{
+    0:  SetGroup  00000000
+    C:  Call  SetTimeFreezeMode ( 00000002 )
+   28:  Call  ShowGotItem       ( *Var0 .True 00000000 )
+   40:  Call  SetTimeFreezeMode ( 00000000 )
+   50:  Return
+   58:  Return
+   60:  End
+}
+
+#new:Script $Script_GiveItem
+{
+   10:  Set   *Var0  *VarA
+   20:  If  *VarA  !=  00000000
+   30:  	ExecWait  $Script_ShowGotItem
+   3C:  EndIf
+   44:  Switch  *VarB
+   50:  	Case  ==  00000000
+   5C:  		Call  AddItem   ( *VarA *Var0 )
+   70:  	Case  ==  00000001
+   7C:  		Call  AddKeyItem    ( *VarA )
+   8C:  	Case  ==  00000002
+   98:  		Call  AddBadge  ( *VarA *Var0 )
+   AC:  EndSwitch
+   B4:  Wait  15`
+   C0:  Call  DisablePlayerInput    ( .False )
+   D0:  Return
+   D8:  End
+}
+
+#new:Script $Script_OpenChest
+{
+        Set	  *Flag_LockInputs_GiantChest .False
+    0:  Set   *VarA  *MapVar[0]
+   10:  Set   *VarB  *MapVar[1]
+   30:  ExecWait  $Script_GiveItem
+   3C:  Return
+   44:  End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Call  FadeOutMusic  ( 00000000 500` ) % usually between 500-1000
+	Call  ClearAmbientSounds ( 250` )
+	Return
+	End
+}
+
+#new:Script $Script_Cutscene_Start
+{
+	Exec	$Script_CreateExitTriggers
+	Call	DisablePlayerInput ( .True )
+	Wait	15`
+	Exec	$MovePartnerBehindMario
+	Call	GetPlayerPos ( *Var3 *Var4 *Var5 )
+	Add		*Var3 255` % x
+	Call	TranslateGroup ( ~Model:nise_koppa *Var3 *Var4 *Var5 )
+	Call	PlaySound ( 03BE )
+	Set		*Var6 *Var3
+	Add		*Var3 -155` % x
+	Call    MakeLerp ( *Var6 *Var3 50` .Easing:Linear )
+	Loop
+		Call    UpdateLerp
+		Call	TranslateGroup ( ~Model:nise_koppa *Var0 *Var4 *Var5 )
+		Wait    1
+		If *Var1 == .False
+			BreakLoop
+		EndIf
+	EndLoop
+	Wait	10`
+	Call	SetNpcVar ( 00000000 00000000 .True )
+	Return
+	End
+}
+
+%=======
+% NPC
+%=======
+
+#new:NpcGroupList $NpcGroupList_pit12
+{
+    00000001 $NpcGroup_Bowser 3A000000
+	00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Bowser
+{
+00000000 $NPCSettings_NPC 0.0 -1000.0 0.0
+81006001 $Script_InitNPC_Bowser 00000000 00000000 0000010E
+~NoDrops ~NoMovement
+~AnimationTable:NPC_KoopaBros_00
+00000001 00000000 00000000 00000000
+}
+
+#new:NpcSettings $NPCSettings_NPC
+{
+00000000 00180028 00000000 00000000 00000000 00000000 00000000 00000000 
+00000000 00000000 000D0000 
+}
+
+#new:Script $Script_InitNPC_Bowser
+{
+    Call    SetSelfVar 	    ( 00000000 .False )
+	Call    BindNpcIdle 	( .Npc:Self $Script_NPC_Idle )
+	Call	BindNpcDefeat ( .Npc:Self $Script_NPC_Outcome )
+	Return
+	End
+}
+
+#new:Script $Script_NPC_Idle
+{
+    Loop
+        Call    GetSelfVar ( 00000000 *Var0 )
+        If  *Var0  ==  .True
+            Call    SetSelfVar ( 0 .False )
+            Call    StartBossBattle ( .Song:FakeBowserBattle )
+        EndIf
+        Wait 1
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_NPC_Outcome
+{    
+    Call    GetBattleOutcome ( *Var0 )
+    Switch  *Var0
+		Default
+            Call    SetSelfEnemyFlagBits ( 00000004 .True ) % bit2 == Don't make the player and npc sprite start flashing after the fight ends
+			Call	EnableGroup ( ~Model:nise_koppa .False )
+            Call    DisablePlayerInput ( .False )
+            Return
+        EndCaseGroup
+    EndSwitch
+    Return
+    End
+}
+
+%=======
+
+#new:Script $Script_EnterMap
+{
+    Set     *VarA ~Entry:Entry0
+ 	Set     *VarB ~Collider:topPipe
+	Set		*VarC $Script_Cutscene_Start
+	Exec    $Script_EnterTopPipe
+    Set	    *Flag_LockInputs_GiantChest .True
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind  $Script_Exit0 .Trigger:WallPush ~Collider:Exit0 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0
+{
+	SetGroup 0000001B
+	Set   *Var[A] ~Entry:Entry1
+	Set   *Var[B] ~Collider:Exit0
+	Set   *Var[C] $Script_GotoMap_Exit0
+	ExecWait  $Script_ExitHorizontalPipe
+	Return
+	End
+}
+
+#new:Script $Script_GotoMap_Exit0
+{
+    Call    GotoMap ( "pit_00" 00000002 )
+    Return
+    End
+}
+
+#new:Script $Script_ReadSign_Entity_Sign
+{
+	Call  DisablePlayerInput        ( .True )
+	Call  ShowMessageAtScreenPos    ( $String_ReadSign_Entity_Sign 000000A0 00000028 )
+	Call  DisablePlayerInput        ( .False )
+	Return
+	End
+}
+
+#new:String $String_ReadSign_Entity_Sign
+{
+	[DelayOff][STYLE:SIGN]
+	[CenterX:FF]
+	[Down:0F][Up] Back to the entrance.
+	[DelayOn][WAIT][END]
+}
+
+% Pipes
+
+#new:Script $Script_EnterTopPipe
+{
+	Call    DisablePlayerInput   ( .True )
+	Call    DisablePlayerPhysics 	( .True )
+	Call    HidePlayerShadow 	( .True )
+	Call    GetCurrentPartnerID 	( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Call    DisablePartnerAI 	( 0 )
+		Call    EnableNpcShadow 	( .Npc:Partner .False )
+		Call    SetNpcFlagBits ( .Npc:Partner 00000002 .True )
+		Call    SetNpcPos   	( .Npc:Partner 0 *VarA 0 )
+	EndIf
+	Set     *Var0  *VarA 
+	Call    $Function_Pipe_GetEntryCoords
+	Call    PlayerMoveTo 	( *Var1 *Var3 3 )
+	Set  	  *Var0  *VarA 
+	Call    $Function_Pipe_GetEntryCoords
+	Call    SetPlayerPos 	( *Var1 *Var2 *Var3 )
+	Call    SetPlayerFlagBits 	( 00200000 .True )
+	Call    $Function_Pipe_GetCameraYaw
+	Call    InterpPlayerYaw 	( *Var0 0 )
+	Wait    2
+	Call    SetPlayerFlagBits 	( 00200000 .False )
+	Call    GetPlayerPos 	( *Var0 *Var1 *Var2 )
+	Call    802D286C ( 00000100 )
+	Call    802D2520 ( 00010000 5 2 1 1 0 )
+	Wait	  4
+	Call PlaySound	( 163 )
+	Loop 40` 
+		Sub  	  *Var1  1`
+		Call    SetPlayerPos 	( *Var0 *Var1 *Var2 )
+		Wait	  1 
+	EndLoop
+	Wait	  1
+	Call     802D2520 ( 00010000 0 0 0 0 0 )
+	Call     SetPlayerAnimation 	( 00010002 )
+	Call     DisablePlayerPhysics 	( .False )
+	Call     DisablePlayerInput 	( .False )
+	Call     HidePlayerShadow 	( .False )
+	Call     GetCurrentPartnerID 	( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Wait	 4`
+		Call    GetPlayerPos    ( *Var4 *Var5 *Var6 )
+		Call    SetNpcPos   	  ( .Npc:Partner *Var4 *Var5 *Var6 )
+		Call    SetNpcFlagBits  ( .Npc:Partner 00000002 .False )
+		Call    EnablePartnerAI
+		Call    EnableNpcShadow ( .Npc:Partner .True )
+    EndIf
+	Exec *VarC
+    Return
+    End
+}
+
+/%
+	ARGS:
+	*VarA  entryID
+	*VarB  colliderID
+	*VarC  $Script_GotoMap
+%/
+#new:Script $Script_ExitVerticalPipe
+{
+	Call  $Function_Pipe_CheckDownInput
+	If  *Var0  ==  00000000
+		Return
+	EndIf
+	Call  GetCurrentPartner ( *Var0 )
+	If  *Var0  !=  .Partner:None
+		Call  GetCurrentPartnerID   ( *Var1 )
+		If  *Var1  !=  .Partner:Watt % 6
+			Return
+		Else
+			Call  802D2B6C
+			Call  DisablePlayerInput    ( .True )
+		EndIf
+	Else
+		Call  DisablePlayerInput    ( .True )
+	EndIf
+	SetGroup  0000001B
+	Call  $Function_Pipe_SetAnimFlag
+	Call  DisablePlayerPhysics  ( .True )
+	Call  HidePlayerShadow  ( .True )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  PlayerMoveTo      ( *Var1 *Var3 00000003 )
+	Set   *Var0  *VarA
+	Call  $Function_Pipe_GetEntryCoords
+	Call  SetPlayerPos      ( *Var1 *Var2 *Var3 )
+	Call  SetPlayerFlagBits ( 00200000 .True )
+	Call  $Function_Pipe_GetCameraYaw
+	Call  InterpPlayerYaw   ( *Var0 00000000 )
+	Wait  2`
+	Call  SetPlayerFlagBits ( 00200000 .False )
+	Call  PlaySound ( 00000163 )
+	Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+	Thread
+		Wait  4`
+		Loop  40`
+			Sub   *Var1  00000001
+			Call  SetPlayerPos  ( *Var0 *Var1 *Var2 )
+			Wait  1`
+		EndLoop
+	EndThread
+	Call  802D286C  ( 00000800 )
+	Call  802D2520  ( 00010002 00000005 00000002 00000001 00000001 00000000 )
+	Wait  25`
+	ExecWait  *VarC
+	Return
+	End
+}
+
+/%
+	ARGS:
+	*Var[A]  entryID
+	*Var[B]  colliderID
+	*Var[C]  $Script_GotoMap
+%/
+#new:Script $Script_ExitHorizontalPipe
+{
+	Call  IsPlayerOnValidFloor  ( *Var[0] )
+	If  *Var[0]  ==  00000000
+		Return
+	EndIf
+	Call  GetPlayerActionState  ( *Var[0] )
+	If  *Var[0]  ==  .ActionState:Spin % 1A
+		Return
+	EndIf
+	Call  GetCurrentPartner ( *Var[0] )
+	If  *Var[0]  !=  .ActionState:Idle % 0
+		Call  GetCurrentPartnerID   ( *Var[1] )
+		If  *Var[1]  !=  .Partner:Watt % 6
+			Return
+		Else
+			Call  802D2B6C ( )
+			Call  DisablePlayerInput    ( .True )
+		EndIf
+	Else
+		Call  DisablePlayerInput    ( .True )
+	EndIf
+	SetGroup  0000001B
+	Call  $Function_Pipe_SetAnimFlag ( )
+	Call  DisablePlayerPhysics  ( .True )
+	Call  ModifyColliderFlags   ( 00000000 *Var[B] 7FFFFE00 )
+	Set   *Var[0]  *Var[A]
+	Call  $Function_Pipe_GetEntryCoords ( )
+	Set   *Var[5]  *Var[1]
+	Set   *Var[6]  *Var[2]
+	Add   *Var[6]  2`
+	Set   *Var[7]  *Var[3]
+	Set   *Var[8]  *Var[4]
+	Add   *Var[8]  180`
+	If  *Var[4]  >=  360`
+		Sub   *Var[4]  360`
+	EndIf
+	Call  InterpPlayerYaw       ( *Var[8] 00000001 )
+	Wait  1`
+	Call  PlaySound     ( 00000163 )
+	Call  GetPlayerPos  ( *Var[0] *Var[1] *Var[2] )
+	Call  SetPlayerPos  ( *Var[0] *Var[6] *Var[7] )
+	Call  SetPlayerAnimation    ( .PlayerAnim:StandStill )
+	Call  802D286C      ( 00000800 )
+	Call  802D2520      ( 00010000 00000005 00000003 00000001 00000001 00000000 )
+	Thread
+		Wait  8`
+		Call  HidePlayerShadow  ( .True )
+	EndThread
+	Thread
+		Wait  3`
+		Loop  40`
+			Call  $Function_Pipe_GetPointInFrontOfPlayer ( *Fixed[1.0] )
+			Call  SetPlayerPos  ( *Var[0] *Var[1] *Var[2] )
+			Wait  1`
+		EndLoop
+	EndThread
+	Wait  25`
+	ExecWait  *Var[C]
+	Return
+	End
+}
+
+#new:Function $Function_Pipe_SetAnimFlag
+{
+	LAW       V0, 800F7B30
+	LW        V1, 4 (V0)
+	LUI       A0, 10
+	OR        V1, V1, A0
+	SW        V1, 4 (V0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_GetCurrentFloor
+{
+	LAH       V0, 8015A552
+	SW        V0, 84 (A0)
+	JR        RA
+	ADDIU     V0, R0, 2
+}
+
+#new:Function $Function_Pipe_CheckDownInput
+{
+	LAH       V1, 8015A552
+	ADDIU     SP, SP, FFE8
+	SW        S0, 10 (SP)
+	COPY      S0, A0
+	SW        RA, 14 (SP)
+	LW        V0, B0 (S0)
+	BEQ       V1, V0, .o2C
+	ADDIU     V0, R0, 2
+	BEQ       R0, R0, .oAC
+	SW        R0, 84 (S0)
+	.o2C
+	LAW       V1, 8007419C
+	LB        V0, 40 (V1)
+	LB        A3, 44 (V1)
+	BLTZL     V0, .o44
+	SUBU      V0, R0, V0
+	.o44
+	BNE       V0, R0, .o54
+	NOP
+	BEQL      A3, R0, .oAC
+	CLEAR     V0
+	.o54
+	MTC1      V0, F4
+	NOP
+	CVT.S.W   F4, F4
+	MFC1      A2, F4
+	MTC1      A3, F4
+	NOP
+	CVT.S.W   F4, F4
+	MTC1      R0, F12
+	MFC1      A3, F4
+	JAL       ~Func:atan2
+	MOV.S     F14, F12
+	LIF       F2, 60.0
+	NOP
+	C.LT.S    F0, F2
+	NOP
+	BC1F      .oA8
+	ADDIU     V0, R0, 1
+	SW        V0, 84 (S0)
+	BEQ       R0, R0, .oAC
+	ADDIU     V0, R0, 2
+	.oA8
+	CLEAR     V0
+	.oAC
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetEntryCoords
+{
+	ADDIU     SP, SP, FFE0
+	SW        S1, 14 (SP)
+	COPY      S1, A0
+	SW        RA, 1C (SP)
+	SW        S2, 18 (SP)
+	JAL       ~Func:get_current_map_header
+	SW        S0, 10 (SP)
+	COPY      A0, S1
+	LIO       A1, *Var0
+	JAL       ~Func:get_variable
+	COPY      S2, V0
+	COPY      A0, S1
+	LUI       A1, FE36
+	LW        V1, 14 (S2)
+	SLL       S0, V0, 4
+	ADDU      V1, S0, V1
+	LWC1      F0, 0 (V1)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 4 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C82 % Var2
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      V0, S0, V0
+	LWC1      F0, 8 (V0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C83 % Var3
+	COPY      A0, S1
+	LW        V0, 14 (S2)
+	LUI       A1, FE36
+	ADDU      S0, S0, V0
+	LWC1      F0, C (S0)
+	TRUNC.W.S F2, F0
+	MFC1      A2, F2
+	JAL       ~Func:set_variable
+	ORI       A1, A1, 3C84 % Var4
+	LW        RA, 1C (SP)
+	LW        S2, 18 (SP)
+	LW        S1, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_Pipe_GetCameraYaw
+{
+	LAW       V1, 80077410
+	LIF       F12, 180.0
+	ADDIU     SP, SP, FFE8
+	SW        RA, 14 (SP)
+	SW        S0, 10 (SP)
+	SLL       V0, V1, 2
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 2
+	SUBU      V0, V0, V1
+	SLL       V1, V0, 3
+	ADDU      V0, V0, V1
+	SLL       V0, V0, 3
+	LTF       F0, V0 (800B1DEC)
+	ADD.S     F12, F0, F12
+	JAL       ~Func:clamp_angle
+	COPY      S0, A0
+	TRUNC.W.S F2, F0
+	SWC1      F2, 84 (S0)
+	LW        RA, 14 (SP)
+	LW        S0, 10 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 18
+}
+
+#new:Function $Function_Pipe_GetPointInFrontOfPlayer
+{
+	ADDIU     SP, SP, FFD8
+	SW        S0, 18 (SP)
+	COPY      S0, A0
+	SW        RA, 1C (SP)
+	SDC1      F20, 20 (SP)
+	LW        V0, C (S0)
+	JAL       ~Func:get_float_variable
+	LW        A1, 0 (V0)
+	ADDIU     A0, SP, 10
+	LIA       V0, 8010EFC8
+	MFC1      A2, F0
+	LWC1      F0, 28 (V0) % player X
+	LWC1      F2, 30 (V0) % player Z
+	SWC1      F0, 10 (SP) % arg0 for add_vec2D_polar
+	SWC1      F2, 14 (SP) % arg1 for add_vec2D_polar
+	LW        A3, 80 (V0)
+	LWC1      F20, 2C (V0)
+	JAL       ~Func:add_vec2D_polar
+	ADDIU     A1, SP, 14
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 10 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C80 % Var0
+	COPY      A0, S0
+	LUI       A1, FE36
+	MFC1      A2, F20
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C81 % Var1
+	COPY      A0, S0
+	LUI       A1, FE36
+	LW        A2, 14 (SP)
+	JAL       ~Func:set_float_variable
+	ORI       A1, A1, 3C82 % Var2
+	LW        RA, 1C (SP)
+	LW        S0, 18 (SP)
+	LDC1      F20, 20 (SP)
+	ADDIU     V0, R0, 2
+	JR        RA
+	ADDIU     SP, SP, 28
+}
+
+% Strings
+
+#new:Function $Function_GetTattle
+{
+    LIO       V0, $String_Tattle
+    JR        RA
+    RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+Finally... the last floor of the[BR]
+pit, floor 100![BR]
+[Wait][Next]
+But, there wasn't even a person[BR]
+down here, but a robot, maybe it was[BR]
+some kind of security device?[BR]
+[Wait][Next]
+I wonder what it protected, I hope[BR]
+it's worth it!
+[Wait][End]
+}

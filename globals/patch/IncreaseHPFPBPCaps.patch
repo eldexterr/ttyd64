@@ -1,0 +1,177 @@
+% Increase HP, FP and BP caps from this to this:
+% 50/50/30 > 95/95/99
+%
+% Also increase Mario's Level cap from 27 to 67.
+
+%=====
+% HP
+%=====
+
+% Don't let player pick HP if max HP is equal to 95
+%
+% From ~Func:btl_state_update_celebration
+@Function 18D73C % 8025EE5C
+{
+    ADDIU	V0, R0, 95`
+}
+
+% Always set Max HP as 95 if max HP about to set is >= 95
+%
+% From ~Func:btl_state_update_celebration
+@Function 18E27C % 8025F99C
+{
+    SLTI	V1, V1, 96`
+    BNE 	V1, R0, .8025F9B0
+    SB	    V0, 0002 (S5)
+    ADDIU	V0, R0, 95`
+    SB	    V0, 0003 (S5)
+    .8025F9B0
+    LB	    V1, 0002 (S5)
+}
+
+% Raise HP Plus cap to 95HP
+%
+% ~Func:enforce_hpfp_limits
+@Function 800E78A8
+{
+    SLTI	V1, V1, 100`
+}
+
+% Lock HP to 99 as the cap
+%
+% ~Func:enforce_hpfp_limits
+@Function 800E78B4
+{
+    ORI     V0, R0, 99`
+}
+
+%=====
+% FP
+%=====
+
+% Don't let player pick FP if max FP is equal to 95
+%
+% From ~Func:btl_state_update_celebration
+@Function 18D380 % 8025EAA0
+{
+    ADDIU	V0, R0, 95`
+}
+
+% Always set Max FP as 95 if max FP about to set is >= 95
+%
+% From ~Func:btl_state_update_celebration
+@Function 18E2E0 % 8025FA00
+{
+    SLTI	V1, V1, 96`
+    BNE 	V1, R0, .8025FA14
+    SB	    V0, 0005 (S5)
+    ADDIU	V0, R0, 95`
+    SB	    V0, 0006 (S5)
+    .8025FA14
+    LB	    V1, 0005 (S5)
+}
+
+% Raise FP Plus cap to 95FP
+%
+% ~Func:enforce_hpfp_limits
+@Function 800E78F8
+{
+    SLTI	V1, V1, 100`
+}
+
+% Lock FP to 99 as the cap
+%
+% ~Func:enforce_hpfp_limits
+@Function 800E7900
+{
+    ORI     V0, R0, 99`
+}
+
+%=====
+% BP
+%=====
+
+% Don't let player pick BP if max BP is equal to 99
+%
+% From ~Func:btl_state_update_celebration
+@Function 18DB04 % 8025F224
+{
+    ADDIU	V0, R0, 99`
+}
+
+% Always set Max BP as 95 if max BP about to set is >= 95
+%
+% From ~Func:btl_state_update_celebration
+@Function 18E328 % 8025FA48
+{
+    SLTI	V0, V0, 100`
+    BNE 	V0, R0, .8025FA64
+    COPY    A1, A0
+    ADDIU	V0, R0, 99`
+    SB	    V0, 0008 (S5)
+    CLEAR   A0
+    CLEAR   A1
+    .8025FA64
+    LUI	    A2, 0003
+}
+
+% If BP has reached their cap always show "99" in the BP box - Left Digit
+%
+% From ~Func:btl_state_update_celebration
+@Function 18DD44 % 8025F464
+{
+    LW	    A1, 0074 (S2) % load 9's iconScript
+}
+
+% If BP has reached their cap always show "99" in the BP box - Right Digit
+%
+% From ~Func:btl_state_update_celebration
+@Function 18DD90 % 8025F4B0
+{
+    LW	    A1, 0074 (S2) % load 9's iconScript
+}
+
+% Level 27 cap - lock the star points byte after lvl 67 instead.
+%
+% From ~Func:update_status_menu
+@Function 800E88CC
+{
+    SLTI	V0, V0, 67`
+}
+
+% Level 27 cap - Make possible to get more star points until level 67 instead of 27. - 1
+%
+% From ~Func:btl_state_update_celebration
+@Function:Battle 8025E488
+{
+    SLTI	V0, V0, 67`
+}
+
+% Level 27 cap - Make possible to get more star points until level 67 instead of 27. - 2
+%
+% From ~Func:btl_state_update_celebration
+@Function:Battle 8025E4C8
+{
+    ADDIU	V1, R0, 67`
+}
+
+
+% Always give at least 1 Star Point instead of nothing if Mario is over leveled.
+%
+% From ~Func:btl_state_update_celebration
+@Hook:Battle 8025E218
+{
+    LB	    V1, 0078 (FP) % get star points
+    BNE     V1, R0, .End
+    NOP
+    % check if Mario's level is >= 67`
+    LABU    AT, 8010F299 % player's level
+    SLTI    V0, AT, 67`
+    BEQ     V0, R0, .End
+    NOP
+    ORI     V1, R0, 1
+    SB      V1, 0078 (FP) % star points
+    .End
+    J       8025E220
+    LUI	    AT, 802A
+}

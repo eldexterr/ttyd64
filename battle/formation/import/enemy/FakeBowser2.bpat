@@ -1,0 +1,4105 @@
+#new:Actor $FakeBowser2 {
+% stats
+[Index]        5Bb
+[Level]         0`b 
+[MaxHP]        100`b 
+[Coins]         0`b 
+[Flags]       00000004 
+[StatusTable] $StatusTable_FakeBowser2 
+% ai
+[PartsCount]   16`s 
+[PartsTable]  $PartsTable_FakeBowser2 
+[Script]      $Script_Init_FakeBowser2 
+% move effectiveness
+[Escape]        0`b 
+[Item]          0`b 
+[AirLift]       0`b 
+[Hurricane]     0`b % Bow's "Spook" as well
+[UpAndAway]     0`b 
+[PowerBounce]  60`b 
+[SpinSmash]     4`b % weight (0-4)
+% ui positions
+[Size]        -71`b 125`b % width height
+[HealthBar]     0`b   0`b % dx dy
+[StatusTurn]  -10`b  20`b % dx dy
+[StatusIcon]   10`b  20`b % dx dy
+}
+
+#define .Animation:ChangeToIdle                 00000000
+#define .Animation:Idle                         00000001
+#define .Animation:ChangeToHurt                 00000002
+#define .Animation:Hurt                         00000003
+#define .Animation:ChangeToRunning              00000004
+#define .Animation:Running                      00000005
+#define .Animation:ChangeToAttack0              00000006
+#define .Animation:Attack0                      00000007
+#define .Animation:ChangeToDying                00000008
+#define .Animation:Dying                        00000009
+#define .Animation:ChangeToArmAttackBlocked     0000000A
+#define .Animation:ArmAttackBlocked             0000000B
+% NEW
+#define .Animation:ChangeToAttack_LeftArmA      0000000C
+#define .Animation:Attack_LeftArmA              0000000D
+#define .Animation:ChangeToAttack_LeftArmB      0000000E
+#define .Animation:Attack_LeftArmB              0000000F
+#define .Animation:ChangeToAttack_FireBreath    00000010
+#define .Animation:Attack_FireBreath            00000011
+#define .Animation:ChangeToAttack_Bomb          00000012
+#define .Animation:Attack_Bomb                  00000013
+#define .Animation:ChangeToAttack_MachineGun    00000014
+#define .Animation:Attack_MachineGun            00000015
+#define .Animation:ChangeToStopMachineGun       00000016
+#define .Animation:StopMachineGun               00000017
+#define .Animation:ChangeToStartHealing         00000018
+#define .Animation:StartHealing                 00000019
+#define .Animation:ChangeToStopHealing          0000001A
+#define .Animation:StopHealing                  0000001B
+#define .Animation:ChangeToHealing              0000001C
+#define .Animation:Healing                      0000001D
+
+#define .Part:FakeBowser      00000001
+#define .Part:Belly           00000003
+#define .Part:Shell           00000004
+#define .Part:Head            00000005
+#define .Part:LeftArm         00000006
+#define .Part:Tail            00000007
+#define .Part:WheelsFront     00000008
+#define .Part:WheelsBack      00000009
+#define .Part:Base            0000000A
+#define .Part:RightArm        0000000B
+% NEW
+#define .Part:BellyPanel      0000000C
+#define .Part:Bomb            0000000D
+#define .Part:Bullet1         0000000E
+#define .Part:Bullet2         0000000F
+#define .Part:Bullet3         00000010
+
+% Call  $Function_StartRumble ( frequency duration )
+#new:Function $Function_StartRumble {
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S1, 14 (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 18 (SP)
+   10:  SW        S0, 10 (SP)
+   14:  LW        S0, C (S1)
+   18:  LW        A1, 0 (S0)
+   1C:  JAL       ~Func:get_variable
+   20:  ADDIU     S0, S0, 4
+   24:  COPY      A0, S1
+   28:  LW        A1, 0 (S0)
+   2C:  JAL       ~Func:get_variable
+   30:  COPY      S0, V0
+   34:  COPY      A0, S0
+   38:  JAL       ~Func:start_rumble
+   3C:  COPY      A1, V0
+   40:  LW        RA, 18 (SP)
+   44:  LW        S1, 14 (SP)
+   48:  LW        S0, 10 (SP)
+   4C:  LI        V0, 2
+   50:  JR        RA
+   54:  ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_BurnHit_InitBurnFX {
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        S1, 14 (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 1C (SP)
+   10:  SW        S2, 18 (SP)
+   14:  SW        S0, 10 (SP)
+   18:  LW        S0, C (S1)
+   1C:  LW        A1, 0 (S0)
+   20:  JAL       ~Func:get_variable
+   24:  ADDIU     S0, S0, 4
+   28:  LW        A1, 0 (S0)
+   2C:  ADDIU     S0, S0, 4
+   30:  COPY      A0, S1
+   34:  JAL       ~Func:get_variable
+   38:  COPY      S2, V0
+   3C:  COPY      A0, S1
+   40:  LW        A1, 0 (S0)
+   44:  JAL       ~Func:get_variable
+   48:  COPY      S0, V0
+   4C:  COPY      S1, V0
+   50:  LI        V0, FFFF
+   54:  BNE       S0, V0, .o6C
+   58:  LI        V0, 1
+   5C:  JAL       ~Func:mdl_set_all_fog_mode
+   60:  COPY      A0, S1
+   64:  BEQ       R0, R0, .o10C
+   68:  LI        V0, 2
+        .o6C
+   6C:  BEQ       S2, V0, .oD0
+   70:  SLTI      V0, S2, 2
+   74:  BEQ       V0, R0, .o8C
+   78:  LI        V0, 2
+   7C:  BEQ       S2, R0, .o9C
+   80:  ORI       S2, R0, FFFF
+   84:  BEQ       R0, R0, .o10C
+   88:  NOP
+        .o8C
+   8C:  BEQ       S2, V0, .oFC
+   90:  LI        V0, 2
+   94:  BEQ       R0, R0, .o10C
+   98:  NOP
+        .o9C
+   9C:  LW        A0, 0 (S0)
+   A0:  BEQ       A0, S2, .o10C
+   A4:  LI        V0, 2
+   A8:  JAL       ~Func:get_model_list_index_from_tree_index
+   AC:  ADDIU     S0, S0, 4
+   B0:  JAL       ~Func:get_model_from_list_index
+   B4:  COPY      A0, V0
+   B8:  COPY      A0, V0
+   BC:  LI        A1, FFFF
+   C0:  JAL       ~Func:set_mdl_custom_gfx_set
+   C4:  COPY      A2, S1
+   C8:  BEQ       R0, R0, .o9C
+   CC:  NOP
+        .oD0
+   D0:  ORI       S2, R0, FFFF
+        .oD4
+   D4:  LW        V0, 0 (S0)
+   D8:  BEQ       V0, S2, .o108
+   DC:  LI        A1, FFFF
+   E0:  LHU       A0, 2 (S0)
+   E4:  COPY      A2, S1
+   E8:  ADDIU     S0, S0, 4
+   EC:  JAL       8011B950
+   F0:  CLEAR     A3
+   F4:  BEQ       R0, R0, .oD4
+   F8:  NOP
+        .oFC
+   FC:  LAW       V0, 801512F0
+  104:  SB        S1, 0 (V0)
+        .o108
+  108:  LI        V0, 2
+        .o10C
+  10C:  LW        RA, 1C (SP)
+  110:  LW        S2, 18 (SP)
+  114:  LW        S1, 14 (SP)
+  118:  LW        S0, 10 (SP)
+  11C:  JR        RA
+  120:  ADDIU     SP, SP, 20
+}
+
+#new:Function $Function_BurnHit_BurnFX {
+    0:  ADDIU     SP, SP, FFA8
+    4:  SW        S1, 34 (SP)
+    8:  COPY      S1, A0
+    C:  SW        RA, 54 (SP)
+   10:  SW        S8, 50 (SP)
+   14:  SW        S7, 4C (SP)
+   18:  SW        S6, 48 (SP)
+   1C:  SW        S5, 44 (SP)
+   20:  SW        S4, 40 (SP)
+   24:  SW        S3, 3C (SP)
+   28:  SW        S2, 38 (SP)
+   2C:  SW        S0, 30 (SP)
+   30:  LW        S0, C (S1)
+   34:  LW        A1, 0 (S0)
+   38:  JAL       ~Func:get_variable
+   3C:  ADDIU     S0, S0, 4
+   40:  LW        A1, 0 (S0)
+   44:  ADDIU     S0, S0, 4
+   48:  COPY      A0, S1
+   4C:  JAL       ~Func:get_variable
+   50:  COPY      S3, V0
+   54:  LW        A1, 0 (S0)
+   58:  ADDIU     S0, S0, 4
+   5C:  COPY      A0, S1
+   60:  JAL       ~Func:get_variable
+   64:  COPY      S6, V0
+   68:  LW        A1, 0 (S0)
+   6C:  ADDIU     S0, S0, 4
+   70:  COPY      A0, S1
+   74:  JAL       ~Func:get_variable
+   78:  COPY      S5, V0
+   7C:  LW        A1, 0 (S0)
+   80:  ADDIU     S0, S0, 4
+   84:  COPY      A0, S1
+   88:  JAL       ~Func:get_variable
+   8C:  COPY      S4, V0
+   90:  LW        A1, 0 (S0)
+   94:  ADDIU     S0, S0, 4
+   98:  COPY      A0, S1
+   9C:  JAL       ~Func:get_variable
+   A0:  COPY      S2, V0
+   A4:  LW        A1, 0 (S0)
+   A8:  ADDIU     S0, S0, 4
+   AC:  COPY      A0, S1
+   B0:  JAL       ~Func:get_variable
+   B4:  SW        V0, 28 (SP)
+   B8:  LW        A1, 0 (S0)
+   BC:  ADDIU     S0, S0, 4
+   C0:  COPY      A0, S1
+   C4:  JAL       ~Func:get_variable
+   C8:  COPY      S8, V0
+   CC:  LW        A1, 0 (S0)
+   D0:  ADDIU     S0, S0, 4
+   D4:  COPY      A0, S1
+   D8:  JAL       ~Func:get_variable
+   DC:  COPY      S7, V0
+   E0:  COPY      A0, S1
+   E4:  LW        A1, 0 (S0)
+   E8:  JAL       ~Func:get_variable
+   EC:  COPY      S0, V0
+   F0:  COPY      V1, V0
+   F4:  LI        V0, 2
+   F8:  BEQ       S3, V0, .o144
+   FC:  SLTI      V0, S3, 3
+  100:  BEQ       V0, R0, .o118
+  104:  LI        V0, 1
+  108:  BEQ       S3, V0, .o12C
+  10C:  ANDI      A0, S6, FF
+  110:  BEQ       R0, R0, .o1A0
+  114:  NOP
+        .o118
+  118:  LI        V0, 3
+  11C:  BEQ       S3, V0, .o180
+  120:  ANDI      A0, S6, FF
+  124:  BEQ       R0, R0, .o1A0
+  128:  NOP
+        .o12C
+  12C:  ANDI      A1, S5, FF
+  130:  ANDI      A2, S4, FF
+  134:  JAL       ~Func:set_background_color_blend
+  138:  ANDI      A3, S2, FF
+  13C:  BEQ       R0, R0, .o1A0
+  140:  NOP
+        .o144
+  144:  ANDI      A0, S6, FF
+  148:  ANDI      A1, S5, FF
+  14C:  ANDI      A2, S4, FF
+  150:  ANDI      A3, S2, FF
+  154:  LBU       V0, 2B (SP)
+  158:  SW        S0, 1C (SP)
+  15C:  SW        V1, 20 (SP)
+  160:  SW        V0, 10 (SP)
+  164:  ANDI      V0, S8, FF
+  168:  SW        V0, 14 (SP)
+  16C:  ANDI      V0, S7, FF
+  170:  JAL       ~Func:set_model_fog_color_parameters
+  174:  SW        V0, 18 (SP)
+  178:  BEQ       R0, R0, .o1A0
+  17C:  NOP
+        .o180
+  180:  ANDI      A1, S5, FF
+  184:  ANDI      A2, S4, FF
+  188:  ANDI      A3, S2, FF
+  18C:  LBU       V0, 2B (SP)
+  190:  SW        V0, 10 (SP)
+  194:  ANDI      V0, S8, FF
+  198:  JAL       ~Func:set_model_env_color_parameters
+  19C:  SW        V0, 14 (SP)
+        .o1A0
+  1A0:  LW        RA, 54 (SP)
+  1A4:  LW        S8, 50 (SP)
+  1A8:  LW        S7, 4C (SP)
+  1AC:  LW        S6, 48 (SP)
+  1B0:  LW        S5, 44 (SP)
+  1B4:  LW        S4, 40 (SP)
+  1B8:  LW        S3, 3C (SP)
+  1BC:  LW        S2, 38 (SP)
+  1C0:  LW        S1, 34 (SP)
+  1C4:  LW        S0, 30 (SP)
+  1C8:  LI        V0, 2
+  1CC:  JR        RA
+  1D0:  ADDIU     SP, SP, 58
+}
+
+#new:DefenseTable $DefenseTable_FakeBowser {
+.Element:Normal 00000002
+.Element:Blast  00000002
+.Element:End
+}
+
+#new:DefenseTable $DefenseTable_HealingMode {
+.Element:Normal 00000063
+.Element:End
+}
+
+#new:DefenseTable $DefenseTable_Unknown {
+.Element:Normal 00000002
+.Element:End
+}
+
+#new:StatusTable $StatusTable_FakeBowser2 {
+.Status:Normal      0`
+.Status:Default    -1`
+.Status:Sleep       0`
+.Status:Poison      0`
+.Status:Frozen      0`
+.Status:Dizzy       0`
+.Status:Fear        0`
+.Status:Static      0`
+.Status:Paralyze    0`
+.Status:Shrink      0`
+.Status:Stop        0`
+.Status:DefaultTurnMod    0`
+.Status:SleepTurnMod      0`
+.Status:PoisonTurnMod     0`
+.Status:FrozenTurnMod     0`
+.Status:DizzyTurnMod      0`
+.Status:FearTurnMod       0`
+.Status:StaticTurnMod     0`
+.Status:ParalyzeTurnMod   0`
+.Status:ShrinkTurnMod     0`
+.Status:StopTurnMod       0`
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_FakeBowser {
+.Status:Normal    00660004
+.Status:End
+}
+
+#new:IdleAnimations $IdleAnimations_Bomb {
+.Status:Normal    00770001
+.Status:End
+}
+
+#new:PartsTable $PartsTable_FakeBowser2 {
+% 0x01 - FakeBowser
+00800001 0100000F D26E00FF $IdleAnimations_FakeBowser $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x02 - ?
+00020000 02000000 000000FF 00000000 $DefenseTable_Unknown 00000000 00000000 00000000 00000000 
+% 0x03 - belly
+00020000 05000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x04 - shell
+00020000 03000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x05 - head
+00020000 04000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x06 - left arm
+00020000 06000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x07 - tail
+00020000 07000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x08 - wheels (front)
+00120000 08000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x09 - wheels (back)
+00120000 09000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x0A - feets/base
+00020000 0A000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x0B - right arm
+00020000 0B000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% ===NEW====
+% 0x0C - belly pannel
+00020000 0C000000 000A00FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 00000000 00000000 
+% 0x0D - bomb
+20120001 0D000000 000000FF $IdleAnimations_Bomb $DefenseTable_FakeBowser 00000000 00000000 FFF60000 00000000 
+% 0x0E - bullet1
+00020000 0E000000 000000FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 FFF60000 00000000 
+% 0x0F - bullet2
+00020000 0F000000 000000FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 FFF60000 00000000 
+% 0x10 - bullet3
+00020000 10000000 000000FF 00000000 $DefenseTable_FakeBowser 00000000 00000000 FFF60000 00000000 
+}
+
+% Table with all the models that will get burned when triggering .Event:BurnHit
+#new:Data $Data_BurnedModelsTable {
+~Model:pit_bt02:p1   ~Model:pit_bt02:u1   ~Model:pit_bt02:u2    ~Model:pit_bt02:u3    ~Model:pit_bt02:k1
+~Model:pit_bt02:k2   ~Model:pit_bt02:k3   ~Model:pit_bt02:k4    ~Model:pit_bt02:k5    ~Model:pit_bt02:k6
+~Model:pit_bt02:s1   ~Model:pit_bt02:s2   ~Model:pit_bt02:s3    ~Model:pit_bt02:s5    ~Model:pit_bt02:d1
+~Model:pit_bt02:d2   ~Model:pit_bt02:d3   ~Model:pit_bt02:o171  ~Model:pit_bt02:o172  ~Model:pit_bt02:o183
+~Model:pit_bt02:o118 ~Model:pit_bt02:o120 ~Model:pit_bt02:o165  ~Model:pit_bt02:km1   ~Model:pit_bt02:km2 
+0000FFFF 
+}
+
+#new:Script $Script_Init_FakeBowser2 {
+    0:  Call  BindTakeTurn  ( .Actor:Self $Script_TakeTurn_FakeBowser2 )
+   14:  Call  BindIdle      ( .Actor:Self $Script_Idle_FakeBowser2 )
+   28:  Call  BindHandleEvent       ( .Actor:Self $Script_HandleEvent_FakeBowser2 )
+   3C:  Call  BindNextTurn  ( .Actor:Self $Script_NextTurn_FakeBowser2 )
+   50:  UseArray  $End[0] 
+        %Call $WriteAddress  ( 802DBCA8 2 $End[0] .False .False ) % save in *MapVar[0], for testing
+   5C:  Call  SetActorVar   ( .Actor:Self 00000000 00000000 )
+   74:  Call  SetActorVar   ( .Actor:Self 00000001 00000000 )
+   8C:  Call  SetActorVar   ( .Actor:Self 00000002 00000000 )
+   A4:  Call  SetActorVar   ( .Actor:Self 00000003 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000004 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000005 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000006 00000000 )
+        Call  SetActorVar   ( .Actor:Self 00000007 00000000 )
+   BC:  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+   CC:  Call  SetActorPos   ( .Actor:Self 00000060 00000000 00000000 )
+   E8:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  104:  Call  ForceHomePos  ( .Actor:Self *Var0 *Var1 *Var2 )
+  120:  Call  HPBarToHome   ( .Actor:Self )
+  130:  Call  SetPartTargetFlagBits ( .Actor:Self 00000002 00000004 .True ) % only moment part 0x02 is referenced
+        Call  EnableModel ( ~Model:pit_bt02:d4 .False )
+        Call  EnableModel ( ~Model:pit_bt02:u4 .False )
+        Call  EnableModel ( ~Model:pit_bt02:bullet1 .False )
+        Call  EnableModel ( ~Model:pit_bt02:bullet2 .False )
+        Call  EnableModel ( ~Model:pit_bt02:bullet3 .False )
+  14C:  Return
+  154:  End
+}
+
+#new:FloatTable $FloatTable_Idle_Head_RotationTable {
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 *Fixed[1.0] 
+00000000 00000000 *Fixed[2.0] 
+00000000 00000000 *Fixed[2.5] 
+00000000 00000000 *Fixed[3.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[3.5] 
+00000000 00000000 *Fixed[3.0] 
+00000000 00000000 *Fixed[2.5] 
+00000000 00000000 *Fixed[3.0] 
+00000000 00000000 *Fixed[2.0] 
+00000000 00000000 *Fixed[1.0] 
+00000000 00000000 *Fixed[0.5]
+00000000 00000000 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Idle_UpdateHeadRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Idle_Head_RotationTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Idle % 1
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Float  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseFloatBuffer  $FloatTable_Idle_Head_RotationTable 
+   84:  	Get3Float  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+   C0:  Wait  1`
+   CC:  Goto  0
+   D8:  Return
+   E0:  End
+}
+
+#new:FloatTable $FloatTable_Running_Head_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 *Fixed[2.0] 
+00000000 00000000 *Fixed[5.0] 
+00000000 00000000 *Fixed[8.0] 
+00000000 00000000 *Fixed[8.0] 
+00000000 00000000 *Fixed[8.0] 
+00000000 00000000 *Fixed[8.0] 
+00000000 00000000 *Fixed[7.0] 
+00000000 00000000 *Fixed[5.0] 
+00000000 00000000 *Fixed[4.0] 
+00000000 00000000 *Fixed[1.0]
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Running_UpdateHeadRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Running_Head_RotationTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Running % 5
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Float  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseFloatBuffer  $FloatTable_Running_Head_RotationTable 
+   84:  	Get3Float  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+   C0:  Wait  1`
+   CC:  Goto  0
+   D8:  Return
+   E0:  End
+}
+
+#new:FloatTable $FloatTable_Hurt_Head_RotationTable {
+00000000      *Fixed[10.0]    00000000 
+*Fixed[20.0]  00000000        *Fixed[5.0] 
+00000000      00000000        00000000 
+*Fixed[5.0]   *Fixed[20.0]    00000000 
+*Fixed[10.0]  00000000        00000000 
+00000000      *Fixed[30.0]    00000000 
+00000000      *Fixed[5.0]     *Fixed[2.0] 
+*Fixed[30.0]  00000000        *Fixed[10.0] 
+*Fixed[30.0]  *Fixed[10.0]    00000000 
+00000000      *Fixed[40.0]    *Fixed[2.0] 
+00000000      00000000        *Fixed[5.0] 
+*Fixed[5.0]   00000000        *Fixed[8.0] 
+*Fixed[10.0]  00000000        00000000 
+00000000      *Fixed[30.0]    00000000 
+*Fixed[20.0]  00000000        *Fixed[5.0] 
+00000000      00000000        00000000 
+00000000      *Fixed[5.0]     00000000 
+*Fixed[10.0]  00000000        *Fixed[8.0] 
+00000000      *Fixed[20.0]    00000000 
+*Fixed[5.0]   00000000        00000000 
+00000000      *Fixed[5.0]     *Fixed[5.0] 
+*Fixed[30.0]  00000000        00000000 
+00000000      00000000        00000000 
+000000FF      000000FF        000000FF
+}
+
+#new:Script $Script_Animation_Hurt_UpdateHeadRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Hurt_Head_RotationTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Hurt % 3
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Float  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseFloatBuffer  $FloatTable_Hurt_Head_RotationTable 
+   84:  	Get3Float  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  RandInt   ( 00000064 *VarA )
+   B4:  If  *VarA  <  00000032 
+   C4:  	SetF  *VarA  *Fixed[0.0] 
+   D4:  	SubF  *VarA  *Var0 
+   E4:  	SetF  *Var0  *VarA 
+   F4:  	SetF  *VarA  *Fixed[0.0] 
+  104:  	SubF  *VarA  *Var1 
+  114:  	SetF  *Var1  *VarA 
+  124:  EndIf
+  12C:  Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  14C:  Wait  1`
+  158:  Goto  0
+  164:  Return
+  16C:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_Head {
+    0:  UseArray  $End[0] 
+    C:  Call  $Function_StartRumble ( 00000100 0000001E )
+   20:  Thread
+   28:  	SetGroup  00000000 
+   34:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000014 *Fixed[3.0] )
+   50:  EndThread
+   58:  Call  SetPartFlagBits   ( .Actor:Self .Part:Head 00100000 .True )
+   74:  Call  GetPartPos        ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+   94:  Call  SetPartDispOffset ( .Actor:Self .Part:Head 00000000 FFFFFFC4 00000000 )
+   B4:  Set   *Var1  0000003C 
+   C4:  Call  SetPartPos        ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+   E4:  Thread
+   EC:  	Set   *Var0  00000000 
+   FC:  	Set   *Var1  00000000 
+  10C:  	Set   *Var2  00000000 
+  11C:  	Loop  0000003C 
+  128:  		Add   *Var0  00000014 
+  138:  		Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  158:  		Wait  1`
+  164:  	EndLoop
+  16C:  EndThread
+  174:  Sub   *Var0  0000003C 
+  184:  Set   *Var1  FFFFFF38 
+  194:  Add   *Var2  00000064 
+  1A4:  Call  SetPartJumpGravity    ( .Actor:Self .Part:Head *Fixed[0.5] )
+  1BC:  Call  JumpPartTo    ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 0000003C .True )
+  1E4:  Wait  30`
+  1F0:  Call  PlaySoundAtModel      ( ~Model:pit_bt02:k1 000001E2 00000000 )
+  208:  Thread
+  210:  	SetGroup  00000000 
+  21C:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[1.0] )
+  238:  EndThread
+  240:  Call  $Function_StartRumble ( 00000064 00000014 )
+  254:  Wait  20`
+  260:  Call  PlaySoundAtModel      ( ~Model:pit_bt02:u1 000001E2 00000000 )
+  278:  Thread
+  280:  	SetGroup  00000000 
+  28C:  	Call  ShakeCam  ( .Cam:Battle 00000000 0000000A *Fixed[1.5] )
+  2A8:  EndThread
+  2B0:  Call  $Function_StartRumble ( 00000096 00000014 )
+  2C4:  Wait  30`
+  2D0:  Call  PlaySoundAtModel      ( ~Model:pit_bt02:p1 000001E2 00000000 )
+  2E8:  Thread
+  2F0:  	SetGroup  00000000 
+  2FC:  	Call  ShakeCam  ( .Cam:Battle 00000000 0000000A *Fixed[1.0] )
+  318:  EndThread
+  320:  Call  $Function_StartRumble ( 00000064 00000014 )
+  334:  Wait  30`
+  340:  Call  PlaySoundAtModel      ( ~Model:pit_bt02:d1 000001E2 00000000 )
+  358:  Thread
+  360:  	SetGroup  00000000 
+  36C:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[0.7] )
+  388:  EndThread
+  390:  Call  $Function_StartRumble ( 00000046 00000014 )
+  3A4:  Wait  20`
+  3B0:  Call  PlaySoundAtModel      ( ~Model:pit_bt02:s1 000001E2 00000000 )
+  3C8:  Thread
+  3D0:  	SetGroup  00000000 
+  3DC:  	Call  ShakeCam  ( .Cam:Battle 00000000 0000000A *Fixed[1.0] )
+  3F8:  EndThread
+  400:  Call  $Function_StartRumble ( 00000064 00000014 )
+  414:  Wait  20`
+  420:  Call  PlaySoundAtModel      ( ~Model:pit_bt02:km1 000001E2 00000000 )
+  438:  Call  $Function_StartRumble ( 0000003C 00000014 )
+  44C:  Thread
+  454:  	SetGroup  00000000 
+  460:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[0.6] )
+  47C:  EndThread
+  484:  Wait  20`
+  490:  Thread
+  498:  	SetGroup  00000000 
+  4A4:  	Call  ShakeCam  ( .Cam:Battle 00000000 00000005 *Fixed[0.3] )
+  4C0:  EndThread
+  4C8:  Call  $Function_StartRumble ( 0000001E 00000014 )
+  4DC:  Return
+  4E4:  End
+}
+
+#new:IntTable $IntTable_Idle_Body_OffsetTable {
+00000000 00000000 00000000
+00000000 00000001 00000000
+00000000 00000002 00000000
+00000000 00000003 00000000
+00000000 00000004 00000000
+00000000 00000004 00000000
+00000000 00000004 00000000
+00000000 00000004 00000000 
+00000000 00000004 00000000
+00000000 00000003 00000000
+00000000 00000003 00000000
+00000000 00000002 00000000
+00000000 00000001 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF 
+}
+
+#new:Script $Script_Animation_Idle_UpdateBodyPos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_Idle_Body_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Idle % 1
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Int  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseIntBuffer  $IntTable_Idle_Body_OffsetTable 
+   84:  	Get3Int  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetActorDispOffset    ( .Actor:Self *Var0 *Var1 *Var2 )
+   BC:  Wait  1`
+   C8:  Goto  0
+   D4:  Return
+   DC:  End
+}
+
+#new:IntTable $IntTable_Running_Body_OffsetTable {
+00000000 00000002 00000000 
+00000000 00000007 00000000 
+00000000 00000009 00000000 
+00000000 00000009 00000000 
+00000000 00000007 00000000 
+00000000 00000005 00000000 
+00000000 00000001 00000000 
+00000000 00000000 00000000 
+00000000 00000002 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Running_UpdateBodyPos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_Running_Body_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Running % 5
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Int  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseIntBuffer  $IntTable_Running_Body_OffsetTable 
+   84:  	Get3Int  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetActorDispOffset    ( .Actor:Self *Var0 *Var1 *Var2 )
+   BC:  Wait  1`
+   C8:  Goto  0
+   D4:  Return
+   DC:  End
+}
+
+#new:IntTable $IntTable_AnyAttack_Body_OffsetTable {
+00000000 00000000 00000000 
+00000000 00000001 00000000 
+00000000 00000002 00000000 
+00000000 00000003 00000000 
+00000000 00000004 00000000 
+00000000 00000004 00000000 
+00000000 00000004 00000000 
+00000000 00000004 00000000 
+00000000 00000004 00000000 
+00000000 00000003 00000000 
+00000000 00000003 00000000 
+00000000 00000002 00000000 
+00000000 00000001 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_AnyAttack_UpdateBodyPos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_AnyAttack_Body_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Animation:Attack0 % 7
+   4C:  	Case  ==  .Animation:ArmAttackBlocked % B
+            Case  ==  .Animation:Attack_LeftArmA % D
+            Case  ==  .Animation:Attack_LeftArmB % F
+   58:  	Default
+   60:  		Return
+   68:  EndSwitch
+   70:  Get3Int  *Var0 *Var1 *Var2 
+   84:  If  *Var0  ==  000000FF 
+   94:  	UseIntBuffer  $IntTable_AnyAttack_Body_OffsetTable 
+   A0:  	Get3Int  *Var0 *Var1 *Var2 
+   B4:  EndIf
+   BC:  Call  SetActorDispOffset    ( .Actor:Self *Var0 *Var1 *Var2 )
+   D8:  Wait  1`
+   E4:  Goto  0
+   F0:  Return
+   F8:  End
+}
+
+#new:IntTable $IntTable_Hurt_Body_OffsetTable {
+00000000 00000001 00000000
+00000000 00000004 00000000
+00000000 00000010 00000000
+00000000 00000008 00000000
+00000000 00000014 00000000
+00000000 00000008 00000000
+00000000 0000000C 00000000
+00000000 00000006 00000000
+00000000 00000000 00000000
+00000000 00000006 00000000
+00000000 00000000 00000000
+00000000 00000002 00000000
+00000000 00000000 00000000
+00000000 00000002 00000000
+00000000 00000000 00000000
+00000000 00000002 00000000
+00000000 00000000 00000000
+00000000 00000002 00000000
+00000000 00000000 00000000
+00000000 00000002 00000000
+00000000 00000000 00000000
+00000000 00000002 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Hurt_UpdateBodyPos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_Hurt_Body_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Hurt % 3
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Int  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseIntBuffer  $IntTable_Hurt_Body_OffsetTable 
+   84:  	Get3Int  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetActorDispOffset    ( .Actor:Self *Var0 *Var1 *Var2 )
+   BC:  Wait  1`
+   C8:  Goto  0
+   D4:  Return
+   DC:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_Belly {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:Belly 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:Belly *Var0 *Var1 *Var2 )
+   48:  Call  SetPartDispOffset ( .Actor:Self .Part:Belly 00000000 FFFFFFE2 00000000 )
+   68:  Set   *Var1  0000001E 
+   78:  Call  SetPartPos        ( .Actor:Self .Part:Belly *Var0 *Var1 *Var2 )
+   98:  Thread
+   A0:  	Set   *Var0  00000000 
+   B0:  	Set   *Var1  00000000 
+   C0:  	Set   *Var2  00000000 
+   D0:  	Loop  00000050 
+   DC:  		Add   *Var0  FFFFFFEC 
+   EC:  		Call  SetPartRotation   ( .Actor:Self .Part:Belly *Var0 *Var1 *Var2 )
+  10C:  		Wait  1`
+  118:  	EndLoop
+  120:  EndThread
+  128:  Sub   *Var0  00000096 
+  138:  Set   *Var1  FFFFFF38 
+  148:  Sub   *Var2  000000C8 
+  158:  Call  SetPartJumpGravity    ( .Actor:Self .Part:Belly *Fixed[0.3] )
+  170:  Call  JumpPartTo    ( .Actor:Self .Part:Belly *Var0 *Var1 *Var2 00000050 .True )
+  198:  Return
+  1A0:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_Shell {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:Shell 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:Shell *Var0 *Var1 *Var2 )
+   48:  Call  SetPartDispOffset ( .Actor:Self .Part:Shell 00000000 FFFFFFE8 00000000 )
+   68:  Set   *Var1  00000018 
+   78:  Call  SetPartPos        ( .Actor:Self .Part:Shell *Var0 *Var1 *Var2 )
+   98:  Thread
+   A0:  	Set   *Var0  00000000 
+   B0:  	Set   *Var1  00000000 
+   C0:  	Set   *Var2  00000000 
+   D0:  	Loop  0000003C 
+   DC:  		Add   *Var0  00000004 
+   EC:  		Add   *Var1  FFFFFFFF 
+   FC:  		Call  SetPartRotation   ( .Actor:Self .Part:Shell *Var0 *Var1 *Var2 )
+  11C:  		Wait  1`
+  128:  	EndLoop
+  130:  EndThread
+  138:  Add   *Var0  0000001E 
+  148:  Set   *Var1  FFFFFF38 
+  158:  Add   *Var2  00000096 
+  168:  Call  SetPartJumpGravity    ( .Actor:Self .Part:Shell *Fixed[0.5] )
+  180:  Call  JumpPartTo    ( .Actor:Self .Part:Shell *Var0 *Var1 *Var2 0000003C .True )
+  1A8:  Return
+  1B0:  End
+}
+
+#new:IntTable $IntTable_Idle_Base_OffsetTable {
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 FFFFFFFF 00000000
+00000000 FFFFFFFF 00000000
+00000000 FFFFFFFE 00000000
+00000000 FFFFFFFE 00000000
+00000000 FFFFFFFE 00000000
+00000000 FFFFFFFE 00000000
+00000000 FFFFFFFE 00000000
+00000000 FFFFFFFF 00000000
+00000000 FFFFFFFF 00000000
+00000000 FFFFFFFF 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF
+}
+#new:Script $Script_Animation_Idle_UpdateBasePos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_Idle_Base_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Idle % 1
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Int  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseIntBuffer  $IntTable_Idle_Base_OffsetTable 
+   84:  	Get3Int  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetPartPos    ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+   C0:  Wait  1`
+   CC:  Goto  0
+   D8:  Return
+   E0:  End
+}
+
+#new:IntTable $IntTable_AnyAttack_Base_OffsetTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 FFFFFFFF 00000000 
+00000000 FFFFFFFF 00000000 
+00000000 FFFFFFFE 00000000 
+00000000 FFFFFFFE 00000000 
+00000000 FFFFFFFE 00000000 
+00000000 FFFFFFFE 00000000 
+00000000 FFFFFFFE 00000000 
+00000000 FFFFFFFF 00000000 
+00000000 FFFFFFFF 00000000 
+00000000 FFFFFFFF 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_AnyAttack_UpdateBasePos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_AnyAttack_Base_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Animation:Attack0 % 7
+   4C:  	Case  ==  .Animation:ArmAttackBlocked % B
+            Case  ==  .Animation:Attack_LeftArmA % D
+            Case  ==  .Animation:Attack_LeftArmB % F
+   58:  	Default
+   60:  		Return
+   68:  EndSwitch
+   70:  Get3Int  *Var0 *Var1 *Var2 
+   84:  If  *Var0  ==  000000FF 
+   94:  	UseIntBuffer  $IntTable_AnyAttack_Base_OffsetTable 
+   A0:  	Get3Int  *Var0 *Var1 *Var2 
+   B4:  EndIf
+   BC:  Call  SetPartPos    ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+   DC:  Wait  1`
+   E8:  Goto  0
+   F4:  Return
+   FC:  End
+}
+
+#new:IntTable $IntTable_Running_Base_OffsetTable {
+00000000 00000000 00000000 
+00000000 FFFFFFFE 00000000 
+00000000 FFFFFFFC 00000000 
+00000000 FFFFFFFC 00000000 
+00000000 FFFFFFFC 00000000 
+00000000 FFFFFFFD 00000000 
+00000000 FFFFFFFF 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Running_UpdateBasePos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_Running_Base_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Running % 5
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Int  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseIntBuffer  $IntTable_Running_Base_OffsetTable 
+   84:  	Get3Int  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetPartPos    ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+   C0:  Wait  1`
+   CC:  Goto  0
+   D8:  Return
+   E0:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_Base {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:Base 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+   48:  Call  SetPartPos        ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+   68:  Thread
+   70:  	Set   *Var0  00000000 
+   80:  	Set   *Var1  00000000 
+   90:  	Set   *Var2  00000000 
+   A0:  	Loop  00000050 
+   AC:  		Add   *Var0  FFFFFFF6 
+   BC:  		Call  SetPartRotation   ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+   DC:  		Wait  1`
+   E8:  	EndLoop
+   F0:  EndThread
+   F8:  Sub   *Var0  00000032 
+  108:  Set   *Var1  FFFFFF38 
+  118:  Sub   *Var2  000000C8 
+  128:  Call  SetPartJumpGravity    ( .Actor:Self .Part:Base *Fixed[0.3] )
+  140:  Call  JumpPartTo    ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 00000050 .True )
+  168:  Return
+  170:  End
+}
+
+#new:FloatTable $FloatTable_Attack0_LeftArm_RotationTable {
+00000000 00000000 *Fixed[5.0]
+00000000 00000000 *Fixed[10.0]
+00000000 00000000 *Fixed[15.0] 
+00000000 00000000 *Fixed[20.0] 
+00000000 00000000 *Fixed[25.0] 
+00000000 00000000 *Fixed[30.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[40.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[25.0] 
+00000000 00000000 *Fixed[15.0] 
+00000000 00000000 *Fixed[5.0]
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Attack0_UpdateLeftArmRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Attack0_LeftArm_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var0  *Array[0] 
+   44:  If  *Var0  !=  .Animation:Attack0 % 7
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+   98:  		Set   *VarF  00000001 
+   A8:  		Set   *Var0  *Fixed[0.0] 
+   B8:  		Set   *Var1  *Fixed[0.0] 
+   C8:  		Set   *Var2  *Fixed[0.0] 
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:Script $Script_Animation_ArmAttackBlocked_UpdateLeftArmRotation {
+    0:  Call  GetPartRotation   ( .Actor:Self .Part:LeftArm *Var2 *Var3 *Var4 )
+   20:  Call  MakeLerp  ( *Var4 00000000 00000014 .Easing:Linear )
+   3C:  Label  0
+   48:  Call  UpdateLerp ( )
+   54:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Fixed[0.0] *Fixed[0.0] *Var0 )
+   74:  Wait  1`
+   80:  If  *Var1  ==  00000001 
+   90:  	Goto  0
+   9C:  EndIf
+   A4:  Return
+   AC:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_LeftArm {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:LeftArm 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+   48:  Call  SetPartDispOffset ( .Actor:Self .Part:LeftArm 00000000 FFFFFFC4 00000000 )
+   68:  Set   *Var1  0000003C 
+   78:  Call  SetPartPos        ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+   98:  Thread
+   A0:  	Set   *Var0  00000000 
+   B0:  	Set   *Var1  00000000 
+   C0:  	Set   *Var2  00000000 
+   D0:  	Loop  00000050 
+   DC:  		Add   *Var0  00000008 
+   EC:  		Add   *Var1  0000000A 
+   FC:  		Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  11C:  		Wait  1`
+  128:  	EndLoop
+  130:  EndThread
+  138:  Sub   *Var0  00000000 
+  148:  Set   *Var1  FFFFFF38 
+  158:  Add   *Var2  00000064 
+  168:  Call  SetPartJumpGravity    ( .Actor:Self .Part:LeftArm *Fixed[0.6] )
+  180:  Call  JumpPartTo    ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 00000050 .True )
+  1A8:  Return
+  1B0:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_RightArm {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:RightArm 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+   48:  Call  SetPartDispOffset ( .Actor:Self .Part:RightArm 00000000 FFFFFFC4 00000000 )
+   68:  Set   *Var1  0000003C 
+   78:  Call  SetPartPos        ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+   98:  Sub   *Var0  00000000 
+   A8:  Set   *Var1  FFFFFF38 
+   B8:  Sub   *Var2  000000C8 
+   C8:  Call  SetPartJumpGravity    ( .Actor:Self .Part:RightArm *Fixed[0.4] )
+   E0:  Call  JumpPartTo        ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 00000050 .True )
+  108:  Return
+  110:  End
+}
+
+#new:FloatTable $FloatTable_Running_Wheels_RotationTable {
+00000000 00000000 *Fixed[20.0] 
+00000000 00000000 *Fixed[40.0] 
+00000000 00000000 *Fixed[60.0] 
+00000000 00000000 *Fixed[80.0] 
+00000000 00000000 *Fixed[100.0] 
+00000000 00000000 *Fixed[120.0] 
+00000000 00000000 *Fixed[140.0] 
+00000000 00000000 *Fixed[160.0] 
+00000000 00000000 *Fixed[180.0] 
+00000000 00000000 *Fixed[200.0] 
+00000000 00000000 *Fixed[220.0] 
+00000000 00000000 *Fixed[240.0] 
+00000000 00000000 *Fixed[260.0] 
+00000000 00000000 *Fixed[280.0] 
+00000000 00000000 *Fixed[300.0] 
+00000000 00000000 *Fixed[320.0] 
+00000000 00000000 *Fixed[340.0] 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Running_UpdateWheelsRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Running_Wheels_RotationTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  If  *Var0  !=  .Animation:Running % 5
+   44:  	Return
+   4C:  EndIf
+   54:  Get3Float  *Var0 *Var1 *Var2 
+   68:  If  *Var0  ==  000000FF 
+   78:  	UseFloatBuffer  $FloatTable_Running_Wheels_RotationTable 
+   84:  	Get3Float  *Var0 *Var1 *Var2 
+   98:  EndIf
+   A0:  Call  SetPartRotation   ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 )
+   C0:  Call  SetPartRotation   ( .Actor:Self .Part:WheelsBack *Var0 *Var1 *Var2 )
+   E0:  Wait  1`
+   EC:  Goto  0
+   F8:  Return
+  100:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_WheelsFront {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:WheelsFront 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 )
+   48:  Call  SetPartPos        ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 )
+   68:  Thread
+   70:  	Set   *Var0  00000000 
+   80:  	Set   *Var1  00000000 
+   90:  	Set   *Var2  00000000 
+   A0:  	Loop  00000050 
+   AC:  		Add   *Var0  .Part:WheelsFront 
+   BC:  		Call  SetPartRotation   ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 )
+   DC:  		Wait  1`
+   E8:  	EndLoop
+   F0:  EndThread
+   F8:  Sub   *Var0  00000096 
+  108:  Set   *Var1  FFFFFF38 
+  118:  Add   *Var2  00000064 
+  128:  Call  SetPartJumpGravity    ( .Actor:Self .Part:WheelsFront *Fixed[0.3] )
+  140:  Call  JumpPartTo    ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 00000050 .True )
+  168:  Return
+  170:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_WheelsBack {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:WheelsBack 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:WheelsBack *Var0 *Var1 *Var2 )
+   48:  Call  SetPartPos        ( .Actor:Self .Part:WheelsBack *Var0 *Var1 *Var2 )
+   68:  Thread
+   70:  	Set   *Var0  00000000 
+   80:  	Set   *Var1  00000000 
+   90:  	Set   *Var2  00000000 
+   A0:  	Loop  00000050 
+   AC:  		Add   *Var0  00000008 
+   BC:  		Call  SetPartRotation   ( .Actor:Self .Part:WheelsBack *Var0 *Var1 *Var2 )
+   DC:  		Wait  1`
+   E8:  	EndLoop
+   F0:  EndThread
+   F8:  Sub   *Var0  00000032 
+  108:  Set   *Var1  FFFFFF38 
+  118:  Sub   *Var2  00000064 
+  128:  Call  SetPartJumpGravity    ( .Actor:Self .Part:WheelsBack *Fixed[0.3] )
+  140:  Call  JumpPartTo    ( .Actor:Self .Part:WheelsBack *Var0 *Var1 *Var2 00000050 .True )
+  168:  Wait  100`
+  174:  Return
+  17C:  End
+}
+
+#new:Script $Script_Animation_Dying_JumpPart_Tail {
+    0:  UseArray  $End[0] 
+    C:  Call  SetPartFlagBits   ( .Actor:Self .Part:Tail 00100000 .True )
+   28:  Call  GetPartPos        ( .Actor:Self .Part:Tail *Var0 *Var1 *Var2 )
+   48:  Call  SetPartDispOffset ( .Actor:Self .Part:Tail 00000000 FFFFFFE2 00000000 )
+   68:  Set   *Var1  0000001E 
+   78:  Call  SetPartPos        ( .Actor:Self .Part:Tail *Var0 *Var1 *Var2 )
+   98:  Thread
+   A0:  	Set   *Var0  00000000 
+   B0:  	Set   *Var1  00000000 
+   C0:  	Set   *Var2  00000000 
+   D0:  	Loop  00000050 
+   DC:  		Add   *Var0  00000019 
+   EC:  		Add   *Var1  00000001 
+   FC:  		Call  SetPartRotation   ( .Actor:Self .Part:Tail *Var0 *Var1 *Var2 )
+  11C:  		Wait  1`
+  128:  	EndLoop
+  130:  EndThread
+  138:  Sub   *Var0  00000000 
+  148:  Set   *Var1  FFFFFF38 
+  158:  Add   *Var2  000000C8 
+  168:  Call  SetPartJumpGravity    ( .Actor:Self .Part:Tail *Fixed[0.3] )
+  180:  Call  JumpPartTo    ( .Actor:Self .Part:Tail *Var0 *Var1 *Var2 00000050 .True )
+  1A8:  Return
+  1B0:  End
+}
+
+%=======================
+% NEW ANIMATIONS SCRIPTS
+%=======================
+
+#new:FloatTable $FloatTable_Attack_LeftArmA_RotationTable {
+% rise arm
+00000000 00000000 *Fixed[5.0]
+00000000 00000000 *Fixed[10.0]
+00000000 00000000 *Fixed[15.0] 
+00000000 00000000 *Fixed[20.0] 
+00000000 00000000 *Fixed[25.0] 
+00000000 00000000 *Fixed[30.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[40.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+00000000 00000000 *Fixed[48.0] 
+00000000 00000000 *Fixed[45.0] 
+% spin clockwise
+00000000 00000000 *Fixed[58.0] 
+00000000 00000000 *Fixed[78.0] 
+00000000 00000000 *Fixed[98.0] 
+00000000 00000000 *Fixed[108.0]  
+00000000 00000000 *Fixed[134.0] 
+00000000 00000000 *Fixed[149.0] 
+00000000 00000000 *Fixed[169.0] 
+00000000 00000000 *Fixed[10.0] 
+00000000 00000000 *Fixed[25.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[35.0] 
+00000000 00000000 *Fixed[35.0] 
+% go back to home
+00000000 00000000 *Fixed[25.0] 
+00000000 00000000 *Fixed[15.0] 
+00000000 00000000 *Fixed[5.0]
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_LeftArmA_UpdateLeftArmRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Attack_LeftArmA_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:Attack_LeftArmA % D
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+   98:  		Set   *VarF  00000001 
+   A8:  		Set   *Var0  *Fixed[0.0] 
+   B8:  		Set   *Var1  *Fixed[0.0] 
+   C8:  		Set   *Var2  *Fixed[0.0] 
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Attack_LeftArmB_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 *Fixed[-5.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-25.0]
+00000000 00000000 *Fixed[-35.0]
+00000000 00000000 *Fixed[-45.0]
+00000000 00000000 *Fixed[-60.0]
+00000000 00000000 *Fixed[-75.0]
+00000000 00000000 *Fixed[-90.0]
+00000000 00000000 *Fixed[-105.0]
+00000000 00000000 *Fixed[-130.0]
+00000000 00000000 *Fixed[-150.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_LeftArmB_UpdateLeftArmRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Attack_LeftArmB_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:Attack_LeftArmB % F
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+   98:  		Set   *VarF  00000001 
+   A8:  		Set   *Var0  *Fixed[0.0] 
+   B8:  		Set   *Var1  *Fixed[0.0] 
+   C8:  		Set   *Var2  *Fixed[0.0] 
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:IntTable $IntTable_FireBreath_Head_OffsetTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+-8       -5       00000000
+-12`     -8       00000000
+-15`     -13`     00000000
+-17`     -18`     00000000
+-20`     -25`     00000000
+-20`     -29`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-21`     -31`     00000000
+-12`     -8       00000000
+-8       -3       00000000
+-6       -1       00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_FireBreath_UpdateHeadPos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_FireBreath_Head_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Animation:Attack_FireBreath % 11
+   58:  	Default
+   60:  		Return
+   68:  EndSwitch
+   70:  Get3Int  *Var0 *Var1 *Var2 
+   84:  If  *Var0  ==  000000FF 
+            Return
+   B4:  EndIf
+   BC:  Call  SetPartPos    ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+   DC:  Wait  1`
+   E8:  Goto  0
+   F4:  Return
+   FC:  End
+}
+
+#new:IntTable $IntTable_FireBreath_Arms_OffsetTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+-5       -4       00000000
+-7       -10`     00000000
+-9       -11`     00000000
+-11`     -15`     00000000
+-12`     -19`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-11`     -20`     00000000
+-10`     -15`     00000000
+-7       -10`     00000000
+-5       -6       00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_FireBreath_UpdateArmsPos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_FireBreath_Arms_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Animation:Attack_FireBreath % 11
+   58:  	Default
+   60:  		Return
+   68:  EndSwitch
+   70:  Get3Int  *Var0 *Var1 *Var2 
+   84:  If  *Var0  ==  000000FF 
+            Return
+   B4:  EndIf
+   BC:  Call  SetPartPos    ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+        Call  SetPartPos    ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+   DC:  Wait  1`
+   E8:  Goto  0
+   F4:  Return
+   FC:  End
+}
+
+#new:IntTable $IntTable_Bomb_Pannel_OffsetTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+1        00000000 00000000
+1        00000000 00000000
+2        00000000 00000000
+2        00000000 00000000
+3        00000000 00000000
+3        00000000 00000000
+4        00000000 00000000
+4        00000000 00000000
+5        00000000 00000000
+5        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+5        00000000 00000000
+5        00000000 00000000
+4        00000000 00000000
+4        00000000 00000000
+3        00000000 00000000
+3        00000000 00000000
+2        00000000 00000000
+2        00000000 00000000
+1        00000000 00000000
+1        00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Bomb_UpdatePannelPos {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_Bomb_Pannel_OffsetTable 
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Animation:Attack_Bomb % 13
+   58:  	Default
+   60:  		Return
+   68:  EndSwitch
+   70:  Get3Int  *Var0 *Var1 *Var2 
+   84:  If  *Var0  ==  000000FF 
+            Return
+   B4:  EndIf
+   BC:  Call  SetPartPos    ( .Actor:Self .Part:BellyPanel *Var0 *Var1 *Var2 )
+   DC:  Wait  1`
+   E8:  Goto  0
+   F4:  Return
+   FC:  End
+}
+
+#new:IntTable $IntTable_Bomb_Body_OffsetTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+3        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+6        00000000 00000000
+5        00000000 00000000
+4        00000000 00000000
+3        00000000 00000000
+2        00000000 00000000
+1        00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Bomb_Recoil {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_Bomb_Body_OffsetTable
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Animation:Attack_Bomb % 13
+   58:  	Default
+   60:  		Return
+   68:  EndSwitch
+   70:  Get3Int  *Var0 *Var1 *Var2 
+   84:  If  *Var0  ==  000000FF 
+   94:  	Return
+   B4:  EndIf
+   BC:  Call  SetActorDispOffset    ( .Actor:Self *Var0 *Var1 *Var2 )
+   D8:  Wait  1`
+   E4:  Goto  0
+   F0:  Return
+   F8:  End
+}
+
+#new:IntTable $IntTable_MachineGun_ArmRecoil_OffsetTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+4        00000000 00000000
+2        00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+4        00000000 00000000
+2        00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+4        00000000 00000000
+2        00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_MachineGun_UpdateArmRecoil {
+    0:  UseArray  $End[0] 
+    C:  UseIntBuffer  $IntTable_MachineGun_ArmRecoil_OffsetTable
+   18:  Label  0
+   24:  Set   *Var0  *Array[0] 
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Animation:Attack_MachineGun % 15
+   58:  	Default
+   60:  		Return
+   68:  EndSwitch
+   70:  Get3Int  *Var0 *Var1 *Var2 
+   84:  If  *Var0  ==  000000FF 
+            Return
+   B4:  EndIf
+        Call  SetPartPos    ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+   DC:  Wait  1`
+   E8:  Goto  0
+   F4:  Return
+   FC:  End
+}
+
+#new:FloatTable $FloatTable_Attack_FireBreath_Belly_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-6.0]
+00000000 00000000 *Fixed[-9.0]
+00000000 00000000 *Fixed[-12.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-18.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-20.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-5.0]
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_FireBreath_UpdateBellyRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Attack_FireBreath_Belly_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:Attack_FireBreath % 11
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+   98:  		Set   *VarF  00000001 
+   A8:  		Set   *Var0  *Fixed[0.0] 
+   B8:  		Set   *Var1  *Fixed[0.0] 
+   C8:  		Set   *Var2  *Fixed[0.0] 
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:Belly *Var0 *Var1 *Var2 )
+        Call  SetPartRotation   ( .Actor:Self .Part:Shell *Var0 *Var1 *Var2 )
+        Call  SetPartRotation   ( .Actor:Self .Part:Tail  *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Attack_FireBreath_Head_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_FireBreath_UpdateHeadRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Attack_FireBreath_Head_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:Attack_FireBreath % 11
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+   98:  		Set   *VarF  00000001 
+   A8:  		Set   *Var0  *Fixed[0.0] 
+   B8:  		Set   *Var1  *Fixed[0.0] 
+   C8:  		Set   *Var2  *Fixed[0.0] 
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Attack_FireBreath_Arms_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 *Fixed[7.5]
+00000000 00000000 *Fixed[10.0]
+00000000 00000000 *Fixed[12.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[12.5]
+00000000 00000000 *Fixed[9.0]
+00000000 00000000 *Fixed[5.0]
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_FireBreath_UpdateArmsRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Attack_FireBreath_Arms_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:Attack_FireBreath % 11
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+   98:  		Set   *VarF  00000001 
+   A8:  		Set   *Var0  *Fixed[0.0] 
+   B8:  		Set   *Var1  *Fixed[0.0] 
+   C8:  		Set   *Var2  *Fixed[0.0] 
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+        Call  SetPartRotation   ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_MachineGun_Arms_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 *Fixed[5.0]
+00000000 00000000 *Fixed[10.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[20.0]
+00000000 00000000 *Fixed[25.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[32.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[28.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_MachineGun_UpdateArmRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_MachineGun_Arms_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:Attack_MachineGun % 15
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+                  Return
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_StopMachineGun_Arms_RotationTable {
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[30.0]
+00000000 00000000 *Fixed[25.0]
+00000000 00000000 *Fixed[20.0]
+00000000 00000000 *Fixed[15.0]
+00000000 00000000 *Fixed[10.0]
+00000000 00000000 *Fixed[5.0]
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_StopMachineGun_UpdateArmRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_StopMachineGun_Arms_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:StopMachineGun % 17
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+                  Return
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Healing_Start_Arms_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 *Fixed[-2.5]
+00000000 00000000 *Fixed[-7.0]
+00000000 00000000 *Fixed[-11.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-17.0]
+00000000 00000000 *Fixed[-19.0]
+00000000 00000000 *Fixed[-21.0]
+00000000 00000000 *Fixed[-22.0]
+00000000 00000000 *Fixed[-19.0]
+00000000 00000000 *Fixed[-17.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-13.0]
+00000000 00000000 *Fixed[-11.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-12.0]
+00000000 00000000 *Fixed[-14.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Healing_Start_UpdateArmsRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Healing_Start_Arms_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:StartHealing % 19
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+                  Return
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+        Call  SetPartRotation   ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Healing_Start_Head_RotationTable {
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000 
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 *Fixed[-2.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-4.0]
+00000000 00000000 *Fixed[-5.0]
+00000000 00000000 *Fixed[-6.0]
+00000000 00000000 *Fixed[-7.0]
+00000000 00000000 *Fixed[-8.0]
+00000000 00000000 *Fixed[-9.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Healing_Start_UpdateHeadRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Healing_Start_Head_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:StartHealing % 19
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+                  Return
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Healing_Stop_Arms_RotationTable {
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-15.0]
+00000000 00000000 *Fixed[-11.0]
+00000000 00000000 *Fixed[-7.0]
+00000000 00000000 *Fixed[-2.5]
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Healing_Stop_UpdateArmsRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Healing_Stop_Arms_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:StopHealing % 1B
+   54:  	Return
+   5C:  EndIf
+        If  *VarF  ==  00000000 
+              Get3Float  *Var0 *Var1 *Var2 
+              If  *Var0  ==  000000FF 
+                    Set   *VarF  00000001 
+                    Set   *Var0  *Fixed[0.0] 
+                    Set   *Var1  *Fixed[0.0] 
+                    Set   *Var2  *Fixed[0.0] 
+              EndIf
+        EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+        Call  SetPartRotation   ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Healing_Stop_Head_RotationTable {
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-10.0]
+00000000 00000000 *Fixed[-7.0]
+00000000 00000000 *Fixed[-5.0]
+00000000 00000000 *Fixed[-3.0]
+00000000 00000000 *Fixed[-1.0]
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+00000000 00000000 00000000
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Healing_Stop_UpdateHeadRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Healing_Stop_Head_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var3  *Array[0] 
+   44:  If  *Var3  !=  .Animation:StopHealing % 1B
+   54:  	Return
+   5C:  EndIf
+        If  *VarF  ==  00000000 
+              Get3Float  *Var0 *Var1 *Var2 
+              If  *Var0  ==  000000FF 
+                    Set   *VarF  00000001 
+                    Set   *Var0  *Fixed[0.0] 
+                    Set   *Var1  *Fixed[0.0] 
+                    Set   *Var2  *Fixed[0.0] 
+              EndIf
+        EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Healing_Step_Arms_RotationTable {
+00000000 00000000 *Fixed[-15.0]
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Healing_Step_UpdateArmsRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Healing_Step_Arms_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var0  *Array[0] 
+   44:  If  *Var0  !=  .Animation:Healing % 1D
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+                  Return
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+        Call  SetPartRotation   ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+#new:FloatTable $FloatTable_Healing_Step_Head_RotationTable {
+00000000 00000000 *Fixed[-10.0]
+000000FF 000000FF 000000FF
+}
+
+#new:Script $Script_Animation_Healing_Step_UpdateHeadRotation {
+    0:  UseArray  $End[0] 
+    C:  UseFloatBuffer  $FloatTable_Healing_Step_Head_RotationTable 
+   18:  Set   *VarF  00000000 
+   28:  Label  0
+   34:  Set   *Var0  *Array[0] 
+   44:  If  *Var0  !=  .Animation:Healing % 1D
+   54:  	Return
+   5C:  EndIf
+   64:  If  *VarF  ==  00000000 
+   74:  	Get3Float  *Var0 *Var1 *Var2 
+   88:  	If  *Var0  ==  000000FF 
+                  Return
+   D8:  	EndIf
+   E0:  EndIf
+   E8:  MulF  *Var2  *Fixed[-2.0] 
+   F8:  Call  SetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  118:  Wait  1`
+  124:  Goto  0
+  130:  Return
+  138:  End
+}
+
+%========================
+
+% This script updates bowser animations by reading $End[0]
+#new:Script $Script_Idle_FakeBowser2 {
+    0:  UseArray  $End[0] 
+    C:  Set   *VarA  00000000 
+   1C:  Label  0
+        % update bowser animation
+   28:  Set   *Var0  *Array[0] 
+   38:  Switch  *Var0 
+   44:  	Case  ==  .Animation:ChangeToIdle % 0
+   50:  		Set   *Array[0] .Animation:Idle % 1 
+   60:  		Exec  $Script_Animation_Idle_UpdateBodyPos 
+   6C:  		Exec  $Script_Animation_Idle_UpdateBasePos 
+   78:  		Exec  $Script_Animation_Idle_UpdateHeadRotation 
+   84:  	Case  ==  .Animation:Idle % 1
+   90:  	Case  ==  .Animation:ChangeToHurt % 2
+   9C:  		Set   *Array[0]  .Animation:Hurt % 3 
+   AC:  		Exec  $Script_Animation_Hurt_UpdateBodyPos 
+   B8:  		Exec  $Script_Animation_Hurt_UpdateHeadRotation 
+   C4:  	Case  ==  .Animation:Hurt % 3
+   D0:  	Case  ==  .Animation:ChangeToRunning % 4
+   DC:  		Set   *Array[0]  .Animation:Running % 5 
+   EC:  		Exec  $Script_Animation_Running_UpdateBodyPos 
+   F8:  		Exec  $Script_Animation_Running_UpdateBasePos 
+  104:  		Exec  $Script_Animation_Running_UpdateHeadRotation 
+  110:  		Exec  $Script_Animation_Running_UpdateWheelsRotation 
+  11C:  	Case  ==  .Animation:Running % 5
+  128:  	Case  ==  .Animation:ChangeToAttack0 % 6
+  134:  		Set   *Array[0]  .Animation:Attack0 % 7 
+  144:  		Exec  $Script_Animation_AnyAttack_UpdateBodyPos 
+  150:  		Exec  $Script_Animation_AnyAttack_UpdateBasePos 
+  15C:  		Exec  $Script_Animation_Attack0_UpdateLeftArmRotation 
+  168:  	Case  ==  .Animation:Attack0 % 7
+  174:  	Case  ==  .Animation:ChangeToDying % 8
+  180:  		Call  PlaySoundAtActor  ( .Actor:Self 000003B5 )
+  194:  		Set   *Array[0]  .Animation:Dying % 9 
+  1A4:  		Exec  $Script_Animation_Dying_JumpPart_Head 
+  1B0:  		Exec  $Script_Animation_Dying_JumpPart_Belly 
+  1BC:  		Exec  $Script_Animation_Dying_JumpPart_Shell 
+  1C8:  		Exec  $Script_Animation_Dying_JumpPart_LeftArm 
+  1D4:  		Exec  $Script_Animation_Dying_JumpPart_RightArm 
+  1E0:  		Exec  $Script_Animation_Dying_JumpPart_Tail 
+  1EC:  		Exec  $Script_Animation_Dying_JumpPart_WheelsFront 
+  1F8:  		Exec  $Script_Animation_Dying_JumpPart_WheelsBack 
+  204:  		Exec  $Script_Animation_Dying_JumpPart_Base 
+  210:  		Exec  $Script_EndFight 
+  21C:  	Case  ==  .Animation:Dying % 9
+  228:  	Case  ==  .Animation:ChangeToArmAttackBlocked % A
+  234:  		Set   *Array[0]  .Animation:ArmAttackBlocked % B
+  244:  		Exec  $Script_Animation_AnyAttack_UpdateBodyPos 
+  250:  		Exec  $Script_Animation_AnyAttack_UpdateBasePos 
+  25C:  		Exec  $Script_Animation_ArmAttackBlocked_UpdateLeftArmRotation 
+  268:  	Case  ==  .Animation:ArmAttackBlocked % B
+            %==NEW======
+            Case  ==  .Animation:ChangeToAttack_LeftArmA % C
+                  Set   *Array[0]  .Animation:Attack_LeftArmA % D
+                  Exec  $Script_Animation_AnyAttack_UpdateBodyPos 
+                  Exec  $Script_Animation_AnyAttack_UpdateBasePos 
+                  Exec  $Script_Animation_LeftArmA_UpdateLeftArmRotation 
+            Case  ==  .Animation:Attack_LeftArmA % D
+            Case  ==  .Animation:ChangeToAttack_LeftArmB % E
+                  Set   *Array[0]  .Animation:Attack_LeftArmB % F
+                  Exec  $Script_Animation_AnyAttack_UpdateBodyPos 
+                  Exec  $Script_Animation_AnyAttack_UpdateBasePos 
+                  Exec  $Script_Animation_LeftArmB_UpdateLeftArmRotation 
+            Case  ==  .Animation:Attack_LeftArmB % F
+            Case  ==  .Animation:ChangeToAttack_FireBreath % 10
+                  Set   *Array[0]  .Animation:Attack_FireBreath % 11
+                  Exec  $Script_Animation_AnyAttack_UpdateBodyPos 
+                  Exec  $Script_Animation_AnyAttack_UpdateBasePos 
+                  Exec  $Script_Animation_FireBreath_UpdateHeadPos 
+                  Exec  $Script_Animation_FireBreath_UpdateArmsPos
+                  Exec  $Script_Animation_FireBreath_UpdateBellyRotation 
+                  Exec  $Script_Animation_FireBreath_UpdateHeadRotation 
+                  Exec  $Script_Animation_FireBreath_UpdateArmsRotation 
+            Case  ==  .Animation:Attack_FireBreath % 11
+            Case  ==  .Animation:ChangeToAttack_Bomb % 12
+                  Set   *Array[0]  .Animation:Attack_Bomb % 13
+                  Exec  $Script_Animation_Bomb_UpdatePannelPos
+                  Exec  $Script_Animation_Bomb_Recoil
+            Case  ==  .Animation:Attack_Bomb % 13
+            Case  ==  .Animation:ChangeToAttack_MachineGun % 14
+                  Set   *Array[0]  .Animation:Attack_MachineGun % 15
+                  Exec  $Script_Animation_MachineGun_UpdateArmRotation
+                  Exec  $Script_Animation_MachineGun_UpdateArmRecoil
+            Case  ==  .Animation:Attack_MachineGun % 15
+            Case  ==  .Animation:ChangeToStopMachineGun % 16
+                  Set   *Array[0]  .Animation:StopMachineGun % 17
+                  Exec  $Script_Animation_StopMachineGun_UpdateArmRotation
+            Case  ==  .Animation:StopMachineGun % 17
+            Case  ==  .Animation:ChangeToStartHealing % 18
+                  Set   *Array[0]  .Animation:StartHealing % 19
+                  Exec  $Script_Animation_Healing_Start_UpdateArmsRotation
+                  Exec  $Script_Animation_Healing_Start_UpdateHeadRotation
+            Case  ==  .Animation:StartHealing % 19
+            Case  ==  .Animation:ChangeToStopHealing % 1A
+                  Set   *Array[0]  .Animation:StopHealing % 1B
+                  Exec  $Script_Animation_Healing_Stop_UpdateArmsRotation
+                  Exec  $Script_Animation_Healing_Stop_UpdateHeadRotation
+            Case  ==  .Animation:StopHealing % 1B
+            Case  ==  .Animation:ChangeToHealing % 1C
+                  Set   *Array[0]  .Animation:Healing % 1D
+                  Exec  $Script_Animation_Healing_Step_UpdateArmsRotation
+                  Exec  $Script_Animation_Healing_Step_UpdateHeadRotation
+            Case  ==  .Animation:Healing % 1D
+  274:  EndSwitch
+        % the scripts above set all the data neccesary to animate bowser here.
+        %
+        % update head rotation and pos
+  27C:  Call  GetPartPos    ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  29C:  Call  TranslateGroup    ( ~Model:pit_bt02:atama *Var0 *Var1 *Var2 )
+  2B8:  Call  GetPartRotation   ( .Actor:Self .Part:Head *Var0 *Var1 *Var2 )
+  2D8:  Call  RotateGroup   ( ~Model:pit_bt02:atama *Var0 00000001 00000000 00000000 )
+  2F8:  Call  RotateGroup   ( ~Model:pit_bt02:atama *Var1 00000000 00000001 00000000 )
+  318:  Call  RotateGroup   ( ~Model:pit_bt02:atama *Var2 00000000 00000000 00000001 )
+        % head's models
+  338:  Call  SetModelFlags ( ~Model:pit_bt02:k1 00000040 .True ) % unknown flag
+  350:  Call  SetModelFlags ( ~Model:pit_bt02:k2 00000040 .True )
+  368:  Call  SetModelFlags ( ~Model:pit_bt02:k3 00000040 .True )
+  380:  Call  SetModelFlags ( ~Model:pit_bt02:k4 00000040 .True )
+  398:  Call  SetModelFlags ( ~Model:pit_bt02:k5 00000040 .True )
+  3B0:  Call  SetModelFlags ( ~Model:pit_bt02:k6 00000040 .True )
+  3C8:  Call  SetModelFlags ( ~Model:pit_bt02:k7 00000040 .True )
+  3E0:  Call  SetModelFlags ( ~Model:pit_bt02:k8 00000040 .True )
+  3F8:  Call  SetModelFlags ( ~Model:pit_bt02:k9 00000040 .True )
+        % update belly rotation and pos
+  410:  Call  GetPartPos    ( .Actor:Self .Part:Belly *Var0 *Var1 *Var2 )
+  430:  Call  TranslateGroup    ( ~Model:pit_bt02:dou *Var0 *Var1 *Var2 )
+  44C:  Call  GetPartRotation   ( .Actor:Self .Part:Belly *Var0 *Var1 *Var2 )
+  46C:  Call  RotateGroup   ( ~Model:pit_bt02:dou *Var0 00000001 00000000 00000000 )
+  48C:  Call  RotateGroup   ( ~Model:pit_bt02:dou *Var1 00000000 00000001 00000000 )
+  4AC:  Call  RotateGroup   ( ~Model:pit_bt02:dou *Var2 00000000 00000000 00000001 )
+        % belly's models
+  4CC:  Call  SetModelFlags ( ~Model:pit_bt02:d1 00000040 .True )
+  4E4:  Call  SetModelFlags ( ~Model:pit_bt02:d2 00000040 .True )
+  4FC:  Call  SetModelFlags ( ~Model:pit_bt02:d3 00000040 .True )
+        % update shell rotation and pos
+  514:  Call  GetPartPos    ( .Actor:Self .Part:Shell *Var0 *Var1 *Var2 )
+  534:  Call  TranslateGroup    ( ~Model:pit_bt02:koura *Var0 *Var1 *Var2 )
+  550:  Call  GetPartRotation   ( .Actor:Self .Part:Shell *Var0 *Var1 *Var2 )
+  570:  Call  RotateGroup   ( ~Model:pit_bt02:koura *Var0 00000001 00000000 00000000 )
+  590:  Call  RotateGroup   ( ~Model:pit_bt02:koura *Var1 00000000 00000001 00000000 )
+  5B0:  Call  RotateGroup   ( ~Model:pit_bt02:koura *Var2 00000000 00000000 00000001 )
+        % shell's models
+  5D0:  Call  SetModelFlags ( ~Model:pit_bt02:s1 00000040 .True )
+  5E8:  Call  SetModelFlags ( ~Model:pit_bt02:s2 00000040 .True )
+  600:  Call  SetModelFlags ( ~Model:pit_bt02:s3 00000040 .True )
+  %618:  Call  SetModelFlags ( ~Model:pit_bt02:s4 00000040 .True ) % model got removed
+  630:  Call  SetModelFlags ( ~Model:pit_bt02:s5 00000040 .True )
+        % update left arm rotation and pos
+  648:  Call  GetPartPos    ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  668:  Call  TranslateGroup    ( ~Model:pit_bt02:left_arm *Var0 *Var1 *Var2 )
+        Call  TranslateGroup    ( ~Model:pit_bt02:left_arm2 *Var0 *Var1 *Var2 )
+  684:  Call  GetPartRotation   ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+  6A4:  Call  RotateGroup   ( ~Model:pit_bt02:left_arm *Var0 00000001 00000000 00000000 )
+  6C4:  Call  RotateGroup   ( ~Model:pit_bt02:left_arm *Var1 00000000 00000001 00000000 )
+  6E4:  Call  RotateGroup   ( ~Model:pit_bt02:left_arm *Var2 00000000 00000000 00000001 )
+        % left arm's models
+  704:  Call  SetModelFlags ( ~Model:pit_bt02:u1 00000040 .True )
+  71C:  Call  SetModelFlags ( ~Model:pit_bt02:u2 00000040 .True )
+  734:  Call  SetModelFlags ( ~Model:pit_bt02:u3 00000040 .True )
+        % update tail rotation and pos
+  74C:  Call  GetPartPos    ( .Actor:Self .Part:Tail *Var0 *Var1 *Var2 )
+  76C:  Call  TranslateGroup    ( ~Model:pit_bt02:shippo *Var0 *Var1 *Var2 )
+  788:  Call  GetPartRotation   ( .Actor:Self .Part:Tail *Var0 *Var1 *Var2 )
+  7A8:  Call  RotateGroup   ( ~Model:pit_bt02:shippo *Var0 00000001 00000000 00000000 )
+  7C8:  Call  RotateGroup   ( ~Model:pit_bt02:shippo *Var1 00000000 00000001 00000000 )
+  7E8:  Call  RotateGroup   ( ~Model:pit_bt02:shippo *Var2 00000000 00000000 00000001 )
+        % tail model
+  808:  Call  SetModelFlags ( ~Model:pit_bt02:p1 00000040 .True )
+        % update front wheels rotation and pos
+  820:  Set   *Var0  *Array[0] 
+  830:  If  *Var0  ==  .Animation:Dying % 9
+  840:  	Call  GetPartPos    ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 )
+  860:  Else
+  868:  	Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  884:  	Set   *Var1  00000000 
+  894:  EndIf
+  89C:  Call  SetPartPos    ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 )
+  8BC:  Call  TranslateGroup    ( ~Model:pit_bt02:koma1 *Var0 *Var1 *Var2 )
+  8D8:  Call  GetPartRotation   ( .Actor:Self .Part:WheelsFront *Var0 *Var1 *Var2 )
+  8F8:  Call  RotateGroup   ( ~Model:pit_bt02:koma1 *Var0 00000001 00000000 00000000 )
+  918:  Call  RotateGroup   ( ~Model:pit_bt02:koma1 *Var1 00000000 00000001 00000000 )
+  938:  Call  RotateGroup   ( ~Model:pit_bt02:koma1 *Var2 00000000 00000000 00000001 )
+        % front wheels model
+  958:  Call  SetModelFlags ( ~Model:pit_bt02:km1 00000040 .True )
+        % update back wheels rotation and pos
+  970:  Set   *Var0  *Array[0] 
+  980:  If  *Var0  ==  .Animation:Dying % 9
+  990:  	Call  GetPartPos    ( .Actor:Self 00000009 *Var0 *Var1 *Var2 )
+  9B0:  Else
+  9B8:  	Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  9D4:  	Set   *Var1  00000000 
+  9E4:  EndIf
+  9EC:  Call  SetPartPos    ( .Actor:Self .Part:WheelsBack *Var0 *Var1 *Var2 )
+  A0C:  Call  TranslateGroup    ( ~Model:pit_bt02:koma2 *Var0 *Var1 *Var2 )
+  A28:  Call  GetPartRotation   ( .Actor:Self .Part:WheelsBack *Var0 *Var1 *Var2 )
+  A48:  Call  RotateGroup   ( ~Model:pit_bt02:koma2 *Var0 00000001 00000000 00000000 )
+  A68:  Call  RotateGroup   ( ~Model:pit_bt02:koma2 *Var1 00000000 00000001 00000000 )
+  A88:  Call  RotateGroup   ( ~Model:pit_bt02:koma2 *Var2 00000000 00000000 00000001 )
+        % back wheels model
+  AA8:  Call  SetModelFlags ( ~Model:pit_bt02:km2 00000040 .True )
+        % update right arm rotation and pos
+  AC0:  Call  GetPartPos    ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+  AE0:  Call  TranslateGroup    ( ~Model:pit_bt02:right_arm *Var0 *Var1 *Var2 )
+  AFC:  Call  GetPartRotation   ( .Actor:Self .Part:RightArm *Var0 *Var1 *Var2 )
+  B1C:  Call  RotateGroup   ( ~Model:pit_bt02:right_arm *Var0 00000001 00000000 00000000 )
+  B3C:  Call  RotateGroup   ( ~Model:pit_bt02:right_arm *Var1 00000000 00000001 00000000 )
+  B5C:  Call  RotateGroup   ( ~Model:pit_bt02:right_arm *Var2 00000000 00000000 00000001 )
+        % right arm's models
+  B7C:  Call  SetModelFlags (  ~Model:pit_bt02:o171 00000040 .True )
+  B94:  Call  SetModelFlags (  ~Model:pit_bt02:o172 00000040 .True )
+  BAC:  Call  SetModelFlags (  ~Model:pit_bt02:o183 00000040 .True )
+        % update base rotation and pos
+  BC4:  Call  GetPartPos    ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+  BE4:  Call  TranslateGroup    ( ~Model:pit_bt02:ashi *Var0 *Var1 *Var2 )
+  C00:  Call  GetPartRotation   ( .Actor:Self .Part:Base *Var0 *Var1 *Var2 )
+        % base's models
+  C20:  Call  RotateGroup   ( ~Model:pit_bt02:ashi *Var0 00000001 00000000 00000000 )
+  C40:  Call  RotateGroup   ( ~Model:pit_bt02:ashi *Var1 00000000 00000001 00000000 )
+  C60:  Call  RotateGroup   ( ~Model:pit_bt02:ashi *Var2 00000000 00000000 00000001 )
+  C80:  Call  SetModelFlags (  ~Model:pit_bt02:o118 00000040 .True )
+  C98:  Call  SetModelFlags (  ~Model:pit_bt02:o120 00000040 .True )
+  CB0:  Call  SetModelFlags (  ~Model:pit_bt02:o165 00000040 .True )
+        %===NEW============
+        % update belly's panel rotation and pos
+        Call  GetPartPos      ( .Actor:Self .Part:BellyPanel *Var0 *Var1 *Var2 )
+        Call  TranslateGroup    ( ~Model:pit_bt02:d4 *Var0 *Var1 *Var2 )
+        % update rotations
+        Call  GetPartRotation   ( .Actor:Self .Part:BellyPanel *Var0 *Var1 *Var2 )
+        Call  RotateGroup     ( ~Model:pit_bt02:d4 *Var0 00000001 00000000 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:d4 *Var1 00000000 00000001 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:d4 *Var2 00000000 00000000 00000001 )
+        % set flags
+        Call  SetModelFlags   (  ~Model:pit_bt02:d4 00000040 .True )
+        % update bullets' rotation and pos
+        Call  GetPartPos      ( .Actor:Self .Part:Bullet1 *Var0 *Var1 *Var2 )
+        Call  TranslateGroup    ( ~Model:pit_bt02:bullet1 *Var0 *Var1 *Var2 )
+        Call  GetPartPos      ( .Actor:Self .Part:Bullet2 *Var0 *Var1 *Var2 )
+        Call  TranslateGroup    ( ~Model:pit_bt02:bullet2 *Var0 *Var1 *Var2 )
+        Call  GetPartPos      ( .Actor:Self .Part:Bullet3 *Var0 *Var1 *Var2 )
+        Call  TranslateGroup    ( ~Model:pit_bt02:bullet3 *Var0 *Var1 *Var2 )
+        % update rotations
+        Call  GetPartRotation   ( .Actor:Self .Part:Bullet1 *Var0 *Var1 *Var2 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet1 *Var0 00000001 00000000 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet1 *Var1 00000000 00000001 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet1 *Var2 00000000 00000000 00000001 )
+        Call  GetPartRotation   ( .Actor:Self .Part:Bullet2 *Var0 *Var1 *Var2 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet2 *Var0 00000001 00000000 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet2 *Var1 00000000 00000001 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet2 *Var2 00000000 00000000 00000001 )
+        Call  GetPartRotation   ( .Actor:Self .Part:Bullet3 *Var0 *Var1 *Var2 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet3 *Var0 00000001 00000000 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet3 *Var1 00000000 00000001 00000000 )
+        Call  RotateGroup     ( ~Model:pit_bt02:bullet3 *Var2 00000000 00000000 00000001 )
+        % set flags
+        Call  SetModelFlags   (  ~Model:pit_bt02:bullet1 00000040 .True )
+        Call  SetModelFlags   (  ~Model:pit_bt02:bullet2 00000040 .True )
+        Call  SetModelFlags   (  ~Model:pit_bt02:bullet3 00000040 .True )
+        %==================
+        % update damaged FX
+  CC8:  Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+  CE0:  If  *Var0  !&  00000002 
+  CF0:  	Call  GetActorHP    ( .Actor:Self *Var0 )
+  D04:  	Call  GetEnemyMaxHP ( .Actor:Self *Var1 )
+  D18:  	Mul   *Var0  00000064 
+  D28:  	Div   *Var0  *Var1 
+  D38:  	Switch  *Var0 
+  D44:  		Case  ==  00000000 
+  D50:  		Case  <  00000014 
+  D5C:  			If  *VarA  >  00000014 
+  D6C:  				Exec  $Script_PlayDamagedFX 
+  D78:  				Set   *VarA  00000000 
+  D88:  			EndIf
+  D90:  		Case  <  00000028 
+  D9C:  			If  *VarA  >  00000028 
+  DAC:  				Exec  $Script_PlayDamagedFX 
+  DB8:  				Set   *VarA  00000000 
+  DC8:  			EndIf
+  DD0:  		Case  <  0000003C 
+  DDC:  			If  *VarA  >  0000003C 
+  DEC:  				Exec  $Script_PlayDamagedFX 
+  DF8:  				Set   *VarA  00000000 
+  E08:  			EndIf
+  E10:  		Case  <  00000050 
+  E1C:  			If  *VarA  >  00000050 
+  E2C:  				Exec  $Script_PlayDamagedFX 
+  E38:  				Set   *VarA  00000000 
+  E48:  			EndIf
+  E50:  	EndSwitch
+  E58:  	Add   *VarA  00000001 
+  E68:  EndIf
+  E70:  Wait  1`
+  E7C:  Goto  0
+  E88:  Return
+  E90:  End
+}
+
+#new:Script $Script_PlayDamagedFX {
+    0:  Div   *VarA  00000004 
+   10:  Add   *VarA  00000001 
+   20:  Call  RandInt       ( *VarA *Var3 )
+   34:  Add   *Var3  00000001 
+   44:  Wait  *Var3 
+   50:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+   6C:  Add   *Var0  FFFFFFF8 
+   7C:  Call  PlayEffect    ( ~FX:Steam:Ring *Var0 00000062 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+   C0:  Call  RandInt       ( *VarA *Var3 )
+   D4:  Add   *Var3  00000001 
+   E4:  Wait  *Var3 
+   F0:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  10C:  Add   *Var0  FFFFFFF4 
+  11C:  Call  PlayEffect    ( ~FX:Steam:Ring *Var0 00000017 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  160:  Call  RandInt       ( *VarA *Var3 )
+  174:  Add   *Var3  00000001 
+  184:  Wait  *Var3 
+  190:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  1AC:  Add   *Var0  FFFFFFD1 
+  1BC:  Call  PlayEffect    ( ~FX:Steam:Ring *Var0 00000046 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  200:  Call  RandInt       ( *VarA *Var3 )
+  214:  Add   *Var3  00000001 
+  224:  Wait  *Var3 
+  230:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  24C:  Add   *Var0  00000028 
+  25C:  Call  PlayEffect    ( ~FX:Steam:Ring *Var0 00000016 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  2A0:  Call  RandInt       ( *VarA *Var3 )
+  2B4:  Add   *Var3  00000001 
+  2C4:  Wait  *Var3 
+  2D0:  Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  2EC:  Add   *Var0  FFFFFFED 
+  2FC:  Call  PlayEffect    ( ~FX:Steam:Ring *Var0 0000003B 00000021 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  340:  Return
+  348:  End
+}
+
+#new:Script $Script_HandleEvent_FakeBowser2 {
+    0:  UseArray  $End[0] 
+    C:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   20:  Call  GetLastEvent      ( .Actor:Self *Var0 )
+   34:  Switch  *Var0 
+   40:  	Case  ==  .Event:HitCombo % 9
+   4C:  		Set   *Array[0]  .Animation:ChangeToHurt % 2
+   5C:  		Wait  20`
+                  Call  GetActorVar ( .Actor:Self 00000003 *Var0 )
+                  If *Var0 == .True % bowser is in healing mode
+                        Set   *Array[0]  .Animation:ChangeToHealing % 1C
+                  Else
+                        Set   *Array[0]  .Animation:ChangeToIdle % 0 
+                  EndIf
+   78:  	Case  ==  .Event:Hit % A
+   84:  		Set   *Array[0]  .Animation:ChangeToHurt % 2 
+   94:  		Wait  20`
+                  Call  GetActorVar ( .Actor:Self 00000003 *Var0 )
+                  If *Var0 == .True % bowser is in healing mode
+                        Set   *Array[0]  .Animation:ChangeToHealing % 1C
+                  Else
+                        Set   *Array[0]  .Animation:ChangeToIdle % 0 
+                  EndIf
+   B0:  	CaseOR  ==  00000017 % 17
+   BC:  	CaseOR  ==  .Event:Immune % 19
+   C8:  		Set   *Array[0]  .Animation:ChangeToHurt % 2 
+   D8:  		Wait  20`
+                  Call  GetActorVar ( .Actor:Self 00000003 *Var0 )
+                  If *Var0 == .True % bowser is in healing mode
+                        Set   *Array[0]  .Animation:ChangeToHealing % 1C
+                  Else
+                        Set   *Array[0]  .Animation:ChangeToIdle % 0 
+                  EndIf
+   F4:  	EndCaseGroup
+   FC:  	CaseOR  ==  .Event:Death % 20
+  108:  	CaseOR  ==  .Event:BurnDeath % 24
+                  Call  GetActorVar ( .Actor:Self 00000007 *Var0 )
+                  If *Var0 == .False % bowser has not healed
+                        Call  SetDefenseTable ( .Actor:Self .Part:FakeBowser $DefenseTable_HealingMode )
+                        Call  SetEnemyHP ( .Actor:Self 1 )
+                        Return
+                  EndIf
+  114:  		Call  8027D32C  ( .Actor:Self ) % HideHealthBar
+  124:  		If  *Var0  ==  .Event:BurnDeath % 24
+  134:  			Call  $Function_BurnHit_InitBurnFX ( 00000000 $Data_BurnedModelsTable 00000003 )
+  14C:  			Call  $Function_BurnHit_BurnFX ( 00000003 00000023 00000023 00000023 00000000 00000000 00000000 00000000 00000000 00000000 )
+  180:  		EndIf
+  188:  		Set   *Array[0]  .Animation:ChangeToHurt % 2 
+  198:  		Wait  20`
+  1A4:  		If  *Var0  ==  .Event:BurnDeath % 24
+  1B4:  			Call  $Function_BurnHit_InitBurnFX ( 00000000 $Data_BurnedModelsTable 00000000 )
+  1CC:  			Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  1E8:  			Call  GetActorSize  ( .Actor:Self *Var3 *Var4 )
+  200:  			DivF  *Var3  *Fixed[2.0] 
+  210:  			AddF  *Var1  *Var3 
+  220:  			AddF  *Var2  *Fixed[5.0] 
+  230:  			DivF  *Var3  *Fixed[10.0] 
+  240:  			Call  PlayEffect    ( ~FX:SmokeBurst:Black *Var0 *Var1 *Var2 *Var3 0000000A 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  284:  			Wait  5`
+  290:  			Call  PlayEffect    ( ~FX:SmokeBurst:Black *Var0 *Var1 *Var2 *Var3 0000000A 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  2D4:  		EndIf
+  2FC:  		Wait  30`
+                  Set   *Array[0]  .Animation:ChangeToIdle % 0
+                  Wait  30`
+                  Set   *Array[0]  .Animation:ChangeToStartHealing % 18
+                  Call  ActorSpeak ( $String_HealingMode_Start2 .Actor:Self .Part:FakeBowser FFFFFFFF FFFFFFFF )
+                  Set   *Array[0]  .Animation:ChangeToHurt % 2 
+                  Wait  40`
+  308:  		Set   *Array[0]  .Animation:ChangeToDying % 8 
+  318:  		Label  14
+  324:  		Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+  33C:  		Wait  1`
+  348:  		If  *Var0  !&  00000001 
+  358:  			Goto  14
+  364:  		EndIf
+  36C:  		Wait  20`
+  3AC:  		Return
+  3B4:  	EndCaseGroup
+  3BC:  	CaseOR  ==  .Event:BurnContact % 2C
+  3C8:  	CaseOR  ==  .Event:BurnHit % E
+  3D4:  		Call  $Function_BurnHit_InitBurnFX ( 00000000 $Data_BurnedModelsTable 00000003 )
+  3EC:  		Call  $Function_BurnHit_BurnFX ( 00000003 00000023 00000023 00000023 00000000 00000000 00000000 00000000 00000000 00000000 )
+  420:  		Set   *Array[0]  .Animation:ChangeToHurt % 2 
+  430:  		Wait  20`
+                  Call  GetActorVar ( .Actor:Self 00000003 *Var0 )
+                  If *Var0 == .True % bowser is in healing mode
+                        Set   *Array[0]  .Animation:ChangeToHealing % 1C
+                  Else
+                        Set   *Array[0]  .Animation:ChangeToIdle % 0 
+                  EndIf
+  44C:  		Call  $Function_BurnHit_InitBurnFX ( 00000000 $Data_BurnedModelsTable 00000000 )
+  464:  		Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+  480:  		Call  GetActorSize  ( .Actor:Self *Var3 *Var4 )
+  498:  		DivF  *Var3  *Fixed[2.0] 
+  4A8:  		AddF  *Var1  *Var3 
+  4B8:  		AddF  *Var2  *Fixed[5.0] 
+  4C8:  		DivF  *Var3  *Fixed[10.0] 
+  4D8:  		Call  PlayEffect    ( ~FX:SmokeBurst:Black *Var0 *Var1 *Var2 *Var3 0000000A 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  51C:  		Wait  5`
+  528:  		Call  PlayEffect    ( ~FX:SmokeBurst:Black *Var0 *Var1 *Var2 *Var3 0000000A 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  56C:  	EndCaseGroup
+  574:  	Default
+  57C:  EndSwitch
+  584:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  598:  Return
+  5A0:  End
+}
+
+#new:Script $Script_TakeTurn_FakeBowser2 {
+      Call  GetActorVar ( .Actor:Self 00000003 *Var0 )
+      If *Var0 == .True % bowser is in healing mode
+            Return
+      EndIf
+      % check if is time to heal
+      Call  GetActorVar ( .Actor:Self 00000007 *Var0 )
+      If *Var0 == .False % bowser has not healed
+            Call  GetActorHP ( .Actor:Self *Var0 )
+            If *Var0 <= 1
+                  ExecWait $Script_HealingMode_Start
+                  Call  SetActorVar ( .Actor:Self 00000002 00000004 )
+                  Return
+            EndIf
+      EndIf
+      % do next attack according to the last attack made
+      Call  GetActorVar ( .Actor:Self 00000002 *Var0 )
+      Switch *Var0
+            Case == 00000000 % init battle
+                  ExecWait $Script_Attack_LeftArm
+                  Call  SetActorVar ( .Actor:Self 00000002 00000001 )
+            Case == 00000001 % left arm attack
+                  Call  GetActorVar ( .Actor:Self 00000007 *Var0 )
+                  If *Var0 == .False % bowser has not healed
+                        Call  RandInt ( 100` *Var0 )
+                        If *Var0 <= 70`
+                              ExecWait $Script_Attack_LeftArm
+                        Else
+                              ExecWait $Script_Attack_FireBreath
+                              Call  SetActorVar ( .Actor:Self 00000002 00000002 )
+                        EndIf
+                  Else
+                        ExecWait $Script_Attack_Bomb
+                        Call  SetActorVar ( .Actor:Self 00000002 00000003 )
+                  EndIf
+            Case == 00000002 % fire attack
+                  Call  GetActorVar ( .Actor:Self 00000007 *Var0 )
+                  If *Var0 == .False % bowser has not healed
+                        % get HP in percentage
+                        Call  GetActorHP    ( .Actor:Self *Var0 )
+                        Call  GetEnemyMaxHP ( .Actor:Self *Var1 )
+                        Mul   *Var0  100` 
+                        Div   *Var0  *Var1 
+                        If *Var0 <= 60`
+                              ExecWait $Script_Attack_Bomb
+                              Call  SetActorVar ( .Actor:Self 00000002 00000003 )
+                        Else
+                              ExecWait $Script_Attack_LeftArm
+                              Call  SetActorVar ( .Actor:Self 00000002 00000001 )
+                        EndIf
+                  Else
+                        ExecWait $Script_Attack_LeftArm
+                        Call  SetActorVar ( .Actor:Self 00000002 00000003 )
+                  EndIf
+            Case == 00000003 % bomb attack
+                  Call  GetActorVar ( .Actor:Self 00000007 *Var0 )
+                  If *Var0 == .False % bowser has not healed
+                        ExecWait $Script_Attack_LeftArm
+                        Call  SetActorVar ( .Actor:Self 00000002 00000001 )
+                  Else
+                        Call  RandInt ( 100` *Var0 )
+                        If *Var0 >= 60`
+                              ExecWait $Script_Attack_MachineGun
+                              Call  SetActorVar ( .Actor:Self 00000002 00000005 )
+                        Else
+                              ExecWait $Script_Attack_FireBreath
+                              Call  SetActorVar ( .Actor:Self 00000002 00000002 )
+                        EndIf
+                  EndIf
+            Case == 00000004 % recovery mode (healed)
+                  Call  SetActorVar ( .Actor:Self 00000002 00000006 )
+            Case == 00000005 % machine gun attack
+                  ExecWait $Script_Attack_LeftArm
+                  Call  SetActorVar ( .Actor:Self 00000002 00000001 )
+            Case == 00000006 % recovery mode (next turn)
+                  ExecWait $Script_Attack_MachineGun
+                  Call  SetActorVar ( .Actor:Self 00000002 00000005 )
+      EndSwitch
+      Return
+      End
+}
+
+#new:Script $Script_Attack_LeftArm {
+      Call  RandInt ( 1 *Var0 )
+      Switch *Var0
+            Case == 0
+                  ExecWait $Script_Attack_LeftArm_A
+            Case == 1
+                  ExecWait $Script_Attack_LeftArm_B
+      EndSwitch
+      Return
+      End
+}
+
+#new:Script $Script_Attack_LeftArm_A {
+      0:  UseArray  $End[0] 
+      C:  Call  UseIdleAnimation  ( .Actor:Self .False )
+          Call  $SetTargetActorInFront ( .Actor:Self )
+     34:  Thread
+     3C:  	Loop  00000004 
+     48:  		Call  $Function_StartRumble ( 00000100 00000003 )
+     5C:  		Wait  5`
+     68:  	EndLoop
+     70:  EndThread
+     78:  Set   *Array[0]  .Animation:ChangeToRunning % 4 
+     88:  Call  SetActorSpeed ( .Actor:Self *Fixed[6.0] )
+     9C:  Call  SetGoalToTarget   ( .Actor:Self )
+     AC:  Call  AddGoalPos    ( .Actor:Self 00000046 00000000 00000000 )
+     C8:  Call  RunToGoal     ( .Actor:Self 00000000 .False )
+     E0:  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+     F0:  Thread
+     F8:  	Call  PlaySoundAtActor  ( .Actor:Self 000020FD )
+    10C:  	Wait  34`
+    118:  	Call  PlaySoundAtActor  ( .Actor:Self 000020FE )
+    12C:  EndThread
+    134:  Set   *Array[0]  .Animation:ChangeToAttack_LeftArmA % C
+          Wait  38`
+    150:  Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:0 00000000 00000001 00000010 )
+    174:  Switch  *Var0 
+    180:  	CaseOR  ==  .HitResult:Miss % 6
+    18C:  	CaseOR  ==  .HitResult:Lucky % 5
+    198:  		If  *Var0  ==  .HitResult:Lucky % 5
+    1A8:  			Thread
+    1B0:  				Wait  15`
+    1BC:  				Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+    1E0:  			EndThread
+    1E8:  		EndIf
+    1F0:  		Wait  8`
+    1FC:  		Thread
+    204:  			Loop  00000004 
+    210:  				Call  $Function_StartRumble ( 00000100 00000005 )
+    224:  				Wait  8`
+    230:  			EndLoop
+    238:  		EndThread
+    240:  		Set   *Array[0]  .Animation:ChangeToRunning % 4 
+    250:  		Call  SetGoalToHome ( .Actor:Self )
+    260:  		Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    274:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    28C:  		Set   *Array[0]  .Animation:ChangeToIdle % 0 
+    29C:  		Return
+    2A4:  	EndCaseGroup
+    2AC:  EndSwitch
+    2B4:  Call  SetGoalToTarget   ( .Actor:Self )
+    2C4:  Wait  2`
+    2D0:  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:IgnoreDefense:00080000 0000FFFF 00000000 00000004 00000040 )
+    2F8:  Call  GetBattleFlags    ( *Var0 )
+    308:  If  *Var0  &  80000000 
+              Call  GetOwnerTarget ( *Var0 00000000 )
+              If *Var0 == .Actor:Player
+                    Call  GetPlayerHP   ( *Var0 )
+              Else % .Actor:Partner
+                    Call  $GetPartnerHP_API ( *Var0 )
+              EndIf
+    328:  	If  *Var0  !=  00000000 
+    338:  		Set   *Array[0]  .Animation:ChangeToArmAttackBlocked % A 
+    348:  	EndIf
+    350:  EndIf
+    358:  Wait  18`
+    364:  Thread
+    36C:  	Loop  00000004 
+    378:  		Call  $Function_StartRumble ( 00000100 00000005 )
+    38C:  		Wait  8`
+    398:  	EndLoop
+    3A0:  EndThread
+    3A8:  Set   *Array[0]  .Animation:ChangeToRunning % 4 
+    3B8:  Call  SetGoalToHome ( .Actor:Self )
+    3C8:  Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    3DC:  Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    3F4:  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+    404:  Call  UseIdleAnimation  ( .Actor:Self .True )
+          Call  GetOwnerTarget ( *Var0 00000000 )
+          If *Var0 == .Actor:Player
+                Call  GetPlayerHP   ( *Var0 )
+          Else % .Actor:Partner
+                Call  $GetPartnerHP_API ( *Var0 )
+          EndIf
+    428:  If  *Var0  <=  00000000 
+    438:  	Return
+    440:  EndIf
+    768:  Return
+    770:  End
+}
+
+#new:Script $Script_Attack_LeftArm_B {
+      0:  UseArray  $End[0] 
+      C:  Call  UseIdleAnimation  ( .Actor:Self .False )
+          Call  $SetTargetActorInFront ( .Actor:Self )
+     34:  Thread
+     3C:  	Loop  00000004 
+     48:  		Call  $Function_StartRumble ( 00000100 00000003 )
+     5C:  		Wait  5`
+     68:  	EndLoop
+     70:  EndThread
+     78:  Set   *Array[0]  .Animation:ChangeToRunning % 4 
+     88:  Call  SetActorSpeed ( .Actor:Self *Fixed[6.0] )
+     9C:  Call  SetGoalToTarget   ( .Actor:Self )
+     AC:  Call  AddGoalPos    ( .Actor:Self 00000046 00000000 00000000 )
+     C8:  Call  RunToGoal     ( .Actor:Self 00000000 .False )
+     E0:  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+     F0:  Thread
+    10C:  	Wait  11`
+    118:  	Call  PlaySoundAtActor  ( .Actor:Self 000020FE )
+    12C:  EndThread
+    134:  Set   *Array[0]  .Animation:ChangeToAttack_LeftArmB % E
+          Wait  21`
+    150:  Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:0 00000000 00000001 00000010 )
+    174:  Switch  *Var0 
+    180:  	CaseOR  ==  .HitResult:Miss % 6
+    18C:  	CaseOR  ==  .HitResult:Lucky % 5
+    198:  		If  *Var0  ==  .HitResult:Lucky % 5
+    1A8:  			Thread
+    1B0:  				Wait  15`
+    1BC:  				Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+    1E0:  			EndThread
+    1E8:  		EndIf
+    1F0:  		Wait  8`
+    1FC:  		Thread
+    204:  			Loop  00000004 
+    210:  				Call  $Function_StartRumble ( 00000100 00000005 )
+    224:  				Wait  8`
+    230:  			EndLoop
+    238:  		EndThread
+    240:  		Set   *Array[0]  .Animation:ChangeToRunning % 4 
+    250:  		Call  SetGoalToHome ( .Actor:Self )
+    260:  		Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    274:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    28C:  		Set   *Array[0]  .Animation:ChangeToIdle % 0 
+    29C:  		Return
+    2A4:  	EndCaseGroup
+    2AC:  EndSwitch
+    2B4:  Call  SetGoalToTarget   ( .Actor:Self )
+    2C4:  Wait  2`
+    2D0:  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:IgnoreDefense:00080000 0000FFFF 00000000 00000004 00000040 )
+    2F8:  Call  GetBattleFlags    ( *Var0 )
+    308:  If  *Var0  &  80000000 
+              Call  GetOwnerTarget ( *Var0 00000000 )
+              If *Var0 == .Actor:Player
+                    Call  GetPlayerHP   ( *Var0 )
+              Else % .Actor:Partner
+                    Call  $GetPartnerHP_API ( *Var0 )
+              EndIf
+    328:  	If  *Var0  !=  00000000 
+    338:  		Set   *Array[0]  .Animation:ChangeToArmAttackBlocked % A 
+    348:  	EndIf
+    350:  EndIf
+    358:  Wait  18`
+    364:  Thread
+    36C:  	Loop  00000004 
+    378:  		Call  $Function_StartRumble ( 00000100 00000005 )
+    38C:  		Wait  8`
+    398:  	EndLoop
+    3A0:  EndThread
+    3A8:  Set   *Array[0]  .Animation:ChangeToRunning % 4 
+    3B8:  Call  SetGoalToHome ( .Actor:Self )
+    3C8:  Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    3DC:  Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    3F4:  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+    404:  Call  UseIdleAnimation  ( .Actor:Self .True )
+          Call  GetOwnerTarget ( *Var0 00000000 )
+          If *Var0 == .Actor:Player
+                Call  GetPlayerHP   ( *Var0 )
+          Else % .Actor:Partner
+                Call  $GetPartnerHP_API ( *Var0 )
+          EndIf
+    428:  If  *Var0  <=  00000000 
+    438:  	Return
+    440:  EndIf
+    768:  Return
+    770:  End
+}
+
+% original attack script from Bowser???, unused here
+#new:Script $Script_Attack_LeftArm_OriginalAttack {
+      0:  UseArray  $End[0] 
+      C:  Call  UseIdleAnimation  ( .Actor:Self .False )
+          Call  $SetTargetActorInFront ( .Actor:Self )
+     34:  Thread
+     3C:  	Loop  00000004 
+     48:  		Call  $Function_StartRumble ( 00000100 00000003 )
+     5C:  		Wait  5`
+     68:  	EndLoop
+     70:  EndThread
+     78:  Set   *Array[0]  .Animation:ChangeToRunning % 4 
+     88:  Call  SetActorSpeed ( .Actor:Self *Fixed[6.0] )
+     9C:  Call  SetGoalToTarget   ( .Actor:Self )
+     AC:  Call  AddGoalPos    ( .Actor:Self 00000046 00000000 00000000 )
+     C8:  Call  RunToGoal     ( .Actor:Self 00000000 .False )
+     E0:  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+     F0:  Thread
+     F8:  	Call  PlaySoundAtActor  ( .Actor:Self 000020FD )
+    10C:  	Wait  22`
+    118:  	Call  PlaySoundAtActor  ( .Actor:Self 000020FE )
+    12C:  EndThread
+    134:  Set   *Array[0]  .Animation:ChangeToAttack0 % 6 
+    144:  Wait  24`
+    150:  Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:0 00000000 00000001 00000010 )
+    174:  Switch  *Var0 
+    180:  	CaseOR  ==  .HitResult:Miss % 6
+    18C:  	CaseOR  ==  .HitResult:Lucky % 5
+    198:  		If  *Var0  ==  .HitResult:Lucky % 5
+    1A8:  			Thread
+    1B0:  				Wait  15`
+    1BC:  				Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+    1E0:  			EndThread
+    1E8:  		EndIf
+    1F0:  		Wait  8`
+    1FC:  		Thread
+    204:  			Loop  00000004 
+    210:  				Call  $Function_StartRumble ( 00000100 00000005 )
+    224:  				Wait  8`
+    230:  			EndLoop
+    238:  		EndThread
+    240:  		Set   *Array[0]  .Animation:ChangeToRunning % 4 
+    250:  		Call  SetGoalToHome ( .Actor:Self )
+    260:  		Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    274:  		Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    28C:  		Set   *Array[0]  .Animation:ChangeToIdle % 0 
+    29C:  		Return
+    2A4:  	EndCaseGroup
+    2AC:  EndSwitch
+    2B4:  Call  SetGoalToTarget   ( .Actor:Self )
+    2C4:  Wait  2`
+    2D0:  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:IgnoreDefense:00080000 0000FFFF 00000000 00000001 00000040 )
+    2F8:  Call  GetBattleFlags    ( *Var0 )
+    308:  If  *Var0  &  80000000 
+              Call  GetOwnerTarget ( *Var0 00000000 )
+              If *Var0 == .Actor:Player
+                    Call  GetPlayerHP   ( *Var0 )
+              Else % .Actor:Partner
+                    Call  $GetPartnerHP_API ( *Var0 )
+              EndIf
+    328:  	If  *Var0  !=  00000000 
+    338:  		Set   *Array[0]  .Animation:ChangeToArmAttackBlocked % A 
+    348:  	EndIf
+    350:  EndIf
+    358:  Wait  18`
+    364:  Thread
+    36C:  	Loop  00000004 
+    378:  		Call  $Function_StartRumble ( 00000100 00000005 )
+    38C:  		Wait  8`
+    398:  	EndLoop
+    3A0:  EndThread
+    3A8:  Set   *Array[0]  .Animation:ChangeToRunning % 4 
+    3B8:  Call  SetGoalToHome ( .Actor:Self )
+    3C8:  Call  SetActorSpeed ( .Actor:Self *Fixed[4.0] )
+    3DC:  Call  RunToGoal     ( .Actor:Self 00000000 .False )
+    3F4:  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+    404:  Call  UseIdleAnimation  ( .Actor:Self .True )
+          Call  GetOwnerTarget ( *Var0 00000000 )
+          If *Var0 == .Actor:Player
+                Call  GetPlayerHP   ( *Var0 )
+          Else % .Actor:Partner
+                Call  $GetPartnerHP_API ( *Var0 )
+          EndIf
+    428:  If  *Var0  <=  00000000 
+    438:  	Return
+    440:  EndIf
+    768:  Return
+    770:  End
+}
+
+#new:Script $Script_Attack_FireBreath
+{
+      UseArray  $End[0] 
+      Call  UseIdleAnimation  ( .Actor:Self .False )
+      Call  $SetTargetActorInFront ( .Actor:Self )
+      Wait  15`
+      Set   *Array[0]  .Animation:ChangeToAttack_FireBreath % 10 
+      % code grabbed from Bowser3
+      Call  MoveBattleCamOver ( 00000037 )
+      Wait  15`
+      Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+      Sub   *Var0  0000005F
+      Add   *Var1  0000002A
+      Add   *Var2  0000000A 
+      Call  SetGoalToTarget   ( .Actor:Self )
+      Call  GetGoalPos        ( .Actor:Self *Var3 *Var4 *Var5 )
+      Sub   *Var3  00000078 
+      Set   *Var4  00000014 
+      Call  PlayEffect    ( ~FX:FireBreath:Large *Var0 *Var1 *Var2 *Var3 *Var4 *Var5 0000006 00000007 00000018 00000000 00000000 00000000 )
+      Thread
+            Call  $Function_StartRumble ( 00000032 00000094 )
+            Call  PlaySound ( 000003BD )
+            Wait  40`
+            Call  PlaySound ( 000007BD )
+      EndThread
+      Wait  10`
+      Call  SetGoalToTarget   ( .Actor:Self )
+      %
+      % attack actor in front
+      Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000001 00000010 )
+      Switch  *VarA 
+            CaseOR  ==  .HitResult:Miss % 6
+            CaseOR  ==  .HitResult:Lucky % 5
+                  If  *VarA  ==  .HitResult:Lucky % 5
+                        Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                  EndIf
+            EndCaseGroup
+            Default
+                  Wait  2`
+                  Call  SetGoalToTarget   ( .Actor:Self )
+                  Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Fire|IgnoreDefense 0000FFFF 00000000 00000008 00000020 )
+                  Switch  *VarF 
+                        CaseOR  ==  .HitResult:Hit % 0
+                        CaseOR  ==  00000002 % 2
+                        CaseOR  ==  0000000A % A
+                        EndCaseGroup
+                  EndSwitch
+      EndSwitch
+      % attack actor in the back
+      Call  $SetTargetActorInTheBack ( .Actor:Self )
+      Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000001 00000010 )
+      Switch  *VarA 
+            CaseOR  ==  .HitResult:Miss % 6
+            CaseOR  ==  .HitResult:Lucky % 5
+                  If  *VarA  ==  .HitResult:Lucky % 5
+                        Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                  EndIf
+                  Wait  45`
+                  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+                  Return
+            EndCaseGroup
+            Default
+                  Call  SetGoalToTarget   ( .Actor:Self )
+                  Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Fire|IgnoreDefense 0000FFFF 00000000 00000008 00000020 )
+      EndSwitch
+      Wait  45`
+      Set   *Array[0]  .Animation:ChangeToIdle % 0 
+      Call  UseIdleAnimation  ( .Actor:Self .True )
+      Return
+      End
+}
+
+#new:Script $Script_Attack_Bomb
+{
+      UseArray  $End[0] 
+      Call  UseIdleAnimation  ( .Actor:Self .False )
+      Call  $SetTargetActorInFront ( .Actor:Self )
+      Set   *Array[0]  .Animation:ChangeToAttack_Bomb % 12
+      Thread % panel sfx
+            Wait  5
+            Call  PlaySound ( 007B )
+            Wait  60`
+            Call  PlaySound ( 007B )
+      EndThread
+      Call  EnableModel ( ~Model:pit_bt02:d3 .False )
+      Call  EnableModel ( ~Model:pit_bt02:d4 .True )
+      %
+      Wait  22`
+      Call  SetPartScale ( .Actor:Self .Part:Bomb *Fixed[1.4] *Fixed[1.4] *Fixed[1.4] )
+      Call  GetModelCenter ( ~Model:pit_bt02:d3 )
+      Add   *Var0 10` % x
+      Add   *Var1 -20` % y
+      Call  SetPartPos ( .Actor:Self .Part:Bomb *Var0 *Var1 *Var2 )
+      Call  SetPartFlagBits ( .Actor:Self .Part:Bomb 00000001 .False ) % make part visible
+      Call  SetGoalToTarget   ( .Actor:Self )
+      Call  AddGoalPos ( .Actor:Self -12` 0 0 )
+      Call  RandInt ( 2 *VarD )
+      % check if player team already had statuses
+      %
+      % player
+      Call  GetStatusFlags ( .Actor:Player *Var0 )
+      If *VarD != 0
+            If *Var0 & ~Flags:DebuffType:Sleep|Static|Frozen|Paralyzed|Dizzy|Stop
+                  Set *VarD 0
+            EndIf
+      EndIf
+      % partner
+      Call  GetStatusFlags ( .Actor:Partner *Var0 )
+      If *VarD != 0
+            If *Var0 & ~Flags:DebuffType:Sleep|Static|Frozen|Paralyzed|Dizzy|Stop
+                  Set *VarD 0
+            EndIf
+      EndIf
+      Switch *VarD
+            Case == 0 % Normal bomb
+                  Call  SetAnimation ( .Actor:Self .Part:Bomb 00770001 )
+                  Set   *VarE ~Flags:DamageType:Fire
+            Case == 1 % Poison bomb
+                  Call  SetAnimation ( .Actor:Self .Part:Bomb 00770301 )
+                  Set   *VarE ~Flags:DamageType:Fire
+                  Call  $WriteAddress ( $PoisonDrive 0 .True .False .False ) % show the flame FX as green
+            Case == 2 % Ice bomb
+                  Call  SetAnimation ( .Actor:Self .Part:Bomb 00770401 )
+                  Set   *VarE ~Flags:DamageType:Ice
+      EndSwitch
+      Call  GetGoalPos ( .Actor:Self *Var0 *Var1 *Var2 )
+      Call  SetPartJumpGravity    ( .Actor:Self .Part:Bomb *Fixed[1.0] )
+      Call  PlaySound ( 03FA )
+      Call  JumpPartTo ( .Actor:Self .Part:Bomb *Var0 *Var1 *Var2 11` .False )
+      Call  PlayEffect    ( ~FX:Explosion1 *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )
+      Call  SetPartFlagBits ( .Actor:Self .Part:Bomb 00000001 .True ) % make part invisible
+      %
+      Call  SetGoalToTarget   ( .Actor:Self )
+      % attack actor in front
+      Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000001 00000010 )
+      Switch  *VarA 
+            CaseOR  ==  .HitResult:Miss % 6
+            CaseOR  ==  .HitResult:Lucky % 5
+                  If  *VarA  ==  .HitResult:Lucky % 5
+                        Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                  EndIf
+            EndCaseGroup
+            Default
+                  Wait  2`
+                  Call  SetGoalToTarget   ( .Actor:Self )
+                  Switch *VarD
+                        Case == 0 % normal bomb
+                              Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Fire 0000FFFF 00000000 00000006 00000020 )
+                        Case == 1 % poison
+                              Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Fire 0000FFFF 80020664 00000006 00000020 )
+                        Case == 2 % ice
+                              Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Ice 0000FFFF 80004164 00000006 00000020 )
+                  EndSwitch
+                  Switch  *VarF 
+                        CaseOR  ==  .HitResult:Hit % 0
+                        CaseOR  ==  00000002 % 2
+                        CaseOR  ==  0000000A % A
+                        EndCaseGroup
+                  EndSwitch
+      EndSwitch
+      % attack actor in the back
+      Call  $SetTargetActorInTheBack ( .Actor:Self )
+      Call  SetGoalToTarget   ( .Actor:Self )
+      Call  EnemyTestTarget   ( .Actor:Self *VarA ~Flags:DamageType:0 00000000 00000001 00000010 )
+      Switch  *VarA 
+            CaseOR  ==  .HitResult:Miss % 6
+            CaseOR  ==  .HitResult:Lucky % 5
+                  If  *VarA  ==  .HitResult:Lucky % 5
+                        Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                  EndIf
+                  Wait  40`
+                  Call  $WriteAddress ( $PoisonDrive 0 .False .False .False )
+                  Set   *Array[0]  .Animation:ChangeToIdle % 0 
+                  Call  EnableModel ( ~Model:pit_bt02:d3 .True )
+                  Call  EnableModel ( ~Model:pit_bt02:d4 .False )
+                  Call  UseIdleAnimation  ( .Actor:Self .True )
+                  Return
+            EndCaseGroup
+            Default
+                  Call  SetGoalToTarget   ( .Actor:Self )
+                  Switch *VarD
+                        Case == 0 % normal bomb
+                              Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Fire 0000FFFF 00000000 00000006 00000020 )
+                        Case == 1 % poison
+                              Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Fire 0000FFFF 80020664 00000006 00000020 )
+                        Case == 2 % ice
+                              Call  EnemyDamageTarget ( .Actor:Self *VarF ~Flags:DamageType:Ice 0000FFFF 80004164 00000006 00000020 )
+                  EndSwitch
+      EndSwitch
+      Call $WriteAddress ( $PoisonDrive 0 .False .False .False )
+      Wait  40`
+      %
+      Set   *Array[0]  .Animation:ChangeToIdle % 0 
+      Call  EnableModel ( ~Model:pit_bt02:d3 .True )
+      Call  EnableModel ( ~Model:pit_bt02:d4 .False )
+      Call  UseIdleAnimation  ( .Actor:Self .True )
+      Return
+      End
+}
+
+#new:Script $Script_HealingMode_Start
+{
+      UseArray  $End[0] 
+      Call  UseIdleAnimation  ( .Actor:Self .False )
+      Set   *Array[0]  .Animation:ChangeToStartHealing % 18
+      Call  ActorSpeak ( $String_HealingMode_Start1 .Actor:Self .Part:FakeBowser FFFFFFFF FFFFFFFF )
+      Wait  40`
+      Call  SetDefenseTable ( .Actor:Self .Part:FakeBowser $DefenseTable_HealingMode )
+      Call  SetActorVar ( .Actor:Self 00000003 .True )
+      Call  SetActorVar ( .Actor:Self 00000004 .False )
+      Call  UseIdleAnimation  ( .Actor:Self .True )
+      Return
+      End
+}
+
+#new:Script $Script_HealingMode_Stop
+{
+      UseArray  $End[0] 
+      Set   *Array[0]  .Animation:ChangeToStopHealing % 1A
+      Thread
+            Call  8026BF48  ( 00000001 ) % FreezeBattleState
+            Call  HealActor ( .Actor:Self 99` .False )
+            Call  8026BF48  ( 00000000 ) % FreezeBattleState
+      EndThread
+      Wait  30`
+      Set   *Array[0]  .Animation:ChangeToIdle % 0
+      Call  SetDefenseTable ( .Actor:Self .Part:FakeBowser $DefenseTable_FakeBowser )
+      Call  SetActorVar ( .Actor:Self 00000003 .False )
+      Call  SetActorVar ( .Actor:Self 00000004 .False )
+      Call  SetActorVar ( .Actor:Self 00000007 .True )
+      Return
+      End
+}
+
+#new:Script $Script_Attack_MachineGun
+{
+      UseArray  $End[0] 
+      Call  SetActorVar ( .Actor:Self 00000005 .False )
+      Call  SetActorVar ( .Actor:Self 00000006 .False )
+      Call  UseIdleAnimation  ( .Actor:Self .False )
+      Set   *Array[0]  .Animation:ChangeToAttack_MachineGun % 14
+      Thread
+            Wait  15`
+            Call  PlaySoundAtActor  ( .Actor:Self 000020FD )
+            Wait  88`
+            Call  PlaySoundAtActor  ( .Actor:Self 000001AD )
+            Wait  12`
+            Call  PlaySoundAtActor  ( .Actor:Self 000001AD )
+            Wait  12`
+            Call  PlaySoundAtActor  ( .Actor:Self 000001AD )
+            Wait  50`
+            Call  PlaySoundAtActor  ( .Actor:Self 000020FD )
+      EndThread
+      Wait  40`
+      Call  EnableModel ( ~Model:pit_bt02:u4 .True )
+      Call  EnableModel ( ~Model:pit_bt02:u1 .False )
+      Exec  $Script_MachineGun_UpdateCannonRotation
+      Exec  $Script_MachineGun_ShootBullets
+      Wait  60`
+      % get miss/lucky
+      %
+      % actor in front
+      Call  $SetTargetActorInFront ( .Actor:Self )
+      Call  SetGoalToTarget ( .Actor:Self )
+      Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:0 00000000 00000001 00000010 )
+      Switch  *Var0 
+            CaseOR  ==  .HitResult:Miss % 6
+            CaseOR  ==  .HitResult:Lucky % 5
+                  If  *Var0  ==  .HitResult:Lucky % 5
+                        Thread
+                              Wait  15`
+                              Call  EnemyTestTarget   ( .Actor:Self *Var0 ~Flags:DamageType:TriggerLucky 00000000 00000000 00000000 )
+                        EndThread
+                  EndIf
+                  Call  SetActorVar ( .Actor:Self 00000006 .True ) % actor in front avoided the attack
+            EndCaseGroup
+      EndSwitch
+      %=============
+      % 1st shoot
+      %=============
+      % try to attack actor in front
+      Call  $SetTargetActorInFront ( .Actor:Self )
+      Call  SetGoalToTarget ( .Actor:Self )
+      Call  GetActorVar ( .Actor:Self 00000006 *Var0 )
+      If *Var0 == .False
+            Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:00002000 0000FFFF 00000000 00000004 00000040 )
+      EndIf
+      Wait  12`
+      %=============
+      % 2nd shoot
+      %=============
+      % try to attack actor in front
+      Call  $SetTargetActorInFront ( .Actor:Self )
+      Call  GetOwnerTarget ( *Var0 .False )
+      If *Var0 == .Actor:Player
+            Call  GetPlayerHP ( *Var0 )
+      Else
+            Call  $GetPartnerHP_API ( *Var0 )
+      EndIf
+      If *Var0 > 0 % target isn't dead
+            Call  SetGoalToTarget ( .Actor:Self )
+            Call  GetActorVar ( .Actor:Self 00000006 *Var0 )
+            If *Var0 == .False
+                  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:00002000 0000FFFF 00000000 00000004 00000040 )
+            EndIf
+      EndIf
+      Wait  12`
+      %=============
+      % 3rd shoot
+      %=============
+      % try to attack actor in front
+      Call  $SetTargetActorInFront ( .Actor:Self )
+      Call  GetOwnerTarget ( *Var0 .False )
+      If *Var0 == .Actor:Player
+            Call  GetPlayerHP ( *Var0 )
+      Else
+            Call  $GetPartnerHP_API ( *Var0 )
+      EndIf
+      If *Var0 > 0 % target isn't dead
+            Call  SetGoalToTarget ( .Actor:Self )
+            Call  GetActorVar ( .Actor:Self 00000006 *Var0 )
+            If *Var0 == .False
+                  Call  EnemyDamageTarget ( .Actor:Self *Var0 ~Flags:DamageType:00002000 0000FFFF 00000000 00000004 00000040 )
+            EndIf
+      EndIf
+      Wait  6
+      Call  SetActorVar ( .Actor:Self 00000005 .True ) % stop canon from spinning
+      Wait  35`
+      Call  EnableModel ( ~Model:pit_bt02:u4 .False )
+      Call  EnableModel ( ~Model:pit_bt02:u1 .True )
+      Set   *Array[0]  .Animation:ChangeToStopMachineGun % 16
+      Wait  25`
+      Set   *Array[0]  .Animation:ChangeToIdle % 0
+      Call  EnableModel ( ~Model:pit_bt02:bullet1 .False )
+      Call  EnableModel ( ~Model:pit_bt02:bullet2 .False )
+      Call  EnableModel ( ~Model:pit_bt02:bullet3 .False )
+      Call  SetPartDispOffset ( .Actor:Self .Part:Bullet1 0 0 0 )
+      Call  SetPartDispOffset ( .Actor:Self .Part:Bullet2 0 0 0 )
+      Call  SetPartDispOffset ( .Actor:Self .Part:Bullet3 0 0 0 )
+      Call  UseIdleAnimation  ( .Actor:Self .True )
+      Return
+      End
+}
+
+#new:Script $Script_MachineGun_UpdateCannonRotation
+{
+      SetF   *Var0 *Fixed[0.0]
+      Loop 5
+            AddF  *Var0 *Fixed[1.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 10`
+            AddF  *Var0 *Fixed[3.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 20`
+            AddF  *Var0 *Fixed[5.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 10`
+            AddF  *Var0 *Fixed[10.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 5
+            AddF  *Var0 *Fixed[20.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop
+            Call  GetActorVar ( .Actor:Self 00000005 *Var1 )
+            If *Var1 == .True
+                  BreakLoop
+            EndIf
+            AddF  *Var0 *Fixed[40.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      % stop canon from spinning
+      Loop 5
+            AddF  *Var0 *Fixed[20.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 10`
+            AddF  *Var0 *Fixed[10.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 20`
+            AddF  *Var0 *Fixed[5.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 10`
+            AddF  *Var0 *Fixed[3.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Loop 5
+            AddF  *Var0 *Fixed[1.0]
+            Call  RotateModel ( ~Model:pit_bt02:u4 *Var0 -1 0 0 )
+            Wait  1
+      EndLoop
+      Call  RotateModel ( ~Model:pit_bt02:u4 0 -1 0 0 )
+      Return
+      End
+}
+
+#new:Script $Script_MachineGun_ShootBullets
+{
+      Call  EnableModel ( ~Model:pit_bt02:bullet1 .True )
+      Call  EnableModel ( ~Model:pit_bt02:bullet2 .True )
+      Call  EnableModel ( ~Model:pit_bt02:bullet3 .True )
+      Call  SetPartFlagBits   ( .Actor:Self .Part:Bullet1 00100000 .True )
+      Call  SetPartFlagBits   ( .Actor:Self .Part:Bullet2 00100000 .True )
+      Call  SetPartFlagBits   ( .Actor:Self .Part:Bullet3 00100000 .True )
+      Call  GetPartPos ( .Actor:Self .Part:LeftArm *Var0 *Var1 *Var2 )
+      Add   *Var0 150` % x
+      Add   *Var1 60` % y
+      Add   *Var2 0 % z
+      % *var0 == -54`
+      % *var1 == 63`
+      % *var2 == 0
+      Call  SetPartPos ( .Actor:Self .Part:Bullet1 *Var0 *Var1 *Var2 )
+      Call  SetPartPos ( .Actor:Self .Part:Bullet2 *Var0 *Var1 *Var2 )
+      Call  SetPartPos ( .Actor:Self .Part:Bullet3 *Var0 *Var1 *Var2 )
+      Call  SetPartDispOffset ( .Actor:Self .Part:Bullet1 54` -63` 0 )
+      Call  SetPartDispOffset ( .Actor:Self .Part:Bullet2 54` -63` 0 )
+      Call  SetPartDispOffset ( .Actor:Self .Part:Bullet3 54` -63` 0 )
+      Call  SetPartPos ( .Actor:Self .Part:Bullet1 -3 126` 26` )
+      Call  SetPartPos ( .Actor:Self .Part:Bullet2 -3 126` 26` )
+      Call  SetPartPos ( .Actor:Self .Part:Bullet3 -3 126` 26` )
+      Wait  60`
+      Call  SetPartJumpGravity    ( .Actor:Self .Part:Bullet1 *Fixed[0.9] )
+      Call  SetPartJumpGravity    ( .Actor:Self .Part:Bullet2 *Fixed[0.9] )
+      Call  SetPartJumpGravity    ( .Actor:Self .Part:Bullet3 *Fixed[0.9] )
+      %=========
+      % bullet 1
+      %=========
+      Thread % update bullet rotation
+            Loop
+                  Call  GetPartRotation ( .Actor:Self .Part:Bullet1 *Var0 *Var1 *Var2 )
+                  AddF  *Var2 *Fixed[-30.0]
+                  Call  SetPartRotation ( .Actor:Self .Part:Bullet1 *Var0 *Var1 *Var2 )
+                  Wait  1
+                  Call  GetPartPos ( .Actor:Self .Part:Bullet1 *Var0 *Var1 *Var2 )
+                  If *Var1 <= -15`
+                        BreakLoop
+                  EndIf
+            EndLoop
+      EndThread
+      Thread
+            % get x pos
+            Set   *Var0 76`
+            Call  RandInt ( 58` *Var1 )
+            Add   *Var0 *Var1
+            Call  JumpPartTo    ( .Actor:Self .Part:Bullet1 *Var0 -15` 50` 30` .False )
+      EndThread
+      Wait  12`
+      %=========
+      % bullet 2
+      %=========
+      Thread % update bullet rotation
+            Loop
+                  Call  GetPartRotation ( .Actor:Self .Part:Bullet2 *Var0 *Var1 *Var2 )
+                  AddF  *Var2 *Fixed[-30.0]
+                  Call  SetPartRotation ( .Actor:Self .Part:Bullet2 *Var0 *Var1 *Var2 )
+                  Wait  1
+                  Call  GetPartPos ( .Actor:Self .Part:Bullet2 *Var0 *Var1 *Var2 )
+                  If *Var1 <= -15`
+                        BreakLoop
+                  EndIf
+            EndLoop
+      EndThread
+      Thread
+            % get x pos
+            Set   *Var0 76`
+            Call  RandInt ( 58` *Var1 )
+            Add   *Var0 *Var1
+            Call  JumpPartTo    ( .Actor:Self .Part:Bullet2 *Var0 -15` 50` 30` .False )
+      EndThread
+      Wait  12`
+      %=========
+      % bullet 3
+      %=========
+      Thread % update bullet rotation
+            Loop
+                  Call  GetPartRotation ( .Actor:Self .Part:Bullet3 *Var0 *Var1 *Var2 )
+                  AddF  *Var2 *Fixed[-30.0]
+                  Call  SetPartRotation ( .Actor:Self .Part:Bullet3 *Var0 *Var1 *Var2 )
+                  Wait  1
+                  Call  GetPartPos ( .Actor:Self .Part:Bullet3 *Var0 *Var1 *Var2 )
+                  If *Var1 <= -15`
+                        BreakLoop
+                  EndIf
+            EndLoop
+      EndThread
+      Thread
+            % get x pos
+            Set   *Var0 76`
+            Call  RandInt ( 58` *Var1 )
+            Add   *Var0 *Var1
+            Call  JumpPartTo    ( .Actor:Self .Part:Bullet3 *Var0 -15` 50` 30` .False )
+      EndThread
+      Return
+      End
+}
+
+#new:Script $Script_NextTurn_FakeBowser2 {
+    0:  UseArray  $End[0] 
+    C:  Call  UseIdleAnimation  ( .Actor:Self .False )
+   20:  Call  GetBattlePhase    ( *Var0 )
+   30:  Switch  *Var0 
+   3C:  	  Case  ==  .Phase:PlayerBegin % A
+   48:  	  	Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+   60:  	  	If  *Var0  !&  00000008
+  190:  	  		  Call  GetActorVar       ( .Actor:Self 00000000 *Var0 )
+  1A8:  	  		  ConstOR  *Var0 00000008 
+  1B8:  	  		  Call  SetActorVar       ( .Actor:Self 00000000 *Var0 )
+  1EC:  	  	EndIf
+  1F4:  EndSwitch
+        Call  GetActorVar ( .Actor:Self 00000003 *Var0 )
+        If *Var0 == .True
+            % bowser is in healing mode
+            Call  GetActorVar ( .Actor:Self 00000004 *Var0 )
+            Add   *Var0 1
+            Call  SetActorVar ( .Actor:Self 00000004 *Var0 )
+            If *Var0 >= 3
+                  ExecWait $Script_HealingMode_Stop
+            EndIf
+        EndIf
+  1FC:  Call  UseIdleAnimation  ( .Actor:Self .True )
+  210:  Return
+  218:  End
+}
+
+#new:Script $Script_EndFight {
+  36C:  Wait  100`
+  378:  Call  EnableGroup   ( ~Model:pit_bt02:atama .False )
+  38C:  Call  EnableGroup   ( ~Model:pit_bt02:left_arm .False )
+  3A0:  Call  EnableGroup   ( ~Model:pit_bt02:shippo .False )
+  3B4:  Call  EnableGroup   ( ~Model:pit_bt02:dou .False )
+  3C8:  Call  EnableGroup   ( ~Model:pit_bt02:koura .False )
+  3DC:  Call  EnableGroup   ( ~Model:pit_bt02:koma1 .False )
+  3F0:  Call  EnableGroup   ( ~Model:pit_bt02:koma2 .False )
+  404:  Call  EnableGroup   ( ~Model:pit_bt02:right_arm .False )
+  418:  Call  EnableGroup   ( ~Model:pit_bt02:ashi .False )
+        Call  SetActorVar   ( .Actor:Self 00000001 00000003 ) % stop camera shakes?
+        Call  GetActorVar   ( .Actor:Self 00000000 *Var0 )
+        ConstOR  *Var0 00000001 
+        Call  SetActorVar   ( .Actor:Self 00000000 *Var0 ) % stop bowserAI
+        Call  SetActorFlagBits( .Actor:Self 00400000 .True ) % finish fight
+  F48:  Return
+  F50:  End
+}
+
+#string $String_HealingMode_Start1
+{
+[Style Inspect][DelayOff]
+Entering recovery mode.
+[Wait][End]
+}
+
+#string $String_HealingMode_Start2
+{
+[Style Inspect]
+Entering reco[SizeJitter]zvvsfgjoiutfdgjbkmoe[BR]
+mvxcklujgfoarituflkjgbmcvlmbnkajsa[BR]
+alsdmfxmlaoeifkvcxfmbcvkljbnhstiop[BR]
+asdknfjxcnvmvxcklhvfoswuierrhtjlo[BR]
+[Wait][End]
+}

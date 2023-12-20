@@ -1,0 +1,180 @@
+% Script File: sbk_33.mscr
+% Decoded from: 0 to 500 (sbk_33)
+
+
+#new:Function $Function_80240000
+{
+    0:  MTC1      R0, F0
+    4:  ADDIU     SP, SP, FFE0
+    8:  MFC1      A1, F0
+    C:  CLEAR     A0
+   10:  SW        RA, 18 (SP)
+   14:  SW        R0, 14 (SP)
+   18:  SWC1      F0, 10 (SP)
+   1C:  COPY      A2, A1
+   20:  JAL       ~Func:playFX_82
+   24:  COPY      A3, A1
+   28:  LW        RA, 18 (SP)
+   2C:  LI        V0, 2
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 20
+}
+
+PADDING: 80240038 to 80240040 (00000038 to 00000040)
+00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -475.0    0.0    0.0   90.0
+	~Vec4f:Entry1 %  475.0    0.0    0.0  270.0
+	~Vec4f:Entry2 %    0.0    0.0 -475.0  180.0
+	~Vec4f:Entry3 %    0.0    0.0  475.0    0.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000004
+	[Background]  80200000
+	[MapTattle]   0019007A
+}
+
+#new:TweesterPath $TweesterPath_802400C0
+{
+	~Vec3d:TweesterPath_802400C0_1 ~Vec3d:TweesterPath_802400C0_2 ~Vec3d:TweesterPath_802400C0_3 ~Vec3d:TweesterPath_802400C0_4 80000001
+}
+
+#new:TweesterPathList $TweesterPathList_802400F4
+{
+	$TweesterPath_802400C0 FFFFFFFF
+}
+
+#new:Script $Script_802400FC
+{
+    0:  Call  DisablePlayerInput    ( .True )
+   10:  Call  DisablePlayerPhysics  ( .True )
+   20:  Call  GotoMap   ( $ASCII_802404D0 00000004 ) % sbk_24
+   34:  Wait  100`
+   40:  Return
+   48:  End
+}
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeEntity    ( .Entity:HiddenPanel ~Vec4d:Entity8024014C ~Model:stage 80000000 )
+   28:  Call  AssignPanelFlag   ( *GF_SBK33_HiddenPanel )
+   38:  Call  MakeEntity    ( .Entity:Tweester ~Vec4d:Entity80240184 $TweesterPathList_802400F4 80000000 )
+   60:  Call  AssignScript  ( $Script_802400FC )
+   70:  Return
+   78:  End
+}
+
+PADDING: 802401CC to 802401D0 (000001CC to 000001D0)
+00000000
+
+#new:Script $Script_ExitWalk_802401D0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802404D8 00000001 ) % sbk_32
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_8024022C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802404E0 00000000 ) % sbk_34
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_80240288
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry2 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802404E8 00000003 ) % sbk_23
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_802402E4
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry3 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802404F0 00000002 ) % sbk_43
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240340
+{
+    0:  Bind  $Script_ExitWalk_802401D0 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024022C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   38:  Bind  $Script_ExitWalk_80240288 .Trigger:FloorAbove ~Collider:deilin 00000001 00000000
+   54:  Bind  $Script_ExitWalk_802402E4 .Trigger:FloorAbove ~Collider:deilis 00000001 00000000
+   70:  Return
+   78:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:DryDryDesert
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  If  *GB_StoryProgress  ==  .Story:Ch2_GotPulseStone % FFFFFFC1
+   30:  	Call  DisablePulseStone ( .False )
+   40:  EndIf
+   48:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   68:  Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+   84:  Call  SetCamEnabled     ( .Cam:Default .True )
+   98:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   AC:  ExecWait  $Script_MakeEntities
+   B8:  Call  $Function_80240000 ( )
+   C4:  Call  SetMusicTrack     ( 00000000 .Song:DryDryDesert 00000000 00000008 )
+   E0:  Set   *Var0  $Script_80240340
+   F0:  Exec  EnterWalk
+   FC:  Return
+  104:  End
+}
+
+PADDING: 802404CC to 802404D0 (000004CC to 000004D0)
+00000000
+
+#new:ASCII $ASCII_802404D0
+{
+	"sbk_24"
+}
+
+#new:ASCII $ASCII_802404D8
+{
+	"sbk_32"
+}
+
+#new:ASCII $ASCII_802404E0
+{
+	"sbk_34"
+}
+
+#new:ASCII $ASCII_802404E8
+{
+	"sbk_23"
+}
+
+#new:ASCII $ASCII_802404F0
+{
+	"sbk_43"
+}
+
+PADDING: 802404F8 to 80240500 (000004F8 to 00000500)
+00000000 00000000
+

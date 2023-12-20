@@ -1,0 +1,158 @@
+@ $Script_Main {
+    Set   *GB_WorldLocation  .Location:KoopaBrosFortress
+    Call  SetSpriteShading  ( .Shading:None )
+    Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+    Call  SetCamBGColor     ( .Cam:Default  0`  0`  0` )
+    Call  SetCamLeadPlayer  ( .Cam:Default .False )
+    Call  SetCamEnabled     ( .Cam:Default .True )
+    Call  MakeNpcs  ( .True $NpcGroupList_80242E04 )
+    ExecWait  $Script_MakeEntities
+    If  *GB_StoryProgress  <  .Story:Ch1_KoopaBrosHidKey % FFFFFFA8
+        Exec  $Script_80241C14
+    Else
+        Exec  $Script_EnterWalk_80240ED8
+    EndIf
+    If  *GF_TRD02_BombedWall  ==  .False
+        Call  EnableModel   ( ~Model:nk1 .False )
+    Else
+        Call  SetGroupEnabled       ( ~Model:ana1 00000000 )
+        Call  ModifyColliderFlags   ( 00000000 ~Collider:deilit1 7FFFFE00 )
+        Call  ModifyColliderFlags   ( 00000000 ~Collider:tt1 7FFFFE00 )
+    EndIf
+    If  *GF_TRD03_BombedCenterCell  ==  .False
+        Call  EnableModel   ( ~Model:nk2 .False )
+        Bind  $Script_80241064 .Trigger:PointBomb $TriggerCoord_80241044 00000001 00000000
+    Else
+        Call  SetGroupEnabled       ( ~Model:ana2 00000000 )
+        Call  ModifyColliderFlags   ( 00000000 ~Collider:deilit2 7FFFFE00 )
+        Call  ModifyColliderFlags   ( 00000000 ~Collider:tt2 7FFFFE00 )
+    EndIf
+    If  *GF_TRD03_BombedRightCell  ==  .False
+        Call  EnableModel   ( ~Model:nk3 .False )
+        Bind  $Script_80241168 .Trigger:PointBomb $TriggerCoord_80241054 00000001 00000000
+    Else
+        Call  SetGroupEnabled       ( ~Model:ana3 00000000 )
+        Call  ModifyColliderFlags   ( 00000000 ~Collider:deilit3 7FFFFE00 )
+        Call  ModifyColliderFlags   ( 00000000 ~Collider:tt3 7FFFFE00 )
+    EndIf
+    Exec  $Script_80240A80
+    If  *GB_StoryProgress  <  .Story:Ch1_KoopaBrosHidKey % FFFFFFA8
+        Call  TranslateModel    ( ~Model:0ri 00000000 00000064 FFFFFFFF )
+    EndIf
+    ExecWait  $Script_80242E40
+    Exec  $Script_8024126C
+    Exec  $Script_NewStuff
+    Return
+    End
+}
+
+#new:Script $Script_NewStuff
+{
+    Call    MakeItemEntity ( .Item:StarPiece ~Vec3d:ItemPos_cell .ItemSpawnMode:Fixed_NeverVanish *GF_TRD03_CellItem )
+    If *GF_TRD03_Chain == .False
+        Exec  $Script_ChainFX
+        Bind  $Script_PullChain .Trigger:WallTouch ~Collider:col_chainTrigger 00000001 00000000
+    Else % Chain already pulled
+        Call    ModifyColliderFlags ( .False ~Collider:col_chainTrigger 7FFFFE00 )
+        Call    MakeItemEntity ( .Item:MegaRushP ~Vec3d:ItemPos_chain .ItemSpawnMode:Fixed_NeverVanish *GF_TRD03_ChainItem )
+    EndIf
+    Return
+    End
+}
+
+% Show a little sparkle in the chain
+#new:Script $Script_ChainFX
+{
+    Loop
+        Call    PlayEffect ( ~FX:ShinyFlare ~Vec3d:Pos_chainFX *Fixed[1.3] .False .False .False .False .False .False .False .False )
+        Wait    20`
+        If *GF_TRD03_Chain == .True
+            BreakLoop
+        EndIf
+    EndLoop
+    Return
+    End
+}
+
+#new:Script $Script_PullChain
+{
+    SetGroup 0
+    SuspendAll 2
+    Set     *GF_TRD03_Chain .True
+    Call    DisablePartnerAI ( 0 )
+    Call    DisablePlayerInput ( .True )
+    Call    DisablePlayerPhysics ( .True )
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( 00080005 )
+    Call    SetPlayerPos ( ~Vec3d:Pos_chainPlayerPos )
+    Wait    3
+    % chain animation
+    Call    PlaySound ( 0054 )
+    Call    MakeLerp ( 0 -4` 4 .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Set     *Var3 *Var0
+        Set     *Var4 *Var1
+        Call    TranslateModel ( ~Model:chain 0 *Var3 0 )
+        Call    GetModelCenter ( ~Model:chain )
+        Sub     *Var1 160` % y
+        Add     *Var2 1 % z
+        Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+        Wait    1
+        If *Var4 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    % move camera
+    Call    SetCamSpeed 	( .Cam:Default *Fixed[4.0] )
+    Call    GetPlayerPos  ( *Var0 *Var1 *Var2 )
+    Call    UseSettingsFrom   ( .Cam:Default *Var0 *Var1 *Var2 )
+    Set     *Var0 ~PosXd:Pos_chainPlayerPos
+    Set     *Var1 ~PosYd:Pos_chainPlayerPos
+    Set     *Var2 ~PosZd:Pos_chainPlayerPos
+    Add     *Var1 -50` % y
+	Call    SetPanTarget 	( .Cam:Default *Var0 *Var1 *Var2 )
+    Call    SetCamDistance    ( .Cam:Default  350` )
+	Call    PanToTarget 	( .Cam:Default .Easing:Linear 00000001 )
+    Wait    7
+    Call    PlaySound ( 003F )
+    %
+    Thread
+        Wait    10`
+        % spawn item
+        Set     *Var0 ~PosXd:ItemPos_chain
+        Set     *Var1 ~PosYd:ItemPos_chain
+        Set     *Var2 ~PosZd:ItemPos_chain
+        Add     *Var1 285` % y
+        Call    MakeItemEntity ( .Item:MegaRushP *Var0 *Var1 *Var2 .ItemSpawnMode:Fall_NeverVanish *GF_TRD03_ChainItem )
+    EndThread
+    Call    MakeLerp ( 0 -20` 25` .Easing:Linear )
+    Loop
+        Call    UpdateLerp
+        Set     *Var3 *Var0
+        Set     *Var4 *Var1
+        Call    TranslateModel ( ~Model:chain 0 *Var3 0 )
+        Call    GetModelCenter ( ~Model:chain )
+        Sub     *Var1 160` % y
+        Add     *Var2 1 % z
+        Call    SetPlayerPos ( *Var0 *Var1 *Var2 )
+        Wait    1
+        If *Var4 == .False
+            BreakLoop
+        EndIf
+    EndLoop
+    Call    StopSound ( 003F )
+    Wait    25`
+    Call    SetPlayerAnimation ( 00010002 )
+    Call    SetPlayerAnimation ( .PlayerAnim:Midair )
+    Unbind
+    Call    ModifyColliderFlags ( .False ~Collider:col_chainTrigger 7FFFFE00 )
+    Call    DisablePlayerPhysics ( .False )
+    Call    ResetCam ( .Cam:Default *Fixed[4.0] )
+    Call    WaitForCam ( .Cam:Default *Fixed[1.0] )
+    ResumeAll 2
+    Call    DisablePlayerInput ( .False )
+    Call    EnablePartnerAI
+    Return
+    End
+}

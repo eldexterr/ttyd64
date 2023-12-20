@@ -1,0 +1,278 @@
+#new:Header $Header
+{
+	[MainScript] $Script_Main
+	[Background] 00000000
+	[EntryList] $EntryList
+	[EntryCount] 4
+    [MapTattle]  $Function_GetTattle
+}
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0
+	~Vec4f:Entry1
+	~Vec4f:Entry2
+	~Vec4f:Entry3
+}
+
+#new:Script_Main $Script_Main
+{
+	Set   *GB_WorldLocation  .Location:WindyMill
+	Call  SetCamPerspective  ( .Cam:Default 00000003 00000019 00000010 00001000 )
+	Call  SetCamBGColor      ( .Cam:Default 00000000 00000000 00000000 )
+	Call  SetCamEnabled      ( .Cam:Default .True )
+	Call  SetCamLeadPlayer   ( .Cam:Default .False )
+    Call  MakeNpcs ( .False $NpcGroupList_arn22 )
+    Switch *AreaByte[0]
+        CaseOR == 1
+        CaseOR == 2
+            Call SetNpcPos ( 3 0 -1000 0 )
+            Call SetNpcPos ( 4 0 -1000 0 )
+            Call SetNpcPos ( 5 0 -1000 0 )
+            Call EnableNpcShadow ( 3 .False )
+            Call EnableNpcShadow ( 4 .False )
+            Call EnableNpcShadow ( 5 .False )
+        EndCaseGroup
+        CaseOR == 3
+        CaseOR == 4
+        CaseOR == 5
+            Call SetNpcPos ( 0 0 -1000 0 )
+            Call SetNpcPos ( 1 0 -1000 0 )
+            Call SetNpcPos ( 2 0 -1000 0 )
+            Call EnableNpcShadow ( 0 .False )
+            Call EnableNpcShadow ( 1 .False )
+            Call EnableNpcShadow ( 2 .False )
+        EndCaseGroup
+    EndSwitch
+	Exec  $Script_SetupMusic
+	Exec  $Script_EnterMap
+	Return
+	End
+}
+
+#new:Script $Script_SetupMusic
+{
+	Switch  *GB_StoryProgress
+        /%Case  <  .Story:Ch3_HeartFledFirstTunnel % FFFFFFEA
+            Call  SetMusicTrack ( 00000000 .Song:TubbaEscape 00000000 00000008 )
+        Case  <  .Story:Ch3_DefeatedTubbaBlubba % FFFFFFF0
+            Call  SetMusicTrack ( 00000000 .Song:TubbaBlubbaTheme 00000000 00000008 )%/
+        Default
+            Call  SetMusicTrack ( 00000000 .Song:GustyGulch 00000000 00000008 )
+    EndSwitch
+    Return
+    End
+}
+
+% NPCs
+
+#new:NpcGroupList $NpcGroupList_arn22
+{
+00000001 $NpcGroup_Goomba1_1 0E000007
+00000001 $NpcGroup_Goomba2_1 0E000007
+00000001 $NpcGroup_Goomba3_1 0E000007
+%
+00000001 $NpcGroup_Goomba1_2 0E000007
+00000001 $NpcGroup_Goomba2_2 0E000007
+00000001 $NpcGroup_Goomba3_2 0E000007
+00000000 00000000 00000000
+}
+
+#new:NpcGroup $NpcGroup_Goomba1_1
+{
+	00000000 $NpcSettings_Goomba ~Vec3f:NPC_Goomba_00 % 0 0 0
+	00000C00 $Script_NPC_Init_Goomba 00000000 00000000 0000010E
+	~Items:20:DriedShroom:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:2
+	~Movement:NPC_Goomba_00
+	~AnimationTable:NPC_Goomba_00 % .Sprite:Goomba
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_Goomba2_1
+{
+	00000001 $NpcSettings_Goomba ~Vec3f:NPC_Goomba_01 % 0 0 0
+	00000C00 $Script_NPC_Init_Goomba 00000000 00000000 0000010E
+	~Items:20:DriedShroom:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:2
+	~Movement:NPC_Goomba_01
+	~AnimationTable:NPC_Goomba_01 % .Sprite:Goomba
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_Goomba3_1
+{
+	00000002 $NpcSettings_Goomba ~Vec3f:NPC_Goomba_02 % 0 0 0
+	00000C00 $Script_NPC_Init_Goomba 00000000 00000000 0000010E
+	~Items:20:DriedShroom:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:2
+	~Movement:NPC_Goomba_02
+	~AnimationTable:NPC_Goomba_02 % .Sprite:Goomba
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+%
+
+#new:NpcGroup $NpcGroup_Goomba1_2
+{
+	00000003 $NpcSettings_Goomba ~Vec3f:NPC_Goomba_00 % 0 0 0
+	00000C00 $Script_NPC_Init_Goomba 00000000 00000000 0000010E
+	~Items:20:DriedShroom:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:2
+	~Movement:NPC_Goomba_00
+	~AnimationTable:NPC_Goomba_00 % .Sprite:Goomba
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_Goomba2_2
+{
+	00000004 $NpcSettings_Goomba ~Vec3f:NPC_Goomba_01 % 0 0 0
+	00000C00 $Script_NPC_Init_Goomba 00000000 00000000 0000010E
+	~Items:20:DriedShroom:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:2
+	~Movement:NPC_Goomba_01
+	~AnimationTable:NPC_Goomba_01 % .Sprite:Goomba
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_Goomba3_2
+{
+	00000005 $NpcSettings_Goomba ~Vec3f:NPC_Goomba_02 % 0 0 0
+	00000C00 $Script_NPC_Init_Goomba 00000000 00000000 0000010E
+	~Items:20:DriedShroom:A ~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:2
+	~Movement:NPC_Goomba_02
+	~AnimationTable:NPC_Goomba_02 % .Sprite:Goomba
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:AISettings $AISettings_Goomba
+{
+    1.8 % move speed
+    40` % move time
+    15` % wait time
+  150.0 % alert radius
+    0.0
+    2`
+    3.3 % chase speed
+    70`
+    1`
+  180.0 % chase radius
+    0.0
+    1`
+}
+
+#new:Script $Script_NpcAI_Goomba
+{
+    0:  Call  DoBasicAI ( $AISettings_Goomba )
+   10:  Return
+   18:  End
+}
+
+#new:NpcSettings $NpcSettings_Goomba
+{
+	00000000 00140017 00000000 00000000 $Script_NpcAI_Goomba 80077F70 00000000 8007809C
+	00000000 00000000 000C0000
+}
+
+#new:Script $Script_NPC_Init_Goomba
+{
+    Call  BindNpcDefeat ( .Npc:Self $Script_NPC_Defeat_Goomba )
+    Return
+    End
+}
+
+#new:Script $Script_NPC_Defeat_Goomba
+{
+    Call  DoNpcDefeat
+    Return
+    End
+}
+
+%%%
+
+
+#new:Script $Script_EnterMap
+{
+    Set   *Var0  $Script_CreateExitTriggers
+    Exec  EnterWalk
+    Wait  1
+	Return
+	End
+}
+
+#new:Script $Script_CreateExitTriggers
+{
+    Bind     $Script_Exit0  .Trigger:FloorAbove ~Collider:Exit0 00000001 00000000
+    Bind     $Script_Exit1  .Trigger:FloorAbove ~Collider:Exit1 00000001 00000000
+    Bind     $Script_Exit2  .Trigger:FloorAbove ~Collider:Exit2 00000001 00000000
+    Bind     $Script_Exit3  .Trigger:FloorAbove ~Collider:Exit3 00000001 00000000
+	Return
+	End
+}
+
+#new:Script $Script_Exit0 {
+    Set *Var0 ~Entry:Entry0
+    ExecWait $Script_GoBack
+    Return
+    End
+}
+
+#new:Script $Script_Exit1 {
+    Set *Var0 ~Entry:Entry1
+    ExecWait $Script_GoBack
+    Return
+    End
+}
+
+#new:Script $Script_Exit2 {
+    Set *Var0 ~Entry:Entry2
+    ExecWait $Script_GoBack
+    Return
+    End
+}
+
+#new:Script $Script_GoBack {
+	Call     UseExitHeading  	( 3C *Var0 )
+	Exec     ExitWalk
+    Switch *AreaByte[0]
+        Case == 1
+            Call     GotoMap	( "arn_21" 1 ) % Start - Exit1
+        Case == 2
+            Call     GotoMap	( "arn_21" 2 ) % Start - Exit2
+        Case == 3
+            Call     GotoMap	( "arn_23" 1 )
+        Case == 4
+            Call     GotoMap	( "arn_23" 2 )
+        Case == 5
+            Call     GotoMap	( "arn_23" 3 )
+    EndSwitch
+	Wait     100`
+	Return
+	End
+}
+
+#new:Script $Script_Exit3 {
+	Call     UseExitHeading  	( 3C 3 )
+	Exec     ExitWalk
+    If *AreaByte[0] == 2
+        Call     GotoMap	( "arn_23" 0 )
+    Else % 5
+        Call     GotoMap	( "arn_24" 0 )
+    EndIf
+	Wait     100`
+	Return
+	End
+}
+
+#new:Function $Function_GetTattle
+{
+LIO       V0, $String_Tattle
+JR        RA
+RESERVED
+}
+
+#string $String_Tattle {
+[Style Tattle][EnableCDownNext]
+It seems like this is some kind[BR]
+of labyrinth Mario.[BR]
+[Wait][Next]
+We need to keep our eyes open[BR]
+at all costs if we don't want[BR]
+to get lost!
+[Wait][End]
+}

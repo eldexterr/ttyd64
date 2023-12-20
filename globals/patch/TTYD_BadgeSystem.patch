@@ -1,0 +1,2224 @@
+% This file make posible to equip or unequip badges with the same ID in the
+% pause menu, surprisingly most badges already have stack support the only
+% problem was the Pause menu doesn't let you equip badges with the same ID.
+%
+% Also added stack support for move badges (Power Jump, Power Smash, etc.)
+
+% This file add stack support for a few badges that didn't have any stack support too:
+% Fire Shield % unused badge
+% Ice Power
+% Flower Finder
+% Heart Finder
+% Money Money
+% Pay-Off
+% Group Focus
+% HP Drain
+% Close Call
+% Lucky Day
+% Pretty Lucky
+% P-Down, D-Up (Added stack support for power, only stacked the defense before)
+% P-Up, D-Down (same as PDownDUp)
+% Power Rush
+% Mega Rush
+% Last Stand
+% Double Dip
+% Refund
+% Dizzy Attack
+% Speedy Spin
+% Slow Go (:D)
+
+%=========
+% Misc
+%=========
+%
+% Make badge icons from the badge menu a little smaller
+%
+% From ~Func:pause_badges_draw_contents
+@Function 13B074 % 80247D34
+{
+    LUI	    A1, 3F19
+}%/
+
+% Add stack support for RemoveBadge(API)
+%
+% From RemoveBadge(API)
+@Hook 802D7050
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1)
+    COPY    S1, V0
+    LIO     A0, 8010F344 % playerBadges
+    CLEAR   A2
+    .Loop_BadgeInventory
+    LHU     A1, 0 (A0)
+    BEQ     A1, V0, .BadgeFound_BadgeInventory
+    ADDIU   A2, A2, 1
+    SLTIU   A3, A2, 128` % badge cap
+    BEQ     A3, R0, .End % player don't have this badge
+    NOP
+    BEQ     R0, R0, .Loop_BadgeInventory
+    ADDIU   A0, A0, 2
+    .BadgeFound_BadgeInventory
+    SH      R0, 0 (A0) % remove badge from inventory
+    %=====================================
+    % remove badge from activated badges
+    %=====================================
+    LIO     A0, 8010F498 % activated badges
+    CLEAR   A2
+    .Loop_ActivatedBadges
+    LHU     A1, 0 (A0)
+    BEQ     A1, V0, .BadgeFound_ActivatedBadges
+    ADDIU   A2, A2, 1
+    SLTIU   A3, A2, 64` % activated badges cap
+    BEQ     A3, R0, .End % player don't have this badge activated
+    NOP
+    BEQ     R0, R0, .Loop_ActivatedBadges
+    ADDIU   A0, A0, 2
+    .BadgeFound_ActivatedBadges
+    SH      R0, 0 (A0) % remove activated badge
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+%================================================
+%                                               %
+%            Pause Menu - Badge Tab             %
+%    Add support for badges with the same ID    %
+%                                               %
+%================================================
+
+%==========================
+% Data used in this file
+%==========================
+
+% Each word is the data for each activate duplicated badge
+%
+% 64 words because you can have 64 badges activated at most.
+%
+% XXXX0000 = BadgeID
+%
+% 0000XXXX = DuplicatedID
+#new:Data $BadgeTab_ActiveBadges_Duplicated
+{
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000  
+}
+
+% Needed by the "Active Badges" list
+#new:Data $BadgeTab_ActiveBadges_Duplicated_Copy
+{
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000 00000000 
+    00000000 00000000 00000000 00000000  
+}
+
+%========================
+% Init Data
+%========================
+
+% Patch ~Func:pause_badges_init
+%
+% Init the duplicated badges data too, also sort badges copies
+@Hook 13C310 % 80248FD0
+{
+    PUSH    A0, A1
+    % init data (neccesary for the sort functions below)
+    JAL     $BadgeTab_DuplicatedBadgesData_Init
+    NOP
+    % current badges
+    LIO     A0, 8010F498 % badgeListIDs
+    LIO     A1, 80270280 % badgeListIDs(End)
+    JAL     $BadgeTab_SortCopies
+    RESERVED
+    % activated badges
+    LIO     A0, 8010F498 % activatedBadges
+    LIO     A1, 8010F518 % activateBadges(End)
+    JAL     $BadgeTab_SortCopies
+    RESERVED
+    JAL     $BadgeTab_DuplicatedBadgesData_Clear
+    NOP
+    % init data once again, now that the badges copies are properly sorted.
+    JAL     $BadgeTab_DuplicatedBadgesData_Init
+    NOP
+    POP     A0, A1
+    % restore vanilla code
+    SW	    S2, 0018 (SP)
+    J       80248FD8
+    SW	    S1, 0014 (SP)
+}
+
+% Patch ~Func:pause_badges_load_badges
+%
+% Init Duplicated data
+@Hook 13C0D8 % 80248D98
+{
+    PUSH    RA
+    % reorder data to don't have empty words between IDs
+    JAL     $BadgeTab_DuplicatedData_Reorder
+    NOP
+    % Clear backup data
+    JAL     $BadgeTab_DuplicatedBadgesData_Backup_Clear
+    NOP
+    % Copy data to backup
+    JAL     $BadgeTab_BackupDuplicatedData
+    NOP
+    POP     RA
+    % restore vanilla code
+    LIO     S1, 8010F290
+    J       80248DA0
+    RESERVED
+}
+
+% Read which badges are currently active to write the copiesIDs
+% if neccesary.
+#new:Function $BadgeTab_DuplicatedBadgesData_Init
+{
+    PUSH    RA, T0, T1, T2, T3, T4, A0, V0
+    % nuke data first
+    JAL     $BadgeTab_DuplicatedBadgesData_Clear
+    NOP
+    % read each activated badge to find out which one
+    % have copies
+    LIO     T0, 8010F498 % 1st Activated Badge
+    CLEAR   T1
+    .Loop_ReadNextActBadgeSlot
+    LHU     A0, 0 (T0)
+    JAL     $BadgeTab_GetSameBadgeAmount
+    NOP
+    % V0 = Amount of times this badge is activate
+    SLTIU   T2, V0, 2 % Check if is more than once
+    BNE     T2, R0, .DoestHaveCopies
+    NOP
+    % The player have this same badge more than once
+    %
+    % get how many times this badge is active
+    JAL     $IsBadgeActivated_Stack
+    NOP
+    % Write copiesIDs in the copies data
+    LIO     T2, $BadgeTab_ActiveBadges_Duplicated
+    % get next available copy slot
+    .Loop_ReadNextCopySlot
+    LW      T3, 0 (T2)
+    BNEL    T3, R0, .Loop_ReadNextCopySlot
+    ADDIU   T2, T2, 4
+    % Write copies IDs
+    %
+    % T2 = Next Copy Slot pointer
+    % T3 = CopyID
+    % V0 = Amount of times this badge is active
+    SLL     T3, A0, 16`
+    .Loop_WriteCopySlot
+    SW      T3, 0 (T2) % write copyID
+    ADDIU   T2, T2, 4 % write in next slot
+    ADDIU   T3, T3, 1 % add 1 for next copyID
+    SLL     T4, T3, 16`
+    SRL     T4, T4, 16` % get only the copyID
+    SLTU    T4, T4, V0
+    BNE     T4, R0, .Loop_WriteCopySlot
+    NOP
+    % advance actBadge pointer and loop counder
+    % according to how many copies got activated
+    ADDU    T1, T1, V0 % loop counter
+    % advance activated slots
+    ORI     T2, R0, 2 % because each badge uses 2 bytes
+    MULT    T2, V0
+    MFLO    T2
+    BEQ     R0, R0, .CheckActBadgesCap
+    ADDU    T0, T0, T2 % read next activated slot
+    .DoestHaveCopies
+    ADDIU   T0, T0, 2 % read next activated slot
+    ADDIU   T1, T1, 1 % loop counter
+    .CheckActBadgesCap
+    SLTIU   T2, T1, 64` % because only 64 badges can be activated
+    BNE     T2, R0, .Loop_ReadNextActBadgeSlot
+    NOP
+    .End
+    POP     RA, T0, T1, T2, T3, T4, A0, V0
+    JR      RA
+    NOP
+}
+
+% Nuke all data from $BadgeTab_ActiveBadges_Duplicated
+#new:Function $BadgeTab_DuplicatedBadgesData_Clear
+{
+    PUSH    T0, T1, T2
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T1
+    .Loop
+    SW      R0, 0 (T0)
+    ADDIU   T0, T0, 4 % nuke next word
+    ADDIU   T1, T1, 1
+    SLTIU   T2, T1, 64` % because it has 64 words to nuke
+    BNE     T2, R0, .Loop
+    NOP
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+% Nuke all data from $BadgeTab_ActiveBadges_Duplicated_Copy
+#new:Function $BadgeTab_DuplicatedBadgesData_Backup_Clear
+{
+    PUSH    T0, T1, T2
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated_Copy
+    CLEAR   T1
+    .Loop
+    SW      R0, 0 (T0)
+    ADDIU   T0, T0, 4 % nuke next word
+    ADDIU   T1, T1, 1
+    SLTIU   T2, T1, 64` % because it has 64 words to nuke
+    BNE     T2, R0, .Loop
+    NOP
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+%========================
+% Pause Menu - Badge Tab
+%
+% Make posible to wear multiple badges with the same ID
+%========================
+
+% Patch ~Func:pause_badges_draw_contents
+%
+% Check if the player holds a badge with the same ID
+% if that's the case read their DuplicatedID to know
+% which badge to highlight if the badge is active.
+@Hook 13ABD4 % 80247894
+{
+    % restore vanilla code
+    COPY    V1, S1
+    SW	    V0, 0088 (SP)
+    %
+    PUSH    T0, T1, V1, A0, A1, S0
+    CLEAR   GP
+    % S1 = BadgeID to check
+    JAL     $BadgeTab_GetSameBadgeAmount
+    COPY    A0, S1
+    COPY    T0, V0    
+    COPY    V0, S1
+    SLTIU   T0, T0, 2
+    BNE     T0, R0, .End
+    NOP
+    % the player have the same badge more than once
+    %
+    % get current badge list
+    LABU    A0, 8027039F % BadgeList % 0 = All, 1=Active
+    BNE     A0, R0, .Equipped_GetBadgeInvPos
+    NOP
+    %========================
+    .AllBadges_GetBadgeInvPos
+    %========================
+    JAL     $BadgeTab_GetBadgeInventoryPosition
+    COPY    A0, V0
+    BEQ     R0, R0, .FormatBadgePos
+    NOP
+    %========================
+    .Equipped_GetBadgeInvPos
+    %========================
+    JAL     $BadgeTab_GetBadgeListFirstPos
+    COPY    A0, V0
+    %========================
+    % get current pos from the badge being checked right now
+    % A1 = BadgePos
+    %
+    % The positions always have a extra zero (like this 10/20/30)
+    % use SRL to remove that zero
+    .FormatBadgePos
+    SRL     T0, A1, 4
+    LW      T1, 1C (SP) % get page index % from pushed A0
+    ADDI    T1, T1, FFFF % sub 1 % because page #1 is actually 0x01 not 0x00
+    % add +8 for each page (because each page have 8 badges)
+    ORI     A0, R0, 8
+    MULT    T1, A0
+    MFLO    T1
+    % get final pos
+    ADDU    T0, T0, T1
+    % T0 = List pos from the current Badge being check
+    % V0 = List pos from the 1st badge with this ID(the one from badge being checked) in the badge list
+    %
+    % Check if this badge is turned on
+    COPY    A0, S1 % badgeID
+    SUBU    A1, T0, V0 % get copyID (0=Original)
+    % Get current badge list
+    LABU    V0, 8027039F % BadgeList % 0 = All, 1=Active
+    BNE     V0, R0, .Equipped_IsBadgeEqupped
+    NOP
+    %========================
+    .AllBadges_IsBadgeEqupped
+    JAL     $BadgeTab_IsBadgeEquipped_Duplicated
+    NOP
+    BEQ     R0, R0, .DuplicatedBadgeEnd
+    NOP
+    %========================
+    .Equipped_IsBadgeEqupped
+    %========================
+    JAL     $BadgeTab_IsBadgeEquipped_Duplicated_byIndex
+    NOP
+    %========================
+    .DuplicatedBadgeEnd
+    COPY    T0, V0
+    COPY    V0, S1 % restore badgeID
+    ADDI    T1, R0, FFFF
+    BEQL    T0, R0, .End
+    SW      T1, 18 (SP) % save -1 in V1
+    % Activate a Badge with different copies
+    ORI     GP, R0, 1
+    .End
+    POP     T0, T1, V1, A0, A1
+    BNE     GP, R0, .ShowDuplicatedBadgeAsActive
+    NOP
+    J       8024789C
+    NOP
+    .ShowDuplicatedBadgeAsActive
+    J       80247A98
+    NOP
+}
+
+% Patch ~Func:pause_badges_try_equip
+%
+% Add support for badges with the sameIDs
+@Hook 13A6D4 % 80247394
+{
+    PUSH    RA, A0, A1
+    .Start
+    % V1 = BadgeID trying to find
+    LH	    V0, 0000 (A1) % read next badge slot
+    ADDIU	A0, A0, 0001
+    SW      V0, 10 (SP)
+    SW      A0, 14 (SP)
+    SW      A1, 18 (SP)
+    % check if a badge with the same ID is active
+    BNE	    V0, V1, .CheckNextSlot
+    NOP
+    % Badges have the sameID
+    % check how many times the player have that badge
+    JAL     $BadgeTab_GetSameBadgeAmount
+    COPY    A0, V1
+    SLTIU   V0, V0, 2
+    BNE     V0, R0, .DeactivateBadge
+    LH	    V0, 0000 (A1) % restore V0
+    % Badge have other copies
+    %
+    % Check if this copy is already active
+    %
+    % Get copyID
+    .CheckBadgeWCopies
+    % Check which one is the current list
+    LABU    A0, 8027039F % BadgeList % 0 = All, 1=Active
+    BNE     A0, R0, .Equipped
+    NOP
+    %========================
+    .AllBadges
+    %========================
+    JAL     $BadgeTab_GetBadgeInventoryPosition
+    COPY    A0, V1
+    % T1 = BadgeSlot from Badge trying to find
+    SUBU    A1, T1, V0 % copyID
+    JAL     $BadgeTab_IsBadgeEquipped_Duplicated
+    COPY    A0, V1 % badgeID
+    % This copy is already active, deactivate it
+    BNE     V0, R0, .DeactiveBadge_Duplicated_AllBadgesList
+    COPY    A0, V1 % badgeID
+    .ActivateBadge_Duplicated_AllBadgesList
+    JAL     $BadgeTab_CanThisBadgeBeEquipped
+    NOP
+    BEQ     V0, R0, .ActivateBadge
+    NOP
+    % Activate unequipped copy
+    JAL     $BadgeTab_DuplicatedBadge_Equip
+    NOP
+    BEQ     R0, R0, .ActivateBadge
+    NOP
+    .DeactiveBadge_Duplicated_AllBadgesList
+    JAL     $BadgeTab_DuplicatedBadge_Unequip
+    NOP
+    BEQ     R0, R0, .DeactivateBadge
+    NOP
+    %========================
+    .Equipped
+    %========================
+    JAL     $BadgeTab_GetBadgeListFirstPos
+    COPY    A0, V1
+    % T1 = BadgeSlot from Badge trying to find
+    SUBU    A1, T1, V0 % copyID
+    JAL     $BadgeTab_IsBadgeEquipped_Duplicated_byIndex
+    COPY    A0, V1 % badgeID
+    % This copy is already active, deactivate it
+    BNE     V0, R0, .DeactiveBadge_Duplicated_EquippedList
+    COPY    A0, V1 % badgeID
+    .ActivateBadge_Duplicated_EquippedList
+    % Activate unequipped copy
+    JAL     $BadgeTab_DuplicatedBadge_Equip_byIndex
+    NOP
+    BEQ     R0, R0, .ActivateBadge
+    NOP
+    .DeactiveBadge_Duplicated_EquippedList
+    JAL     $BadgeTab_DuplicatedBadge_Unequip_byIndex
+    NOP
+    BEQ     R0, R0, .DeactivateBadge
+    NOP
+    %========================
+    .CheckNextSlot
+    %========================
+    LW      V0, 10 (SP)
+    LW      A0, 14 (SP)
+    LW      A1, 18 (SP)
+    SLTI	V0, A0, 64` % because the activated badges cap is 64
+    BNE 	V0, R0, .Start
+    ADDIU	A1, A1, 2 % read next slot
+    % Before activating this badge, check how many times
+    % the player owns this badge to activate copy #0 first
+    JAL     $BadgeTab_GetSameBadgeAmount
+    COPY    A0, V1
+    SLTIU   V0, V0, 2
+    BEQ     V0, R0, .CheckBadgeWCopies
+    NOP
+    .ActivateBadge
+    POP     RA, A0, A1
+    J       802473AC
+    CLEAR   V0
+    .DeactivateBadge
+    POP     RA, A0, A1
+    J       80247408
+    NOP
+}
+
+%=====================
+% Functions used in this file
+%=====================
+
+% Get how many times the player have a badge in specific.
+%
+% `A0` = `BadgeID`
+%
+% Returns amount in `V0`.
+#export:Function $BadgeTab_GetSameBadgeAmount
+{
+    PUSH    T0, T1, T2, T3
+    % Check if A0 = 0
+    BEQ     A0, R0, .End
+    CLEAR   V0
+    LIO     T0, 8010F344 % Badge #1
+    LIO     T1, 8010F442 % Badge #128 (last slot)
+    .Loop
+    LHU     T2, 0 (T0)
+    BEQL    T2, A0, .BadgeActive
+    ADDIU   V0, V0, 1
+    .BadgeActive
+    ADDIU   T0, T0, 2 % read next badge
+    SLTU    T3, T1, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    .End
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Get in which position a badge is in the
+%
+% badge inventory (NOT BADGES LIST, fort that use $BadgeTab_GetBadgeListFirstPos).
+%
+% A0 = BadgeID
+%
+% *out = V0 = Slot
+#new:Function $BadgeTab_GetBadgeInventoryPosition
+{
+    PUSH    T0, T1, T2, T3
+    % Check if A0 = 0
+    BEQL    A0, R0, .End
+    ADDI    V0, R0, FFFF
+    CLEAR   V0
+    LIO     T0, 8010F344 % Badge #1
+    LIO     T1, 8010F442 % Badge #128 (last slot)
+    .Loop
+    LHU     T2, 0 (T0)
+    BEQ     T2, A0, .End
+    NOP
+    .BadgeActive
+    ADDIU   T0, T0, 2 % read next badge
+    ADDIU   V0, V0, 1
+    SLTU    T3, T1, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    ADDI    V0, R0, FFFF % player don't have this badge
+    .End
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% A0 = badgeID
+%
+% *out = V0 = posIndex
+%
+% Get the first position in list for a badge in specific
+#new:Function $BadgeTab_GetBadgeListFirstPos
+{
+    PUSH    T0, T1
+    LIO     T0, 80270180 % BadgeTab - IDs for Badges in the curent list
+    CLEAR   V0
+    .Loop
+    LHU     T1, 0 (T0)
+    % Is this the ID you was looking for?
+    BEQ     T1, A0, .End
+    NOP
+    ADDIU   V0, V0, 1 % loop counter
+    ADDIU   T0, T0, 2 % read next badge slot
+    SLTIU   T1, V0, 64` % because the active badges cap is 64`
+    BNE     T1, R0, .Loop
+    NOP
+    ADDI    V0, R0, FFFF % -1
+    .End
+    POP     T0, T1
+    JR      RA
+    NOP
+}
+
+% A0 = Badge's Inventory Pos
+%
+% V0 = List inventory pos
+#new:Function $BadgeTab_TransformInvPosToListPos % unused
+{
+    PUSH    T0, T1
+    % get list page
+    ORI     T0, R0, 8
+    DIV     A0, T0
+    MFLO    T1
+    % get list pos
+    MULTU   T1, T0
+    MFLO    T2
+    SUBU    V0, A0, T2
+    % get final pos
+    % XX00 = Page
+    % 00XX = Pos
+    SLL     T1, T1, 8
+    ADDU    V0, V0, T1
+    POP     T0, T1
+    JR      RA
+    NOP
+}
+
+% Check if this badge copy in specific is activated
+%
+% A0 = BadgeID
+%
+% A1 = CopyID (0=Original)
+%
+% *out = V0 = bool
+#new:Function $BadgeTab_IsBadgeEquipped_Duplicated
+{
+    PUSH    T0, T1, T2, T3
+    % Join BadgeID and CopyID in one single amount
+    SLL     A0, A0, 16`
+    ADDU    A0, A0, A1
+    % Look for this ID in the Duplicated badges table
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T2
+    .Loop
+    LW      T1, 0 (T0)
+    BEQ     A0, T1, .End
+    ORI     V0, R0, 1
+    ADDIU   T0, T0, 4 % read next slot
+    ADDIU   T2, T2, 1
+    SLTIU   T3, T2, 64` % because the activated badges cap is 64`
+    BNE     T3, R0, .Loop
+    NOP
+    % Badge is not active, end the function and clear V0
+    CLEAR   V0
+    .End
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Check if this badge copy in specific is activated.
+%
+% Check by CopyIndex instead of the ID in specific
+%
+% A0 = BadgeID
+%
+% A1 = copyIndex (0=Original)
+%
+% *out = V0 = bool
+#new:Function $BadgeTab_IsBadgeEquipped_Duplicated_byIndex
+{
+    PUSH    T0, T1, T2, T3, T4
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated_Copy
+    LIO     T4, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T1
+    CLEAR   T3
+    CLEAR   V0
+    .Loop
+    % find BadgeID
+    LHU     T2, 0 (T0)
+    BNE     T2, A0, .ReadNextCopySlot
+    NOP
+    % This copyID start with the same badgeID
+    BNE     A1, T3, .ReadNextCopySlot % Is the same badgeID but the index isn't the one we're looking for
+    ADDIU   T3, T3, 1
+    % CopyID found
+    LW      T4, 0 (T4) % read from $BadgeTab_ActiveBadges_Duplicated
+    BNEL    T4, R0, .End
+    ORI     V0, R0, 1 % this copy is active
+    BEQ     R0, R0, .End
+    NOP
+    .ReadNextCopySlot
+    ADDIU   T0, T0, 4 % read next copy slot
+    ADDIU   T4, T4, 4
+    ADDIU   T1, T1, 1
+    SLTIU   T2, T1, 64` % because the active badges cap is 64`
+    BNE     T2, R0, .Loop
+    NOP
+    .End
+    POP     T0, T1, T2, T3, T4
+    JR      RA
+    NOP
+}
+
+% A0 = BadgeID
+%
+% A1 = CopyID (0=Original)
+#new:Function $BadgeTab_DuplicatedBadge_Equip
+{
+    PUSH    T0, T1, T2, T3
+    % Join BadgeID and CopyID in one single amount
+    SLL     A0, A0, 16`
+    ADDU    A0, A0, A1
+    % Look for this ID in the Duplicated badges table
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T2
+    .Loop
+    LW      T1, 0 (T0)
+    BEQL    R0, T1, .End % look for the next available slot
+    SW      A0, 0 (T0) % activate badge
+    ADDIU   T0, T0, 4 % read next slot
+    ADDIU   T2, T2, 1
+    SLTIU   T3, T2, 64` % because the activated badges cap is 64`
+    BNE     T3, R0, .Loop
+    NOP
+    .End
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Equip by CopyIndex instead of the CopyID in specific
+%
+% A0 = BadgeID
+%
+% A1 = IndexID (0=Original)
+#new:Function $BadgeTab_DuplicatedBadge_Equip_byIndex
+{
+    PUSH    T0, T1, T2, T3, T4
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated_Copy
+    LIO     T4, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T1
+    CLEAR   T3
+    .Loop
+    % find BadgeID
+    LHU     T2, 0 (T0)
+    BNE     T2, A0, .ReadNextCopySlot
+    NOP
+    % This copyID start with the same badgeID
+    BNE     A1, T3, .ReadNextCopySlot % Is the same badgeID but the index isn't the one we're looking for
+    ADDIU   T3, T3, 1
+    % CopyID found, activate badge
+    LW      T2, 0 (T0) % read from $BadgeTab_ActiveBadges_Duplicated_Copy
+    BEQ     R0, R0, .End
+    SW      T2, 0 (T4) % write in $BadgeTab_ActiveBadges_Duplicated
+    .ReadNextCopySlot
+    ADDIU   T0, T0, 4 % read next copy slot
+    ADDIU   T4, T4, 4
+    ADDIU   T1, T1, 1
+    SLTIU   T2, T1, 64` % because the active badges cap is 64`
+    BNE     T2, R0, .Loop
+    NOP
+    .End
+    POP     T0, T1, T2, T3, T4
+    JR      RA
+    NOP
+}
+
+% Check if this badge copy in specific is activated
+%
+% A0 = BadgeID
+%
+% A1 = CopyID (0=Original)
+#new:Function $BadgeTab_DuplicatedBadge_Unequip
+{
+    PUSH    T0, T1, T2, T3
+    % Join BadgeID and CopyID in one single amount
+    SLL     A0, A0, 16`
+    ADDU    A0, A0, A1
+    % Look for this ID in the Duplicated badges table
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T2
+    .Loop
+    LW      T1, 0 (T0)
+    BEQL    A0, T1, .End
+    SW      R0, 0 (T0) % clear badge
+    ADDIU   T0, T0, 4 % read next slot
+    ADDIU   T2, T2, 1
+    SLTIU   T3, T2, 64` % because the activated badges cap is 64`
+    BNE     T3, R0, .Loop
+    NOP
+    .End
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Unequip by CopyIndex instead of the CopyID in specific
+%
+% A0 = BadgeID
+%
+% A1 = IndexID (0=Original)
+#new:Function $BadgeTab_DuplicatedBadge_Unequip_byIndex
+{
+    PUSH    T0, T1, T2, T3, T4
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated_Copy
+    LIO     T4, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T1
+    CLEAR   T3
+    .Loop
+    % find BadgeID
+    LHU     T2, 0 (T0)
+    BNE     T2, A0, .ReadNextCopySlot
+    NOP
+    % This copyID start with the same badgeID
+    BNE     A1, T3, .ReadNextCopySlot % Is the same badgeID but the index isn't the one we're looking for
+    ADDIU   T3, T3, 1
+    % CopyID found, deactivate badge
+    BEQ     R0, R0, .End
+    SW      R0, 0 (T4) % write in $BadgeTab_ActiveBadges_Duplicated
+    .ReadNextCopySlot
+    ADDIU   T0, T0, 4 % read next copy slot
+    ADDIU   T4, T4, 4
+    ADDIU   T1, T1, 1
+    SLTIU   T2, T1, 64` % because the active badges cap is 64`
+    BNE     T2, R0, .Loop
+    NOP
+    .End
+    POP     T0, T1, T2, T3, T4
+    JR      RA
+    NOP
+}
+
+% Copy all data from $BadgeTab_ActiveBadges_Duplicated to 
+%
+% $BadgeTab_ActiveBadges_Duplicated_Copy
+%
+% Needed by the "Active Badges" list.
+#new:Function $BadgeTab_BackupDuplicatedData
+{
+    PUSH    T0, T1, T2, T3
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated
+    LIO     T1, $BadgeTab_ActiveBadges_Duplicated_Copy
+    CLEAR   T3
+    .Loop
+    LW      T2, 0 (T0)
+    SW      T2, 0 (T1)
+    % write in next slot
+    ADDIU   T0, T0, 4
+    ADDIU   T1, T1, 4
+    ADDIU   T3, T3, 1
+    SLTIU   T2, T3, 64` % because only 64 badges can be activated at the same time
+    BNE     T2, R0, .Loop
+    NOP
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Move everything to don't have empty data between IDs
+#new:Function $BadgeTab_DuplicatedData_Reorder
+{
+    PUSH    T0, T1, T2, T3, T4
+    LIO     T0, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   T3
+    .Loop
+    LW      T1, 0 (T0)
+    BNE     T1, R0, .ReadNextSlot
+    NOP
+    % This word is empty, get the next ID and move it
+    % here.
+    COPY    T4, T3 % copy current copyID pointer
+    COPY    T2, T0 % copy current loop counter
+    .Loop_GetNextID
+    ADDIU   T4, T4, 1 % move counter
+    ADDIU   T2, T2, 4 % read next copyID
+    % Check if is already the last copyID
+    SLTIU   T1, T4, 64` % because only 64 badges can be activated at the same time
+    BEQ     T1, R0, .End
+    NOP
+    LW      T1, 0 (T2) % read slot
+    BEQ     T1, R0, .Loop_GetNextID
+    NOP
+    % Move ID
+    SW      T1, 0 (T0) % copy to new slot
+    SW      R0, 0 (T2) % delete from old slot
+    .ReadNextSlot
+    ADDIU   T0, T0, 4
+    ADDIU   T3, T3, 1
+    SLTIU   T2, T3, 64` % because only 64 badges can be activated at the same time
+    BNE     T2, R0, .Loop
+    NOP
+    .End
+    POP     T0, T1, T2, T3, T4
+    JR      RA
+    NOP
+}
+
+% A0 = BadgeID
+%
+% *out = V0 = Amount of times this badge is active
+#new:Function $IsBadgeActivated_Stack
+{
+    PUSH    T0, T1, T2, T3
+    CLEAR   V0
+    LIO     T0, 8010F498 % Activated Badge #1
+    LIO     T1, 8010F516 % Activated Badge #64 (last slot)
+    .Loop
+    LHU     T2, 0 (T0)
+    BEQL    T2, A0, .BadgeActive
+    ADDIU   V0, V0, 1
+    .BadgeActive
+    ADDIU   T0, T0, 2 % read next badge
+    SLTU    T3, T1, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    POP     T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+% Call    $IsBadgeActivated_Stack_API ( badgeID *out )
+#export:Function $IsBadgeActivated_Stack_API
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    S0, A0
+    LW      S1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (S1) % load Arg0
+    JAL     $IsBadgeActivated_Stack
+    COPY    A0, V0
+    COPY    A0, S0 % load $script context
+    COPY    A2, V0 % load output
+    JAL     ~Func:set_variable
+    LW      A1, 4 (S1) % load Arg1
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% A0=badgeID
+%
+% Returns a bool if is possible to equip this badge.
+%
+% Code grabbed from ~Func:pause_badges_try_equip
+#new:Function:Pause $BadgeTab_CanThisBadgeBeEquipped
+{
+    PUSH        RA, A0, A1, A2, A3, V1, S0, S1
+    COPY        S0, A0
+    LIO         S1, 8010F290 % playerData
+    % Check if player have enough BP
+    JAL         ~Func:pause_get_total_equipped_bp_cost
+    NOP
+    % get badge bp cost
+    COPY        A0, V0
+    SLL         V0, S0, 10
+    SRA         V0, V0, 10
+    BEQ         V0, R0, .oD8
+    SLL         V0, V0, 5
+    LTBU        V1, V0 (800878FA)
+    SLL         V0, V1, 2
+    ADDU        V0, V0, V1
+    SLL         V0, V0, 2
+    LTB         V0, V0 (8008F072)
+    LB          V1, 8 (S1)
+    ADDU        V0, A0, V0
+    SLT         V1, V1, V0
+    BEQ         V1, R0, .oDC
+    ADDIU       A1, S1, 208 % equippedBadges
+    .oC8    
+    BEQ         R0, R0, .End
+    CLEAR       V0 % No BP
+    .oD8
+    ADDIU       A1, S1, 208 % equippedBadges
+    .oDC    
+    CLEAR       A0
+    .oE0
+    % Check if more badges can be equipped
+    LH          V0, 0 (A1)
+    BEQ         V0, R0, .oFC
+    NOP 
+    ADDIU       A0, A0, 1
+    SLTI        V0, A0, 64`
+    BNE         V0, R0, .oE0
+    ADDIU       A1, A1, 2
+    .oFC    
+    ADDIU       V1, R0, 64`
+    BEQ         A0, V1, .End
+    CLEAR       V0 % Not enough room
+    ORI         V0, R0, 1 % Badge can be equipped
+    .End    
+    POP         RA, A0, A1, A2, A3, V1, S0, S1
+    JR          RA
+    NOP
+}
+
+% Make sure all copies are next to the original badges, when you open the active badges list.
+%
+% ~Func:pause_badges_handle_input
+@Hook:Pause 8024929C
+{
+    JAL     ~Func:pause_badges_load_badges
+    NOP
+    LABU    V0, 8027039F % BadgeList % 0 = All, 1=Active
+    ORI     V1, R0, 1
+    BNE     V0, V1, .End
+    NOP
+    PUSH    A0, A1
+    LIO     A0, 8010F498 % activatedBadges
+    LIO     A1, 8010F518 % activateBadges(End)
+    JAL     $BadgeTab_SortCopies
+    RESERVED
+    LIO     A0, 80270180 % badgeListIDs
+    LIO     A1, 80270280 % badgeListIDs(End)
+    JAL     $BadgeTab_SortCopies
+    RESERVED
+    POP     A0, A1
+    .End
+    J       802492A4
+    NOP
+}
+
+% Move all badges copies next to the original badge.
+%
+% A0=badgeList(start)
+% A1=badgeList(End)
+#new:Function $BadgeTab_SortCopies
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, T0, T1, T2, T3
+    COPY    S0, A0 % badgeList (start)
+    COPY    S1, A1 % badgeList (End)
+    LIO     S2, $BadgeTab_ActiveBadges_Duplicated
+    CLEAR   S3
+    .Loop_FindCopies % search copies
+    LW      A0, 0 (S2)
+    BEQ     A0, R0, .ReadNextCopySlot
+    NOP
+    % copy found, check if is copy #1
+    LHU     A1, 0 (S2) % badgeID
+    LHU     A2, 2 (S2) % copyID
+    BEQ     A2, R0, .ReadNextCopySlot
+    NOP
+    % try to find where the original badge and the copy are placed
+    COPY    T0, S0 % copy badgeListIDs
+    .Loop_FindBadge_Original
+    LHU     T1, 0 (T0)
+    ADDIU   T0, T0, 2
+    BEQ     T0, S1, .ReadNextCopySlot % original couldn't be found
+    NOP
+    BNE     T1, A1, .Loop_FindBadge_Original
+    NOP
+    ADDI    T0, T0, -2
+    % original badge was found, now find the copy
+    COPY    T1, T0 % copy original badge pos
+    CLEAR   T2
+    .Loop_FindBadge_Copy
+    LHU     T3, 0 (T1)
+    ADDIU   T1, T1, 2
+    BEQ     T1, S1, .ReadNextCopySlot % copy couldn't be found
+    NOP
+    BNE     T3, A1, .Loop_FindBadge_Copy
+    NOP
+    % copy was found, check if this is the one we're looking for
+    BNEL    T2, A2, .Loop_FindBadge_Copy
+    ADDIU   T2, T2, 1
+    % this is the correct copy
+    ADDI    T1, T1, -2
+    % move the copy next to the original badge,
+    % and move all badges between them too.
+    %
+    % get copy new pos
+    ORI     T3, R0, 2 % because each badge uses 2 bytes
+    MULT    T3, A2 % A2=copyIndex
+    MFLO    T3
+    ADD     T0, T0, T3
+    COPY    T2, T1
+    % check if copy was already next to the original one
+    ADDI    T3, T2, -2
+    LHU     T3, 0 (T3)
+    BEQ     T3, A1, .ReadNextCopySlot
+    NOP
+    SH      R0, 0 (T1) % clear copy old position
+    .Loop_MoveBadges
+    ADDI    T2, T2, -2
+    LHU     T3, 0 (T2)
+    SH      T3, 2 (T2) % move badge to the right
+    % check if we have reached the new copy position
+    BNE     T0, T2, .Loop_MoveBadges
+    NOP
+    % we already moved all badges one position to the right
+    % now put the copy in a new position next to the original one
+    SH      A1, 0 (T2)
+    .ReadNextCopySlot
+    ADDIU   S2, S2, 4
+    ADDIU   S3, S3, 1
+    SLTIU   V0, S3, 64` % because only 64 badges can be active
+    BNE     V0, R0, .Loop_FindCopies
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, T0, T1, T2, T3
+    JR      RA
+    NOP
+}
+
+#export $IsBadgeActivated_Stack
+
+%================================================
+%                                               %
+%                  New Badges                   %
+%  Make possible to use badges with an item ID  %
+%  above 0x155                                  %
+%================================================
+
+% From ~func:pause_badges_load_badges
+@Function 13C114 % 80248DD4
+{
+    SLTI	V0, V0, 01FF % new cap
+}
+
+%================================================
+%                                               %
+%            Battle - Move Badges               %
+%      Add stack support for move badges        %
+%                                               %
+%================================================
+
+% For the actual damage boost, it's in each move .bpat file
+
+% Clear subMenu's icon IDs
+%
+% func_802634B8 (~Func:btl_init_menu_boots)
+@Hook:Battle 802634C0
+{
+    PUSH    RA
+    LIO     S4, 800DC070 % battleStatus
+    COPY    A0, S4
+    ADDIU   A0, A0, 1AE
+    JAL     ~Func:mem_clear
+    ORI     A1, R0, 48
+    POP     RA
+    J       802634C8
+    NOP
+}
+
+% Clear subMenu's icon IDs
+%
+% func_802636E4 (~Func:btl_init_menu_hammer)
+@Hook:Battle 802636EC
+{
+    PUSH    RA
+    LIO     S4, 800DC070 % battleStatus
+    COPY    A0, S4
+    ADDIU   A0, A0, 1AE
+    JAL     ~Func:mem_clear
+    ORI     A1, R0, 48
+    POP     RA
+    J       802636F4
+    NOP
+}
+
+% Don't add a move more than once.
+%
+% func_802634B8 (~Func:btl_init_menu_boots)
+@Hook:Battle 80263580
+{
+    ADDU	S1, V0, T1 % restore code
+    PUSH    RA, A0
+    JAL     $Function_MoveBadge_IsThisBadgeAlreadyInSubMenu
+    LHU	    A0, 0208 (A0) % get badgeID
+    BNE     V0, R0, .End
+    CLEAR   V0
+    LB	    V0, 0010 (S1) % restore code
+    .End
+    POP     RA, A0
+    J       80263588
+    NOP
+}
+
+% Don't add a move more than once.
+%
+% func_802636E4 (~Func:btl_init_menu_hammer)
+@Hook:Battle 802637AC
+{
+    ADDU	S1, V0, T1 % restore code
+    PUSH    RA, A0
+    JAL     $Function_MoveBadge_IsThisBadgeAlreadyInSubMenu
+    LHU	    A0, 0208 (A0) % get badgeID
+    BNE     V0, R0, .End
+    CLEAR   V0
+    LB	    V0, 0010 (S1) % restore code
+    .End
+    POP     RA, A0
+    J       802637B4
+    NOP
+}
+
+% Update badge FP cost - lock if not enough FP
+%
+% func_802634B8 (~Func:btl_init_menu_boots)
+@Hook:Battle 802635E8
+{
+    ADDU	S1, V0, T2 % restore code
+    PUSH    RA, V1
+    LIO     A0, 800DC070 % battleStatus
+    SLL     V1, S2, 1
+    ADDU    A0, A0, V1
+    JAL     $IsBadgeActivated_Stack
+    LHU     A0, 1AE (A0) % get move itemID
+    COPY    V1, V0
+    LB	    S0, 0011 (S1) % get move FP cost
+    MULT    S0, V1
+    MFLO    S0
+    .End
+    POP     RA, V1
+    J       802635F0
+    NOP
+}
+
+% Update badge FP cost - lock if not enough FP
+%
+% func_802636E4 (~Func:btl_init_menu_hammer)
+@Hook:Battle 80263814
+{
+    ADDU	S1, V0, T2 % restore code
+    PUSH    RA, V1
+    LIO     A0, 800DC070 % battleStatus
+    SLL     V1, S2, 1
+    ADDU    A0, A0, V1
+    JAL     $IsBadgeActivated_Stack
+    LHU     A0, 1AE (A0) % get move itemID
+    COPY    V1, V0
+    LB	    S0, 0011 (S1) % get move FP cost
+    MULT    S0, V1
+    MFLO    S0
+    .End
+    POP     RA, V1
+    J       8026381C
+    NOP
+}
+
+% Update badge FP cost - display
+%
+% ~Func:~Func:btl_state_update_player_menu
+@Hook:Battle 802A6874
+{
+    PUSH    RA, V1
+    LIO     A0, 800DC070 % battleStatus
+    SLL     AT, S3, 1
+    ADDU    A0, A0, AT
+    % check if current command is items, to don't stack costs, neccesary for Double Dip
+    LABU    V0, 800DC0B8 % Mario's current command
+    ORI     V1, R0, 2 % Items
+    BEQ     V0, V1, .End
+    LB	    V0, 0011 (S2) % get move FP cost
+    JAL     $IsBadgeActivated_Stack
+    LHU     A0, 1AE (A0) % get move itemID
+    COPY    V1, V0
+    LB	    V0, 0011 (S2) % get move FP cost
+    MULT    V0, V1
+    MFLO    V0
+    .End
+    POP     RA, V1
+    J       802A687C
+    COPY    A0, S7
+}
+
+% Substract the correct amount of FP with stack moves
+%
+% ~Func:deduct_current_move_fp
+@Hook:Battle 80263C04
+{
+    PUSH    RA, A0, A1
+    % check if current turn is partner
+    LAW     A1, 800DC068 % battleStatus
+    ORI     V0, R0, 13 % .BattleState:PartnerMove
+    BEQ     A1, V0, .End
+    LB	    S0, F071 (S0) % get FP cost
+    % check if current command is items
+    LABU    A1, 800DC0B8 % Mario's current command
+    ORI     V0, R0, 2 % Items
+    BEQ     A1, V0, .End
+    NOP
+    LBU     A1, 49 (A0) % get selected move index
+    SLL     A1, A1, 1
+    ADDU    A1, A0, A1
+    JAL     $IsBadgeActivated_Stack
+    LHU     A0, 1AE (A1) % get move itemID
+    MULT    S0, V0
+    MFLO    S0
+    .End
+    JAL     $Function_GlitzPit_NoFPChallenge % from `Battle_GlitzPit.patch`
+    NOP
+    POP     RA, A0, A1
+    J       80263C0C
+    LW	    S1, 00D8 (A0)
+}
+
+% A0=badgeID
+%
+% Returns a bool in `V0`
+#new:Function $Function_MoveBadge_IsThisBadgeAlreadyInSubMenu
+{
+    PUSH    A1, A2, A3
+    LIO     A1, 800DC070 % battleStatus
+    CLEAR   A2
+    CLEAR   V0
+    .Loop
+    LHU     A3, 1AE (A1) % subMenuIcon itemID
+    BEQL    A0, A3, .End
+    ORI     V0, R0, 1
+    ADDIU   A2, A2, 1
+    SLTIU   A3, A2, 24`
+    BNE     A3, R0, .Loop
+    ADDIU   A1, A1, 2
+    .End
+    POP     A1, A2, A3
+    JR      RA
+    NOP
+}
+
+% No longer read the #debuffType argument as a constant, neccesary to add stack support.
+%
+% PlayerDamageEnemy(API)
+@Hook:Battle 802742A8
+{
+    JAL     ~Func:get_variable
+    LW	    A1, 0000 (S0)
+    COPY    A0, S2
+    J       802742B0
+    ADDIU	S0, S0, 0004
+}
+
+% `Call  $GetStackBoost ( itemID boostAmount *out_1 *out_2 )`
+%
+% Check how many times a badge is equipped an add a damage boost
+%
+% per copy.
+%
+% It can save in 2 vars at the same time (neccesary for a few moves).
+#export:Function $GetStackBoost
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1)
+    COPY    S1, V0 % push boostAmount in S1
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % get itemID
+    JAL     $IsBadgeActivated_Stack
+    COPY    A0, V0
+    ADDI    V0, V0, -1
+    MULT    V0, S1
+    MFLO    S1
+    % save vars
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, 8 (A1)
+    JAL     ~Func:set_variable
+    COPY    A2, S1
+    % out2
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, C (A1)
+    JAL     ~Func:set_variable
+    COPY    A2, S1
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% `Call  $GetStackBoostDebuff ( itemID debuffKey boostAmount *out )`
+%
+% Check how many times a badge is equipped an add a turn boost per copy.
+#export:Function $GetStackBoostDebuff
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    COPY    S0, A0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 4 (A1)
+    COPY    S1, V0 % push debuffKey in S1
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 8 (A1)
+    COPY    S2, V0 % push boostAmount in S2
+    COPY    A0, S0
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % get itemID
+    JAL     $IsBadgeActivated_Stack
+    COPY    A0, V0
+    ADDI    V0, V0, -1
+    MULT    V0, S2
+    MFLO    S2
+    % apply boost to debuffKey
+    COPY    A2, S1
+    SLL	    A2, A2, 20`
+    SRL	    A2, A2, 28`
+    ADDU    A2, A2, S2 % turns boost
+    % check boost cap
+    SLTIU   V0, A2, 10`
+    BEQL    V0, R0, .ApplyBoostIntoKey
+    ORI     A2, R0, 9
+    .ApplyBoostIntoKey
+    SLL	    A2, A2, 8
+    % now apply turn's boost into debuffKey
+    LIO     A0, FFFFF0FF
+    AND     S1, S1, A0
+    OR      S1, S1, A2
+    % save vars
+    COPY    A0, S0
+    LW      A1, C (A0)
+    LW      A1, C (A1)
+    JAL     ~Func:set_variable
+    COPY    A2, S1
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+%================================================
+%                                               %
+%                Stack Support                  %
+%  Add stack support for some badges lacking it %
+%                                               %
+%================================================
+
+% From ~Func:calc_enemy_damage_target
+%
+% Fire Shield
+@Hook 1A61D0 % 802778F0
+{
+    PUSH    T0
+    % S0 = Amount to deal
+    % V0 = Amount of times this badge is active
+    COPY    T0, V0
+    LW	    V0, 0188 (S4) % get damage type for current attack
+    ANDI	V0, V0, 0002 % .Element:Fire
+    % Add Stack support
+    BNEL	V0, R0, .End
+    SUB     S0, S0, T0 % sub T0, instead of always substracting only 1
+    COPY	A0, S3
+    .End
+    POP     T0
+    J       80277904
+    NOP
+}
+
+% From ~Func:calc_player_damage_enemy
+%
+% Ice Power
+@Hook:Battle 80271F58
+{
+    PUSH    RA, A0, V0
+    % check if current attack had the ice element
+    %
+    % A0=currentAttackElement
+    ORI     V0, R0, 0008 % ~Flags:DamageType:Ice
+    AND     V0, A0, V0
+    BEQ     V0, R0, .End
+    NOP
+    % check if current enemy is weak to ice
+    %
+    % S5=enemy's defense
+    BGEZ    S5, .End
+    NOP
+    % enemy is weak to ice, give +1 more damage per Ice Power copy
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 00FA % .Item:IcePower
+    BEQ     V0, R0, .End
+    NOP
+    ADDI    V0, V0, -1
+    SUB     S5, S5, V0
+    .End
+    POP     RA, A0, V0
+    % restore vanilla code
+    LUI	    V0, 0800 % ~Flags:DamageType:IgnoreDefense
+    J       80271F60
+    AND	    V0, A0, V0
+}
+
+% From ~Func:spawn_drops
+%
+% Heart Finder
+@Hook 23B80 % 80048780
+{
+    PUSH    T0
+    % Add Stack support
+    %
+    % V0 = Amount of times this badge is active
+    ADDI    V0, V0, FFFF % sub 1
+    ORI     T0, R0, 2 % give 2 posible extra hearts for every Extra Heart Finder
+    MULT    V0, T0
+    MFLO    T0
+    CLEAR   A0
+    ADDU    A0, A0, T0
+    ADDIU	A0, A0, 2
+    .End
+    POP     T0
+    JAL     ~Func:rand_int
+    NOP
+    J       80048788
+    NOP
+}
+
+% From ~Func:spawn_drops
+%
+% Flower Finder
+@Hook 23E30 % 80048A30
+{
+    PUSH    T0
+    % Add Stack support
+    %
+    % V0 = Amount of times this badge is active
+    ADDI    V0, V0, FFFF % sub 1
+    ORI     T0, R0, 2 % give 2 posible extra flowers for every Extra Flower Finder
+    MULT    V0, T0
+    MFLO    T0
+    CLEAR   A0
+    ADDU    A0, A0, T0
+    ADDIU	A0, A0, 2
+    .End
+    POP     T0
+    JAL     ~Func:rand_int
+    NOP
+    J       80048A38
+    NOP
+}
+
+% From ~Func:spawn_drops
+%
+% Money Money
+@Hook 24008 % 80048C08
+{
+    PUSH    T0
+    % V0 = Amount of times this badge is active
+    BEQ 	V0, R0, .End
+    NOP
+    % Add Stack support
+    ORI     T0, R0, 2 % coins bonus x2
+    MULT    V0, T0
+    MFLO    T0
+    % S1 = Coins to spawn
+    MULT    S1, T0 % (Coins*(MoneyMoneyBadges*2))
+    MFLO    S1
+    .End
+    POP     T0
+    J       80048C10
+    NOP
+}
+
+% From ~Func:spawn_drops
+%
+% Pay-Off
+@Hook 23FCC % 80048BCC
+{
+    PUSH    T0, T1
+    % V0 = Amount of times this badge is active
+    COPY    T0, V0
+    LABU    V0, 800B0F1C % load DamageFromLastBattle
+    SAB     R0, 800B0F1C % nuke DamageFromLastBattle
+    % Add Stack support
+    ORI     T1, R0, 2 % coins bonus x2
+    MULT    T0, T1
+    MFLO    T0
+    MULT    V0, T0 % Multiply by DamageFromLastBattle
+    MFLO    V0
+    % S1 = Coins to spawn
+    ADDU	S1, S1, V0 % (Coins*(Pay-Off*2*DamageFromLastBattle))
+    POP     T0, T1
+    J       80048BE4
+    NOP
+}
+
+% Deep Focus P (previously Group Focus)
+%
+% This function is called in "00 Focus.bpat"
+#new:Function $Function_PartnerFocus % Function_802A15B0
+{
+    PUSH      S0, S1, RA
+    COPY      S1, A0
+    LA        V0, 8010F290
+    COPY      S0, V0
+    SW        R0, 84 (S1) % set $Script's Var0 as Zero
+    LB        V0, 28E (S0) % load Star Spirits saved
+    LH        V1, 290 (S0) % load current SP
+    SLL       V0, V0, 8
+    SLT       V1, V1, V0
+    BEQ       V1, R0, .o58
+    LI        V0, 1
+    JAL       $IsBadgeActivated_Stack
+    ORI       A0, R0, 0143 % .Item:DeepFocusP
+    % get amount to give
+    ORI       A0, R0, 40 % give an extra 0x40 for each Group Focus badge
+    MULT      A0, V0
+    MFLO      V0
+    JAL       ~Func:add_SP
+    ADDIU     A0, V0, 80
+    LB        V0, 28E (S0) % load Star Spirits saved
+    LH        V1, 290 (S0) % load current SP
+    SLL       V0, V0, 8
+    BNE       V1, V0, .o60
+    LI        V0, 2
+    .o58
+    SW        V0, 84 (S1) % set $Script's Var0 as 1
+    LI        V0, 2
+    .o60
+    POP       S0, S1, RA
+    JR        RA
+    NOP
+}
+
+#export $Function_PartnerFocus
+
+% HP Drain - Add stack support, heal +1 for every extra badge
+%
+% From ~Func:btl_state_update_end_player_turn
+@Hook:Battle 80246554
+{
+    PUSH    RA, A0, V0
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 00F5 % .Item:HPDrain
+    ADDI    V0, V0, -1
+    LB	    S5, 0089 (S3) % hpDrain Byte
+    ADDU    S5, S5, V0 % add +1 per extra HPDrain
+    POP     RA, A0, V0
+    J       8024655C
+    SB	    R0, 0089 (S3)
+}
+
+/% Scrapped
+
+% HP Drain - Remove the 5HP cap
+@Function 1A09B8 % 802720D8
+{
+    ORI     V1, R0, 1
+}
+
+From ~Func:calc_player_damage_enemy
+%
+% HP Drain - Add stack support and change HP Drain's behavior to be the same as TTYD
+% (Always recover the same amount it just depends on the amount of HP Drains equipped also remove the 5HP cap)
+@Function 1A0984 % 802720A4
+{
+    % S0 = Damage
+    % V0 = amount of times this badge is active
+    J       802720B0
+    ADDI    S0, S0, FFFF % don't stack the power reduction
+    %SUBU    S0, S0, V0 % use this line instead if you want to stack the power reduction
+}%/
+
+/% Scrapped
+
+This isn't exactly a TTYD thing but I wanted to do it
+% Skip each respective happy or drain badges if Mario have max HP or FP
+%
+% HP Badges
+@Hook 174DAC % 802464CC
+{
+    % Check if player has max HP
+    LABU    V0, 8010F292 % current HP
+    LABU    V1, 8010F293 % max HP
+    SLTU    V0, V0, V1
+    BEQ     V0, R0, .SkipHappyBadges_HP
+    NOP
+    % restore vanilla code
+    LAW     V0, 800DC074 % load battleFlags2
+    J       802464D4
+    RESERVED
+    .SkipHappyBadges_HP
+    J       80246504
+    NOP
+}
+
+% FP Badges
+@Hook 174DE4 % 80246504
+{
+    % Check if player has max FP
+    LABU    V0, 8010F295 % current FP
+    LABU    V1, 8010F296 % max FP
+    SLTU    V0, V0, V1
+    BEQ     V0, R0, .SkipHappyBadges_FP
+    NOP
+    % restore vanilla code
+    JAL	    ~Func:is_ability_active
+    ADDIU	A0, R0, 0034 % .Ability:HappyFlower
+    J       8024650C
+    NOP
+    .SkipHappyBadges_FP
+    J       802465D4
+    ADDIU	V0, R0, 0005
+}%/
+
+%================================================
+% How Pretty Lucky & Lucky Day exactly works?
+%================================================
+% I always had this question but how does exactly Pretty Lucky & Lucky Day work and also they stack?
+% I always assumed if you have both equipped you have more chances to get a Lucky, and now I have
+% seen the code that's partially true.
+
+% The Lucky badges basically does this, if you have "Pretty Lucky" equipped you have a 10% chance to
+% get a Lucky, if you equip "Lucky Day" you have a 20% chance
+
+% If you have both the game will just "roll the dice" twice, will get a random number between 0 - 100
+% and will check if the number is less than 10 (because Pretty Lucky), if wasn't true, roll the dice again but now, check if
+% the number is less than 20 (because Lucky Day) and that's it, lol.
+%================================================
+
+% From ~Func:calc_enemy_test_target
+%
+% Pretty Lucky
+@Hook 1A5C38 % 80277358
+{
+    PUSH    S0, T0
+    COPY    S0, V0
+    .Loop
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    % S0 = Amount of times this badge is active
+    ORI     T0, R0, 10` % 10% to trigger
+    SLT 	V0, V0, T0
+    BNE	    V0, R0, .End
+    NOP
+    % check copies left
+    ADDI    S0, S0, -1
+    BNE     S0, R0, .Loop
+    NOP
+    .End
+    POP     S0, T0
+    J       80277364
+    NOP
+}
+
+% From ~Func:calc_enemy_test_target
+%
+% Close Call
+@Hook:Battle 1A5C70 % 80277390
+{
+    PUSH    S1, T0
+    % get how many Close Calls are Equipped once again
+    COPY    A0, S0 % S0 = $actor
+    JAL     ~Func:player_team_is_ability_active
+    ADDIU	A1, R0, 0021
+    COPY    S1, V0
+    .Loop
+    JAL     ~Func:rand_int
+    ORI     A0, R0, 100`
+    % S1 = Amount of times this badge is active
+    ORI     T0, R0, 001E % 30% to trigger
+    SLT 	V0, V0, T0
+    BNE	    V0, R0, .End
+    NOP
+    % check copies left
+    ADDI    S1, S1, -1
+    BNE     S1, R0, .Loop
+    NOP
+    .End
+    POP     S1, T0
+    BNEL	V0, R0, .TriggerLucky
+    ADDIU	S1, R0, 0005
+    % Don't get trigger lucky, now check the Lucky Day Badge
+    J       802773A4
+    NOP
+    .TriggerLucky
+    J       802773D0
+    NOP
+}
+
+% From ~Func:calc_enemy_test_target
+%
+% Lucky Day
+@Hook 1A5C90 % 802773B0
+{
+    PUSH    S0, T0
+    COPY    S0, V0
+    BNE     V0, R0, .Loop
+    NOP
+    % Lucky Day isn't active
+    POP     S0, T0
+    J       802773D4
+    ADDIU	V0, R0, 0006
+    .Loop
+    JAL	    ~Func:rand_int
+    ADDIU	A0, R0, 0064
+    % Add Stack support
+    %
+    % S0 = amount of times this badge is active
+    ORI     T0, R0, 20`
+    SLTU	V0, V0, T0
+    BNE	    V0, R0, .End
+    NOP
+    % check copies left
+    ADDI    S0, S0, -1
+    BNE     S0, R0, .Loop
+    NOP
+    .End
+    POP     S0, T0
+    J       802773C4
+    NOP
+}
+
+% From ~Func:calc_player_damage_enemy
+%
+% P-Up, D-Down (Add stack support for the power, it already stacks the defense)
+@Function 1A0944 % 80272064
+{
+    % S0 = Amount to deal
+    % V0 = amount of times this badge is active
+    ADDU   S0, S0, V0
+}
+
+% From ~Func:calc_player_damage_enemy
+%
+% P-Down, D-Up (Add stack support for the power, it already stacks the defense)
+@Function 1A0958 % 80272078
+{
+    % S0 = Amount to deal
+    % V0 = amount of times this badge is active
+    SUBU    S0, S0, V0
+}
+
+% From ~Func:calc_player_damage_enemy
+%
+% Power Rush & Mega Rush
+@Hook 1A0A64 % 80272184
+{
+    PUSH    RA, A0, T0, T1, T2
+    % get amount of times each Badge is Active
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 010D % .Item:PowerRush
+    COPY    T0, V0
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 00F9 % .Item:MegaRush
+    COPY    T1, V0
+    % T0 = Amount of times Power Rush is active
+    % T1 = Amount of times Mega Rush is active
+    % S0 = Amount to deal
+    LBU	    V1, 0099 (S4) % BattleStatus(0x99)=RushesStatus % 1 = Mega Rush, 2 = Power Rush
+    .Danger
+    ANDI	V0, V1, 0002
+    BEQ 	V0, R0, .Peril
+    NOP
+    % Power Rush
+    ORI     T2, R0, 2 % Add +2 for each Power Rush
+    MULT    T0, T2
+    MFLO    T0
+    ADDU	S0, S0, T0
+    .Peril
+    ANDI	V0, V1, 0001
+    BEQ 	V0, R0, .End
+    NOP
+    % Mega Rush
+    ORI     T2, R0, 4 % Add +4 for each Mega Rush
+    MULT    T1, T2
+    MFLO    T1
+    ADDU	S0, S0, T1
+    .End
+    POP     RA, A0, T0, T1, T2
+    J       802721A0
+    NOP
+}
+
+
+% Last Stand
+%
+% Divide by damage/2(+ extraBadges), damage rounds down, unlike TTYD.
+%
+% ~Func:calc_enemy_damage_target
+@Hook:Battle 80277950
+{
+    PUSH    RA, A0
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0111 % .Item:LastStand
+    ADDI    V0, V0, -1 % get copies
+    ORI     A0, R0, 2 % divide by 2
+    ADD     A0, A0, V0
+    % S0=damage to deal
+    DIV     S0, A0
+    MFLO    S0
+    POP     RA, A0
+    J       80277958
+    NOP
+}
+
+%==============
+% Double Dip
+%
+% Make Double Dip stacking to work like in TTYD.
+%===============
+
+% Clear subMenu's icon IDs
+%
+% ~Func:btl_state_update_player_menu
+@Hook:Battle 802A62D4
+{
+    PUSH    A0, A1
+    LIO     A0, 800DC070 % battleStatus
+    ADDIU   A0, A0, 1AE
+    JAL     ~Func:mem_clear
+    ORI     A1, R0, 48
+    POP     A0, A1
+    % restore code
+    SB	    V0, 004C (S6)
+    J       802A62DC
+    ADDU	V0, S6, S3
+}
+
+% If player has more than one Double Dip add Triple dip as the 2nd option.
+%
+% ~Func:btl_state_update_player_menu
+@Hook:Battle 802A63D0
+{
+    PUSH    A0, S0
+    LH	    S0, 0208 (A2) % get badgeID
+    COPY    V0, S0
+    BEQL    V0, R0, .EmptySlot
+    ADDIU	S3, S3, 0001
+    % skip if current item isn't Double Dip
+    ORI     A0, R0, 00E9 % .Item:DoubleDip
+    BNE     A0, V0, .End
+    NOP
+    JAL     $Function_MoveBadge_IsThisBadgeAlreadyInSubMenu
+    COPY    A0, V0
+    BEQ     V0, R0, .End
+    NOP
+    % Double Dip has been already added, check if Triple Dip has already been added (thanks to 2 Double Dips)
+    JAL     $Function_MoveBadge_IsThisBadgeAlreadyInSubMenu
+    ORI     A0, R0, 0106 % .Item:TripleDip
+    BEQ     V0, R0, .End
+    ORI     S0, R0, 0106 % add Triple Dip to the menu
+    % Double and Triple are already in the menu, don't add more stuff
+    CLEAR   S0
+    .End
+    COPY    V0, S0
+    POP     A0, S0
+    J       802A63DC
+    NOP
+    .EmptySlot
+    COPY    V0, S0
+    POP     A0, S0
+    J       802A6448
+    NOP
+}
+
+% Complements above hook, same purpose
+%
+% ~Func:btl_state_update_player_menu
+@Hook:Battle 802A6414
+{
+    JAL     $Function_MoveBadge_IsThisBadgeAlreadyInSubMenu
+    ORI     A0, R0, 00E9 % .Item:DoubleDip
+    BEQ     V0, R0, .End
+    NOP
+    % there's a double dip added, check if triple is already added
+    JAL     $Function_MoveBadge_IsThisBadgeAlreadyInSubMenu
+    ORI     A0, R0, 0106 % .Item:TripleDip
+    BNE     V0, R0, .Skip
+    NOP
+    % add Triple Dip instead of 2 Double Dips
+    ADDU	A0, S6, S4
+    SB	    A1, 01DE (A0)
+    J       802A6420
+    ORI     V0, R0, 0106 % .Item:TripleDip
+    .End
+    ADDU	A0, S6, S4
+    J       802A641C
+    SB	    A1, 01DE (A0)
+    .Skip
+    J       802A6448
+    ADDIU	S3, S3, 0001
+}
+
+/% Refund
+
+Refund's code is actually on every item script, isn't global
+and can't be used in globals because it uses $End pointers
+so I will just leave the draft here, you can find this function
+on every Item Script in /battle/item/patch
+
+#new:Function $Function_Refund % Function_802A1000
+{
+    ADDIU     SP, SP, FF98
+    SW        S5, 44 (SP)
+    COPY      S5, A0
+    SW        S1, 34 (SP)
+    CLEAR     S1
+    LI        A1, 1D
+    SDC1      F20, 50 (SP)
+    MTC1      R0, F20
+    LA        V0, 800DC070
+    SW        RA, 48 (SP)
+    SW        S4, 40 (SP)
+    SW        S3, 3C (SP)
+    SW        S2, 38 (SP)
+    SW        S0, 30 (SP)
+    SDC1      F24, 60 (SP)
+    SDC1      F22, 58 (SP)
+    LW        S3, D8 (V0) % load $playerActor pointer
+    LH        V0, 17A (V0) % load selectedItem
+    COPY      A0, S3
+    SLL       V0, V0, 5
+    LTH       S2, V0 (800878EC)
+    % get current actor pointer
+    JAL       ~Func:get_actor
+    LW        A0, 148 (S5) % load self actor pointer
+    COPY      A0, S3 % restore A0
+    COPY      S3, V0
+    LBU       V0, 191 (S3) % load actor's size
+    LWC1      F2, 148 (S3) % load actor's Y pos (float)
+    MTC1      V0, F0
+    NOP
+    CVT.S.W   F0, F0
+    ADD.S     F22, F2, F0
+    JAL       ~Func:player_team_is_ability_active
+    ORI       A1, R0, 1D
+    COPY      S4, V0 % copy in S4
+    BEQL      V0, R0, .o1A0
+    SW        S1, 84 (S5) % clear $script's var0 and finish
+    BLEZ      S2, .o19C
+    LUI       A0, 51EB
+    ORI       A0, A0, 851F
+    SLL       V1, S2, 2
+    ADDU      V1, V1, S2
+    SLL       V0, V1, 4
+    SUBU      V0, V0, V1
+    ADDIU     V0, V0, 63
+    MULT      V0, A0
+    SRA       V0, V0, 1F
+    MFHI      T0
+    SRA       V1, T0, 5
+    SUBU      S2, V1, V0
+    SLT       V0, S1, S2
+    BEQ       V0, R0, .o124
+    COPY      S0, S1
+    % S2 = Amount of coins to give
+    % S4 = Amount of times this badge is active
+    %
+    % Double the amount for each Refund copy
+    MULT      S2, S4
+    MFLO      S2
+    LI        S4, 17
+    LIF       F24, 30.0
+    LI        S1, 1
+    .oD4
+    LWC1      F0, 144 (S3) % load actor's X pos (float)
+    LWC1      F2, 14C (S3) % load actor's Z pos (float)
+    TRUNC.W.S F4, F20
+    SWC1      F4, 18 (SP)
+    LI        A0, 157
+    SW        S1, 14 (SP)
+    ADDIU     S1, S1, 3
+    ADDIU     S0, S0, 1
+    MFC1      A2, F22
+    MFC1      A1, F0
+    MFC1      A3, F2
+    ADD.S     F20, F20, F24
+    SW        S4, 10 (SP)
+    JAL       ~Func:make_item_entity
+    SW        R0, 1C (SP)
+    JAL       ~Func:add_coins
+    LI        A0, 1
+    SLT       V0, S0, S2
+    BNE       V0, R0, .oD4
+    NOP
+    .o124
+    SLL       V0, S0, 1
+    ADDU      V0, V0, S0
+    ADDIU     S1, V0, 1E
+    LWC1      F0, 144 (S3) % load actor's X pos (float)
+    LWC1      F22, 148 (S3) % load actor's Y pos (float)
+    LWC1      F2, 14C (S3) % load actor's Z pos (float)
+    LAW       A0, 80077410
+    ADDIU     V0, SP, 20
+    SW        V0, 10 (SP)
+    ADDIU     V0, SP, 24
+    SW        V0, 14 (SP)
+    MFC1      A1, F0
+    MFC1      A2, F22
+    MFC1      A3, F2
+    ADDIU     V0, SP, 28
+    JAL       ~Func:get_screen_coords
+    SW        V0, 18 (SP)
+    LA        A0, 80108A64
+    JAL       ~Func:create_hud_element
+    NOP
+    LW        A1, 20 (SP)
+    LW        A2, 24 (SP)
+    COPY      A0, V0
+    SAW       A0, $End[0]
+    ADDIU     A1, A1, 24
+    JAL       ~Func:set_hud_element_render_pos
+    ADDIU     A2, A2, FFC1
+    .o19C
+    SW        S1, 84 (S5) % write script's var0
+    .o1A0
+    LW        RA, 48 (SP)
+    LW        S5, 44 (SP)
+    LW        S4, 40 (SP)
+    LW        S3, 3C (SP)
+    LW        S2, 38 (SP)
+    LW        S1, 34 (SP)
+    LW        S0, 30 (SP)
+    LDC1      F24, 60 (SP)
+    LDC1      F22, 58 (SP)
+    LDC1      F20, 50 (SP)
+    LI        V0, 2
+    JR        RA
+    ADDIU     SP, SP, 68
+}%/
+
+% From $world/action/src/01 Walk.wscr - $Function_Init
+%
+% Slow Go
+@Hook E238E8 % 802B6208
+{
+    PUSH    F0, F2
+    JAL	    ~Func:is_ability_active
+    ADDIU	A0, R0, 000B
+    % V0 = amount of times this badge is active
+    BEQ 	V0, R0, .SkipSlowGo
+    NOP
+    % Slow Go is active
+    LIF     F0, 1.0 % subtract 1.0 per Slow Go copy
+    ADDI    V0, V0, FFFF
+    MTC1    V0, F2
+    CVT.S.W F2, F2 % convert to float
+    MUL.S   F2, F0, F2
+    LIF     F0, 2.0 % default walk speed
+    SUB.S   F0, F0, F2
+    LIF     F2, 0.0
+    % Check if the value isn't negative
+    C.LT.S  F0, F2
+    BC1F    .NotNegative
+    NOP
+    % If the value became negative set the value to zero
+    LIF     F0, 0.0
+    .NotNegative
+    SAF     F0, 8010F020 % save walk speed
+    SAF     F0, 8010F01C % save current speed
+    POP     F0, F2
+    J       802B6254
+    NOP
+    .SkipSlowGo
+    LIF     F0, 2.0 % default walk speed
+    SAF     F0, 8010F020 % save walk speed
+    SAF     F0, 8010F01C % save current speed
+    POP     F0, F2
+    J       802B6218
+    NOP
+}
+
+% Dizzy Attack
+%
+% func_80261D98
+@Hook:Battle 80261DAC
+{
+    PUSH    V0
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 011D % .Item:DizzyAttack
+    ADDI    V0, V0, -1
+    LW      A0, 10 (SP) % pop V0
+    ADDIU	A1, R0, 0004
+    CLEAR   A2
+    JAL	    ~Func:inflict_status_set_duration
+    ADDIU	A3, V0, 2 % debuff duration
+    POP     R0
+    J       80261DBC
+    NOP
+}
+
+% From $world/action/src/1A Spin.wscr - $Function_Init
+%
+% Speedy Spin
+@Hook E25E70 % 802B6110
+{
+    PUSH      F4
+    JAL       ~Func:is_ability_active
+    ORI       A0, R0, 27
+    COPY      S4, V0
+    BEQ       V0, R0, .End
+    ORI       V0, R0, 1E
+    % S4 = amount of times this badge is active
+    ADDI      S4, S4, FFFF
+    MTC1      S4, F4
+    CVT.S.W   F4, F4 % convert to float
+    LIF       F2, 1.0 % Add 1.0 per Speedy copy
+    MUL.S     F4, F4, F2
+    ORI       S2, S2, 1
+    SH        V0, 2C (S0)
+    LBU       V1, 2D (S0)
+    LIF       F0, 2.684375 % Speedy Spin original speed
+    ADD.S     F0, F0, F4 % sum base value + stacks bonuses
+    LIF       F2, 0.9
+    ORI       V0, R0, 14
+    SWC1      F20, 20 (S0)
+    SH        V0, 2E (S0)
+    SB        V1, 3 (S0)
+    SWC1      F0, 24 (S0)
+    SWC1      F2, 28 (S0)
+    .End
+    POP     F4
+    J       802B615C
+    NOP
+}
+
+% Activates Badge Cap - Patch warning message
+@Data 162BE4
+{ $String_TooManyBadges }
+
+#string $String_TooManyBadges
+{
+Badges inventory full![End]
+}
+
+% Make warning box larger
+@Function:Pause 80248CD0
+{
+    ADDIU	    V0, R0, 00D2 % x size
+}

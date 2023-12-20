@@ -1,0 +1,331 @@
+% Script File: sbk_05.mscr
+% Decoded from: 0 to 18D0 (sbk_05)
+
+#define .NpcID:Pokey_00             00
+#define .NpcID:Pokey_01             01
+#define .NpcID:Pokey_02             02
+#define .NpcID:Pokey_03             03
+#define .NpcID:Pokey_04             04
+#define .NpcID:Pokey_05             05
+#define .NpcID:Pokey_06             06
+#define .NpcID:Pokey_07             07
+#define .NpcID:Pokey_08             08
+#define .NpcID:Pokey_09             09
+
+#new:Function $Function_80240000
+{
+    0:  MTC1      R0, F0
+    4:  ADDIU     SP, SP, FFE0
+    8:  MFC1      A1, F0
+    C:  CLEAR     A0
+   10:  SW        RA, 18 (SP)
+   14:  SW        R0, 14 (SP)
+   18:  SWC1      F0, 10 (SP)
+   1C:  COPY      A2, A1
+   20:  JAL       ~Func:playFX_82
+   24:  COPY      A3, A1
+   28:  LW        RA, 18 (SP)
+   2C:  LI        V0, 2
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 20
+}
+
+PADDING: 80240038 to 80240040 (00000038 to 00000040)
+00000000 00000000
+
+#new:Function $Function_80240040
+{
+    0:  LW        V1, 148 (A0)
+    4:  LI        V0, 3
+    8:  SB        V0, B5 (V1)
+    C:  JR        RA
+   10:  LI        V0, 2
+}
+
+PADDING: 80240054 to 80240060 (00000054 to 00000060)
+00000000 00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -475.0    0.0    0.0   90.0
+	~Vec4f:Entry1 %  475.0    0.0    0.0  270.0
+	~Vec4f:Entry2 %    0.0    0.0 -475.0  180.0
+	~Vec4f:Entry3 %    0.0    0.0  475.0    0.0
+	~Vec4f:Entry4 %  157.0  200.0 -338.0   90.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main
+	[EntryList]   $EntryList
+	[EntryCount]  00000005
+	[Background]  80200000
+	[MapTattle]   00190066
+}
+
+#new:Script $Script_ExitWalk_802400F0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry0 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802418B0 00000001 ) % sbk_04
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_8024014C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802418B8 00000000 ) % sbk_06
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_802401A8
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry3 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_802418C0 00000002 ) % sbk_15
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240204
+{
+    0:  Bind  $Script_ExitWalk_802400F0 .Trigger:FloorAbove ~Collider:deiliw 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024014C .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   38:  Bind  $Script_ExitWalk_802401A8 .Trigger:FloorAbove ~Collider:deilis 00000001 00000000
+   54:  Return
+   5C:  End
+}
+
+#new:Script $Script_EnterWalk_80240268
+{
+    0:  Call  GetEntryID    ( *Var0 )
+   10:  Switch  *Var0
+   1C:  	Case  ==  ~Entry:Entry4
+   28:  		Exec  $Script_80240204
+   34:  	Default
+   3C:  		Set   *Var0  $Script_80240204
+   4C:  		Exec  EnterWalk
+   58:  EndSwitch
+   60:  Return
+   68:  End
+}
+
+#new:Script_Main $Script_Main
+{
+    0:  Set   *GB_WorldLocation  .Location:DryDryDesert
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  If  *GB_StoryProgress  ==  .Story:Ch2_GotPulseStone % FFFFFFC1
+   30:  	Call  DisablePulseStone ( .False )
+   40:  EndIf
+   48:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   68:  Call  SetCamBGColor ( .Cam:Default  0`  0`  0` )
+   84:  Call  SetCamEnabled ( .Cam:Default .True )
+   98:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   AC:  Call  MakeNpcs      ( .False $NpcGroupList_80241828 )
+   C0:  ExecWait  $Script_80240400
+   CC:  Call  $Function_80240000 ( )
+   D8:  Call  SetMusicTrack ( 00000000 .Song:DryDryDesert 00000000 00000008 )
+   F4:  Exec  $Script_EnterWalk_80240268
+  100:  Wait  1`
+  10C:  Return
+  114:  End
+}
+
+PADDING: 802403F4 to 80240400 (000003F4 to 00000400)
+00000000 00000000 00000000
+
+#new:Script $Script_80240400
+{
+    0:  Call  MakeItemEntity    ( .Item:FireFlower ~Vec3d:Item80240400 .ItemSpawnMode:Fixed_NeverVanish *GF_SBK05_Item_FireFlower )
+   24:  Return
+   2C:  End
+}
+
+PADDING: 80240434 to 80240440 (00000434 to 00000440)
+00000000 00000000 00000000
+
+#new:AISettings $AISettings_80240440
+{
+    1.8 % move speed
+    50` % move time
+    10` % wait time
+  250.0 % alert radius
+    0.0
+    2`
+    3.5 % chase speed
+    45`
+    6`
+  300.0 % chase radius
+    0.0
+    1`
+}
+
+#new:Script $Script_NpcAI_80240470
+{
+    0:  Call  $Function_80240040 ( )
+    C:  Call  DoBasicAI ( $AISettings_80240440 )
+   1C:  Return
+   24:  End
+}
+
+#new:NpcSettings $NpcSettings_8024049C
+{
+	00000000 0048000F 00000000 00000000 $Script_NpcAI_80240470 80077F70 00000000 8007809C
+	00000000 00000000 00090000
+}
+
+#new:NpcGroup $NpcGroup_802404C8
+{
+	.NpcID:NPC_Pokey_00 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_00 % -280 0 -110
+	00002C00 00000000 00000000 00000000 000000B4
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_00
+	~AnimationTable:NPC_Pokey_00 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_802406B8
+{
+	.NpcID:NPC_Pokey_01 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_01 % -200 0 -80
+	00002C00 00000000 00000000 00000000 00000078
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_01
+	~AnimationTable:NPC_Pokey_01 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_802408A8
+{
+	.NpcID:NPC_Pokey_02 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_02 % -160 0 -225
+	00002C00 00000000 00000000 00000000 0000005A
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_02
+	~AnimationTable:NPC_Pokey_02 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80240A98
+{
+	.NpcID:NPC_Pokey_03 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_03 % -100 0 70
+	00002C00 00000000 00000000 00000000 0000010E
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_03
+	~AnimationTable:NPC_Pokey_03 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80240C88
+{
+	.NpcID:NPC_Pokey_04 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_04 % -10 0 30
+	00002C00 00000000 00000000 00000000 00000050
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_04
+	~AnimationTable:NPC_Pokey_04 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80240E78
+{
+	.NpcID:NPC_Pokey_05 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_05 % 20 0 -110
+	00002C00 00000000 00000000 00000000 0000010E
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_05
+	~AnimationTable:NPC_Pokey_05 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80241068
+{
+	.NpcID:NPC_Pokey_06 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_06 % 170 0 -50
+	00002C00 00000000 00000000 00000000 0000005A
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_06
+	~AnimationTable:NPC_Pokey_06 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80241258
+{
+	.NpcID:NPC_Pokey_07 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_07 % 250 0 130
+	00002C00 00000000 00000000 00000000 0000005A
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_07
+	~AnimationTable:NPC_Pokey_07 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80241448
+{
+	.NpcID:NPC_Pokey_08 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_08 % 340 0 200
+	00002C00 00000000 00000000 00000000 0000005A
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_08
+	~AnimationTable:NPC_Pokey_08 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80241638
+{
+	.NpcID:NPC_Pokey_09 $NpcSettings_8024049C ~Vec3f:NPC_Pokey_09 % -150 0 360
+	00002C00 00000000 00000000 00000000 0000010E
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_09
+	~AnimationTable:NPC_Pokey_09 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroupList $NpcGroupList_80241828
+{
+	00000001 $NpcGroup_802404C8 0A000001
+	00000001 $NpcGroup_802406B8 0A000001
+	00000001 $NpcGroup_802408A8 0A000001
+	00000001 $NpcGroup_80240A98 0A020001
+	00000001 $NpcGroup_80240C88 0A020001
+	00000001 $NpcGroup_80240E78 0A030001
+	00000001 $NpcGroup_80241068 0A010001
+	00000001 $NpcGroup_80241258 0A010001
+	00000001 $NpcGroup_80241448 0A010001
+	00000001 $NpcGroup_80241638 0A010001
+	00000000 00000000 00000000
+}
+
+PADDING: 802418AC to 802418B0 (000018AC to 000018B0)
+00000000
+
+#new:ASCII $ASCII_802418B0
+{
+	"sbk_04"
+}
+
+#new:ASCII $ASCII_802418B8
+{
+	"sbk_06"
+}
+
+#new:ASCII $ASCII_802418C0
+{
+	"sbk_15"
+}
+
+PADDING: 802418C8 to 802418D0 (000018C8 to 000018D0)
+00000000 00000000
+

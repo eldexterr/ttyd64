@@ -1,0 +1,160 @@
+% Heal partner too.
+
+#alias $Function_802A18E8 $Function_ShowFlyingHeart
+#alias $Function_802A19A8 $Function_ShowFlyingFlower
+#alias $Function_802A1840 $Function_HealHP
+#alias $Function_802A1894 $Function_HealFP
+#alias $Function_802A17D4 $Function_HealDebuffs
+
+#delete $Script_802A21A0 % is $Script_FlyTowardsMario
+
+@ $Script_UsePower {
+    ExecWait $Script_Refresh
+    Return
+    End
+}
+
+#new:Script $Script_Refresh
+{
+    0:  ExecWait  $Script_802A1A70
+    C:  SetConst  *Var0  00190001
+   1C:  ExecWait  $Script_FlyTowardsMario
+   28:  Call  SetNpcAnimation   ( 00000064 00190002 )
+   3C:  Wait  16`
+   48:  Thread
+   50:  	Wait  10`
+   5C:  	Call  UseBattleCamPreset    ( 00000002 )
+   6C:  EndThread
+   74:  Call  PlaySound     ( 00000242 )
+   84:  Call  EnableNpcBlur ( 00000064 .True )
+   98:  Call  $Function_802A1518    ( 00000064 )
+   A8:  Call  EnableNpcBlur ( 00000064 .False )
+   BC:  Call  DeleteNpc     ( 00000064 )
+   CC:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+   E8:  Add   *Var0  00000000
+   F8:  Add   *Var1  00000023
+  108:  Call  $Function_ShowFlyingHeart    ( *Var0 *Var1 *Var2 00000005 )
+  124:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  140:  Add   *Var0  00000014
+  150:  Add   *Var1  00000019
+  160:  Call  $Function_ShowFlyingFlower    ( *Var0 *Var1 *Var2 00000005 )
+  17C:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  198:  Add   *Var1  00000019
+  1A8:  Call  802D7520      ( *Var0 *Var1 *Var2 00000005 )
+  1C4:  Call  $Function_HealHP    ( 00000005 )
+  1D4:  Call  $Function_HealFP    ( 00000005 )
+  1E4:  Call  $Function_HealDebuffs ( )
+        Call $GetPartnerHP_API ( *Var0 )
+        If *Var0 > 0
+            Call    $Heal_PlayerTeam ( .Actor:Partner 5 )
+            Call    $Function_ClearDebuffs    ( .Actor:Partner )
+            Call    GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+            Add     *Var0 20` % x
+            Add     *Var1 25` % y
+            Call    $Function_ShowFlyingHeart    ( *Var0 *Var1 *Var2 5 )
+            % sparkles FX
+            Call    GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+            Add     *Var1  25` % y
+            Call    802D7520  ( *Var0 *Var1 *Var2 5 )
+        EndIf
+  1F0:  Wait  30`
+  1FC:  Call  80276EFC ( )
+  208:  ExecWait  $Script_802A27FC
+  214:  Return
+  21C:  End
+}
+
+#new:Script $Script_FlyTowardsMario % Script_802A21A0
+{
+    0:  Wait  8`
+    C:  Call  SetForegroundModelsVisible    ( .False )
+   1C:  Call  8024E664  ( 00000049 )
+   2C:  Call  MoveBattleCamOver (  1` )
+   3C:  Call  PlaySound ( 00002041 )
+   4C:  Call  CreateNpc ( 00000064 *Var0 )
+   60:  Call  $Function_802A14E8 ( )
+   6C:  Call  SetNpcFlagBits    ( 00000064 00040000 .True )
+   84:  Call  SetNpcPos ( 00000064  -75`  150`  0` )
+   A0:  Call  SetNpcDecoration  ( 00000064 00000000 .NpcDecoration:WhiteGlowBehind )
+   B8:  Call  $Function_802A116C    ( FFFFFFB5 000000A7 00000000 )
+   D0:  Wait  10`
+   DC:  Call  EnableNpcBlur     ( 00000064 .True )
+   F0:  Set   *Var0  00000000
+  100:  Loop  00000008
+  10C:  	Add   *Var0  00000043
+  11C:  	Call  SetNpcRotation    ( 00000064 00000000 *Var0 00000000 )
+  138:  	Wait  1`
+  144:  EndLoop
+  14C:  Wait  10`
+  158:  Call  EnableNpcBlur ( 00000064 .False )
+  16C:  Thread
+  174:  	Wait  10`
+  180:  	Call  UseBattleCamPreset    ( 00000045 )
+  190:  EndThread
+  198:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  1B4:  Add   *Var1  00000032 % y
+        Call $GetPartnerHP_API ( *Var3 )
+        If *Var3 > 0
+            % Fly to the center of both Mario & Partner
+            Call  $GetMarioPos ( *Var3 )
+            If *Var3 == 0 % Partner is in front
+                  Add   *Var0 25` % x
+            Else
+                  Sub   *Var0 25` % x
+            EndIf
+        EndIf
+  1C4:  Call  NpcFlyTo  ( 00000064 *Var0 *Var1 *Var2  30`  0` .Easing:CosInOut )
+  1EC:  Call  SetForegroundModelsVisible    ( .True )
+  1FC:  Return
+  204:  End
+}
+
+% code grabbed from Item_TastyTonic.bpat
+#new:Function $Function_ClearDebuffs % Function_802A123C
+{
+    0:  ADDIU     SP, SP, FFE0
+    4:  SW        RA, 18 (SP)
+    8:  SW        S1, 14 (SP)
+    C:  SW        S0, 10 (SP)
+   10:  LW        V0, C (A0)
+   14:  JAL       ~Func:get_variable
+   18:  LW        A1, 0 (V0)
+   1C:  JAL       ~Func:get_actor
+   20:  COPY      A0, V0
+   24:  COPY      S0, V0
+   28:  LHU       V0, 192 (S0)
+   2C:  LB        V1, 210 (S0)
+   30:  BEQ       V1, R0, .o48
+   34:  ANDI      S1, V0, 700
+   38:  LH        A0, 436 (S0)
+   3C:  SB        R0, 211 (S0)
+   40:  JAL       80047898 % remove debuff icon
+   44:  SB        R0, 210 (S0)
+        .o48
+   48:  LB        V0, 216 (S0)
+   4C:  BEQ       V0, R0, .o80
+   50:  NOP
+   54:  SB        R0, 217 (S0)
+   58:  BEQ       S1, R0, .o74
+   5C:  SB        R0, 216 (S0)
+   60:  LI        V0, 100
+   64:  BNE       S1, V0, .o74
+   68:  NOP
+        % Clear extra data
+        JAL      $GetPartnerExtraBattleData_Pointer
+        NOP
+        SH       R0, 0 (V0) % clear status debuffs
+   %6C:  JAL       ~Func:dispatch_event_partner
+   %70:  LI        A0, 31
+        .o74
+   74:  LW        V0, 440 (S0)
+   78:  LW        V0, C (V0)
+   7C:  SW        R0, 3C (V0)
+        .o80
+   80:  LW        RA, 18 (SP)
+   84:  LW        S1, 14 (SP)
+   88:  LW        S0, 10 (SP)
+   8C:  LI        V0, 2
+   90:  JR        RA
+   94:  ADDIU     SP, SP, 20
+}

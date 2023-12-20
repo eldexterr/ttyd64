@@ -1,0 +1,31 @@
+% Add new badge block
+
+@ $Script_Main_EnterWalk
+{
+  [14C]  ExecWait  $Script_SetMusicTrack
+}
+
+#delete $Script_80240D30
+
+#new:Script $Script_SetMusicTrack % Script_80240D30
+{
+    Switch  *GB_StoryProgress
+        Case  <  .Story:Ch6_DestroyedPuffPuffMachine % 35
+            Call  SetMusicTrack ( 00000000 .Song:FlowerFieldsCloudy 00000000 00000008 )
+        Default
+            Call  SetMusicTrack ( 00000000 .Song:FlowerFieldsSunny 00000000 00000008 )
+    EndSwitch
+    Exec    $Script_InitNewStuff
+    Return
+    End
+}
+
+#new:Script $Script_InitNewStuff
+{
+    Call  MakeEntity    ( .Entity:RedBlock ~Vec4d:RedBlock .Item:CloseCallP 80000000 )
+    Call  AssignBlockFlag   ( *GF_FLO23_BadgeBlock )
+    Call  MakeEntity    ( .Entity:HiddenYellowBlock ~Vec4d:InvBlock .Item:Coin 80000000 )
+    Call  AssignBlockFlag   ( *GF_FLO23_InvBlock )
+    Return
+    End
+}

@@ -1,0 +1,3874 @@
+% This file add support for partners HP to the game, it patchs everything that needs to be patched when partners have HP
+% like for example Partners being able to use items or Mario being able to use items in Partners, super blocks and everything neccesary.
+%
+% The one that adds support for partner HP in the status menu and for all status menu related function is at NewStatsMenu.patch
+
+% Patch FullyRestoreHPandFP
+% Add support for the partners HP
+@Hook F6880 % 802D1ED0
+{
+    PUSH    RA, V0
+    % Check if the player have at least one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    JAL     $Function_HealPartners
+    NOP
+    % restore vanilla code
+    .End
+    POP     RA, V0
+    SB	    V1, 0002 (V0)
+    J       802D1ED8
+    SB	    A0, 0005 (V0)
+}
+
+% Fully heal all partners
+#export:Function $Function_HealPartners
+{
+    PUSH    T0, T1, T2, T3, T4, T5
+    LIO     T0, 8010F2B0 % Goombario HP data (first partner)
+    LIO     T2, 8010F2F0 % Bow's HP data (last partner)
+    CLEAR   T4 % ID for the partner currently being healed
+    .Loop
+    LBU     T1, 2 (T0)
+    SB      T1, 1 (T0)
+    ADDIU   T4, T4, 1
+    % Heal current partner but don't update the real value
+    % so you can see how the HP goes up when he is healed
+    LABU    T5, 8010F2A2 % Current Partner
+    BEQ     T5, T4 .SkipCurrentPartner
+    NOP
+    SB      T1, 0 (T0) % update value visible in the status menu
+    .SkipCurrentPartner
+    ADDIU   T0, T0, 8 % read next partner HP data
+    SLTU    T3, T2, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    POP     T0, T1, T2, T3, T4, T5
+    JR      RA
+    NOP
+}
+
+%====================
+% Partners Menu
+%
+% Make the menu larger and show the HP for each partner
+%====================
+
+% Any list in the game use the same popup dispacher
+% read this byteflag to know if is the partners' menu
+% to make the menu larger
+#new:Data $PartnerListByteflag
+{ 00 }
+
+% Patch ~Func:setup_partner_popup
+% OVERWORLD - Set Partners' list byteflag every time the list is about to get initialized
+@Hook 8031C % 800E6E6C
+{
+    ORI     A0, R0, 1
+    SAB     A0, $PartnerListByteflag
+    % restore vanilla code
+    JAL	    ~Func:setup_partner_popup
+    COPY    A0, S2
+    J       800E6E74
+    NOP
+}
+
+% BATTLE - Mario - Set Partners' list byteflag every time the list is about to get initialized
+@Hook 41C9E0 % 802A7C50
+{
+    PUSH    T0
+    % V0 = 5 = Partners List
+    ORI     T0, R0, 5
+    BNE     V0, T0 .End
+    NOP
+    ORI     T0, R0, 1
+    SAB     T0, $PartnerListByteflag
+    .End
+    POP     T0
+    % restore vanilla code
+    SB	    V0, 0048 (S6)
+    J       802A7C58
+    LB	    V1, 0048 (S6)
+}
+
+% BATTLE - Partners - Set Partners' list byteflag every time the list is about to get initialized
+@Hook 41E3E8 % 802A9658
+{
+    PUSH    T0
+    % V0 = 5 = Partners List
+    ORI     T0, R0, 5
+    BNE     V0, T0 .End
+    NOP
+    ORI     T0, R0, 1
+    SAB     T0, $PartnerListByteflag
+    .End
+    POP     T0
+    % restore vanilla code
+    SB	    V0, 004A (S4)
+    J       802A9660
+    LB	    V1, 004A (S4)
+}
+
+% Patch ~Func:destroy_popup_menu
+% Always nuke $PartnerListByteflag when a popup list is closed
+@Hook 8A9E8 % 800F1538
+{
+    SAB     R0, $PartnerListByteflag
+    SAW     R0, $PopupMenu_Byte % used by Gfx_IncreaseSpritesCap.patch
+    % restore vanilla code
+    LAW     A0, 8010D65C
+    J       800F1540
+    RESERVED
+}
+
+% Patch ~Func:set_window_properties
+@Hook DE428 % 80147D28
+{
+    PUSH    T0, T1, V0
+    LABU    T0, $PartnerListByteflag
+    BEQ     T0, R0, .End
+    NOP
+    LABU    T0, 80074094 % Game Mode
+    ORI     T1, R0, 1 % Battle
+    BEQ     T0, T1, .InsideABattle
+    NOP
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    % Set window properties for partners' list
+    ORI     T1, R0, 005B % Main box X offset
+    SAH     T1, 80159F1C
+    ORI     T1, R0, 00D0 % Main box X size
+    SAH     T1, 80159F20
+    ORI     T1, R0, 002D % top box X offset
+    SAH     T1, 80159F7C
+    ORI     T1, R0, 0158 % right box Y offset % hide box
+    SAH     T1, 80159FFE
+    BEQ     R0, R0, .End
+    NOP
+    .InsideABattle
+    % Set window properties for partners' list
+    ORI     T1, R0, 00B5 % Main box X size
+    SAH     T1, 80159F20
+    ORI     T1, R0, 0025 % top box X offset
+    SAH     T1, 80159F7C
+    .End
+    POP     T0, T1, V0
+    % restore vanilla code
+    SH	    T1, 0012 (S0)
+    J       80147D30
+    SW	    A0, 0014 (S0)
+}
+
+% Patch ~Func:popup_menu_draw_menu_contents
+% Make the impresion area larger so the rank icons can be moved a lot more to the right
+@Hook 8D020 % 800F3B70
+{
+    PUSH    T0, T1
+    LABU    T0, $PartnerListByteflag
+    BEQL    T0, R0, .End
+    ADDU	V0, T3, V0
+    ADDIU	V0, T3, 00CA
+    .End
+    POP     T0, T1
+    % restore vanilla code
+    MTC1	V0, F2
+    NOP
+    J       800F3B7C
+    NOP
+}
+
+% Partners Menu - Hide the Ranks icons inside battle
+%
+% Why? When the game is rendering to many things in screen it can crash,
+% this is only in battles tho, reason why in the last area of Black Pit
+% the game sometimes crash when opening the partners list with Mario.
+%
+% Only with Mario because his command wheel have more icons than
+% the partners' wheel.
+%
+% TTYD64 has even more icons on screen than Black Pit so if this isn't
+% done the game will crash by opening the partner list with Mario when
+% having 2 to 4 enemies in battle, unlike Black Pit that this problem was
+% only pressent with Lava Piranha and Huff Puff.
+@Hook 8D290 % 800F3DE0
+{
+    LABU    T0, 80074094 % Game Mode
+    ORI     T1, R0, 1 % Battle
+    BEQ     T0, T1, .End
+    NOP
+    LW	    A0, D69C (A0) % load icons
+    .End
+    % restore vanilla code
+    J       800F3DE8
+    LW	    V1, 0318 (A0)
+}
+
+% Patch ~Func:popup_menu_draw_menu_contents
+% Move the rank icons a lot more to the right
+@Hook 8D2E8 % 800F3E38
+{
+    PUSH    T0
+    LABU    T0, $PartnerListByteflag
+    BEQL    T0, R0, .End
+    ADDIU	S6, R0, 0055
+    ADDIU	S6, R0, 009A
+    .End
+    POP     T0
+    % restore vanilla code
+    LUI	    S5, 8011
+    J       800F3E40
+    NOP
+}
+
+% Patch ~Func:popup_menu_draw_menu_contents
+% Make the green arrows x impresion area a lot larger
+@Hook 8D8E0 % 800F4430
+{
+    PUSH        T0
+    LABU        T0, $PartnerListByteflag
+    BEQL        T0, R0, .End
+    ADDIU	    V0, T3, 0064
+    ADDIU	    V0, T3, 0070
+    .End
+    POP         T0
+    % restore vanilla code
+    TRUNC.W.S	F6, F2
+    J           800F4438
+    NOP
+}
+
+% Patch ~Func:popup_menu_draw_menu_contents
+% Move the green arrows more to the right
+%
+% Looks like this line is only for the partners' list so $PartnerListByteflag isn't neccesary
+@Function 8D9A0 % 800F44F0
+{
+    ADDIU	T3, R0, 0045
+}
+
+% Patch ~Func:popup_menu_draw_menu_contents
+% Display each partner HP in the popup menu
+@Hook 8D284 % 800F3DD4
+{
+    PUSH    RA, A1, A3
+    LABU    A3, $PartnerListByteflag
+    BEQ     A3, R0, .End
+    NOP
+    % a0 = stringID
+    ADDI    A1, A1, FFFE % x
+    JAL     $Function_DrawPartnerHP_byReadingStringID
+    CLEAR   A3
+    .End
+    POP     RA, A1, A3
+    % restore vanilla code
+    JAL	    ~Func:draw_string
+    NOP
+    J       800F3DDC
+    NOP
+}
+
+% a0 = Partner Name StringID
+%
+% a1 = posX
+%
+% a2 = posY
+%
+% a3 = dark mode (bool)
+#new:Function $Function_DrawPartnerHP_byReadingStringID
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    COPY    S3, A3
+    LIO     S0, 8010F2AC % partner data start / goombario's byteflag
+    LIO     V0, 001D0007 % Goombario
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 4
+    LIO     V0, 001D0008 % Kooper
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, C
+    LIO     V0, 001D0009 % Bombette
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 14
+    LIO     V0, 001D000A % Parakarry
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 1C
+    LIO     V0, 001D000F % Bow
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 44
+    LIO     V0, 001D000C % Watt
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 2C
+    LIO     V0, 001D000D % Sushie
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 34
+    LIO     V0, 001D000E % Lakilester
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 3C
+    % Zero partners on this list, just skip everything
+    BEQ     R0, R0, .End
+    NOP
+    .ShowPartnerHP
+    % Push Stack
+    LIO     S2, $StackPush
+    LW      S1, 0010 (SP)
+    SW      S1, 0 (S2) % push SP 0x0010
+    LW      S1, 0014 (SP)
+    SW      S1, 4 (S2) % push SP 0x0014
+    LW      S1, 0018 (SP)
+    SW      S1, 8 (S2) % push SP 0x0018
+    % S0(+1)=Current HP
+    % S0(+2)=Max HP
+    COPY    S1, A1 % x
+    COPY    S2, A2 % y
+    % draw "HP"
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .HP_W
+    NOP
+    LIO     A0, $String_HP_B
+    BEQ     R0, R0, .HP_B
+    NOP
+    .HP_W
+    LIO     A0, $String_HP_W
+    .HP_B
+    ADDIU   A1, S1, 53 % x
+    ADDI    A2, S2, FFFE % y
+    ORI     A3, R0, FF % opacity
+    JAL	    ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    % draw current HP
+    LBU     A0, 1 (S0)
+    % Current HP is below 10?
+    SLTIU   V0, A0, A
+    BNE     V0, R0, .OnlyDigit
+    ADDIU   A1, S1, 68 % x % for amounts with 1 digit
+    ADDIU   A1, S1, 61 % x % for amounts with 2 digits
+    .OnlyDigit
+    COPY    A2, S2 % y
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .White1
+    ORI     V0, R0, A % white color
+    ORI     V0, R0, 0 % black color
+    .White1
+    SW      V0, 0010 (SP)
+    ORI     V0, R0, FF % opacity
+    SW      V0, 0014 (SP)
+    SW      R0, 0018 (SP) % text fx / 0 = none
+    JAL	    ~Func:draw_number
+    ORI     A3, R0, 1
+    % draw /
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .Slash_W
+    NOP
+    LIO     A0, $String_Slash_B
+    BEQ     R0, R0, .Slash_B
+    NOP
+    .Slash_W
+    LIO     A0, $String_Slash_W
+    .Slash_B
+    ADDIU   A1, S1, 72 % x
+    ADDI    A2, S2, FFFE % y
+    ORI     A3, R0, FF % opacity
+    JAL	    ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    % draw max HP
+    LBU     A0, 2 (S0)
+    ADDIU   A1, S1, 7D % x
+    COPY    A2, S2 % y
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .White2
+    ORI     V0, R0, A % white color
+    ORI     V0, R0, 0 % black color
+    .White2
+    SW      V0, 0010 (SP)
+    ORI     V0, R0, FF % opacity
+    SW      V0, 0014 (SP)
+    SW      R0, 0018 (SP) % text fx / 0 = none
+    JAL	    ~Func:draw_number
+    ORI     A3, R0, 1
+    % restore stack
+    LIO     S2, $StackPush
+    LW      S1, 0 (S2)
+    SW      S1, 0010 (SP) % pop SP 0x0010
+    LW      S1, 4 (S2)
+    SW      S1, 0014 (SP) % pop SP 0x0014
+    LW      S1, 8 (S2)
+    SW      S1, 0018 (SP) % pop SP 0x0018
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    JR      RA
+    NOP
+}
+
+% Same as above but doesn't print "HP"
+#new:Function $Function_DrawPartnerHP_byReadingStringID_PauseMenu
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    COPY    S3, A3
+    LIO     S0, 8010F2AC % partner data start / goombario's byteflag
+    LIO     V0, 001D0007 % Goombario
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 4
+    LIO     V0, 001D0008 % Kooper
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, C
+    LIO     V0, 001D0009 % Bombette
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 14
+    LIO     V0, 001D000A % Parakarry
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 1C
+    LIO     V0, 001D000F % Bow
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 44
+    LIO     V0, 001D000C % Watt
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 2C
+    LIO     V0, 001D000D % Sushie
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 34
+    LIO     V0, 001D000E % Lakilester
+    BEQL    A0, V0, .ShowPartnerHP
+    ADDIU   S0, S0, 3C
+    % Zero partners on this list, just skip everything
+    BEQ     R0, R0, .End
+    NOP
+    .ShowPartnerHP
+    % Push Stack
+    LIO     S2, $StackPush
+    LW      S1, 0010 (SP)
+    SW      S1, 0 (S2) % push SP 0x0010
+    LW      S1, 0014 (SP)
+    SW      S1, 4 (S2) % push SP 0x0014
+    LW      S1, 0018 (SP)
+    SW      S1, 8 (S2) % push SP 0x0018
+    % S0(+1)=Current HP
+    % S0(+2)=Max HP
+    COPY    S1, A1 % x
+    COPY    S2, A2 % y
+    % draw current HP
+    LBU     A0, 1 (S0)
+    % Current HP is below 10?
+    SLTIU   V0, A0, A
+    BNE     V0, R0, .OnlyDigit
+    ADDIU   A1, S1, 68 % x % for amounts with 1 digit
+    ADDIU   A1, S1, 61 % x % for amounts with 2 digits
+    .OnlyDigit
+    COPY    A2, S2 % y
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .White1
+    ORI     V0, R0, A % white color
+    ORI     V0, R0, 0 % black color
+    .White1
+    SW      V0, 0010 (SP)
+    ORI     V0, R0, FF % opacity
+    SW      V0, 0014 (SP)
+    SW      R0, 0018 (SP) % text fx / 0 = none
+    JAL	    ~Func:draw_number
+    ORI     A3, R0, 1
+    % draw /
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .Slash_W
+    NOP
+    LIO     A0, $String_Slash_B
+    BEQ     R0, R0, .Slash_B
+    NOP
+    .Slash_W
+    LIO     A0, $String_Slash_W
+    .Slash_B
+    ADDIU   A1, S1, 72 % x
+    ADDI    A2, S2, FFFE % y
+    ORI     A3, R0, FF % opacity
+    JAL	    ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    % draw max HP
+    LBU     A0, 2 (S0)
+    ADDIU   A1, S1, 7D % x
+    COPY    A2, S2 % y
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .White2
+    ORI     V0, R0, A % white color
+    ORI     V0, R0, 0 % black color
+    .White2
+    SW      V0, 0010 (SP)
+    ORI     V0, R0, FF % opacity
+    SW      V0, 0014 (SP)
+    SW      R0, 0018 (SP) % text fx / 0 = none
+    JAL	    ~Func:draw_number
+    ORI     A3, R0, 1
+    % restore stack
+    LIO     S2, $StackPush
+    LW      S1, 0 (S2)
+    SW      S1, 0010 (SP) % pop SP 0x0010
+    LW      S1, 4 (S2)
+    SW      S1, 0014 (SP) % pop SP 0x0014
+    LW      S1, 8 (S2)
+    SW      S1, 0018 (SP) % pop SP 0x0018
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    JR      RA
+    NOP
+}
+
+% Some Functions read some arguments from the Stack
+% push the previous values here
+#new:Data $StackPush
+{ 00000000 00000000 00000000 }
+
+#string $String_Slash_W
+{
+[Color:0A]/[END]
+}
+
+#string $String_Slash_B
+{
+[Color:00]/[END]
+}
+
+#string $String_HP_W
+{
+[Size:0B:0B][Down:03][Color:19]HP[END]
+}
+
+#string $String_HP_B
+{
+[Size:0B:0B][Down:03][Color:07]HP[END]
+}
+
+%==================
+% Pause Menu
+%==================
+
+% Party Menu
+
+% Move "Check Abilities" below the partners' image
+% to make space for the current HP
+@Function 13E824 % 8024B4E4
+{
+    ADDIU	A1, R0, 00A0 % x
+    JAL	    8024EE94
+    ADDIU	A2, R0, 00A8 % y
+}
+
+% Save the current partner string, needed by the hook below
+@Hook 13EFD0 % 8024BC90
+{
+    % A0 = StringID
+    SAW     A0, $PartyTab_CurrentString
+    % restore vanilla
+    ADDIU	A3, R0, 00FF
+    J       8024BC98
+    SW	    R0, 0010 (SP)
+}
+
+#new:Data $PartyTab_CurrentString
+{ 00000000 }
+
+% In the pause menu when the menu is being flipped
+% the positions need to be different if not the
+% position of the HP will get fucked up
+%
+% Add this offsets to X and Y to have the same position
+% when the menu is flipped
+#new:Data $PartyMenu_FlipOffsets
+{ 00100024 }
+% XXXXYYYY
+
+% Display a box with the partner HP
+@Hook 13E830 % 8024B4F0
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S2, S3
+    ADDIU   A0, R0, 14 % posX
+    ADDIU   A1, R0, 79 % posY
+    % The menu is doing the flipping animation?
+    LABU    T0, 8015A1AC % Party Tab animation timer / >5 animation ended
+    SLTIU   T1, T0, 6
+    BNE     T1, R0, .MenuAnimationTrue1
+    NOP
+    .MenuAnimationFalse1
+    LIO     T0, $PartyMenu_FlipOffsets
+    LHU     T1, 0 (T0)
+    ADD     A0, A0, T1 % x
+    LHU     T1, 2 (T0)
+    ADD     A1, A1, T1 % y
+    .MenuAnimationTrue1
+    ORI     A2, R0, 56 % sizeX
+    ORI     A3, R0, 1C % sizeY
+    ORI     T0, R0, 17 % style
+    JAL     $DrawBox
+    ORI     T1, R0, FF % opacity
+    LAW     A0, $PartyTab_CurrentString
+    ADDI    A1, R0, FFCF % posX
+    ADDI    A2, R0, 81 % posY
+    % The menu is doing the flipping animation?
+    LABU    T0, 8015A1AC % Party Tab animation timer / >5 animation ended
+    SLTIU   T1, T0, 6
+    BNE     T1, R0, .MenuAnimationTrue2
+    NOP
+    .MenuAnimationFalse2
+    LIO     T0, $PartyMenu_FlipOffsets
+    LHU     T1, 0 (T0)
+    ADD     A1, A1, T1 % x
+    LHU     T1, 2 (T0)
+    ADD     A2, A2, T1 % y
+    .MenuAnimationTrue2
+    JAL     $Function_DrawPartnerHP_byReadingStringID_PauseMenu
+    ORI     A3, R0, 1 % Black strings
+    %==================
+    % Show Heart Icon
+    LAW     S2, $Data_BeltsIcons_FirstIndex
+    ADDIU   A0, S2, 5 % get Heart's iconIndex
+    ADDIU	A1, R0, 0026 % x pos
+    ADDIU	A2, R0, 0086 % y pos
+    % The menu is doing the flipping animation?
+    LABU    T0, 8015A1AC % Party Tab animation timer / >5 animation ended
+    SLTIU   T1, T0, 6
+    BNE     T1, R0, .MenuAnimationTrue3
+    NOP
+    .MenuAnimationFalse3
+    LIO     T0, $PartyMenu_FlipOffsets
+    LHU     T1, 0 (T0)
+    ADD     A1, A1, T1 % x
+    LHU     T1, 2 (T0)
+    ADD     A2, A2, T1 % y
+    .MenuAnimationTrue3
+    JAL	    ~Func:set_hud_element_render_pos
+    NOP
+    %=====
+    % Change Size
+    LIO     A1, 41B00000 % 22.0 % Width
+    LIO     A2, 41B00000 % 22.0 % Lenght
+    JAL     $SetIconSize
+    ADDIU   A0, S2, 5 % get Heart's iconIndex
+    JAL	    ~Func:draw_hud_element_1
+    ADDIU   A0, S2, 5 % get Heart's iconIndex
+    POP     RA, A0, A1, A2, A3, V0, V1, S2, S3
+    % restore vanilla
+    LW	    T8, 018C (SP)
+    J       8024B4F8
+    LW	    T4, 0190 (SP)
+}
+
+% This icon is kinda big with their original icon scripts
+% So I made this ones with a smaller size.
+%
+% The original script for this icon is at ~80407548
+%
+% The icon is created and freed in BadgeTab.patch - Hook 1419C8
+#new:Data $IconScript_HealBoxHeart
+{
+00000008
+00000007 % SetSize
+00000003
+00000002 % Icon size
+0000000D 00000008 0002E900 0002EB00
+00000000 00000000 0000000D 00000005
+0002EB20 0002ED20 00000001 00000001
+0000000D 00000008 0002ED40 0002EF40
+00000002 00000002 00000003 00000000
+}
+
+% Heal Blocks now restore Star Power and Partner HP
+@Hook 106848 % 802E4FC8
+{
+    LABU    V0, 8010F51E % load Star Spirits
+    SLL	    V0, V0, 8
+    SAH     V0, 8010F520 % restore star power
+    % Restore Partners' HP
+    PUSH    RA, V0
+    % Check if the player have at least one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    JAL     $Function_HealPartners
+    NOP
+    .End
+    POP     RA, V0
+    % restore vanilla code
+    LBU	    V0, 0001 (S0)
+    J       802E4FD0
+    SWC1	F4, 0018 (S0)
+}
+
+% Update status menu real values (ONLY PARTNERS' HP)
+%
+% [!] writes in T0-T3
+#new:Function $sync_status_menu_OnlyPartners
+{
+    LIO     T0, 8010F2B0 % Goombario HP data (first partner)
+    LIO     T2, 8010F2F0 % Bow's HP data (last partner)
+    .Loop
+    LBU     T1, 1 (T0)
+    SB      T1, 0 (T0)
+    ADDIU   T0, T0, 8 % read next partner HP data
+    SLTU    T3, T2, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    JR      RA
+    NOP
+}
+
+% Update partners' real values when you swap partners
+@Hook 83DF0 % 800EA940
+{
+JAL     $sync_status_menu_OnlyPartners
+NOP
+% restore vanilla code
+JAL	    ~Func:partner_create_npc
+SB	    V0, 0012 (S3)
+J       800EA948
+NOP
+}
+
+%==================
+% Using Items in the Overworld
+%
+% Add a new window that ask you for who you want to use the item
+%==================
+
+% Items Menu, open a 2nd menu when an item is choosen
+@Hook 8BFDC % 800F2B2C
+{
+    PUSH    RA, V0, T0, T1, T2, T3, T4
+    % Check if the player is in the overworld
+    LABU    V0, 80074094
+    BNE     V0, R0, .End % 0 = Overworld
+    NOP
+    % Check if the current list is the one from C-Left
+    LIO     V0, 8010D65C % Window Data Pointer
+    LW      V0, 0040 (V0) % Popup Menu Data pointer
+    LW      V0, 0318 (V0) % StyleID / 0 = Items Menu
+    BNE     V0, R0, .End
+    NOP
+    % The game set the list as "A button pressed"
+    % only when this value isn't zero, I dunno
+    % exactly what it does tho :shrunk:
+    LABU    V0, 8010D68E
+    BEQ     V0, R0, .End
+    NOP
+    % Check if the player have any partners
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BNE     V0, R0, .PlayerIsntPartnerless
+    NOP
+    % If the player is partnerless nuke all heal menu data
+    % and don't show the heal menu.
+    SAB     R0, $HealingBox_FirstIconIndex
+    SAB     R0, $HealMenu_State
+    LIO     T0, $HealingBox_PartnersOrder
+    SW      R0, 0 (T0)
+    SW      R0, 4 (T0)
+    SW      R0, 8 (T0)
+    SAH     R0, $HealingBox_CursorData
+    BEQ     R0, R0, .End
+    RESERVED
+    .PlayerIsntPartnerless
+    POP     RA, V0, T0, T1, T2, T3, T4
+    % Open the healing menu
+    ORI     V0, R0, 1
+    SAB     V0, $HealMenu_State
+    J       800F364C % skip setting the menu state as "A button pressed"
+    ORI     V0, R0, 2 % Set the menu state as "Froozen"
+    % restore vanilla code
+    .End
+    POP     RA, V0, T0, T1, T2, T3, T4
+    LABU    V0, 8010D68E
+    J       800F2B34
+    RESERVED
+}
+
+% Used to know the state of the healing menu
+% 0 = False
+% 1 = Init menu
+% 2 = Just initializated (used to skip 1 input frame)
+% 3 = Normal
+% 4 = Close
+% 5 = Heal and Close Menu
+#new:Data $HealMenu_State
+{ 00 }
+
+% Show an extra menu when you use an item in the
+% overworld
+#new:Function $UseItem_ShowHealMenu
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4
+    LABU    T0, $HealMenu_State
+    BEQ     T0, R0, .End
+    NOP
+    % The box has just been initializated?
+    ORI     T1, R0, 1
+    BEQ     T0, T1, .StartBox
+    ORI     T1, R0, 4
+    BEQ     T0, T1, .CloseBox
+    ORI     T1, R0, 5
+    BEQ     T0, T1, .CloseBox
+    NOP
+    BEQ     R0, R0, .DrawBox
+    NOP
+    %==Init Healing Box=========
+    .StartBox
+    % Nuke data
+    SAB     R0, $HealingBox_FirstIconIndex
+    SAB     R0, $HealMenu_State
+    LIO     T0, $HealingBox_PartnersOrder
+    SW      R0, 0 (T0)
+    SW      R0, 4 (T0)
+    SW      R0, 8 (T0)
+    SAH     R0, $HealingBox_CursorData
+    % Hide popup windows:
+    % Window #0x0E - Main Box
+    LIO     T0, 80159D50 % Window #0 Data
+    ORI     T1, R0, E % get window #E address
+    ORI     T2, R0, 20 % every 0x20 is the next window data
+    MULT    T1, T2
+    MFLO    T1
+    ADDU    T0, T0, T1
+    ORI     T1, R0, 20 % bit5 = Hide box
+    % Window Data 0x00 - Window's flags
+    SB      T1, 0 (T0)
+    % Window #0x13 - Description Box
+    LIO     T0, 80159D50 % Window #0 Data
+    ORI     T1, R0, 13 % get window #E address
+    ORI     T2, R0, 20 % every 0x20 is the next window data
+    MULT    T1, T2
+    MFLO    T1
+    ADDU    T0, T0, T1
+    ORI     T1, R0, 20 % bit5 = Hide box
+    SB      T1, 0 (T0)
+    % Window #0x15 - Left Box
+    % Hide last box
+    ADDIU   T0, T0, 40
+    SB      T1, 0 (T0)
+    %====================
+    % Init Icons Data
+    %====================    
+    % Icon Scripts are at NewStatusMenu.patch
+    LIO     A0, $IconScript_Mario
+    JAL     $CreateIcon
+    RESERVED
+    % save mario's icon index
+    SAB     S0, $HealingBox_FirstIconIndex
+    LIO     A0, $IconScript_Goombario
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Kooper
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Bombette
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Parakarry
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Bow
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Watt
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Sushie
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Lakilester
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Cursor
+    JAL     $CreateIcon
+    RESERVED
+    %====================
+    % Get order to print each partner
+    JAL     $Function_HealBox_SetOrderList
+    NOP
+    % Set healing box state
+    ORI     T0, R0, 2
+    SAB     T0, $HealMenu_State
+    BEQ     R0, R0, .DrawBox
+    RESERVED
+    %==Free Icons Data and nuke everything=========
+    .CloseBox
+    % Free Icons
+    LABU    S0, $HealingBox_FirstIconIndex
+    CLEAR   S1
+    .Loop_Free
+    JAL     ~Func:free_hud_element
+    COPY    A0, S0
+    ADDIU   S0, S0, 1
+    ADDIU   S1, S1, 1 % loop counter
+    SLTI    T0, S1, 10` % free 10 icons
+    BNE     T0, R0, .Loop_Free
+    NOP
+    %===========
+    % Make Popup Menus visible once again
+    % Window #0x0E - Main Box
+    LIO     T0, 80159D50 % Window #0 Data
+    ORI     T1, R0, E % get window #E address
+    ORI     T2, R0, 20 % every 0x20 is the next window data
+    MULT    T1, T2
+    MFLO    T1
+    ADDU    T0, T0, T1
+    ORI     T1, R0, 11 % bit0+4
+    % Window Data 0x00 - Window's flags
+    SB      T1, 0 (T0)
+    % Window #0x13 - Description Box
+    LIO     T0, 80159D50 % Window #0 Data
+    ORI     T1, R0, 13 % get window #E address
+    ORI     T2, R0, 20 % every 0x20 is the next window data
+    MULT    T1, T2
+    MFLO    T1
+    ADDU    T0, T0, T1
+    ORI     T1, R0, 1 % bit0
+    SB      T1, 0 (T0)
+    % Window #0x15 - Left Box
+    % Hide last box
+    ADDIU   T0, T0, 40
+    SB      T1, 0 (T0)
+    %===========
+    % Heal someone?
+    LABU    T0, $HealMenu_State
+    ORI     T1, R0, 5
+    BNE     T0, T1, .DontHeal
+    NOP
+    % Select the current item
+    LIO     T0, FFFFFFFE % A button pressed
+    SAW     T0, 8010D640 % Popup Menu StateID
+    .DontHeal
+    %===========
+    % Nuke data
+    SAB     R0, $HealingBox_FirstIconIndex
+    SAB     R0, $HealMenu_State
+    BEQ     R0, R0, .End
+    NOP
+    %==================
+    % Draw Box
+    %==================
+    .DrawBox
+    % Get amount of partners unlocked to get the Y size
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    % set list lenght
+    LIO     A3, $HealingBox_CursorData
+    SB      V0, 1 (A3) % save list lenght
+    % Is the player have 7 or 8 partners use 19 instead
+    SLTI    A0, V0, 7
+    BEQ     A0, R0, .MoreThan6Partners
+    ORI     A3, R0, 19
+    ORI     A3, R0, 18 % at most add 18 to the Y size for each partner
+    .MoreThan6Partners
+    SUB     A3, A3, V0
+    MULT    A3, V0
+    MFLO    T0
+    ADDU    A3, A3, T0 % sizeY
+    LIO     A1, $HealingBox_Data
+    LH      A0, 0 (A1) % posX
+    LH      A1, 2 (A1) % posY
+    ORI     A2, R0, B8 % sizeX
+    ORI     T0, R0, 3 % style
+    JAL     $DrawBox
+    ORI     T1, R0, FF % opacity
+    % Draw left box
+    LIO     A1, $HealingBox_Data
+    LH      A0, 0 (A1) % posX
+    LH      A1, 2 (A1) % posY
+    ADDI    A0, A0, FF9E % x
+    ADDI    A1, A1, A % y
+    ORI     A2, R0, 5F % sizeX
+    ORI     A3, R0, 30 % sizeY
+    ORI     T0, R0, 0 % style
+    JAL     $DrawBox
+    ORI     T1, R0, FF % opacity
+    % Draw left box string
+    LIO     A0, $String_HealBox_LeftBox
+    LIO     A1, $HealingBox_Data
+    LH      A2, 2 (A1) % posY
+    LH      A1, 0 (A1) % posX
+    ADDI    A1, A1, FFB0 % x
+    ADDI    A2, A2, 10 % y
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    JAL     ~Func:draw_string
+    ORI     A3, R0, 00FF
+    %=========================
+    % Draw every element in the list
+    %=========================
+    % Draw Icons
+    %=========================
+    CLEAR   S0
+    ORI     S1, R0, 41 % initial y pos
+    .Loop_DrawIcon
+    % If is the 3rd element use a larger space
+    ORI     T0, R0, 2
+    BEQL    S0, T0, .Is3rdElement_1
+    ADDIU   S1, S1, 13 % space between each icon
+    ADDIU   S1, S1, F % space between each icon
+    .Is3rdElement_1
+    COPY    A2, S1 % y
+    LIO     A1, $HealingBox_Data
+    LH      A1, 0 (A1) % posX
+    ADDI    A1, A1, 1B % x
+    LIO     T0, $HealingBox_PartnersOrder
+    ADDU    T0, T0, S0
+    LBU     T0, 0 (T0)
+    LABU    A0, $HealingBox_FirstIconIndex
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDU    A0, A0, T0 % get iconID
+    % Change Size
+    LIO     A1, 41900000 % 18.0 % Width
+    LIO     A2, 41900000 % 18.0 % Lenght
+    LIO     T0, $HealingBox_PartnersOrder
+    ADDU    T0, T0, S0
+    LBU     T0, 0 (T0)
+    LABU    A0, $HealingBox_FirstIconIndex
+    JAL     $SetIconSize
+    ADDU    A0, A0, T0 % get iconID
+    LIO     T0, $HealingBox_PartnersOrder
+    ADDU    T0, T0, S0
+    LBU     T0, 0 (T0)
+    LABU    A0, $HealingBox_FirstIconIndex
+    JAL	    ~Func:draw_hud_element_1
+    ADDU    A0, A0, T0 % get iconID
+    %==============
+    % Load list lenght
+    LIO     T0, $HealingBox_CursorData
+    LBU     T1, 1 (T0)
+    ADDIU   S0, S0, 1
+    % Check if all icons has been already drawn
+    SLTU    T2, T1, S0
+    BEQ     T2, R0, .Loop_DrawIcon
+    NOP
+    %=========================
+    % Draw Strings
+    %=========================
+    CLEAR   S0
+    ORI     S1, R0, 3A % initial y pos
+    .Loop_DrawString
+    % If is the 3rd element use a larger space
+    ORI     T0, R0, 2
+    BEQL    S0, T0, .Is3rdElement_2
+    ADDIU   S1, S1, 13 % space between each string
+    ADDIU   S1, S1, F % space between each string
+    .Is3rdElement_2
+    COPY    A2, S1 % y
+    LIO     A1, $HealingBox_Data
+    LH      A1, 0 (A1) % posX
+    ADDI    A1, A1, 25 % x
+    LIO     T0, $HealingBox_PartnersOrder
+    ADDU    T0, T0, S0
+    LBU     T0, 0 (T0)
+    % get string offset
+    ORI     T2, R0, 4 % every 0x4 is the next string
+    MULT    T0, T2
+    MFLO    T1
+    LIO     A0, $HealingBox_Strings
+    ADDU    A0, A0, T1
+    LW      A0, 0 (A0) % load string
+    % push data
+    COPY    S2, A0 % stringID
+    COPY    S3, A1 % x
+    COPY    S4, A2 % y
+    ORI     A3, R0, 00FF % opacity
+    % push SPx0010
+    LW	    GP, 0010 (SP)
+    ORI     T0, R0, A
+    SW      T0, 0010 (SP) % string color
+    JAL     ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    % If is the 3rd element from the list print a separator
+    ORI     T0, R0, 2
+    BNE     S0, T0, .Isn3rdElement
+    NOP
+    % push data
+    LIO     A0, $String_Separator
+    COPY    A1, S3
+    COPY    A2, S4
+    ADDI    A1, A1, FFEA % x
+    ADDI    A2, A2, FFF5 % y
+    ORI     A3, R0, 00FF % opacity
+    ORI     T0, R0, A
+    SW      T0, 0010 (SP) % string color
+    JAL     ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    .Isn3rdElement
+    % restore SPx0010
+    SW	    GP, 0010 (SP)
+    % Draw HP
+    COPY    A0, S2 % stringID
+    COPY    A1, S3 % x
+    COPY    A2, S4 % y
+    ADDI    A1, A1, FFFF % x
+    ADDI    A2, A2, 2 % y
+    % Print Mario's HP
+    LIO     A3, 001D0013 % Mario
+    BNE     S2, A3, .IsntMario
+    NOP
+    JAL     $Function_HealMenu_DrawMarioHP
+    CLEAR   A3
+    BEQ     R0, R0, .MarioHP
+    NOP
+    .IsntMario
+    JAL     $Function_DrawPartnerHP_byReadingStringID
+    CLEAR   A3
+    .MarioHP
+    %==============
+    % Load list lenght
+    LIO     T0, $HealingBox_CursorData
+    LBU     T1, 1 (T0)
+    ADDIU   S0, S0, 1
+    % Check if all icons has been already drawn
+    SLTU    T2, T1, S0
+    BEQ     T2, R0, .Loop_DrawString
+    NOP
+    %============================
+    % Draw Cursor
+    %============================
+    LIO     A1, $HealingBox_Data
+    LH      A1, 0 (A1) % posX
+    ADDI    A1, A1, A % x
+    % get Y pos
+    LABU    V0, $HealingBox_CursorData
+    ORI     A2, R0, 52 % initial y offset
+    ORI     T0, R0, F % offset between each element
+    MULT    T0, V0
+    MFLO    T0
+    ADDU    A2, A2, T0 % sizeY
+    % Is Cursor Pos >=2?
+    SLTI    T0, V0, 2
+    BEQL    T0, R0, .Above2Pos
+    ADDI    A2, A2, 3 % Add the distance between the seperator
+    .Above2Pos
+    LABU    A0, $HealingBox_FirstIconIndex
+    ORI     T0, R0, 9 % iconIndex
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDU    A0, A0, T0 % get iconID
+    % Change Size
+    LIO     A1, 41800000 % 16.0 % Width
+    LIO     A2, 41800000 % 16.0 % Lenght
+    LABU    A0, $HealingBox_FirstIconIndex
+    ORI     T0, R0, 9 % iconIndex
+    JAL     $SetIconSize
+    ADDU    A0, A0, T0
+    LABU    A0, $HealingBox_FirstIconIndex
+    ORI     T0, R0, 9 % iconIndex
+    JAL	    ~Func:draw_hud_element_1
+    ADDU    A0, A0, T0
+    %===================
+    % Track Inputs
+    %===================
+    % Skip if the box state is 2
+    LABU    T0, $HealMenu_State
+    ORI     T1, R0, 2
+    BNE     T0, T1, .IsntState2
+    NOP
+    ORI     T1, R0, 3 % Set state as normal
+    SAB     T1, $HealMenu_State
+    BEQ     R0, R0, .End
+    RESERVED
+    .IsntState2
+    LABU    T0, 80074035 % Joystick
+    ANDI    T1, T0, 1 % bit0=Up
+    BNE     T1, R0, .MoveUp
+    NOP
+    LABU    T0, 80074036 % Inputs
+    ANDI    T1, T0, 20 % bit5=Z button
+    BNE     T1, R0, .MoveUp
+    NOP
+    LABU    T0, 80074035 % Joystick
+    ANDI    T1, T0, 2 % bit1=Down
+    NOP
+    BNE     T1, R0, .MoveDown
+    NOP
+    LABU    T0, 80074037 % Inputs
+    ANDI    T1, T0, 10 % bit4=R button
+    BNE     T1, R0, .MoveDown
+    NOP
+    LABU    T0, 80074036 % Inputs
+    ANDI    T1, T0, 40 % bit6=B button
+    BNE     T1, R0, .Cancel
+    NOP
+    LABU    T0, 80074036 % Inputs
+    ANDI    T1, T0, 80 % bit7=A button
+    BNE     T1, R0, .Accept
+    NOP
+    % If nothing is pressed just go to the end
+    BEQ     R0, R0, .End
+    NOP
+    %=================
+    .MoveUp
+    LIO     T0, $HealingBox_CursorData
+    LBU     T1, 0 (T0) % load cursor pos
+    LBU     T2, 1 (T0) % load list size
+    ADDI    T1, T1, FFFF
+    % go to the bottom of the list
+    BLTZL   T1, .GoToTheBottom
+    COPY    T1, T2
+    .GoToTheBottom
+    BEQ     R0, R0, .PlayFX_Move
+    SB      T1, 0 (T0) % save cursor pos
+    %=================
+    .MoveDown
+    LIO     T0, $HealingBox_CursorData
+    LBU     T1, 0 (T0) % load cursor pos
+    LBU     T2, 1 (T0) % load list size
+    ADDI    T1, T1, 1
+    SLT     T3, T2, T1
+    % go back to the top
+    BNEL    T3, R0, .GoToTheTop
+    CLEAR   T1
+    .GoToTheTop
+    SB      T1, 0 (T0) % save cursor pos
+    .PlayFX_Move
+    ADDIU	A0, R0, 00C7 % SoundID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_play_sound_with_params
+    COPY 	A3, A1
+    BEQ     R0, R0, .End
+    NOP
+    %=================
+    .Cancel
+    ORI     T0, R0, 4 % close everything
+    SAB     T0, $HealMenu_State
+    ADDIU	A0, R0, 00CA % SoundID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_play_sound_with_params
+    COPY 	A3, A1
+    % Unfreeze popup menu
+    ORI     T0, R0, 1 % normal
+    SAW     T0, 8010D640 % Popup Menu StateID
+    BEQ     R0, R0, .End
+    RESERVED
+    %=================
+    .Accept
+    ORI     T0, R0, 5 % heal and close everything
+    SAB     T0, $HealMenu_State
+    ADDIU	A0, R0, 00C9 % SoundID
+    CLEAR 	A1
+    COPY 	A2, A1
+    JAL 	~Func:sfx_play_sound_with_params
+    COPY 	A3, A1
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3, S4
+    JR      RA
+    NOP
+}
+
+#new:Function $Function_HealBox_SetOrderList
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % First slot is always 0 / Mario
+    LIO     V0, $HealingBox_PartnersOrder
+    SW      R0, 0 (V0)
+    SW      R0, 4 (V0) % just nuke all data
+    % Save current partner
+    ADDIU   V0, V0, 1 % save in next slot
+    LABU    T0, 8010F2A2 % current partnerID
+    ORI     T1, R0, 9 % is bow?
+    BEQL    T0, T1, .IsBow1
+    ORI     T0, R0, 5
+    .IsBow1
+    COPY    V1, T0 % copy current partner in V1
+    SB      V1, 0 (V0)
+    % Mario and current partner are saved
+    % save all other partners
+    %
+    % V0 = $HealingBox_PartnersOrder
+    % V1 = Current Partner
+    CLEAR   T3
+    LIO     T0, 8010F2AC % Goombario byteflag (first partner byteflag)
+    LIO     T2, 8010F2E4 % Lakilester Byteflag (last partner byteflag, is actually bow but bow get a special treatment)
+    .Loop
+    ADDIU   T3, T3, 1 % add to the loop counter, used to get the partnerID
+    LBU     T1, 0 (T0)
+    BEQ     T1, R0, .PartnerNotUnlocked
+    NOP
+    % Skip if this is the current partner (because got already saved)
+    LIO     T4, $HealingBox_PartnersOrder
+    LBU     T4, 1 (T4)
+    BEQ     T3, T4, .PartnerNotUnlocked
+    NOP
+    ADDIU   V0, V0, 1
+    SB      T3, 0 (V0) % save partnerID
+    .PartnerNotUnlocked
+    % Bow data got readed?
+    LIO     T4, 8010F2EC % Bow's data
+    BNE     T0, T4, .IsntBow
+    NOP
+    LIO     T0, 8010F2CC % set T0 as goomba to be set as Watt in the ADDIU below
+    .IsntBow
+    ADDIU   T0, T0, 8 % read next partner byteflag
+    % If is Goompa's data, read Bow's data instead
+    LIO     T4, 8010F2CC
+    BNE     T0, T4 .NotGoompa
+    NOP
+    %=================================
+    % load bow's data here
+    LIO     T0, 8010F2EC % Bow's Data
+    BEQ     R0, R0, .Loop
+    RESERVED
+    %=================================
+    .NotGoompa
+    % End of the list?
+    SLTU    T4, T2, T0
+    BEQ     T4, R0, .Loop
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    NOP
+}
+
+% a1 = posX
+%
+% a2 = posY
+%
+% a3 = dark mode (bool)
+#new:Function $Function_HealMenu_DrawMarioHP
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    COPY    S3, A3
+    % Push Stack
+    LIO     S2, $StackPush
+    LW      S1, 0010 (SP)
+    SW      S1, 0 (S2) % push SP 0x0010
+    LW      S1, 0014 (SP)
+    SW      S1, 4 (S2) % push SP 0x0014
+    LW      S1, 0018 (SP)
+    SW      S1, 8 (S2) % push SP 0x0018
+    COPY    S1, A1 % x
+    COPY    S2, A2 % y
+    % draw "HP"
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .HP_W
+    NOP
+    LIO     A0, $String_HP_B
+    BEQ     R0, R0, .HP_B
+    NOP
+    .HP_W
+    LIO     A0, $String_HP_W
+    .HP_B
+    ADDIU   A1, S1, 53 % x
+    ADDI    A2, S2, FFFE % y
+    ORI     A3, R0, FF % opacity
+    JAL	    ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    % draw current HP
+    LABU    A0, 8010F292 % Current HP
+    % Current HP is below 10?
+    SLTIU   V0, A0, A
+    BNE     V0, R0, .OnlyDigit
+    ADDIU   A1, S1, 68 % x % for amounts with 1 digit
+    ADDIU   A1, S1, 61 % x % for amounts with 2 digits
+    .OnlyDigit
+    COPY    A2, S2 % y
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .White1
+    ORI     V0, R0, A % white color
+    ORI     V0, R0, 0 % black color
+    .White1
+    SW      V0, 0010 (SP)
+    ORI     V0, R0, FF % opacity
+    SW      V0, 0014 (SP)
+    SW      R0, 0018 (SP) % text fx / 0 = none
+    JAL	    ~Func:draw_number
+    ORI     A3, R0, 1
+    % draw /
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .Slash_W
+    NOP
+    LIO     A0, $String_Slash_B
+    BEQ     R0, R0, .Slash_B
+    NOP
+    .Slash_W
+    LIO     A0, $String_Slash_W
+    .Slash_B
+    ADDIU   A1, S1, 72 % x
+    ADDI    A2, S2, FFFE % y
+    ORI     A3, R0, FF % opacity
+    JAL	    ~Func:draw_string
+    SW      R0, 0014 (SP) % text fx / 0 = none
+    % draw max HP
+    LABU    A0, 8010F293 % Max HP
+    ADDIU   A1, S1, 7D % x
+    COPY    A2, S2 % y
+    % S3 = Dark Mode (Bool)
+    BEQ     S3, R0, .White2
+    ORI     V0, R0, A % white color
+    ORI     V0, R0, 0 % black color
+    .White2
+    SW      V0, 0010 (SP)
+    ORI     V0, R0, FF % opacity
+    SW      V0, 0014 (SP)
+    SW      R0, 0018 (SP) % text fx / 0 = none
+    JAL	    ~Func:draw_number
+    ORI     A3, R0, 1
+    % restore stack
+    LIO     S2, $StackPush
+    LW      S1, 0 (S2)
+    SW      S1, 0010 (SP) % pop SP 0x0010
+    LW      S1, 4 (S2)
+    SW      S1, 0014 (SP) % pop SP 0x0014
+    LW      S1, 8 (S2)
+    SW      S1, 0018 (SP) % pop SP 0x0018
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2, S3
+    JR      RA
+    NOP
+}
+
+#new:Data $IconScript_Cursor
+{
+00000008
+00000007 % "SetSize"
+00000001 00000004
+0000000A FFFFFFFF 00000002 00000004
+800FBB60 800FBBE0 0000000A 00000001
+00000002 00000008 800FBB60 800FBBE0
+00000003
+}
+
+% Healing Box Global XY offsets
+#new:Data $HealingBox_Data
+{
+0073s % x
+0040s % y
+}
+
+% save cursor's icon index here
+#new:Data $HealingBox_FirstIconIndex
+{ 00 }
+
+% each byte is a partnerID
+#new:Data $HealingBox_PartnersOrder
+{ 00000000 00000000 00000000 }
+
+#new:Data $HealingBox_CursorData
+{ 
+00b % cursor current pos
+00b % list size
+}
+
+#new:Data $HealingBox_Strings
+{
+001D0013 001D0007 001D0008 001D0009
+001D000A 001D000F 001D000C 001D000D 001D000E
+}
+
+#string $String_Separator
+{
+- - - - - - - - - - -[End]
+}
+
+#string $String_HealBox_LeftBox
+{
+[Color:2F]Use it[BR]
+on whom?[End]
+}
+
+%========================
+% Using Items Animations - Overworld
+%========================
+
+@Script 32579C % UseItem_Init % 802C05CC
+{
+    Jump    $UseItem_Init
+    Return
+    End
+}
+
+#new:Script $UseItem_Init
+{
+    SetGroup  00000000 
+    Call  DisablePlayerInput    ( .True )
+    Call  GetCurrentPartner     ( *Var0 )
+    If  *Var0  !=  .Partner:None 
+        Call  802D2B6C
+        Wait  20`
+    EndIf
+    Call  802C02E4
+    Call  802C0358  ( *VarA )
+    ExecWait  $UseItem_ShowItem
+    If  *VarD  ==  00000000 
+        ExecWait  $UseItem_Eat
+    Else
+        ExecWait  $UseItem_Drink 
+    EndIf
+    If  *VarF  ==  00000001 
+        % Which one is the one about to be healed?
+        Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+        Switch *Var3
+            Case == 0 % Mario
+                Call  SetPlayerAnimation    ( .PlayerAnim:StickOutTongue )
+            Case == 1 % Current Partner
+                Set     *Var0 4 % Hurt
+                Set     *Var1 .False
+                Exec    $SetPartnerAnimation
+            Case > 1 % Other partners
+        EndSwitch
+    EndIf
+    If  *VarB  >  00000000 
+        % Which one is the one about to be healed?
+        Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+        If *Var3 == 1 % Current Partner
+            Call    GetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+            Call    GetCurrentPartnerID ( *Var3 )
+            Switch *Var3
+                CaseOR == .Partner:Watt
+                CaseOR == .Partner:Bow
+                    Add *Var1 -10` % y
+            EndSwitch
+        Else
+            Call  GetPlayerPos  ( *Var0 *Var1 *Var2 )
+        EndIf
+        Add   *Var0  00000000 
+        Add   *Var1  00000023 
+        Call  802C00AC      ( *Var0 *Var1 *Var2 *VarB )
+    EndIf
+    If  *VarC  >  00000000 
+        % Which one is the one about to be healed?
+        Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+        If *Var3 == 1 % Current Partner
+            Call    GetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+            Call    GetCurrentPartnerID ( *Var3 )
+            Switch *Var3
+                CaseOR == .Partner:Watt
+                CaseOR == .Partner:Bow
+                    Add *Var1 -10` % y
+            EndSwitch
+        Else
+            Call    GetPlayerPos  ( *Var0 *Var1 *Var2 )
+        EndIf
+        Add   *Var0  00000014 
+        Add   *Var1  00000019 
+        Call  802C016C      ( *Var0 *Var1 *Var2 *VarC )
+    EndIf
+    % Which one is the one about to be healed?
+    Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+    If *Var3 == 1 % Current Partner
+        Call    GetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+        Call    GetCurrentPartnerID ( *Var3 )
+            Switch *Var3
+                CaseOR == .Partner:Watt
+                CaseOR == .Partner:Bow
+                    Add *Var1 -10` % y
+            EndSwitch
+    Else
+        Call    GetPlayerPos  ( *Var0 *Var1 *Var2 )
+    EndIf
+    Add   *Var1  00000019 
+    Call  802D7520      ( *Var0 *Var1 *Var2 *VarB )
+    % VarB = HP to Heal
+    If  *VarB  !=  .False
+        % Which one is the one about to be healed?
+        Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+        If *Var3 == 0 % Mario
+            Call    802C022C  ( *VarB ) % RecoverHP
+        Else % Is a partner
+            % Heal partner
+            Call    $ReadAddress ( $HealingBox_PartnersOrder 0 *Var4 *Var3 .False )
+            Switch *Var4 % Partner
+                Case == .Partner:Goombario
+                    Set *Var0 8010F2B0
+                Case == .Partner:Kooper
+                    Set *Var0 8010F2B8
+                Case == .Partner:Bombette
+                    Set *Var0 8010F2C0
+                Case == .Partner:Parakarry
+                    Set *Var0 8010F2C8
+                Case == 5 % Bow
+                    Set *Var0 8010F2F0
+                Case == .Partner:Watt
+                    Set *Var0 8010F2D8
+                Case == .Partner:Sushie
+                    Set *Var0 8010F2E0
+                Case == .Partner:Lakilester
+                    Set *Var0 8010F2E8
+            EndSwitch
+            % var0 = Partner's HP data pointer
+            Call    $ReadAddress ( *Var0 0 *Var1 1 .False ) % load current HP
+            Call    $ReadAddress ( *Var0 0 *Var2 2 .False ) % load max HP
+            % var1 = current hp
+            % var2 = max hp
+            % varB = amount to heal
+            Add     *Var1 *VarB
+            If *Var1 > *Var2
+                Set *Var1 *Var2
+            EndIf
+            % save new hp
+            Call    $WriteAddress ( *Var0 0 *Var1 1 .False )
+        EndIf
+    EndIf
+    % VarC = FP to Recover
+    If  *VarC  !=  .False 
+        Call  802C0288  ( *VarC ) % RecoverFP
+    EndIf
+    If  *VarF  ==  00000000 
+        % Which one is the one about to be healed?
+        Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+        If *Var3 == 1 % Current Partner
+            Wait  10`
+            Set   *Var0 5 % Happy
+            Set   *Var1 .False
+            Exec  $SetPartnerAnimation
+            Call  SetPlayerAnimation    ( .PlayerAnim:ThumbsUp )
+            Wait  30`
+        Else
+            Wait  10`
+            Call  SetPlayerAnimation    ( .PlayerAnim:ThumbsUp )
+            Wait  30`
+        EndIf
+    Else
+        Wait  30`
+    EndIf
+    Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+    If *Var3 == 1 % Current Partner
+        Call    GetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+        Call    GetCurrentPartnerID ( *Var3 )
+        Switch *Var3
+            CaseOR == .Partner:Watt
+            CaseOR == .Partner:Bow
+                Add *Var1 -10` % y
+        EndSwitch
+    Else
+        Call    GetPlayerPos  ( *Var0 *Var1 *Var2 )
+    EndIf
+    Call  802D75D8  ( *Var0 *Var1 *Var2 *VarB )
+    Call  SetPlayerAnimation    ( 00010002 )
+    Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+    If *Var3 == 1 % Current Partner was healed?
+        Call    EnablePartnerAI
+    EndIf
+    Wait  20`
+    Call  802C03E8
+    Call  DisablePlayerInput    ( .False )
+    Call  802C031C
+    Return
+    End
+}
+
+#new:Script $UseItem_ShowItem % original location 3255E0 : 802C0410
+{
+    SetGroup  00000000 
+    % Which one is the one about to be healed?
+    Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+    Call    $ReadAddress ( $HealingBox_PartnersOrder 0 *Var4 *Var3 .False )
+    % var0 = Partner to heal ( 0 = Mario )
+    If *Var3 == 1 % Current Partner
+        Set     *Var0 5 % Happy
+        Set     *Var1 .False
+        Call    DisablePartnerAI ( 0 )
+        Exec    $SetPartnerAnimation
+        Call    GetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+    Else
+        Call  SetPlayerAnimation    ( .PlayerAnim:GotItem )
+        Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+    EndIf
+    Add   *Var1  0000002D 
+    Call  MakeItemEntity    ( *VarA *Var0 *Var1 *Var2 .ItemSpawnMode:Decoration 00000000 )
+    Set   *VarA  *Var0 
+    Wait  15`
+    If *Var3 == 1 % Current Partner
+        Call    GetNpcPos ( .Npc:Partner *Var0 *Var1 *Var2 )
+    Else
+        Call  GetPlayerPos      ( *Var0 *Var1 *Var2 )
+    EndIf
+    Add   *Var1  00000014 
+    Call  802C0000  ( *Var0 *Var1 *Var2 )
+    Call  RemoveItemEntity  ( *VarA )
+    Return
+    End
+}
+
+#new:Script $UseItem_Eat % original location 3256C4 : 802C04F4
+{
+    % Which one is the one about to be healed?
+    Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+    If *Var3 > 1 % Is a partner but isn't the current one
+        Return
+    EndIf
+    Thread
+        Loop  00000004 
+            Call  PlaySound ( 00002095 )
+            Wait  10`
+        EndLoop
+    EndThread
+    If *Var3 == 0 % Mario
+        Call  SetPlayerAnimation    ( .PlayerAnim:Eat )
+    Else % Current Partner
+        Set     *Var0 3 % talking
+        Set     *Var1 .False
+        Exec    $SetPartnerAnimation
+    EndIf
+    Wait  45`
+    Return
+    End
+}
+
+#new:Script $UseItem_Drink % original location 325730 : 802C0560
+{
+    % Which one is the one about to be healed?
+    Call    $ReadAddress ( $HealingBox_CursorData 0 *Var3 .False .False )
+    If *Var3 > 1 % Is a partner but isn't the current one
+        Return
+    EndIf
+    Thread
+        Loop  00000004 
+            Call  PlaySound ( 00002095 )
+            Wait  10`
+        EndLoop
+    EndThread
+    If *Var3 == 0 % Mario
+        Call  SetPlayerAnimation    ( .PlayerAnim:Drink )
+    Else
+        Set     *Var0 3 % talking
+        Set     *Var1 .False
+        Exec    $SetPartnerAnimation
+    EndIf
+    Wait  45`
+    Return
+    End
+}
+
+%==============
+% Battle
+%
+% Make partners able to use items and make the player able to use items on partners.
+%==============
+
+#new:Data $HealingItem_Bool
+{ 00 }
+
+% Patch ~Func:create_target_list
+%
+% Mario - Make possible to heal partners in battle
+@Hook 190CEC % 8026240C
+{
+    PUSH    RA, T0, T1, T2, V0, V1
+    LAW     T0, 800DC068 % get battleState
+    ORI     V0, R0, 11 % .BattleState:SelectTarget
+    BNE     T0, V0, .Only1Target
+    NOP
+    ORI     T0, R0, 1
+    SAB     T0, $HealingItem_Bool
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .Only1Target
+    CLEAR   V1
+    % Overwriting target #2 is only needed by items and healing moves
+    % Current turn is from Mario?
+    LABU    T0, 800DC071 % BattleFlagBits(0x01)
+    ANDI    T0, T0, 10 % bit4 = Current turn is partner
+    BNE     T0, R0, .CheckPartner
+    NOP
+    % Current command is items?
+    LABU    T0, 800DC0B8 % Mario current command
+    ORI     T1, R0, 2 % Items
+    BEQ     T0, T1, .AddPartnerAsATarget
+    NOP
+    % Star Spirits checks
+    % Current command is Star Spirits?
+    LABU    T0, 800DC0B8 % Mario current command
+    ORI     T1, R0, 8 % Star Spirits
+    BNE     T0, T1, .Only1Target
+    NOP
+    % Mario will use Refresh?
+    LABU    T0, 802AD109 % Cursor Pos
+    CLEAR   T1
+    BEQL    T0, T1, .AddPartnerAsATarget
+    ORI     V1, R0, 1
+    % Mario will use Smooch?
+    LABU    T0, 802AD109 % Cursor Pos
+    ORI     T1, R0, 4
+    BEQL    T0, T1, .AddPartnerAsATarget
+    ORI     V1, R0, 1
+    BEQ     R0, R0, .Only1Target
+    NOP
+    .CheckPartner
+    % Current command is items?
+    LABU    T0, 800DC0BA % Partner current command
+    ORI     T1, R0, 2 % Items
+    BEQ     T0, T1, .AddMarioAsATarget
+    NOP
+    BEQ     R0, R0, .Only1Target
+    NOP
+    .AddMarioAsATarget
+    % Set target list's cursor data for Mario's partner
+    LIO     T0, 800DC148 % Battle Actors Pointer Table
+    BEQ     R0, R0, .AddExtraTarget
+    LW      T0, 4 (T0) % load partner actor's battle data
+    .AddPartnerAsATarget
+    % Set target list's cursor data for Mario's partner
+    LIO     T0, 800DC148 % Battle Actors Pointer Table
+    LW      T0, 0 (T0) % load mario actor's battle data
+    .AddExtraTarget
+    ADDIU	S5, S5, 0002 % use 2 targets instead of 1
+    ADDIU   T0, T0, 14 % write in target #2
+    % nuke target #2 data
+    SW      R0, 22C (T0)
+    SW      R0, 230 (T0)
+    SW      R0, 234 (T0)
+    SW      R0, 238 (T0)
+    SW      R0, 23C (T0)
+    % set cursor pos #2 as Partner
+    ORI     T1, R0, 1 % Partner
+    SB      T1, 22C (T0) % actor's type
+    SB      T1, 22F (T0) % ?
+    % read partner pos
+    LIO     T2, 800DC148 % Actor Table - Start
+    LW      T2, 4 (T2) % load Partner's actor pointer
+    % Save cursor x pos
+    LW      T1, 144 (T2) % load actor x pos
+    % Convert float to int
+    MTC1    T1, F0
+    TRUNC.W.S F0, F0
+    MFC1    T1, F0
+    ADDIU   T1, T1, A % x
+    SH      T1, 230 (T0) % cursor x offset
+    % Save cursor y pos
+    LW      T1, 148 (T2) % load actor y pos
+    % Convert float to int
+    MTC1    T1, F0
+    TRUNC.W.S F0, F0
+    MFC1    T1, F0
+    ADDIU   T1, T1, 20 % y
+    SH      T1, 232 (T0) % cursor y offset
+    ORI     T1, R0, 9C % target name?
+    SB      T1, 23C (T0) % ?
+    BNE     V1, R0, .End % skip if was Refresh or Smooch.
+    NOP
+    % force flag 00000001 to always be true, needed by buff items
+    LIO     T0, 800DC070 % battleStatus
+    LW      T1, 184 (T0) % currentTargetListFlags
+    ORI     T1, T1, 0001
+    BEQ     R0, R0, .End
+    SW      T1, 184 (T0)
+    .Only1Target
+    ADDIU	S5, S5, 0001
+    .End
+    POP     RA, T0, T1, T2, V0, V1
+    % restore vanilla code
+    J       80262414
+    ADDIU	S7, S7, 0014
+}
+
+% Target - Show "Mario & Partner" instead of partner name - Get string width
+%
+% Needed by Refresh & Smooch.
+%
+% ~Func:btl_state_draw_select_target
+@Hook:Battle 802AB0DC
+{
+    PUSH    V0
+    % check if partner is HP compatible or alive.
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .End
+    NOP
+    % check if current move is Refresh or Smooch.
+    LAHU    V0, 800DC1EC % selectedMove
+    ORI     A1, R0, 0078 % Refresh
+    BEQ     V0, A1, .MarioAndPartner
+    ORI     A1, R0, 007C % Smooch
+    BEQ     V0, A1, .MarioAndPartner
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .MarioAndPartner
+    POP     V0
+    LIO     A0, $String_MarioAndPartner
+    J       802AB0F0
+    RESERVED
+    .End
+    POP     V0
+    % restore code
+    LUI	    A0, 802B
+    J       802AB0E4
+    ADDU	A0, A0, V0
+}
+
+% Partner has already used his/her turn
+%
+% Target - Show "Mario & Partner" instead of partner name - Get string width
+%
+% Needed by Refresh & Smooch.
+%
+% ~Func:btl_state_draw_select_target
+@Hook:Battle 802AB0C8
+{
+    PUSH    V0
+    % check if partner is HP compatible or alive.
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .End
+    LUI	    A0, 001D
+    % check if current move is Refresh or Smooch.
+    LAHU    V0, 800DC1EC % selectedMove
+    ORI     A1, R0, 0078 % Refresh
+    BEQ     V0, A1, .MarioAndPartner
+    ORI     A1, R0, 007C % Smooch
+    BEQ     V0, A1, .MarioAndPartner
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .MarioAndPartner
+    POP     V0
+    LIO     A0, $String_MarioAndPartner
+    J       802AB0F0
+    RESERVED
+    ORI	    A0, A0, 00C4
+    .End
+    POP     V0
+    ORI	    A0, A0, 00C4
+    J	    802AB0F0
+    NOP
+}
+
+% Target - Show "Mario & Partner" instead of partner name - Draw string
+%
+% Needed by Refresh & Smooch.
+%
+% ~Func:btl_state_draw_select_target
+@Hook:Battle 802AB2C0
+{
+    PUSH    V0
+    % check if partner is HP compatible or alive.
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .End
+    NOP
+    % check if current move is Refresh or Smooch.
+    LAHU    V0, 800DC1EC % selectedMove
+    ORI     A3, R0, 0078 % Refresh
+    BEQ     V0, A3, .MarioAndPartner
+    ORI     A3, R0, 007C % Smooch
+    BEQ     V0, A3, .MarioAndPartner
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .MarioAndPartner
+    POP     V0
+    LIO     A0, $String_MarioAndPartner
+    J       802AB2C8
+    RESERVED
+    .End
+    POP     V0
+    % restore code
+    ADDU	A0, A0, V0
+    J       802AB2C8
+    LW	    A0, B738 (A0)
+}
+
+% Partner has used his turn too.
+%
+% Target - Show "Mario & Partner" instead of partner name - Draw string
+%
+% Needed by Refresh & Smooch.
+%
+% ~Func:btl_state_draw_select_target
+@Hook:Battle 802AB298
+{
+    PUSH    V0
+    % check if partner is HP compatible or alive.
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .End
+    LUI	    A0, 001D
+    % check if current move is Refresh or Smooch.
+    LAHU    V0, 800DC1EC % selectedMove
+    ORI     A3, R0, 0078 % Refresh
+    BEQ     V0, A3, .MarioAndPartner
+    ORI     A3, R0, 007C % Smooch
+    BEQ     V0, A3, .MarioAndPartner
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .MarioAndPartner
+    POP     V0
+    LIO     A0, $String_MarioAndPartner
+    J       802AB2D4
+    RESERVED
+    .End
+    POP     V0
+    % restore code
+    J       802AB2D4
+    ORI	    A0, A0, 00C4
+}
+
+#string $String_MarioAndPartner
+{
+Mario & Partner[End]
+}
+
+% Using Items
+% Set initial cursor pos as owner (only with healing items)
+@Hook 191184 % 802628A4
+{
+    PUSH    RA, V0, A0, A1, T0, T1, T2, T4
+    % This is needed only for healing items so check if at least
+    % is one of those
+    LABU    T0, $HealingItem_Bool
+    BEQ     T0, R0, .End
+    NOP
+    JAL     $GetPartnerHP
+    NOP
+    BLEZ    V0, .End % If the player don't have a partner available just skip everything
+    NOP
+    %=================
+    % Whose turn is it?
+    %=================
+    LABU    T0, 800DC071 % BattleFlagBits(0x01)
+    ANDI    T2, T0, 10 % bit4 = Current turns is partner
+    BEQ     T2, R0, .MarioTurn
+    NOP
+    %===========
+    .PartnerTurn
+    %===========
+    % Check if the current command is "Items"
+    LABU    T0, 800DC0BA % Partner current command
+    ORI     T1, R0, 2 % Items
+    BNE     T0, T1, .End
+    NOP
+    BEQ     R0, R0, .SetCursorPos_Partner
+    NOP
+    %===========
+    .MarioTurn
+    %===========
+    % Check if the current command is "Items"
+    LABU    T0, 800DC0B8 % Mario current command
+    ORI     T1, R0, 2 % Items
+    BNE     T0, T1, .End
+    NOP
+    .SetCursorPos_Mario
+    LABU    T0, $MarioPos
+    BEQ     T0, R0, .End
+    NOP
+    BEQ     R0, R0, .StartAtPos2
+    NOP
+    .SetCursorPos_Partner
+    LABU    T0, $MarioPos
+    BEQ     T0, R0, .StartAtPos2
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .StartAtPos2
+    % set cursor pos as #2
+    ORI     V1, R0, 1
+    BEQ     R0, R0, .End
+    SB	    V1, 0425 (T3) % set cursor pos
+    .End
+    SAB     R0, $HealingItem_Bool
+    POP     RA, V0, A0, A1, T0, T1, T2, T4
+    % restore vanilla code
+    SB	    S5, 040C (T3)
+    J       802628AC
+    LBU	    V1, 0197 (S6)
+}
+
+% Mystery - Make Mystery's offensive items compatible to be used by Partners.
+%
+% LoadFreeItemScript(API)
+@Hook:Battle 8026804C
+{
+    % check current turn
+    LW      S0, 0 (S1) % battleFlags
+    LUI     S2, 0010 % 00100000 = partner turn
+    AND     S0, S0, S2
+    BEQ     S0, R0, .End
+    LW	    S0, 00D8 (S1) % player actor data
+    LW	    S0, 00DC (S1) % partner actor data
+    .End
+    % restore code
+    J       80268054
+    SLL	    V0, V0, 5
+}
+
+%==============
+% Put Partners get hurt when being hit in battle instead of getting dazed.
+%==============
+
+% From ~Func:calc_enemy_damage_target
+@Hook 1A6970 % 80278090
+{
+    PUSH    RA, V0, A0, T0, T1, T2
+    JAL     $GetPartnerHP
+    NOP
+    % A2 = Amount to substract
+    SUB     A0, V0, A2
+    BLEZL   A0, .SetPartnerHP % Partner died
+    CLEAR   A0 % set HP to zero
+    .SetPartnerHP
+    JAL     $SetPartnerHP
+    NOP
+    .End
+    POP     RA, V0, A0, T0, T1, T2
+    J       80278098
+    NOP
+}
+
+% Make possible to hurt partners when EnemyDamageTarget use a damage modifier of 00000040
+%
+% From ~Func:calc_enemy_damage_target
+@Function 1A6958 % 80278078
+{
+    NOP
+}
+
+% Don't KO'd a partner when partner lands in a spiked or fire enemy
+%
+% This is done by removing some scripts call in each partner battle file,
+% 
+% Fall to Home instead of always falling to the ground when landing on a spiked enemy (Needed by flying partners)
+@Script 1C38C4 % DoPartnerSpikeContact
+{
+    ExecWait $DoPartnerSpikeContact
+    Return
+    End
+}
+
+% Fall to Home instead of always falling to the ground when landing on a fire enemy (Needed by flying partners)
+@Script 1C3548 % DoPartnerBurnContact
+{
+    ExecWait $DoPartnerBurnContact
+    Return
+    End
+}
+
+#new:Script:Battle $DoPartnerSpikeContact % 001C38C4
+{
+    0:  Set   *VarA  *Var1 
+   10:  Set   *VarB  *Var2 
+   20:  Call  SetActorRotation      ( .Actor:Self 00000000 00000000 00000000 )
+   3C:  Call  SetActorScale ( .Actor:Self *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+   58:  Call  SetActorDispOffset    ( .Actor:Self 00000000 00000000 00000000 )
+   74:  Call  UseBattleCamPreset  ( 0000003D )
+   84:  Call  SetAnimation  ( .Actor:Partner FFFFFFFF *VarA )
+   9C:  Call  GetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+   B8:  Sub   *Var0  0000003C 
+   C8:  Add   *Var1  00000028 
+   D8:  Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[0.1] )
+   EC:  Call  SetJumpAnimations     ( .Actor:Partner 00000000 *VarA *VarA *VarA )
+  10C:  Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+  128:  Call  JumpToGoal    ( .Actor:Partner 00000005 .False .False .False )
+  148:  Set   *Var1  *VarA 
+  158:  Set   *Var2  00000000 
+  168:  ExecWait  802977BC 
+  174:  Call  UseBattleCamPreset  ( 00000002 )
+  184:  ChildThread
+  18C:  	Call  SetActorRotationOffset    ( .Actor:Partner 00000000 *VarB 00000000 )
+  1A8:  	Set   *Var0  00000000 
+  1B8:  	Loop  0000000F 
+  1C4:  		Add   *Var0  00000030 
+  1D4:  		Call  SetActorRotation  ( .Actor:Partner 00000000 00000000 *Var0 )
+  1F0:  		Wait  1`
+  1FC:  	EndLoop
+  204:  	Call  SetActorRotationOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+  220:  EndChildThread
+  228:  Call  SetGoalToHome ( .Actor:Partner )
+  238:  Call  GetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+  254:  Add   *Var0  0000001E 
+  264:  Set   *Var1  00000000 
+  274:  Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+  288:  Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+  2A4:  Call  JumpToGoal    ( .Actor:Partner 0000000F .False .True .False )
+  2C4:  Sub   *Var0  00000014 
+  2D4:  Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+  2F0:  Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+        Call  GetHomePos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+  320:  Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+  33C:  Call  JumpToGoal    ( .Actor:Partner 00000004 .False .True .False )
+  35C:  Return
+  364:  End
+}
+
+#new:Script:Battle $DoPartnerBurnContact % 001C3548
+{
+    0:  Set    *VarA   *Var1 
+   10:  Set    *VarB   *Var2 
+   20:  Set    *VarC   *Var3 
+   30:  Call  SetActorRotation      ( .Actor:Self 00000000 00000000 00000000 )
+   4C:  Call  SetActorScale ( .Actor:Self *Fixed[1.0] *Fixed[1.0] *Fixed[1.0] )
+   68:  Call  SetActorDispOffset    ( .Actor:Self 00000000 00000000 00000000 )
+   84:  Call  UseBattleCamPreset  ( 0000003E )
+   94:  Call  SetAnimation  ( .Actor:Partner FFFFFFFF  *VarA )
+   AC:  Call  GetGoalPos    ( .Actor:Partner  *Var0  *Var1  *Var2 )
+   C8:  Sub    *Var0  0000003C 
+   D8:  Add    *Var1  00000028 
+   E8:  Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[0.1] )
+   FC:  Call  SetJumpAnimations     ( .Actor:Partner 00000000  *VarA  *VarA  *VarA )
+  11C:  Call  SetGoalPos    ( .Actor:Partner  *Var0  *Var1  *Var2 )
+  138:  Call  JumpToGoal    ( .Actor:Partner 00000005 .False .False .False )
+  158:  Set    *Var1   *VarA 
+  168:  Set    *Var2   *VarC 
+  178:  ExecWait  8029621C 
+  184:  Call  UseBattleCamPreset  ( 00000002 )
+  194:  ChildThread
+  19C:  	Call  SetActorRotationOffset    ( .Actor:Partner 00000000  *VarB 00000000 )
+  1B8:  	Set    *Var0  00000000 
+  1C8:  	Loop  0000000F 
+  1D4:  		Add    *Var0  00000030 
+  1E4:  		Call  SetActorRotation  ( .Actor:Partner 00000000 00000000  *Var0 )
+  200:  		Wait  1`
+  20C:  	EndLoop
+  214:  	Call  SetActorRotationOffset    ( .Actor:Partner 00000000 00000000 00000000 )
+  230:  EndChildThread
+  238:  Call  SetGoalToHome ( .Actor:Partner )
+  248:  Call  GetGoalPos    ( .Actor:Partner  *Var0  *Var1  *Var2 )
+  264:  Add    *Var0  0000001E 
+  274:  Set    *Var1  00000000 
+  284:  Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.4] )
+  298:  Call  SetGoalPos    ( .Actor:Partner  *Var0  *Var1  *Var2 )
+  2B4:  Call  JumpToGoal    ( .Actor:Partner 0000000F .False .True .False )
+  2D4:  Sub    *Var0  00000014 
+  2E4:  Call  SetGoalPos    ( .Actor:Partner  *Var0  *Var1  *Var2 )
+  300:  Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+        Call  GetHomePos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+  330:  Call  SetGoalPos    ( .Actor:Partner  *Var0  *Var1  *Var2 )
+  34C:  Call  JumpToGoal    ( .Actor:Partner 00000004 .False .True .False )
+  36C:  Return
+  374:  End
+}
+
+%======================
+
+% v0 = current partner HP
+%
+% Returns -1 if current partner isn't hp compatible
+#new:Function $GetPartnerHP
+{
+    PUSH    T0, T1, T2
+    LUI     T2, 8011
+    LABU    T0, 8010F2A2 % Current Partner
+    ORI     T1, R0, 1 % Goombario
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B1
+    ORI     T1, R0, 2 % Kooper
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B9
+    ORI     T1, R0, 3 % Bombette
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C1
+    ORI     T1, R0, 4 % Parakarry
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C9
+    ORI     T1, R0, 6 % Watt
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2D9
+    ORI     T1, R0, 7 % Sushie
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E1
+    ORI     T1, R0, 8 % Lakilester
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E9
+    ORI     T1, R0, 9 % Bow
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2F1
+    % The player doesn't have any partner with HP
+    BEQ     R0, R0, .End
+    ADDI    T2, R0, FFFF
+    .LoadHP
+    LBU     T2, 0 (T2)
+    .End
+    COPY    V0, T2
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+% A0 = partnerID
+%
+% V0 -> currentHP
+%
+% Returns -1 if current partner isn't hp compatible
+#new:Function $GetPartnerHP_byID
+{
+    PUSH    T0, T1, T2
+    COPY    T0, A0
+    LUI     T2, 8011
+    ORI     T1, R0, 1 % Goombario
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B1
+    ORI     T1, R0, 2 % Kooper
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B9
+    ORI     T1, R0, 3 % Bombette
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C1
+    ORI     T1, R0, 4 % Parakarry
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C9
+    ORI     T1, R0, 6 % Watt
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2D9
+    ORI     T1, R0, 7 % Sushie
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E1
+    ORI     T1, R0, 8 % Lakilester
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E9
+    ORI     T1, R0, 9 % Bow
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2F1
+    % The player doesn't have any partner with HP
+    BEQ     R0, R0, .End
+    ORI     T2, R0, FFFF
+    .LoadHP
+    LBU     T2, 0 (T2)
+    .End
+    COPY    V0, T2
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+#new:Function $GetPartnerMaxHP
+{
+    PUSH    T0, T1, T2
+    LUI     T2, 8011
+    LABU    T0, 8010F2A2 % Current Partner
+    ORI     T1, R0, 1 % Goombario
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B1
+    ORI     T1, R0, 2 % Kooper
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B9
+    ORI     T1, R0, 3 % Bombette
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C1
+    ORI     T1, R0, 4 % Parakarry
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C9
+    ORI     T1, R0, 6 % Watt
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2D9
+    ORI     T1, R0, 7 % Sushie
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E1
+    ORI     T1, R0, 8 % Lakilester
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E9
+    ORI     T1, R0, 9 % Bow
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2F1
+    % The player doesn't have any partner with HP
+    BEQ     R0, R0, .End
+    ORI     T2, R0, FFFF
+    .LoadHP
+    LBU     T2, 1 (T2)
+    .End
+    COPY    V0, T2
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+% `A0` = NewHP
+%
+% Set current partner HP
+#new:Function $SetPartnerHP
+{
+    PUSH    T0, T1, T2
+    LUI     T2, 8011
+    LABU    T0, 8010F2A2 % Current Partner
+    ORI     T1, R0, 1 % Goombario
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B0
+    ORI     T1, R0, 2 % Kooper
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2B8
+    ORI     T1, R0, 3 % Bombette
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C0
+    ORI     T1, R0, 4 % Parakarry
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2C8
+    ORI     T1, R0, 6 % Watt
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2D8
+    ORI     T1, R0, 7 % Sushie
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E0
+    ORI     T1, R0, 8 % Lakilester
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2E8
+    ORI     T1, R0, 9 % Bow
+    BEQL    T0, T1, .LoadHP
+    ADDIU   T2, T2, F2F0
+    % The player doesn't have any partner with HP
+    BEQ     R0, R0, .End
+    CLEAR   T2
+    .LoadHP
+    SB      A0, 1 (T2)
+    .End
+    POP     T0, T1, T2
+    JR      RA
+    NOP
+}
+
+% Call $GetPartnerHP_API ( *out )
+%
+% Get current partner HP
+#new:Function $GetPartnerHP_API
+{
+    PUSH    RA, A0, A1, A2
+    JAL     $GetPartnerHP
+    NOP
+    % V0 = PartnerHP
+    LW      A1, C (A0)
+    LW      A1, 0 (A1) % read arg0
+    JAL     ~Func:set_variable
+    COPY    A2, V0
+    POP     RA, A0, A1, A2
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% Call  $GetPartnerData_API ( *out )
+%
+% Get current partner data (ranks, hp, maxHP)
+#export:Function $GetPartnerData_API
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LUI     A2, 8011
+    LABU    A1, 8010F2A2 % Current Partner
+    ORI     A3, R0, 1 % Goombario
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2AC
+    ORI     A3, R0, 2 % Kooper
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2B4
+    ORI     A3, R0, 3 % Bombette
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2BC
+    ORI     A3, R0, 4 % Parakarry
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2C4
+    ORI     A3, R0, 6 % Watt
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2D4
+    ORI     A3, R0, 7 % Sushie
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2DC
+    ORI     A3, R0, 8 % Lakilester
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2E4
+    ORI     A3, R0, 9 % Bow
+    BEQL    A1, A3, .SetVar
+    ADDIU   A2, A2, F2EC
+    % The player doesn't have any partner with HP
+    ADDI    A2, R0, -1
+    .SetVar
+    % set variable
+    LW      A1, C (A0)
+    JAL     ~Func:set_variable
+    LW      A1, 0 (A1) % arg0
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+
+% Skip blocking an attack with A when using a Partner
+%
+% From ~Func:calc_enemy_damage_target
+@Hook:Battle 1A62F0 % 80277A10
+{
+    PUSH    T0, T1, R0
+    % Check if current attack is for partner
+    % S6 = TargetID
+    ORI     T0, R0, 100 % .Actor:Partner
+    BNE     T0, S6, .TrackAButton
+    NOP
+    % Check Kooper flipped state
+    %
+    % Check if current Partner is Kooper
+    LABU    T0, 8010F2A2 % partnerID
+    ORI     T1, R0, 2
+    BNE     T0, T1, .TrackAButton
+    NOP
+    % Check if Kooper is currently flipped to skip being able
+    % to guard the attack.
+    LIO     T0, $ExtraPartnerActorData
+    LBU     T0, 1C (T0) % load flipped byteflag
+    BNE     T0, R0, .End
+    CLEAR   V0
+    .TrackAButton
+    JAL     ~Func:check_block_input
+    ORI	    A0, R0, 8000 % A button
+    SW      V0, 18 (SP) % push V0
+    %================
+    % Damage Dodge P
+    %================
+    BEQ     V0, R0, .End
+    LW      V0, 18 (SP) % pop V0
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 0180 % .Item:DamageDodgeP
+    SUBU	S0, S0, V0 % S0 = Amount to deal
+    LW      V0, 18 (SP) % pop V0
+    .End
+    POP     T0, T1, R0
+    J       80277A18
+    NOP
+}
+
+% Flip Kooper if an enemy used a POW Block.
+%
+% From ~Func:calc_item_damage_enemy
+@Hook:Battle 802521B0
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Check if target is partner
+    LHU     A0, 192 (A0)
+    ORI     A1, R0, 0100 % .Actor:Partner
+    BNE     A0, A1, .End
+    NOP
+    % Check if current Partner is Kooper
+    LABU    A0, 8010F2A2 % partnerID
+    ORI     A1, R0, 2 % kooper
+    BNE     A0, A1, .End
+    NOP
+    % check if this attack has the "Jump, Pow or Quake" flags
+    LIO     A0, 00000C80
+    LAW     A1, 800DC1F8 % load DamageTypeFlags for last attack
+    AND     A0, A0, A1
+    BNEL    A0, R0, .End
+    ORI     S2, R0, D % .Event:FlipTrigger
+    %===============
+    % restore vanilla code
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JAL	    ~Func:dispatch_event_general
+    COPY    A1, S2
+    J       802521B8
+    NOP
+}
+
+% Enable being able to block if partner is poisoned or shrinked
+%
+% From ~Func:calc_enemy_damage_target
+@Hook 1A62D4 % 802779F4
+{
+    LB	    V0, 0210 (S3) % load current debuffID
+    ORI     V1, R0, 9 % .Status:Poison
+    BEQ     V0, V1, .DontSkipGuard
+    NOP
+    ORI     V1, R0, A % .Status:Shrink
+    BEQ     V0, V1, .DontSkipGuard
+    NOP
+    LB	    V0, 0216 (S3) % load debuff state
+    BNE 	V0, R0, .SkipGuard
+    NOP
+    .DontSkipGuard
+    J       802779FC
+    NOP
+    .SkipGuard
+    J       80277A80
+    NOP
+}
+
+% Attack Dodged - Partner - Sub attack damage by 1 instead of always doing zero damage
+@Function 1A6300 % 80277A20
+{
+    ADDI	S0, S0, FFFF
+}
+
+% When partner is dead put the message that appears when you press Z isn't the one
+% about "Since you already used your turn you can't switch"
+%
+% From ~Func:btl_state_update_player_menu
+@Hook:Battle 41B9A8 % 802A6C18
+{
+    PUSH    RA, V0
+    ORI     V0, R0, 50 % messageIndex
+    BNE     A0, V0, .ShowMessage
+    NOP
+    % current message index is 0x50, check if partner is dead
+    JAL     $GetPartnerHP
+    NOP
+    BLEZL   V0, .ShowMessage
+    ORI     A0, R0, 0100 % Show "Partner is not available" instead
+    .ShowMessage
+    JAL     ~Func:btl_show_variable_battle_message
+    NOP
+    POP     RA, V0
+    J       802A6C20
+    NOP
+}
+
+% If the current partner is dead, make sure partner's turn
+% always stay as "turn already used" - enemies turn
+%
+% From ~Func:btl_state_update_next_enemy
+@Hook 175D64 % 80247484
+{
+    PUSH    RA, A0, V0, T0, T1, T2
+    JAL     $GetPartnerHP
+    NOP
+    BEQL    V0, R0, .End
+    ADDIU	V1, R0, FFFF % stay turn as "used"
+    % Check Kooper flipped state too
+    %
+    % Check if current partner is Kooper
+    LABU    V0, 8010F2A2 % partnerID
+    ORI     T0, R0, 2
+    BNE     V0, T0, .DontSkipPartnerTurn
+    NOP
+    JAL     $GetPartnerExtraBattleData
+    ORI     A0, R0, D % load turns left to unflip
+    BEQ     V0, R0, .DontSkipPartnerTurn
+    NOP
+    % Activate 00000010 % forces partner to use his idleAnimation
+    LW      V0, 18 (SP) % load BattleFlags2
+    ORI     T0, R0, 10 % bit4
+    OR      V0, V0, T0
+    SW      V0, 18 (SP)
+    BEQ     R0, R0, .End
+    ADDIU	V1, R0, FFFF % stay turn as "used"
+    .DontSkipPartnerTurn
+    ADDIU	V1, R0, FFFB
+    .End
+    POP     RA, A0, V0, T0, T1, T2
+    J       8024748C
+    AND	    V0, V0, T0
+}
+
+% If the current partner is dead, make sure partner's turn
+% always stay as "turn already used" - start heroes turn
+%
+% From ~Func:btl_state_update_begin_turn
+@Hook:Battle 170454 % 80241B74
+{
+    PUSH    RA, A0, A1, V0, T0
+    %===== Check if Partner is Dead======
+    JAL     $GetPartnerHP
+    NOP
+    BEQ     V0, R0, .SkipTurn
+    NOP
+    % Kooper flipped state - Check if is time for kooper to get up
+    %
+    % Check if current partner is Kooper
+    .CheckKooper
+    LABU    V0, 8010F2A2 % partnerID
+    ORI     T0, R0, 2
+    BNE     V0, T0, .DontSkipTurn
+    NOP
+    JAL     $GetPartnerExtraBattleData
+    ORI     A0, R0, D % load turns left to unflip
+    BNE     V0, R0, .SkipTurn
+    NOP
+    % Check if flipped flag is true, maybe the turns left are zero but the flipped flag is true
+    % means Kooper will go up now, but will become available until the next turn
+    JAL     $GetPartnerExtraBattleData
+    ORI     A0, R0, C % load flipped byteflag
+    BEQ     V0, R0, .End
+    NOP
+    % Kooper just go up
+    %
+    % clear flipped byteflag
+    CLEAR   A1
+    JAL     $SetPartnerExtraBattleData
+    ORI     A0, R0, C % set flipped byteflag
+    % He will become available on the next turn
+    .SkipTurn
+    BEQ     R0, R0, .End
+    ADDIU	V1, R0, FFFF % stay turn as "used", 
+    .DontSkipTurn
+    ADDIU	V1, R0, FFFB % don't skip partner turn
+    .End
+    POP     RA, A0, A1, V0, T0
+    J       80241B7C
+    AND	    V0, V0, V1
+}
+
+% If the current partner is dead, make sure partner's turn
+% always stay as "turn already used" - run away failed - 1
+@Hook 1719A0 % 802430C0
+{
+    PUSH    RA, A0, V0, T0
+    JAL     $GetPartnerHP
+    NOP
+    BEQL    V0, R0, .End
+    ADDIU	V1, R0, FFFF % stay turn as "used"
+    % Check Kooper flipped state too
+    %
+    % Check if current partner is Kooper
+    LABU    V0, 8010F2A2 % partnerID
+    ORI     T0, R0, 2
+    BNE     V0, T0, .DontSkipPartnerTurn
+    NOP
+    JAL     $GetPartnerExtraBattleData
+    ORI     A0, R0, D % load turns left to unflip
+    BNEL    V0, R0, .End
+    ADDIU	V1, R0, FFFF % stay turn as "used"
+    .DontSkipPartnerTurn
+    ADDIU	V1, R0, FFFB
+    .End
+    POP     RA, A0, V0, T0
+    J       802430C8
+    AND	    V0, V0, V1
+}
+
+% If the current partner is dead, make sure partner's turn
+% always stay as "turn already used" - run away failed - 2
+@Hook 172074 % 80243794
+{
+    PUSH    RA, A0, V0, T0
+    JAL     $GetPartnerHP
+    NOP
+    BEQL    V0, R0, .End
+    ADDIU	V1, R0, FFFF % stay turn as "used"
+    % Check Kooper flipped state too
+    %
+    % Check if current partner is Kooper
+    LABU    V0, 8010F2A2 % partnerID
+    ORI     T0, R0, 2
+    BNE     V0, T0, .DontSkipPartnerTurn
+    NOP
+    JAL     $GetPartnerExtraBattleData
+    ORI     A0, R0, D % load turns left to unflip
+    BNEL    V0, R0, .End
+    ADDIU	V1, R0, FFFF % stay turn as "used"
+    .DontSkipPartnerTurn
+    ADDIU	V1, R0, FFFB
+    .End
+    POP     RA, A0, V0, T0
+    J       8024379C
+    AND	    V0, V0, A2
+}
+
+% Player - Partners List - Make each partner already dead as unavailable
+%
+% From ~Func:btl_state_update_player_menu
+@Hook 41CC4C % 802A7EBC
+{
+    % restore vanilla code
+    SW	    V0, 0210 (A0)
+    LB	    V0, 0012 (S5)
+    PUSH    RA, A0, V0
+    % check if current mode is Super Bow
+    LABU    V0, 8035600B % *GameMode
+    ORI     A0, R0, 1
+    BEQ     V0, A0, .PartnerDead
+    NOP
+    .CheckPartnersHP
+    % A1 = partner ID for current partner being checked
+    JAL     $GetPartnerHP_byID
+    COPY    A0, A1
+    BEQ     V0, R0, .PartnerDead
+    NOP
+    % partner alive
+    POP     RA, A0, V0
+    J       802A7EC4
+    NOP
+    .PartnerDead
+    POP     RA, A0, V0
+    J       802A7ECC
+    NOP
+}
+
+% Partner - Partners List - Make each partner already dead as unavailable
+%
+% From ~Func:btl_state_update_partner_menu
+@Hook:Battle 802A984C
+{
+    % restore vanilla code
+    SW	    V0, 0210 (A0)
+    LB	    V0, 0012 (S7)
+    PUSH    RA, A0, V0
+    % check if current mode is Super Bow
+    LABU    V0, 8035600B % *GameMode
+    ORI     A0, R0, 1
+    BEQ     V0, A0, .PartnerDead
+    NOP
+    .CheckPartnersHP
+    % A1 = partner ID for current partner being checked
+    JAL     $GetPartnerHP_byID
+    COPY    A0, A1
+    BEQ     V0, R0, .PartnerDead
+    NOP
+    % partner alive
+    POP     RA, A0, V0
+    J       802A9854
+    NOP
+    .PartnerDead
+    POP     RA, A0, V0
+    J       802A985C
+    NOP
+}
+
+% When the player tries to swap to a dead partner
+% show a different message rather than the one
+% about having the same partner.
+@Hook 8E1A4 % 800F4CF4
+{
+    PUSH    RA, T0, T1, T2, V0
+    % Check if the player is inside a battle
+    LABU    T0, 80074094 % Game Mode
+    ORI     T1, R0, 1 % Battle
+    BNE     T0, T1, .SamePartner
+    NOP
+    % get partnerID from the element selected
+    LABU    T0, 8010D64B % cursor pos
+    LIO     T1, 802ACDD8 % partnerID for each element (each word is each ID)
+    % get offset
+    ORI     T2, R0, 4
+    MULTU   T0, T2
+    MFLO    T2
+    ADDU    T1, T1, T2
+    LW      A0, 0 (T1)
+    % check if current mode is Super Bow
+    LABU    V0, 8035600B % *GameMode
+    ORI     A0, R0, 1
+    BEQ     V0, A0, .PartnerDead
+    NOP
+    % Check if HP from the partner in the cursor pusition is zero
+    JAL     $GetPartnerHP_byID
+    NOP
+    BGTZ    V0, .SamePartner
+    NOP
+    .PartnerDead
+    LIO     A0, $String_PartnerDead
+    BEQ     R0, R0, .End
+    RESERVED
+    .SamePartner
+    LIO     A0, 001D006B % You already have that partner!
+    .End
+    POP     RA, T0, T1, T2, V0
+    J       800F4CFC
+    NOP
+}
+
+#string $String_PartnerDead
+{
+This partner is[BR]
+unavailable![END]
+}
+
+% Patch SetTargetActor (API)
+%
+% Check if the current partner is dead
+% to avoid enemies from trying to attack it
+@Hook 1AAE7C % 8027C59C
+{
+    PUSH    RA, V0
+    % S0 = Current target
+    LIO     A0, 00000100 % .Actor:Partner
+    BNE     A0, S0 .End
+    NOP
+    % check if player is Peach (Kammy's Fight)
+    LABU    V0, 800740A2 % Peach's byte
+    BNE     V0, R0, .End
+    NOP
+    % Check if current partner isn't dead
+    JAL     $GetPartnerHP
+    NOP
+    BLEZL   V0, .End
+    CLEAR   S0 % .Actor:Player - Attack Mario instead
+    .End
+    POP     RA, V0
+    /% TESTING - Always attack partner
+    LIO     S0, 00000100 % .Actor:Partner%/
+    % restore vanilla code
+    COPY	A0, V0
+    J       8027C5A4
+    ADDIU	V1, R0, 0001
+}
+
+% Don't clear the button pressed inputs at the end of the function,
+% to make possible to block attacks that damage Mario & Partner at the
+% same time.
+%
+% ~DamageType:00002000 = consecutive hits attack
+%
+% From ~Func:check_block_input
+@Hook 197994 % 802690B4
+{
+    PUSH    A0, A1
+    % check if is a consecutive hits attack
+    LW      A0, 188 (S1) % battleStatus(0x188) - currentAttackElement
+    LIO     A1, 00002000
+    AND     A1, A1, A0
+    BNEL    A1, R0, .End
+    SW	    R0, 0330 (V0) % clear input queue
+    .End
+    POP     A0, A1
+    J       802690BC
+    ADDIU	A0, A0, 0001
+}
+
+% Mario dies - Don't force partner's idle animations to be used
+%
+% From ~Func:btl_state_update_defeat
+@Function:Battle 802454C8
+{
+    NOP
+}
+
+% Always check if partner HP is now zero (like how Mario works)
+%
+% From ~Func:btl_check_player_defeated
+@Function 191D88 % 802634A8
+{
+    J       $CheckPartnerDefeated
+    LW	    RA, 0010 (SP)
+}
+
+#new:Function:Battle $CheckPartnerDefeated
+{
+    PUSH    RA, A0, A1, A2, A3, V1
+    LIO     A0, $ActorDead % clear defeated bytes
+    SW      R0, 0 (A0)
+    JAL     $GetPartnerHP
+    NOP
+    BLTZL   V0, .End % Partner isn't hp compatible
+    CLEAR   V0
+    BGTZL   V0, .End % Partner is still alive
+    CLEAR   V0
+    % check if partner is already dead
+    %
+    % just check if he is flat by reading his X rotation
+    LIO     S0, 800DC070 % battleStatus
+    LW      A0, DC (S0) % battleStatus(0xDC)=partnerActor*
+    LW      A0, 15C (A0) % load rotation X
+    BNE     A0, R0, .End
+    NOP
+    % Partner died
+    LAW     A0, 800DC068 % load battleState
+    SAW     A0, 800DC4E4 % push battleState
+    JAL	    ~Func:btl_set_state
+    ADDIU	A0, R0, 001B % .BattleState:Defeat
+    ORI     V0, R0, 1
+    .End
+    POP     RA, A0, A1, A2, A3, V1
+    % restore vanilla code
+    J       802634B0
+    LW	    RA, 0010 (SP)
+}
+
+% Add the "partner died" code to the defeat code
+%
+% From ~Func:btl_update
+@Hook:Battle 16D05C % 8023E77C
+{
+    LABU    V0, 8010F292 % load player hp
+    BEQ     V0, R0, .UpdatePlayerDefeat
+    NOP
+    JAL     $GetPartnerHP
+    NOP
+    BGTZ    V0, .ClearBytes % Partner is Alive
+    NOP
+    BLTZ    V0, .ClearBytes % Partner isn't HP compatible
+    NOP
+    % update partner defeated
+    LIO     A0, $ActorDead
+    SW      R0, 0 (A0)
+    ORI     A1, R0, 1
+    SB      A1, 1 (A0) % save in Partner's byte
+    .EndPartnerDefeat
+    JAL     $btl_state_update_defeat_partner
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .UpdatePlayerDefeat
+    LIO     A0, $ActorDead
+    SW      R0, 0 (A0)
+    ORI     A1, R0, 1
+    SB      A1, 0 (A0) % save in Mario's byte
+    .EndPlayerDefeat
+    JAL	    ~Func:btl_state_update_defeat
+    NOP
+    BEQ     R0, R0, .End
+    NOP
+    .ClearBytes
+    LIO     A0, $ActorDead
+    LBU     A1, 0 (A0)
+    BNE     A1, R0, .EndPlayerDefeat
+    NOP
+    .ClearByte_CheckPartner
+    LBU     A1, 1 (A0)
+    BNE     A1, R0, .EndPartnerDefeat
+    NOP
+    .End
+    J       8023E784
+    NOP
+}
+
+#new:Data $ActorDead
+{
+    00b % Mario byte
+    00b % Partner byte
+    0000s % unused
+}
+
+#new:Function:Battle $btl_state_update_defeat_partner
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    LIO     S1, 800DC070 % battleStatus
+    LIO     S3, 800DC4DC
+    LW	    S0, 00D8 (S1) % load playerActorData
+    LW	    S2, 00DC (S1) % load partnerActorData
+    LW      A0, 1D8 (S2) % load onHitID
+    BEQ     A0, R0, .RunScript
+    NOP
+    JAL     ~Func:does_script_exist_by_ref
+    NOP
+    BNE     V0, R0, .End
+    NOP
+    % script has ended, kill script
+    JAL     ~Func:kill_script
+    LW      A0, 1D8 (S2) % load onHitScript
+    SW      R0, 1D8 (S2) % clear onHitScript
+    SW      R0, 1E8 (S2) % clear onHitID
+    LAW     A0, 800DC4E4 % previous battleState
+    JAL	    ~Func:btl_set_state
+    RESERVED
+    % check if Battle Phase is First Strike
+    ORI     A0, R0, 1 % .Phase:FirstStrike
+    LABU    A1, 800DC217 % batle phase
+    BEQL    A0, A1, .WriteBattleState2
+    ORI     A0, R0, 2
+    ORI     A0, R0, 1E
+    .WriteBattleState2
+    SAW     A0, 800DC4DC % move to next turn
+    BEQ     R0, R0, .End
+    RESERVED
+    .RunScript
+    JAL     ~Func:dispatch_event_partner
+    ORI     A0, R0, 20 % .Event:Death
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1, S2
+    JR      RA
+    NOP
+}
+
+% Used by each Partner HandleEvent script
+%
+% Is partners' dead animation
+%
+% var0 = partIndex
+%
+% var1 = deadAnimation
+#new:Script:Battle $PartnerDies
+{
+    % Nuke Extra data
+    Call    $RunFunction ( $ClearPartnerExtraData )
+    Call    $RunFunction ( $ClearPartnerStatusData )
+    Call    SetAnimation  ( .Actor:Self *Var0 *Var1 )
+    Wait    20`
+    Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+	If *Var1 != .False % is flying
+        % partner falls to the floor
+        Call    GetCurrentPartnerID ( *Var0 )
+        Switch *Var0
+            Case == .Partner:Parakarry
+                SetConst  *Var1  000C000D
+            Case == .Partner:Bow
+                SetConst  *Var1  000D0015
+            Case == .Partner:Watt
+                SetConst  *Var1  000E000C
+            Case == .Partner:Lakilester
+                SetConst  *Var1  0010000A
+        EndSwitch
+        Set   *VarA  *Var1 
+        Call  SetAnimation  ( .Actor:Partner FFFFFFFF *VarA )
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Set   *Var1  3
+        Call  SetActorJumpGravity   ( .Actor:Partner *Fixed[1.0] )
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  JumpToGoal    ( .Actor:Partner 10` .False .True .False )
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  JumpToGoal    ( .Actor:Partner 8 .False .True .False )
+        Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  JumpToGoal    ( .Actor:Partner 5 .False .True .False )
+        Wait  8
+        Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+        Call  PlayEffect    ( ~FX:Steam:TinyOutward *Var0 *Var1 *Var2 .False .False .False .False .False .False .False .False .False )%/
+    Else
+        Wait    20`
+    EndIf
+    % Move Mario to the front
+    Call  $ReadAddress ( $MarioPos 0 *Var0 .False .False )
+    If *Var0 == 0 % Mario is on the left
+        Call    FindItem ( .Item:LifeShroom *Var0 )
+        If *Var0 == -1
+            ExecWait $Script_SwapHeroesPositions_MoveMarioUpfront
+        EndIf
+    EndIf
+    Call  $WriteBitFlag ( 800DC077 .False .False 2 .True ) % set partner turn as "used"
+    Call  $WriteBitFlag ( 800DC077 .False .False 4 .False ) % force partner to don't use his idle animation
+    Set   *Var0 8 % static
+    Exec  $SetPartnerAnimation_Battle
+    Wait  10`
+    Thread
+        Wait    5
+        Call    PlaySound ( 03FB )
+    EndThread
+    % sprite falls
+    Call    MakeLerp    	( 0 86` 10` .Easing:CosIn )
+    Loop     
+        Call     UpdateLerp
+        Call     SetActorRotation  ( .Actor:Self *Var0 0 0 )
+        Wait     1
+        If  *Var1  ==  .False
+            BreakLoop
+        EndIf
+    EndLoop
+    % Play dust FX
+    Call    GetActorPos ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call    SetHomePos ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call    PlayEffect ( ~FX:Steam:Burst *Var0 *Var1 *Var2 0 10` .False .False .False .False .False .False .False )
+    Wait    15`
+    % Check if player have a Life Shroom
+    Call    FindItem ( .Item:LifeShroom *Var0 )
+    If *Var0 != -1
+        ExecWait $UseLifeShroom_Actor
+    EndIf
+    Return
+    End
+}
+
+% Mostly the same as Mario's LS Script, but everything is faster and omits some things.
+%
+% I took most code from UseLifeShroom % 1B62A0 % 802879C0
+#export:Script:Battle $UseLifeShroom_Actor
+{
+    Call  UseIdleAnimation  ( .Actor:Self .False )
+    /%ChildThread
+        Call  80261388
+        If  *Var0  ==  00000001 
+            Call  DispatchEvent     ( .Actor:Partner .Event:LifeShroomProc )
+            Call  SetActorFlagBits  ( .Actor:Partner 00000004 .True )
+            Set   *Var0  000000FF 
+            Loop  10` 
+                Sub   *Var0  00000019 
+                If  *Var0  <  00000000 
+                    Set   *Var0  00000000 
+                EndIf
+                Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+                Wait  1`
+            EndLoop
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 00000000 )
+        EndIf
+    EndChildThread%/
+    Call  802610CC % Make all geometry darker
+    Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  MakeItemEntity    ( .Item:LifeShroom *Var0 *Var1 *Var2 .ItemSpawnMode:Decoration 00000000 )
+    Set   *VarA  *Var0 
+    Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+    AddF  *Var1  *Fixed[30.0] 
+    Call  SetItemPos    ( *VarA *Var0 *Var1 *Var2 )
+    Wait  1`
+    Set   *Var3  *Var0 
+    Set   *Var4  *Var1 
+    Set   *Var5  *Var2 
+    Call  802613A8 % Set selectItem as .Item:LifeShroom
+    Call  GetOwnerTarget ( *Var0 .False )
+    If *Var0 < .Actor:Enemy0 % Only player team
+        Call  80260E90 % Try to use Refund
+        If  *Var0  >  0 % Var0=Amount of coins
+            Wait  *Var0 
+            Wait  15`
+            Call  80261064 % Free refund icons?
+        EndIf
+    EndIf
+    Call  PlaySoundAtActor  ( .Actor:Self 0372 )
+    Add   *Var4  0000000F 
+    Call  PlayEffect        ( ~FX:EnergyOut:ShortStreaks *Var3 *Var4 *Var5 *Fixed[1.0] .False .False .False .False .False .False .False .False )
+    Set   *Var0  *VarF 
+    Loop  3 % Life Shroom starts blinking
+        Call  SetItemFlags  ( *VarA 00000040 00000001 )
+        Wait  2`
+        Call  SetItemFlags  ( *VarA 00000040 00000000 )
+        Wait  6`
+    EndLoop
+    Call  RemoveEffect  ( *Var0 )
+    Call  RemoveItemEntity  ( *VarA )
+    Call  PlaySoundAtActor  ( .Actor:Self 2055 )
+    Call  PlayEffect    ( 00000022 00000001 *Var3 *Var4 *Var5 00000046 00000046 0000000A 00000014 .False .False .False .False .False )
+    Wait  20`
+    Call  PlaySoundAtActor  ( .Actor:Self 0373 )
+    Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  PlayEffect    ( ~FX:RedShimmer:Spiral *Var0 *Var1 *Var2 00000032 00000014 00000020 0000001E .False .False .False .False .False )
+    Wait  25`
+    Call  PlayEffect    ( ~FX:RedShimmer:Spiral *Var0 *Var1 *Var2 0000001E 00000032 00000020 0000001E .False .False .False .False .False )
+    ChildThread
+        %Loop  3
+            Call  SetActorDispOffset    ( .Actor:Self 00000001 00000000 00000000 )
+            Wait  4`
+            Call  SetActorDispOffset    ( .Actor:Self FFFFFFFF 00000000 00000000 )
+            Wait  4`
+        %EndLoop
+        %Loop  3
+            Call  SetActorDispOffset    ( .Actor:Self 00000001 00000000 00000000 )
+            Wait  2`
+            Call  SetActorDispOffset    ( .Actor:Self FFFFFFFF 00000000 00000000 )
+            Wait  2`
+        %EndLoop
+        Loop  7
+            Call  SetActorDispOffset    ( .Actor:Self 00000001 00000000 00000000 )
+            Wait  1`
+            Call  SetActorDispOffset    ( .Actor:Self FFFFFFFF 00000000 00000000 )
+            Wait  1`
+        EndLoop
+    EndChildThread
+    Wait  26`
+    ChildThread
+        Call  80261164
+    EndChildThread
+    Call  PlaySoundAtActor  ( .Actor:Self 0374 )
+    Call  SetActorRotation  ( .Actor:Self 00000000 00000000 00000000 )
+    Call  SetActorYaw       ( .Actor:Self 00000000 )
+    %Call  ConsumeLifeShroom
+    Call  GetOwnerID ( *Var3 )
+    If *Var3 == .Actor:Partner
+        Call  RemoveItem ( .Item:LifeShroom .False )
+    EndIf
+    Call  GetActorPos       ( .Actor:Self *Var0 *Var1 *Var2 )
+    Add   *Var1  00000019 
+    Call  FXRecoverHP   ( *Var0 *Var1 *Var2 10` )
+    Call  FreezeBattleCam   ( .False )
+    Call  UseBattleCamPreset ( 00000002 )
+    Call  MoveBattleCamOver ( 0000000F )
+    /%ChildThread
+        Call  80261388
+        If  *Var0  ==  00000001 
+            Call  SetActorFlagBits  ( .Actor:Partner 00000004 .False )
+            Set   *Var0  00000000 
+            Loop  10`
+                Add   *Var0  00000019 
+                If  *Var0  >  000000FF 
+                    Set   *Var0  000000FF 
+                EndIf
+                Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+                Wait  1`
+            EndLoop
+            Call  DispatchEvent ( .Actor:Partner .Event:Revive )
+            Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 000000FF )
+        EndIf
+    EndChildThread%/
+    ChildThread
+        Wait  20`
+        Loop  5
+            Wait  2`
+            Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+            Add   *Var1 5
+            Call  PlayEffect    ( ~FX:EmitterVolume:GoldShimmer1 *Var0 *Var1 *Var2 00000014 00000014 *Fixed[1.0] 0000000A 00000032 .False .False .False .False )
+        EndLoop
+    EndChildThread
+    Call  PlaySoundAtActor  ( .Actor:Self 0160 )
+    Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.0] )
+    Call  SetActorSpeed ( .Actor:Self *Fixed[1.0] )
+    Call GetOwnerID ( *Var3 )
+    If *Var3 == .Actor:Partner
+        Call  SetBattleFlagBits2 ( 00000004 .False ) % Force partner turn as "not used"
+        Call  SetBattleFlagBits2 ( 00000010 .True ) % Don't use IdleAnimations
+        Call  $Heal_PlayerTeam ( .Actor:Self 10` )
+    Else % Enemy
+        Call  $HealActor ( .Actor:Self 10` )
+    EndIf
+    Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+    Set   *Var1  00000000 
+    %Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010009 )
+    Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    %Call  80273444      ( 00000014 00000000 00000000 )
+    %Call  SetAnimation  ( .Actor:Player 00000000 00010009 )
+    %=== Get up =======%
+    Call GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call GetOwnerID ( *Var3 )
+    If *Var3 == .Actor:Partner
+        Call GetCurrentPartnerID ( *Var3 )
+        Switch *Var3
+            Case == .Partner:Parakarry
+                Set *Var1 4 % y
+            Case == .Partner:Bow
+                Set *Var1 9` % y
+            Case == .Partner:Watt
+                Set *Var1 11` % y
+            Case == .Partner:Lakilester
+                Set *Var1 4 % y
+        EndSwitch
+        % Revive player if he died too
+        Call  GetPlayerHP ( *Var3 )
+        If *Var3 == 0
+            Thread % Make player jump
+                Call  $Heal_PlayerTeam ( .Actor:Player 10` )
+                Call  UseIdleAnimation  ( .Actor:Player .False )
+                Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.0] )
+                Call  SetActorSpeed ( .Actor:Player *Fixed[1.0] )
+                Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+                Set   *Var1  00000000 
+                Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010009 )
+                Set   *Var3 *Var1
+                Add   *Var3 19 % y
+                Call  FXRecoverHP   ( *Var0 *Var3 *Var2 10` )
+                Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+                Call  80273444      ( 00000014 00000000 00000000 )
+                Call  SetAnimation  ( .Actor:Player 00000000 00010009 )
+                Call  SetActorSpeed ( .Actor:Player *Fixed[1.0] )
+                Call  SetActorJumpGravity       ( .Actor:Player *Fixed[0.8] )
+                Call  SetActorDispOffset    ( .Actor:Player 0 0 0 )
+                Call  SetActorRotationOffset    ( .Actor:Player 0 0 0 )
+                Call  SetActorRotation          ( .Actor:Player 0 0 0 )
+                Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+                Call  UseIdleAnimation  ( .Actor:Player .True )
+            EndThread
+            ChildThread % sparkles fx
+                Loop  5
+                    Wait  2`
+                    Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+                    Add   *Var1 5
+                    Call  PlayEffect    ( ~FX:EmitterVolume:GoldShimmer1 *Var0 *Var1 *Var2 00000014 00000014 *Fixed[1.0] 0000000A 00000032 .False .False .False .False )
+                EndLoop
+            EndChildThread
+        EndIf
+    EndIf
+    Call  SetGoalPos    ( .Actor:Self *Var0 *Var1 *Var2 )
+    % Jump
+    Call GetOwnerID ( *Var3 )
+    If *Var3 == .Actor:Partner
+        Set   *Var0 9 % jump
+        Exec  $SetPartnerAnimation_Battle
+    EndIf
+    Call  SetActorJumpGravity       ( .Actor:Self *Fixed[0.8] )
+    Call  SetActorDispOffset    ( .Actor:Self 0 0 0 )
+    Call  JumpToGoal            ( .Actor:Self 20` .False .False .True )
+    Call  GetOwnerID ( *Var3 )
+    If *Var3 == .Actor:Partner
+        Set   *Var0 0 % idle
+        Exec  $SetPartnerAnimation_Battle
+    EndIf
+    Call  SetActorRotationOffset    ( .Actor:Self 0 0 0 )
+    Call  SetActorDispOffset        ( .Actor:Self 0 0 0 )
+    Call  SetActorRotation          ( .Actor:Self 0 0 0 )
+    Wait  5`
+    %Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+    Call  UseIdleAnimation  ( .Actor:Self .True )
+    %Call  RestorePreDefeatState
+    Wait  20`
+    Return
+    End
+}
+
+% Heal partner too, if both died at the same time
+@Script:Battle 1B62A0 % UseLifeShroom
+{
+    ExecWait $UseLifeShroom
+    Return
+    End
+}
+
+#new:Script:Battle $UseLifeShroom
+{
+    0:  Call  UseIdleAnimation  ( .Actor:Player .False )
+   14:  ChildThread
+   1C:  	Call  80261388
+   28:  	If  *Var0  ==  00000001 
+   38:  		Call  DispatchEvent     ( .Actor:Partner .Event:LifeShroomProc )
+   4C:  		Call  SetActorFlagBits  ( .Actor:Partner 00000004 .True )
+   64:  		Set   *Var0  000000FF 
+   74:  		Loop  0000000A 
+   80:  			Sub   *Var0  00000019 
+   90:  			If  *Var0  <  00000000 
+   A0:  				Set   *Var0  00000000 
+   B0:  			EndIf
+   B8:  			Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+   D0:  			Wait  1`
+   DC:  		EndLoop
+   E4:  		Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 00000000 )
+   FC:  	EndIf
+  104:  EndChildThread
+  10C:  Call  802610CC
+  118:  Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+  134:  Call  MakeItemEntity    ( .Item:LifeShroom *Var0 *Var1 *Var2 .ItemSpawnMode:Decoration 00000000 )
+  158:  Set   *VarA  *Var0 
+  168:  Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+  184:  Set   *Var3  0000001E 
+  194:  Set   *Var4  00000010 
+  1A4:  Loop  *Var3 
+  1B0:  	Add   *Var4  00000008 
+  1C0:  	If  *Var4  >  000000FF 
+  1D0:  		Set   *Var4  000000FF 
+  1E0:  	EndIf
+  1E8:  	AddF  *Var1  *Fixed[1.0] 
+  1F8:  	Call  SetItemPos    ( *VarA *Var0 *Var1 *Var2 )
+  214:  	Wait  1`
+  220:  EndLoop
+  228:  Set   *Var3  *Var0 
+  238:  Set   *Var4  *Var1 
+  248:  Set   *Var5  *Var2 
+  258:  Call  802613A8
+  264:  Call  80260E90
+  270:  If  *Var0  >  00000000 
+  280:  	Wait  *Var0 
+  28C:  	Wait  15`
+  298:  	Call  80261064
+  2A4:  EndIf
+  2AC:  Call  PlaySoundAtActor  ( .Actor:Player 00000372 )
+  2C0:  Add   *Var4  0000000F 
+  2D0:  Call  PlayEffect        ( 0000006B 00000003 *Var3 *Var4 *Var5 *Fixed[1.0] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  314:  Set   *Var0  *VarF 
+  324:  Loop  00000004 
+  330:  	Call  SetItemFlags  ( *VarA 00000040 00000001 )
+  348:  	Wait  2`
+  354:  	Call  SetItemFlags  ( *VarA 00000040 00000000 )
+  36C:  	Wait  8`
+  378:  EndLoop
+  380:  Call  RemoveEffect  ( *Var0 )
+  390:  Call  RemoveItemEntity  ( *VarA )
+  3A0:  Call  PlaySoundAtActor  ( .Actor:Player 00002055 )
+  3B4:  Call  PlayEffect    ( 00000022 00000001 *Var3 *Var4 *Var5 00000046 00000046 0000000A 00000014 00000000 00000000 00000000 00000000 00000000 )
+  3F8:  Wait  20`
+  404:  Call  PlaySoundAtActor  ( .Actor:Player 00000373 )
+  418:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  434:  Call  PlayEffect    ( 00000022 00000002 *Var0 *Var1 *Var2 00000032 00000014 00000020 0000001E 00000000 00000000 00000000 00000000 00000000 )
+  478:  Wait  40`
+  484:  Call  PlayEffect    ( 00000022 00000002 *Var0 *Var1 *Var2 0000001E 00000032 00000020 0000001E 00000000 00000000 00000000 00000000 00000000 )
+  4C8:  ChildThread
+  4D0:  	Loop  00000003 
+  4DC:  		Call  SetActorDispOffset    ( .Actor:Player 00000001 00000000 00000000 )
+  4F8:  		Wait  4`
+  504:  		Call  SetActorDispOffset    ( .Actor:Player FFFFFFFF 00000000 00000000 )
+  520:  		Wait  4`
+  52C:  	EndLoop
+  534:  	Loop  00000003 
+  540:  		Call  SetActorDispOffset    ( .Actor:Player 00000001 00000000 00000000 )
+  55C:  		Wait  2`
+  568:  		Call  SetActorDispOffset    ( .Actor:Player FFFFFFFF 00000000 00000000 )
+  584:  		Wait  2`
+  590:  	EndLoop
+  598:  	Loop  00000007 
+  5A4:  		Call  SetActorDispOffset    ( .Actor:Player 00000001 00000000 00000000 )
+  5C0:  		Wait  1`
+  5CC:  		Call  SetActorDispOffset    ( .Actor:Player FFFFFFFF 00000000 00000000 )
+  5E8:  		Wait  1`
+  5F4:  	EndLoop
+  5FC:  EndChildThread
+  604:  Wait  50`
+  610:  ChildThread
+  618:  	Call  80261164
+  624:  EndChildThread
+  62C:  Call  PlaySoundAtActor  ( .Actor:Player 00000374 )
+  640:  Call  SetActorRotation  ( .Actor:Player 00000000 00000000 00000000 )
+  65C:  Call  SetActorYaw       ( .Actor:Self 00000000 )
+  670:  Call  ConsumeLifeShroom
+  67C:  Call  GetActorPos       ( .Actor:Player *Var0 *Var1 *Var2 )
+  698:  Add   *Var1  00000019 
+  6A8:  Call  PlayEffect        ( 00000040 00000000 *Var0 *Var1 *Var2 *Var3 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 )
+  6EC:  Call  FreezeBattleCam   ( .False )
+  6FC:  Call  UseBattleCamPreset ( 00000002 )
+  70C:  Call  MoveBattleCamOver ( 0000000F )
+  71C:  ChildThread
+  724:  	Call  80261388
+  730:  	If  *Var0  ==  00000001 
+  740:  		Call  SetActorFlagBits  ( .Actor:Partner 00000004 .False )
+  758:  		Set   *Var0  00000000 
+  768:  		Loop  0000000A 
+  774:  			Add   *Var0  00000019 
+  784:  			If  *Var0  >  000000FF 
+  794:  				Set   *Var0  000000FF 
+  7A4:  			EndIf
+  7AC:  			Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF *Var0 )
+  7C4:  			Wait  1`
+  7D0:  		EndLoop
+  7D8:  		Call  DispatchEvent ( .Actor:Partner .Event:Revive )
+  7EC:  		Call  SetPartAlpha  ( .Actor:Partner FFFFFFFF 000000FF )
+  804:  	EndIf
+  80C:  EndChildThread
+  814:  ChildThread
+  81C:  	Loop  00000005 
+  828:  		Wait  2`
+  834:  		Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  850:  		Call  PlayEffect    ( 00000072 00000002 *Var0 *Var1 *Var2 00000014 00000014 *Fixed[1.0] 0000000A 00000032 00000000 00000000 00000000 00000000 )
+  894:  	EndLoop
+  89C:  EndChildThread
+  8A4:  Call  PlaySoundAtActor  ( .Actor:Player 00000160 )
+  8B8:  Call  SetActorJumpGravity   ( .Actor:Player *Fixed[1.0] )
+  8CC:  Call  SetActorSpeed ( .Actor:Player *Fixed[1.0] )
+        % Revive partner if he died too
+        Call  $GetPartnerHP_API ( *Var0 )
+        If *Var0 == 0
+            Call  SetBattleFlagBits2 ( 00000004 .False ) % Force partner turn as "not used"
+            Call  SetBattleFlagBits2 ( 00000010 .True ) % Don't use IdleAnimations
+            Call  UseIdleAnimation  ( .Actor:Partner .False )
+            Call  $Heal_PlayerTeam ( .Actor:Partner 10` )
+            Thread % Make partner jump
+                Call  UseIdleAnimation  ( .Actor:Partner .False )
+                Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+                Set   *Var3 *Var1
+                Add   *Var3 19 % y
+                Call  FXRecoverHP   ( *Var0 *Var3 *Var2 10` )
+                Call  GetCurrentPartnerID ( *Var3 )
+                Switch *Var3
+                    Case == .Partner:Parakarry
+                        Set *Var1 4 % y
+                    Case == .Partner:Bow
+                        Set *Var1 9` % y
+                    Case == .Partner:Watt
+                        Set *Var1 11` % y
+                    Case == .Partner:Lakilester
+                        Set *Var1 4 % y
+                EndSwitch
+                Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+                Set   *Var0 9 % jump
+                Exec  $SetPartnerAnimation_Battle
+                Call  SetActorSpeed ( .Actor:Player *Fixed[1.0] )
+                Call  SetActorJumpGravity       ( .Actor:Partner *Fixed[0.8] )
+                Call  SetActorDispOffset    ( .Actor:Partner 0 0 0 )
+                Call  JumpToGoal            ( .Actor:Partner 20` .False .False .True )
+                Call  GetOwnerID ( *Var3 )
+                If *Var3 == .Actor:Partner
+                    Set   *Var0 0 % idle
+                    Exec  $SetPartnerAnimation_Battle
+                EndIf
+                Call  SetActorDispOffset        ( .Actor:Partner 0 0 0 )
+                Call  SetActorRotationOffset    ( .Actor:Partner 0 0 0 )
+                Call  SetActorRotation          ( .Actor:Partner 0 0 0 )
+                Call  UseIdleAnimation  ( .Actor:Partner .True )
+            EndThread
+            ChildThread % sparkles fx
+                Loop  5
+                    Wait  2`
+                    Call  GetActorPos   ( .Actor:Partner *Var0 *Var1 *Var2 )
+                    Add   *Var1 5
+                    Call  PlayEffect    ( ~FX:EmitterVolume:GoldShimmer1 *Var0 *Var1 *Var2 00000014 00000014 *Fixed[1.0] 0000000A 00000032 .False .False .False .False )
+                EndLoop
+            EndChildThread
+        EndIf
+  8E0:  Call  GetActorPos   ( .Actor:Player *Var0 *Var1 *Var2 )
+  8FC:  Set   *Var1  00000000 
+  90C:  Call  SetJumpAnimations ( .Actor:Player 00000000 00010007 00010008 00010009 )
+  92C:  Call  SetGoalPos    ( .Actor:Player *Var0 *Var1 *Var2 )
+  948:  Call  80273444      ( 00000014 00000000 00000000 )
+  960:  Call  SetAnimation  ( .Actor:Player 00000000 00010009 )
+  978:  Wait  4`
+  984:  Call  SetAnimation  ( .Actor:Player 00000000 00010002 )
+  99C:  Wait  10`
+  9A8:  Call  UseIdleAnimation  ( .Actor:Player .True )
+  9BC:  Call  RestorePreDefeatState
+  9C8:  Return
+  9D0:  End
+}
+
+#new:Script:Battle $Script_SwapHeroesPositions_MoveMarioUpfront
+{
+    Call  $WriteAddress ( $MarioPos 0 1 .False .False ) % set Mario pos as 1 (Right)
+    Set   *Var0 -95.0
+    % The game uses this addresses to know where to move mario when pressing Z
+    % set address as -95.0, it means Mario is now on the right side
+    Call  $WriteAddress ( 800DC148 2 *Var0 138 .True ) % x
+    % Z uses 0 when Mario is on the right
+    Call  $WriteAddress ( 800DC148 2 0 140 .True ) % z
+    Call  GetActorPos ( .Actor:Player *Var0 *Var1 *Var2 )
+    Add   *Var0 35` % x
+    Call  SetGoalPos ( .Actor:Player *Var0 *Var1 0 )
+    Call  GetActorPos ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Add   *Var0 -35` % x
+    Call  SetGoalPos ( .Actor:Partner *Var0 *Var1 -10` )
+    Exec  $Script_SHP_MMU_MovePartner
+    Thread
+        % rotate Mario
+        Call    MakeLerp    	( 180` 0 4 .Easing:Linear )
+        Loop     
+            Call     UpdateLerp
+            Call     SetActorRotation  ( .Actor:Player 0 *Var0 0 )
+            Wait     1
+            If  *Var1  ==  .False
+                BreakLoop
+            EndIf
+        EndLoop
+    EndThread
+    Call  RunToGoal ( .Actor:Player 4 .False )
+    Return
+    End
+}
+
+#new:Script:Battle $Script_SHP_MMU_MovePartner
+{
+    Thread
+        % rotate Partner
+        Call    MakeLerp    	( 180` 0 4 .Easing:Linear )
+        Loop     
+            Call     UpdateLerp
+            Call     SetActorRotation  ( .Actor:Partner 0 *Var0 0 )
+            Wait     1
+            If  *Var1  ==  .False
+                BreakLoop
+            EndIf
+        EndLoop
+    EndThread
+    Call  RunToGoal ( .Actor:Partner 4 .False )
+    Return
+    End
+}
+
+% Put your current partner stay in the same position when being dead,
+% when the player try to run away.
+
+@Script:Battle 1C33DC % PartnerRunAway % 80294AFC
+{
+    ExecWait $PartnerRunAway
+    Return
+    End
+}
+
+#new:Script:Battle $PartnerRunAway
+{
+    Call  $GetPartnerHP_API ( *Var0 )
+    If *Var0 == .False
+        % Don't do anything if partner is dead
+        Return
+    EndIf
+    Call  UseIdleAnimation      ( .Actor:Partner .False )
+    Call  SetActorYaw   ( .Actor:Self 000000B4 )
+    Call  SetAnimation  ( .Actor:Self *Var0 *Var1 )
+    Wait  10`
+    Call  GetActorPos   ( .Actor:Self *Var0 *Var1 *Var2 )
+    Call  SetActorJumpGravity   ( .Actor:Self *Fixed[1.2] )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+    Call  SetGoalPos    ( .Actor:Partner *Var0 *Var1 *Var2 )
+    Call  JumpToGoal    ( .Actor:Partner 0000000A .False .True .False )
+    Wait  5`
+    Call  SetActorSpeed ( .Actor:Self *Fixed[12.0] )
+    Call  SetGoalPos    ( .Actor:Partner FFFFFF06 00000000 00000000 )
+    Call  RunToGoal     ( .Actor:Partner 00000000 .False )
+    Call  UseIdleAnimation      ( .Actor:Partner .True )
+    Return
+    End
+}
+
+% Run away - Keep using partner's "turn used" animation
+% when Mario tries to run away and Partner is dead
+%
+% Also only set current actor turn as used instead of both actors.
+@Hook 173864 % 80244F84
+{
+    PUSH    RA, A0, T0, T1, T2
+    JAL     $GetPartnerHP
+    COPY    T2, V0 % push V0
+    COPY    T1, V0 % push new V0
+    COPY    V0, T2 % pop V0
+    BEQL    T1, R0, .End
+    ORI	    V0, V0, 000E % Don't set bit4 as true
+    % Check Kooper flipped state too
+    %
+    % Check if current partner is Kooper
+    LABU    V0, 8010F2A2 % partnerID
+    ORI     T0, R0, 2
+    BNEL    V0, T0, .DontUseIdleAnimsPartner
+    COPY    V0, T2 % pop V0
+    JAL     $GetPartnerExtraBattleData
+    ORI     A0, R0, D % load turns left to unflip
+    COPY    T0, V0
+    COPY    V0, T2 % pop V0
+    BNEL    T0, R0, .End
+    ORI	    V0, V0, 000E % Don't set bit4 as true
+    .DontUseIdleAnimsPartner
+    % check if after this turn the enemies turn will start
+    LAW     A0, 800DC074 % battleFlags2
+    ANDI    A0, A0, 6 % check if bit1 or bit2 are true (player and partner turns bitflags)
+    BNEL    A0, R0, .End
+    ORI	    V0, V0, 001E % set both turns as used
+    % check which actor is the one using his turn
+    LAW     A0, 800DC070 % battleFlags
+    LUI     T0, 0010 % (0x01(bit4))=PartnerTurn bitflag
+    AND     T1, A0, T0
+    BNE     T1, R0, .PartnerFailedRunAway
+    NOP
+    % set current turn as partner to don't swap position between Mario & Partner
+    OR      A0, A0, T0 % enable (0x01(bit4))
+    SAW     A0, 800DC070 % battleFlags
+    BEQ     R0, R0, .End
+    ORI	    V0, V0, 001A % don't set partner turn as used
+    .PartnerFailedRunAway
+    % set current turn as player to don't swap position between Mario & Partner
+    LIO     T0, FFEFFFFF % disable (0x01(bit4))
+    AND     A0, A0, T0
+    SAW     A0, 800DC070 % battleFlags
+    ORI	    V0, V0, 001C % don't set player turn as used
+    .End
+    POP     RA, A0, T0, T1, T2
+    J       80244F8C
+    ADDIU	V1, V1, 0001
+}
+
+% Level Up
+%
+% Patch ~Func:btl_state_update_celebration
+%
+% Heal Partner too and show a little heart
+@Hook 18CF98 % 8025E6B8
+{
+    % This function writes in SP(0x10, 0x28, 0x2C)
+    % That's why I clear SP(0x00 - 0x2C)
+    PUSH    R0, R0, R0, R0, R0, R0, R0, R0, S1, A0
+    % Check if is an invalid partner
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End
+    NOP
+    % I grabbed this code from 8025E6C0
+    % Is the one the game uses to show Mario's heart when
+    % he level ups.
+    %
+    % Load Partner's actor data
+    LIO     S1, 800DC148 % actors data
+    JAL     $GetPartnerMaxHP
+    LW      S1, 4 (S1) % load partner's data
+    COPY    T0, V0
+    JAL     $SetPartnerHP % Heal current partner
+    COPY    A0, V0
+    % V0 = Partner Max HP
+    MTC1	R0, F2
+    LWC1	F4, 0144 (S1)
+    LWC1	F0, 014C (S1)
+    TRUNC.W.S	F6, F0
+    MFC1	A3, F6
+    NOP
+    MTC1	A3, F6
+    NOP
+    CVT.S.W	F6, F6
+    ADD.S	F4, F4, F2
+    LWC1	F0, 0148 (S1)
+    LUI	    AT, 420C
+    MTC1	AT, F2
+    MFC1	A3, F6
+    ADD.S	F0, F0, F2
+    TRUNC.W.S F6, F4
+    MFC1	V1, F6
+    NOP
+    MTC1	V1, F6
+    NOP
+    CVT.S.W	F6, F6
+    MFC1	A1, F6
+    TRUNC.W.S F6, F0
+    MFC1	V0, F6
+    NOP
+    MTC1	V0, F6
+    NOP
+    CVT.S.W	F6, F6
+    MFC1	A2, F6
+    SW	    V1, 0028 (SP)
+    SW	    V0, 002C (SP)
+    CLEAR   A0 % show a heart, not a flower
+    JAL	    80071090 % show flying Heart
+    SW	    T0, 0010 (SP)
+    .End
+    POP     R0, R0, R0, R0, R0, R0, R0, R0, S1, A0
+    % restore vanilla code
+    LBU	    V0, 0003 (S5) % load Mario maxHP
+    J       8025E6C0
+    LBU	    V1, 0006 (S5) % load maxFP
+}
+
+% Overworld - Picking Hearts
+%
+% Heal current partner too.
+%
+% Patch ~Func:update_item_entity_collectable
+@Hook 801352E0
+{
+    PUSH    RA, A0, A1, A2, V0
+    JAL     $GetPartnerHP
+    NOP
+    BLTZ    V0, .End % Partner isn't HP compatible
+    COPY    A0, V0
+    JAL     $GetPartnerMaxHP
+    NOP
+    ADDIU   A0, A0, 1
+    SLTU    A2, V0, A0
+    BNE     A2, R0, .End
+    NOP
+    JAL     $SetPartnerHP
+    NOP
+    .End
+    POP     RA, A0, A1, A2, V0
+    % restore vanilla code
+    SB	    V0, 0002 (S3) % update player's HP
+    J       801352E8
+    SLL	    V0, V0, 24`
+}
+
+% `Call  $RaisePartnerMaxHP ( partnerID )`
+%
+% Read partner current rank and update their current & max HP
+#export:Function $RaisePartnerMaxHP
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    LW      A1, C (A0)
+    JAL     ~Func:get_variable
+    LW      A1, 0 (A1) % arg1
+    JAL     $updatePartnerMaxHP
+    COPY    A0, V0
+    POP     RA, A0, A1, A2, A3, V0, V1
+    JR      RA
+    ORI     V0, R0, 2
+}
+
+% A0=partnerID
+%
+% Fully heal and update partner maxHP according to his current rank.
+#export:Function $updatePartnerMaxHP
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    COPY    V1, A0
+    % get partner data
+    LIO     A0, 8010F2AC % partnersData
+    ORI     A1, R0, 8 % because each partners uses 8 bytes of data
+    ADDI    V1, V1, -1
+    MULT    A1, V1
+    MFLO    A1
+    ADD     S0, A0, A1
+    % get partner new max HP
+    LIO     A0, $PartnersHPTable
+    ORI     A1, R0, 3
+    MULT    A1, V1
+    MFLO    A1
+    ADD     S1, A0, A1
+    % S0=partnerData
+    % S1=partnerNewHP data
+    LBU     A0, 1 (S0) % partnerRank
+    ADD     S1, S1, A0
+    LBU     A1, 0 (S1) % new partnerMaxHP
+    % get HP Plus P badges
+    JAL     $IsBadgeActivated_Stack
+    ORI     A0, R0, 018D % .Item:HPPlusP
+    ORI     A0, R0, 5 % add +5 HP per badge
+    MULT    A0, V0
+    MFLO    A0
+    ADDU    A1, A1, A0
+    % save new HP
+    SB      A1, 5 (S0) % currentHP
+    SB      A1, 6 (S0) % maxHP
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    NOP
+}
+
+/% 0x00 - Zero Rank Max HP %/
+/% 0x01 - Super Rank Max HP %/
+/% 0x02 - Ultra Rank Max HP %/
+#new:Data $PartnersHPTable
+{
+  10`b 20`b 30`b % partnerID=0x01 (Goombario)
+  10`b 15`b 25`b % partnerID=0x02 (Kooper)
+  15`b 25`b 40`b % partnerID=0x03 (Bombette)
+  15`b 20`b 25`b % Parakarry
+  0`b 0`b 0`b % Gompa (unused)
+  10`b 15`b 20`b % Watt
+  15`b 25`b 35`b % Sushie
+  15`b 20`b 30`b % Lakilester
+  10`b 20`b 30`b % Bow
+  0`b 0`b 0`b % Goombaria (unused)
+  0`b 0`b 0`b % Twink (unused)
+}
+
+#export $sync_status_menu_OnlyPartners
+#export $IconScript_HealBoxHeart
+#export $HealMenu_State
+#export $UseItem_ShowHealMenu
+#export $GetPartnerHP
+#export $GetPartnerHP_API
+#export $GetPartnerHP_byID
+#export $GetPartnerMaxHP
+#export $SetPartnerHP
+#export $PartnerDies

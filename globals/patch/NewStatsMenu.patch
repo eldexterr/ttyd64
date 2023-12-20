@@ -1,0 +1,1425 @@
+% This file rebuilds the stats menu
+
+% This hook use this data to calculate the coordinates
+% for all elements in the stats menu, the y position is
+% still calculated like always with the 2 bytes at 8010EF8E
+#new:Data $Data_FirstBox_Coords % HP
+{
+    000F0000 005A001B 17FF0000
+%   XXXX0000 XXXXYYYY SSOO
+%   Pos      Size     Style Opacity
+}
+
+/%
+8010EF8E [2 Bytes] - stats bar y offset
+FFC9 (-100) % top
+0012 (18) % lowest
+%/
+
+% Draw all new boxes (placed where the 1st half of the stats menu was before)
+@Hook 81B60 % 800E86B0
+{
+    PUSH    RA, A0, A1, A2, A3, T0, T1, S0
+    % Draw HP Box
+    LIO     S0, $Data_FirstBox_Coords
+    LH      A0, 0 (S0) % x
+    LAH     A1, 8010EF8E % stats bar y offset
+    LHU     A2, 4 (S0) % SizeX
+    LHU     A3, 6 (S0) % SizeY
+    LBU     T0, 8 (S0) % Style
+    JAL     $DrawBox
+    LBU     T1, 9 (S0) % Opacity
+    % Draw Partner HP Box
+    % Check if the player have at least one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .NoPartners
+    NOP
+    % Check if the current Partner is HP compatible
+    JAL     $Function_IsPartnerHPCompatible
+    NOP
+    BEQ     V0, R0, .NoPartners
+    NOP
+    % Check if the player don't have any partner currently out
+    LH      A0, 0 (S0) % x
+    LAH     A1, 8010EF8E % stats bar y offset
+    ADDI    A1, A1, 15 % y
+    LHU     A2, 4 (S0) % SizeX
+    ADDI    A2, A2, FFF0 % -16`
+    LHU     A3, 6 (S0) % SizeY
+    LBU     T0, 8 (S0) % Style
+    JAL     $DrawBox
+    LBU     T1, 9 (S0) % Opacity
+    % Draw FP Box
+    .NoPartners
+    LH      A0, 0 (S0)
+    ADDI    A0, A0, 57 % x
+    LAH     A1, 8010EF8E % stats bar y offset
+    LHU     A2, 4 (S0) % SizeX
+    ADDI    A2, A2, FFF4 % -12`
+    LHU     A3, 6 (S0) % SizeY
+    LBU     T0, 8 (S0)
+    ADDI    T0, T0, 1 % Style
+    JAL     $DrawBox
+    LBU     T1, 9 (S0) % Opacity
+    % Draw SP/Coins Box
+    LH      A0, 0 (S0)
+    ADDI    A0, A0, A0 % x
+    LAH     A1, 8010EF8E % stats bar y offset
+    LHU     A2, 4 (S0) 
+    ADDI    A2, A2, 2A % SizeX
+    LHU     A3, 6 (S0) % SizeY
+    LBU     T0, 8 (S0)
+    ADDI    T0, T0, 2 % Style
+    JAL     $DrawBox
+    LBU     T1, 9 (S0) % Opacity
+    % Draw Star Power Box if the player have at least 1 star spirit
+    LABU    A0, 8010F51E % Star Spirits
+    BEQ     A0, R0, .End
+    NOP
+    LH      A0, 0 (S0) % x
+    ADDI    A0, A0, 49 % x
+    LAH     A1, 8010EF8E % stats bar y offset
+    ADDI    A1, A1, 18 % y
+    LHU     A2, 4 (S0) 
+    ADDI    A2, A2, 4C % SizeX
+    LHU     A3, 6 (S0) % SizeY
+    ADDI    A3, A3, FFFB % -7`
+    LBU     T0, 8 (S0)
+    ADDI    T0, T0, 3 % Style
+    JAL     $DrawBox
+    LBU     T1, 9 (S0) % Opacity
+    .End
+    POP     RA, A0, A1, A2, A3, T0, T1, S0
+    J       800E86B8 
+    NOP
+}
+
+% Disable the 2nd half of the stats menu
+@Function 81BBC % 800E870C
+{
+    NOP
+}
+
+%==================
+% Recolor all boxes
+%==================
+
+% Don't crash the game after trying to load box style 0x17 or above
+@Function 8E7C0 % 800F5310
+{
+    SLTIU   V0, A1, 101` % set cap to 100 styles
+}
+
+% Load new styles
+@Hook 8E810 % 800F5360
+{
+    % A1 - Box Style ID
+    % Check if the ID is above 0x16, so is one of our new styles
+    SLTIU   V0, A1, 17
+    BNE     V0, R0, .VanillaStyle
+    NOP
+    % get new style
+    ORI     V0, R0, 17
+    BEQ     A1, V0, .HPBox
+    ORI     V0, R0, 18
+    BEQ     A1, V0, .FPBox
+    ORI     V0, R0, 19
+    BEQ     A1, V0, .CoinsBox
+    ORI     V0, R0, 1A
+    BEQ     A1, V0, .StarBox
+    NOP
+    BEQ     R0, R0, .VanillaStyle
+    NOP
+    % T1 = Box Data Pointer
+    .HPBox
+    LIO     T1, $BoxData_HP
+    BEQ     R0, R0, .End
+    RESERVED
+    .FPBox
+    LIO     T1, $BoxData_FP
+    BEQ     R0, R0, .End
+    RESERVED
+    .CoinsBox
+    LIO     T1, $BoxData_Coins
+    BEQ     R0, R0, .End
+    RESERVED
+    .StarBox
+    LIO     T1, $BoxData_StarPower
+    BEQ     R0, R0, .End
+    RESERVED
+    % If was one of the vanilla styles
+    .VanillaStyle
+    SLL	    V0, A1, 1
+    ADDU	V0, V0, A1
+    SLL	    V0, V0, 2
+    SUBU	V0, V0, A1
+    ADDU	T1, V0, V1
+    .End
+    J   800F5374
+    NOP
+}
+
+%==================
+% New Styles Data
+
+#new:Data $BoxData_HP
+{
+    01b  % texture
+    08`b % Box Type
+    01b  % ??
+    EDb 87b 87b FFb % Box Color 1 - RGBA
+    69b 29b 29b FFb % Box Color 2 - RGBA
+    00b  % unused
+}
+
+#new:Data $BoxData_FP
+{
+    01b  % texture
+    08`b % Box Type
+    01b  % ??
+    E8b E7b A2b FFb % Box Color 1 - RGBA
+    61b 60b 38b FFb % Box Color 2 - RGBA
+    00b  % unused
+}
+
+#new:Data $BoxData_Coins
+{
+    01b  % texture
+    08`b % Box Type
+    01b  % ??
+    98b C8b A6b FFb % Box Color 1 - RGBA
+    42b 4Db 3Fb FFb % Box Color 2 - RGBA
+    00b  % unused
+}
+
+#new:Data $BoxData_StarPower
+{
+    01b  % texture
+    08`b % Box Type
+    01b  % ??
+    EFb C4b A8b FFb % Box Color 1 - RGBA
+    4Db 89b 8Db FFb % Box Color 2 - RGBA
+    00b  % unused
+}
+
+%=========================
+% Move everything to make space for all the new stuff
+%=========================
+
+% Mario's Heart Icon
+@Hook 81C60 % 800E87B0
+{
+    % vanilla code
+    COPY    GP, A0 % copy iconIndex
+    ADDIU	A1, A1, 0011 % x pos
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, 0008 % y pos
+    PUSH    RA, V0, V1, A0, A1, A2, A3
+    %=====
+    % Change Size
+    LIO     A1, 41800000 % 16.0 % Width
+    LIO     A2, 41800000 % 16.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, GP
+    POP     RA, V0, V1, A0, A1, A2, A3
+    J       800E87BC
+    NOP
+}
+
+% Flower Icon
+@Hook 81D38 % 800E8888
+{
+    % vanilla code
+    COPY    GP, A0 % copy iconIndex
+    ADDIU	A1, A1, 0063 % x pos
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, 000D % y pos
+    PUSH    RA, V0, V1, A0, A1, A2, A3
+    %=====
+    % Change Size
+    LIO     A1, 41D00000 % 26.0 % Width
+    LIO     A2, 41D00000 % 26.0 % Lenght
+    JAL     $SetIconSize2
+    COPY    A0, GP
+    POP     RA, V0, V1, A0, A1, A2, A3
+    J       800E8894
+    NOP
+}
+
+% HP 00/00
+@Function 81C8C % 800E87DC
+{
+    ADDIU	A1, A1, 0017 % x pos
+    ADDIU	A2, A2, 0008 % y pos
+    JAL	    ~Func:status_menu_draw_stat
+    SW	    V0, 0010 (SP)
+}
+
+% FP 00/00
+@Function 81D64 % 800E88B4
+{
+    ADDIU	A1, A1, 0070 % x pos
+    ADDIU	A2, A2, 0008 % y pos
+    JAL	    ~Func:status_menu_draw_stat
+    SW	    V0, 0010 (SP)
+}
+
+% Star Points Icon
+@Function 81DDC % 800E892C
+{
+    ADDIU	A1, A1, 00B8 % x pos
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, 000E % y pos
+}
+
+% Star Points' Bubble Icon
+@Function 81E00 % 800E8950
+{
+    ADDIU	A1, A1, 00B8 % x pos
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, 0009 % y pos
+}
+
+% Coin Icon
+@Function 81EB4 % 800E8A04
+{
+    ADDIU	A1, A1, 00EA % x pos
+    JAL	    ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, 000E % y pos
+}
+
+% Coins x000
+@Function 81F04 % 800E8A54
+{
+    ADDIU	A1, A1, 00F0 % x pos
+    JAL	    ~Func:status_menu_draw_number
+    ADDIU	A2, A2, 0008 % y pos
+}
+
+% Star Power
+@Function 81F5C % 800E8AAC
+{
+    ADDIU	S5, V0, 0023 % y pos
+}
+
+% Star Power - Empty Stars
+@Function 824E8 % 800E9038
+{
+ADDIU	S7, V0, 0056 % x pos
+}
+
+% Star Power - Filled Stars
+@Function 82488 % 800E8FD8
+{
+ADDIU	A1, T1, 0056 % x pos
+}
+
+% Star Power - Power Bars X Offsets
+@Data 91498 % 800E87EC
+{
+    49 % Star Power 1 - Power Meter - X offset
+    4A % Star Power 2 - Power Meter - X offset
+    4B % Star Power 3 - Power Meter - X offset
+    4D % Star Power 4 - Power Meter - X offset
+    4E % Star Power 5 - Power Meter - X offset
+    4F % Star Power 6 - Power Meter - X offset
+    50 % Star Power 7 - Power Meter - X offset
+}
+
+% Focus FX - Move the Focus FX from the position from vanilla's stats menu
+% to the new stats menu
+%
+% From ~Func:update_status_menu
+@Hook 8203C % 800E8B8C
+{
+    PUSH    F0, F2
+    % vanilla code
+    CVT.S.W	F0, F0
+    MFC1	A1, F0
+    % x pos
+    LIF     F0, 64.0 % add this to x pos
+    MTC1    A1, F2
+    ADD.S   F2, F2, F0
+    MFC1    A1, F2 % FX's x pos
+    % y pos
+    LIF     F0, 4.0 % add this to y pos
+    MTC1    A2, F2
+    ADD.S   F2, F2, F0
+    MFC1    A2, F2 % FX's y pos
+    POP     F0, F2
+    J       800E8B94
+    NOP
+}
+
+%=========================
+% Show Partner HP on screen
+%=========================
+
+#new:Data $PartnerHP_AnimationTimer
+{ 00 }
+
+@Hook 81C9C % 800E87EC
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1
+    % Check if the player have at least one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    % Check if the current Partner is HP compatible
+    JAL     $Function_IsPartnerHPCompatible
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    % force partnerMaxHP to not be zero
+    JAL     $GetPartnerMaxHP
+    NOP
+    BNE     V0, R0, .DontUpdateMaxHP
+    NOP
+    LABU    A0, 8010F2A2 % partnerID
+    JAL     $updatePartnerMaxHP
+    RESERVED
+    .DontUpdateMaxHP
+    LW	    A0, 0020 (S3)
+    LH	    A1, 0034 (S3)
+    LH	    A2, 0036 (S3)
+    LB	    A3, 003D (S3) % value to print
+    LABU    T0, 8010F2A2 % current partnerID
+    LIO     T1, 8010F2AC % partner data start / goombario byteflag
+    % Check which one is the current partner
+    ORI     T2, R0, 1 % goombario
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, 4
+    ORI     T2, R0, 2 % kooper
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, C
+    ORI     T2, R0, 3 % bombette
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, 14
+    ORI     T2, R0, 4 % parakarry
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, 1C
+    ORI     T2, R0, 9 % bow
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, 44
+    ORI     T2, R0, 6 % watt
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, 2C
+    ORI     T2, R0, 7 % sushie
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, 34
+    ORI     T2, R0, 8 % lakilester
+    BEQL    T0, T2, .HPDataLoaded
+    ADDIU   A3, T1, 3C
+    % If the player don't have any of these partners out don't show the HP
+    BEQ     R0, R0, .End
+    NOP
+    .HPDataLoaded
+    % Current HP isn't the real HP?
+    % Needed to do some animations
+    LBU     V0, 2 (A3) % load HP cap
+    LBU     T0, 1 (A3) % load actual HP
+    LBU     T1, 0 (A3) % load current HP on screen
+    BEQL    T0, T1, .DrawHP
+    CLEAR   T2 % Nuke animation timer
+    ORI     T3, R0, 1
+    SAW     T3, 8010EF90 % force the status bar to appear
+    % HP on screen is lower or higher than actual HP?
+    SLTU    T2, T1, T0
+    BEQ     T2, R0, .DecreaseHP
+    NOP
+    .IncreaseHP
+    LABU    T2, $PartnerHP_AnimationTimer
+    ADDIU   T2, T2, 1
+    % Is already time to decrease the value or wait a little more?
+    SLTIU   T3, T2, 4  % increasing hp speed
+    BNE     T3, R0, .DrawHP
+    NOP
+    CLEAR   T2 % Nuke animation timer
+    ADDI    T1, T1, 1 % increase HP by 1
+    SB      T1, 0 (A3) % save current HP on screen
+    JAL     $Function_PlayHealSFX
+    NOP
+    BEQ     R0, R0, .DrawHP
+    NOP
+    .DecreaseHP
+    LABU    T2, $PartnerHP_AnimationTimer
+    ADDIU   T2, T2, 1
+    % Is already time to decrease the value or wait a little more?
+    SLTIU   T3, T2, 4 % decreasing hp speed
+    BNE     T3, R0, .DrawHP
+    NOP
+    CLEAR   T2 % Nuke animation timer
+    ADDI    T1, T1, FF % decrease HP by 1
+    SB      T1, 0 (A3) % save current HP on screen
+    .DrawHP
+    SAB     T2, $PartnerHP_AnimationTimer
+    LBU     A3, 0 (A3) % load current HP on screen
+    ADDIU	A1, A1, 0017 % x
+    ADDIU	A2, A2, 001C % y
+    JAL	    ~Func:status_menu_draw_stat
+    SW	    V0, 0010 (SP)
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1
+    % restore vanilla code
+    LB	    V0, 004F (S3)
+    J       800E87F4
+    LBU	    V1, 004F (S3)
+}
+
+% *out = v0 (bool)
+%
+% [!] Writes in T0-T1
+#new:Function $Function_IsPartnerHPCompatible
+{
+    % Check if the player have a partner compatible with HP
+    LABU    T0, 8010F2A2 % current partnerID
+    ORI     T1, R0, 1 % goombario
+    BEQ     T0, T1, .GoodPartner
+    ORI     T1, R0, 2 % kooper
+    BEQ     T0, T1, .GoodPartner
+    ORI     T1, R0, 3 % bombette
+    BEQ     T0, T1, .GoodPartner
+    ORI     T1, R0, 4 % parakarry
+    BEQ     T0, T1, .GoodPartner
+    ORI     T1, R0, 9 % bow
+    BEQ     T0, T1, .GoodPartner
+    ORI     T1, R0, 6 % watt
+    BEQ     T0, T1, .GoodPartner
+    ORI     T1, R0, 7 % sushie
+    BEQ     T0, T1, .GoodPartner
+    ORI     T1, R0, 8 % lakilester
+    BEQ     T0, T1, .GoodPartner
+    NOP
+    % If the player don't have any of these partners out
+    BEQ     R0, R0, .End
+    CLEAR   V0
+    .GoodPartner
+    ORI     V0, R0, 1
+    .End
+    JR      RA
+    NOP
+}
+
+#new:Function $Function_PlayHealSFX
+{
+    PUSH        RA, A0, A1, A2, A3, V0, V1
+    ADDIU	    A0, R0, 0213 % soundID
+    CLEAR 	    A1
+    COPY 	    A2, A1
+    JAL 	    ~Func:sfx_play_sound_with_params
+    COPY 	    A3, A1
+    POP         RA, A0, A1, A2, A3, V0, V1
+    JR          RA
+    NOP
+}
+
+% Patch ~Func:initialize_status_menu
+% Force the partner HP to be the real value when the status menu get initializated
+@Hook 80E98 % 800E79E8
+{
+    PUSH    RA, V0
+    % Check if the player have at least one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    JAL     $Function_sync_status_menu_partnerHP
+    NOP
+    % restore vanilla code
+    .End
+    POP     RA, V0
+    ADDIU	V0, R0, FFFF
+    J       800E79F0
+    SB  	A1, 003E (S1)
+}
+
+% Patch ~Func:sync_status_menu
+% Add support for the partners HP
+@Hook 83050 % 800E9BA0
+{
+    PUSH    RA, V0
+    % Check if the player have at least one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .End
+    NOP
+    JAL     $Function_sync_status_menu_partnerHP
+    NOP
+    % restore vanilla code
+    .End
+    POP     RA, V0
+    SH	    A2, 0048 (V0)
+    J       800E9BA8
+    SH	    A3, 0040 (V0)
+}
+
+% Update the Partner HP on screen with the real value
+%
+% [!] writes in T0-T3
+#new:Function $Function_sync_status_menu_partnerHP
+{
+    LIO     T0, 8010F2B0 % Goombario HP data (first partner)
+    LIO     T2, 8010F2F0 % Bow's HP data (last partner)
+    .Loop
+    LBU     T1, 1 (T0)
+    SB      T1, 0 (T0)
+    ADDIU   T0, T0, 8 % read next partner HP data
+    SLTU    T3, T2, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    JR      RA
+    NOP
+}
+
+%=========================
+% Change the HP and FP icons to the animated ones
+%=========================
+
+% This icons are kinda big with their original icon scripts
+% So I made this ones with a smaller size.
+%
+% The original script for this icon is at 80407608
+#new:Data $IconScript_FPPickup
+{
+00000008
+00000007 % "SetSize"
+00000003
+00000002 % Icon Size
+0000000D 00000008 0002EF60 0002F160
+00000003 00000003 0000000D 00000005
+0002F180 0002F380 00000004 00000004
+0000000D 00000008 0002F3A0 0002F5A0
+00000005 00000005 00000003 00000000
+}
+
+% HP
+@Function 80F0C % 800E7A5C
+{
+    LIO    A0, $IconScript_Heart % Heal Box's Heart - Icon Script Address
+    JAL    ~Func:create_hud_element
+    RESERVED
+}
+
+% FP
+@Function 80F6C % 800E7ABC
+{
+    LIO    A0, $IconScript_FPPickup % FP Overworld Pickup - Icon Script Address
+    JAL    ~Func:create_hud_element
+    RESERVED
+}
+
+%=========================
+% Disable "HP" and "FP" icons
+%=========================
+
+% Disable the "HP" icon
+@Function 81C48 % 800E8798
+{
+    NOP
+}
+
+% Disable the "FP" icon
+@Function 81D20 % 800E8870
+{
+    NOP
+}
+
+%=========================
+% New Icons Scripts
+%=========================
+
+% =================
+% Life Shroom slot
+
+% original script is at 800E8864
+#new:Data $IconScript_LifeShroom
+{
+00000008
+00000007 % "SetIconSize" (I disabled all this animations commands to get a SetIconSize basically see below)
+00000003 00000002
+0000000D 0000003C 00023E80 00024080
+00000004 00000004 00000003 00000000
+}
+
+% original script is at 8040C2B8
+#new:Data $IconScript_FP_LifeShroom % unused
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 00024C00 00024E00
+00000007 00000007 00000003 00000000
+}
+
+% original script is at 8040C258
+#new:Data $IconScript_Ultra_LifeShroom % unused
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 000249C0 00024BC0
+00000008 00000008 00000003 00000000
+}
+
+% original script is at 8040C0A8
+#new:Data $IconScript_LifeShroomBandW
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+0000000D 0000003C 00023E80 000240A0
+00000006 0000000A 00000003 00000000
+}
+
+% original script is at 80108974
+#new:Data $IconScript_Star
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C 800FB7E0 800FB9E0
+00000003 00000000
+}
+
+#new:Data $IconScript_Mario
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $MarioIcon_Image $MarioIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Goombario
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $GoombarioIcon_Image $GoombarioIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Kooper
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $KooperIcon_Image $KooperIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Bombette
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $BombetteIcon_Image $BombetteIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Parakarry
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $ParakarryIcon_Image $ParakarryIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Bow
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $BowIcon_Image $BowIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Watt
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $WattIcon_Image $WattIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Sushie
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $SushieIcon_Image $SushieIcon_Palette
+00000003 00000000
+}
+
+#new:Data $IconScript_Lakilester
+{
+00000008
+00000007 % "SetIconSize"
+00000003 00000002
+00000002 0000003C $LakilesterIcon_Image $LakilesterIcon_Palette
+00000003 00000000
+}
+
+#export $IconScript_Mario
+#export $IconScript_Goombario
+#export $IconScript_Kooper
+#export $IconScript_Bombette
+#export $IconScript_Parakarry
+#export $IconScript_Bow
+#export $IconScript_Watt
+#export $IconScript_Sushie
+#export $IconScript_Lakilester
+
+#new:Data $IconScript_Heart
+{
+00000008
+00000007 % "SetIconSize"
+00000001 00000002
+00000002 0000003C $HeartIcon_Image $HeartIcon_Palette
+00000003 00000000
+}
+
+% 00 = None
+%
+% 01 = LS
+#new:Data $CurrentLSIcon
+{ 00000000 00000000 }
+% XX00YYYY ZZZZ
+% XX= LsType
+% YYYY= Star iconIndex (Overworld)
+% ZZZZ= Star iconIndex (Battle)
+
+#export $CurrentLSIcon
+
+% Create the Life Shroom, the Star and all partners icons after loading the last icon for the stats menu
+@Hook 81134 % 800E7C84 % Overworld
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    % =======
+    % Make Star Icon
+    LIO     A0, $IconScript_Star
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $CurrentLSIcon
+    SH      S0, 2 (A0) % save star iconIndex
+    % ======
+    % Make all Life Shrooms icons
+    LIO     A0, $IconScript_LifeShroomBandW
+    JAL     $CreateIcon
+    RESERVED
+    % Change Icon Palette
+    LIO     A1, FAAFAF00 % RGB
+    JAL     $SetIconPalette
+    COPY    A0, S0 % copy index to A0
+    LIO     A0, $IconScript_LifeShroom
+    JAL     $CreateIcon
+    RESERVED
+    % ======
+    % Make all Partners Icons
+    LIO     A0, $IconScript_Heart
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Mario
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Goombario
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Kooper
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Bombette
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Parakarry
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Bow
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Watt
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Sushie
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Lakilester
+    JAL     $CreateIcon
+    RESERVED
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    PUSH    RA
+    % restore vanilla code
+    JAL	    800F0D5C
+    NOP
+    POP     RA
+    J       800E7C8C
+    NOP
+}
+
+% Create the Life Shroom, Star and all HP icons after loading the last icon for the stats menu
+@Hook 16CC6C % 8023E38C % Battle
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    % =======
+    % Make Star Icon
+    LIO     A0, $IconScript_Star
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $CurrentLSIcon
+    SH      S0, 4 (A0) % save star iconIndex
+    % ======
+    % Make all Life Shrooms icons
+    LIO     A0, $IconScript_LifeShroomBandW
+    JAL     $CreateIcon
+    RESERVED
+    % Change Icon Palette
+    LIO     A1, FAAFAF00 % RGB
+    JAL     $SetIconPalette
+    COPY    A0, S0 % copy index to A0
+    LIO     A0, $IconScript_LifeShroom
+    JAL     $CreateIcon
+    RESERVED
+    % ======
+    % Make all Partners Icons
+    LIO     A0, $IconScript_Heart
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Mario
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Goombario
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Kooper
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Bombette
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Parakarry
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Bow
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Watt
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Sushie
+    JAL     $CreateIcon
+    RESERVED
+    LIO     A0, $IconScript_Lakilester
+    JAL     $CreateIcon
+    RESERVED
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    % restore vanilla code
+    LIO     V0, 8023F088
+    J       8023E394
+    RESERVED
+}
+
+% a0 = iconScript
+%
+% save iconIndex in s0
+#new:Function $CreateIcon
+{
+    PUSH    RA, A0, A1, A2, A3, V0
+    JAL     ~Func:create_hud_element
+    NOP
+    COPY    S0, V0 % save iconIndex in S0
+    ADDIU	A1, R0, 0080
+    JAL	    ~Func:set_hud_element_flags
+    COPY    A0, S0 % load iconIndex
+    ADDIU	A1, R0, 8000
+    JAL	    ~Func:clear_hud_element_flags
+    COPY    A0, S0 % load iconIndex
+    POP     RA, A0, A1, A2, A3, V0
+    JR      RA
+    NOP
+}
+
+% Make icon to be always on top
+#export:Function $CreateIcon_ignoreViewport
+{
+    PUSH    RA, A0, A1, A2, A3, V0
+    JAL     ~Func:create_hud_element
+    NOP
+    COPY    S0, V0 % save iconIndex in S0
+    ADDIU	A1, R0, 0040
+    JAL	    ~Func:set_hud_element_flags
+    COPY    A0, S0 % load iconIndex
+    % hide icon
+    ADDI    A1, R0, -100` % x
+    CLEAR   A2 % y
+    JAL     ~Func:set_hud_element_render_pos
+    COPY    A0, S0
+    ADDIU	A1, R0, 8000
+    JAL	    ~Func:clear_hud_element_flags
+    COPY    A0, S0 % load iconIndex
+    POP     RA, A0, A1, A2, A3, V0
+    JR      RA
+    NOP
+}
+
+% A0 = iconIndex
+%
+% A1 = Palette
+#new:Function $SetIconPalette
+{
+    % Check if the player is in the overworld or inside a battle
+    LABU    V1, 80074094 % 0 = Overworld / 1=Battle
+    LUI     V0, 8015
+    % Load overworld Icon Table
+    BEQL    V1, R0, .IconTableLoaded
+    ADDIU   V0, V0, 6F60
+    % Load battle Icon Table
+    ADDIU   V0, V0, 7494
+    .IconTableLoaded
+    BEQ     V1, R0, .UseOverworldTable
+    NOP
+    % Battle Table, the ID for icon #0 is 80D for the battle icons
+    ORI     T0, R0, 80D
+    SUBU    A0, A0, T0 % convert iconIndex from battle to overworld
+    .UseOverworldTable
+    ORI     V1, R0, 4
+    MULTU   A0, V1 % throw result in LO
+    MFLO    A0
+    ADDU    V0, V0, A0 % get icon pointer
+    LW      V0, 0 (V0) % follow pointer
+    % save new palette
+    SRL     T0, A1, 24`
+    SB      T0, 4B (V0) % save red
+    SLL     T0, A1, 8
+    SRL     T0, T0, 24`
+    SB      T0, 4C (V0) % save blue
+    SLL     T0, A1, 16`
+    SRL     T0, T0, 24`
+    SB      T0, 4D (V0) % save green
+    JR      RA
+    NOP
+}
+
+%=========================
+% Set Size and Pos for the the Life Shrooms and the Star Icons
+%=========================
+
+/% % Patching a way to draw an icon with whatever size you want:
+
+The Life Shroom Icon is still kinda big even when setting his size to 2 instead of 3, and when using 1 as size it appears bugged
+
+The sprite size can be found in $iconPointer(0x28) (the one from the current icons on screen table (80156F60))
+But the thing is, this data is only readed when using a few commands from an Icon Script, and the commands
+are size animations so isn't like for example you put 1.0 and that will be the size of the icon.
+
+This patch disables those animations but makes it possible to change the size of an icon however you want
+I don't remember the game even using any of those animations, so I hope this doesn't cause some problems.
+
+This one was the only way I found to achieve this tho.
+
+To change an icon size use command 7 or 16 for the game to toogle the icon bitflag
+used to read the size data from $iconPointer(0x28)
+%/
+
+% draw_hud_element_1 - Don't play an animation when the game tries to read an icon size
+% nuke 10 functions placed here
+@Data D7DB4 % 801416B4
+{
+00000000 00000000 00000000 00000000
+00000000 00000000 00000000 00000000
+00000000 00000000
+}
+
+% draw_hud_element_1 - don't overwrite the size data
+@Function D82CC % 80141BCC
+{
+NOP
+}
+
+% draw_hud_element_1 - IconBytecode - Command #7 and 16 - don't overwrite the size data
+@Function D82F0 % 80141BF0
+{
+NOP
+}
+
+% A0 = iconIndex
+%
+% A1 = Width (Float)
+%
+% A2 = Length (Float)
+#new:Function $SetIconSize
+{
+    % Check if the player is in the overworld or inside a battle
+    LABU    V1, 80074094 % 0 = Overworld / 1=Battle
+    LUI     V0, 8015
+    % Load overworld Icon Table
+    BEQL    V1, R0, .IconTableLoaded
+    ADDIU   V0, V0, 6F60
+    % Load battle Icon Table
+    ADDIU   V0, V0, 7494
+    .IconTableLoaded
+    BEQ     V1, R0, .UseOverworldTable
+    NOP
+    % Battle Table, the ID for icon #0 is 80D for the battle icons
+    ORI     T0, R0, 80D
+    SUBU    A0, A0, T0 % convert iconIndex from battle to overworld
+    .UseOverworldTable
+    ORI     V1, R0, 4
+    MULTU   A0, V1 % throw result in LO
+    MFLO    A0
+    ADDU    V0, V0, A0 % get icon pointer
+    LW      V0, 0 (V0) % follow pointer
+    % save the new icon size
+    SW      A1, 28 (V0) % save new width
+    JR      RA
+    SW      A2, 2C (V0) % save new lenght
+}
+
+#export $CreateIcon
+#export $SetIconPalette
+#export $SetIconSize
+
+% ==============
+% Change Life Shrooms, Star and all HP icons size and positions
+
+% I placed the code that set the size and the final position
+% for the Life Shrooms icons and the Star Icon at the one from
+% the current Star Points.
+@Hook 81E30 % 800E8980
+{
+    %======================
+    % Change Life Shroom Size, Pos and render the current Ls icon
+    %======================
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    JAL     $StatsMenu_UpdateCurrentLS % check if the player got a new Ls
+    NOP
+    % load current Ls
+    LIO     V1, $CurrentLSIcon
+    LBU     V0, 0 (V1)
+    % The player is in the overworld or inside a battle?
+    LABU    T0, 80074094 % 0 = Overworld / 1=Battle
+    BEQL    T0, R0, .StarIconIndexLoaded
+    LHU     V1, 2 (V1) % Load battle index
+    LHU     V1, 4 (V1) % Load battle index
+    .StarIconIndexLoaded
+    % V0 = current Ls
+    % V1 = star iconIndex (used to know the Ls icon index)
+    % get iconIndex for actual Ls
+    ORI     A0, R0, 1
+    ADDU    A0, A0, V0
+    ADDU    V0, V1, A0
+    COPY    A0, V0
+    % a0 = current Ls iconIndex
+    COPY    S0, A0 % save it in s0 too
+    ADDIU	A1, A1, 004A % x
+    JAL     ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, 000E % y
+    % Change Size
+    LIO     A1, 41700000 % 15.0 % Width
+    LIO     A2, 41700000 % 15.0 % Lenght
+    JAL     $SetIconSize
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    %======================
+    % Change Star Size, Pos and render the icon
+    %======================
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     A0, $CurrentLSIcon
+    % The player is in the overworld or inside a battle?
+    LABU    T0, 80074094 % 0 = Overworld / 1=Battle
+    BEQL    T0, R0, .StarIconIndexLoaded2
+    LHU     S0, 2 (A0) % Load battle index
+    LHU     S0, 4 (A0) % Load battle index
+    .StarIconIndexLoaded2
+    COPY    A0, S0
+    % The player have at least one Star Spirit?
+    LABU    V0, 8010F51E % Star Spirits
+    BEQL    V0, R0, .HideStarIcon
+    ADDI	A1, R0, FFEC % -20`
+    ADDIU	A1, A1, 0053 % x
+    .HideStarIcon
+    JAL     ~Func:set_hud_element_render_pos
+    ADDIU	A2, A2, 0022 % y
+    % Change Size
+    LIO     A1, 41A00000 % 20.0 % Width
+    LIO     A2, 41A00000 % 20.0 % Lenght
+    JAL     $SetIconSize
+    COPY    A0, S0
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    COPY    A0, S0
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    %======================
+    % Change all HP related icon size, pos and render the icon
+    %======================
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0
+    LIO     A0, $CurrentLSIcon
+    % The player is in the overworld or inside a battle?
+    LABU    T0, 80074094 % 0 = Overworld / 1=Battle
+    BEQL    T0, R0, .StarIconIndexLoaded3
+    LHU     S0, 2 (A0) % Load battle index
+    LHU     S0, 4 (A0) % Load battle index
+    .StarIconIndexLoaded3
+    %======Print Mario Icon=======
+    ADDIU   A0, S0, 4
+    LAH     A2, 8010EF8E % Status bar Global Y offset
+    ADDIU	A2, A2, 000F % y
+    JAL     ~Func:set_hud_element_render_pos
+    ADDIU	A1, R0, 0016 % x
+    % Change Size
+    LIO     A1, 41B00000 % 22.0 % Width
+    LIO     A2, 41B00000 % 22.0 % Lenght
+    JAL     $SetIconSize
+    ADDIU   A0, S0, 4
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    ADDIU   A0, S0, 4
+    %======Print Current Partner Icon=======
+    % Check if the player have at least one partner
+    JAL     $Function_GetPartnersUnlocked
+    NOP
+    BEQ     V0, R0, .CleanStar
+    NOP
+    % Check if the current Partner is HP compatible
+    JAL     $Function_IsPartnerHPCompatible
+    NOP
+    BEQ     V0, R0, .CleanStar
+    NOP
+    % Set Heart icon pos
+    ADDIU   A0, S0, 3
+    LAH     A2, 8010EF8E % Status bar Global Y offset
+    ADDIU	A2, A2, 001D % y
+    JAL     ~Func:set_hud_element_render_pos
+    ADDIU	A1, R0, 001D % x
+    % Change Size
+    LIO     A1, 41800000 % 16.0 % Width
+    LIO     A2, 41800000 % 16.0 % Lenght
+    JAL     $SetIconSize
+    ADDIU   A0, S0, 3
+    % draw icon
+    JAL	    ~Func:draw_hud_element_1
+    ADDIU   A0, S0, 3
+    % Get Icon Index by reading the partnerID
+    JAL     $Function_GetIconIndex_PartnerIcon
+    NOP
+    LAH     A2, 8010EF8E % Status bar Global Y offset
+    ADDIU	A2, A2, 0022 % y
+    JAL     ~Func:set_hud_element_render_pos
+    ADDIU	A1, A1, 0017 % x
+    % Change Size
+    % Get Icon Index by reading the partnerID
+    JAL     $Function_GetIconIndex_PartnerIcon
+    NOP
+    LIO     A1, 41B00000 % 22.0 % Width
+    LIO     A2, 41B00000 % 22.0 % Lenght
+    JAL     $SetIconSize
+    RESERVED
+    % draw icon
+    % Get Icon Index by reading the partnerID
+    JAL     $Function_GetIconIndex_PartnerIcon
+    NOP
+    JAL	    ~Func:draw_hud_element_1
+    NOP
+    .CleanStar
+    % Clean Star Meter bars, brown outlines
+    JAL     $Function_StarMeter_RemoveBrownOutline
+    NOP
+    POP     RA, A0, A1, A2, A3, V0, V1, S0
+    %======================
+    % vanilla code - Star Points x000 pos
+    %======================
+    ADDIU	A1, A1, 00BD % x pos
+    JAL	    ~Func:status_menu_draw_number
+    ADDIU	A2, A2, 0008 % y pos
+    J       800E898C
+    NOP
+}
+
+% *out = a0 = iconIndex
+#new:Function $Function_GetIconIndex_PartnerIcon
+{
+    LABU    T0, 8010F2A2 % current partner
+    ORI     T1, R0, 1 % Goombario
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, 5
+    ORI     T1, R0, 2 % Kooper
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, 6
+    ORI     T1, R0, 3 % Bombette
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, 7
+    ORI     T1, R0, 4 % Parakarry
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, 8
+    ORI     T1, R0, 9 % Bow
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, 9
+    ORI     T1, R0, 6 % Watt
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, A
+    ORI     T1, R0, 7 % Sushie
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, B
+    ORI     T1, R0, 8 % Lakilester
+    BEQL    T0, T1, .End
+    ADDIU   A0, S0, C
+    % Use goombario by default
+    ADDIU   A0, S0, 5
+    .End
+    JR      RA
+    NOP
+}
+
+#new:Function $StatsMenu_UpdateCurrentLS
+{
+    PUSH    RA, A0, A1, A2, A3, V0, V1, S0, S1
+    % Check if the player got or lost his life shroom to change the icon in real time
+    .FindItem
+    JAL	    ~Func:find_item % a0=item : v0= slotNumber (-1 if not found)
+    ORI     A0, R0, 0095 % LifeShroom
+    % The player hold a LS?
+    LIO     A0, -1
+    BEQ     V0, A0, .UpdatewNoLS
+    NOP
+    BEQ     R0, R0, .UpdatewLS
+    NOP
+    .UpdatewNoLS
+    SAB     R0, $CurrentLSIcon
+    BEQ     R0, R0, .End
+    RESERVED
+    .UpdatewLS
+    ORI     A0, R0, 1
+    SAB     A0, $CurrentLSIcon
+    .End
+    POP     RA, A0, A1, A2, A3, V0, V1, S0, S1
+    JR      RA
+    NOP
+}
+
+%==================
+% Clean all icons
+% Remove the brown parts from the icons
+%==================
+
+% I placed this function in Hook 81C3C
+#new:Function $Function_StarMeter_RemoveBrownOutline
+{
+    % I tried using @Data to nuke everything but star rod
+    % just doesn't do it, I dunno why.
+    %
+    % I even open the rom in a hex editor and poked the data i was trying to patch
+    % and it worked, looks like star rod just doesn't patch it
+    SAW     R0, 80100734 % Bar 1
+    SAW     R0, 80100774 % Bar 3
+    SAW     R0, 801007B4 % Bar 2
+    SAW     R0, 801007F4 % Bar 4
+    SAW     R0, 80100834 % Bar 5
+    SAW     R0, 80100874 % Bar 6
+    SAW     R0, 801008B4 % Bar 7
+    JR      RA
+    RESERVED
+}
+
+% v0 = amount of partners unlocked
+%
+% [!] writes in T0-T4
+#new:Function $Function_GetPartnersUnlocked
+{
+    PUSH    T0, T1, T2, T3, T4
+    CLEAR   V0
+    LIO     T0, 8010F2AC % Goombario byteflag
+    .Loop
+    LBU     T1, 0 (T0)
+    ADDU    V0, V0, T1
+    ADDIU   T0, T0, 8 % read next partner byteflag
+    % Skip goompa's data
+    LIO     T4, 8010F2CC
+    BEQL    T0, T4 .SkipUnusedPartnerData
+    ADDIU   T0, T0, 8
+    .SkipUnusedPartnerData
+    % End of the list?
+    LIO     T2, 8010F2EC % Bow Byteflag (last partner byteflag)
+    SLTU    T3, T2, T0
+    BEQ     T3, R0, .Loop
+    NOP
+    POP     T0, T1, T2, T3, T4
+    JR      RA
+    NOP
+}
+
+#export $Function_GetPartnersUnlocked
+#export $Function_IsPartnerHPCompatible
+
+% For all the other icons I just used Photoshop to edit each one from mods/image/misc/ui
+
+%==================
+% res Files
+%==================
+
+#new:Data $MarioIcon_Image
+{ ~RasterFile:CI-4:status_menu/mario_icon.png }
+
+#new:Data $GoombarioIcon_Image
+{ ~RasterFile:CI-4:status_menu/goombario_icon.png }
+
+#new:Data $KooperIcon_Image
+{ ~RasterFile:CI-4:status_menu/kooper_icon.png }
+
+#new:Data $BombetteIcon_Image
+{ ~RasterFile:CI-4:status_menu/bombette_icon.png }
+
+#new:Data $ParakarryIcon_Image
+{ ~RasterFile:CI-4:status_menu/parakarry_icon.png }
+
+#new:Data $BowIcon_Image
+{ ~RasterFile:CI-4:status_menu/bow_icon.png }
+
+#new:Data $WattIcon_Image
+{ ~RasterFile:CI-4:status_menu/watt_icon.png }
+
+#new:Data $SushieIcon_Image
+{ ~RasterFile:CI-4:status_menu/sushie_icon.png }
+
+#new:Data $LakilesterIcon_Image
+{ ~RasterFile:CI-4:status_menu/lakilester_icon.png }
+
+#new:Data $HeartIcon_Image
+{ ~RasterFile:CI-4:status_menu/stat_heart.png }
+
+% Palettes
+
+#new:Data $MarioIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/mario_icon.png }
+
+#new:Data $GoombarioIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/goombario_icon.png }
+
+#new:Data $KooperIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/kooper_icon.png }
+
+#new:Data $BombetteIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/bombette_icon.png }
+
+#new:Data $ParakarryIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/parakarry_icon.png }
+
+#new:Data $BowIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/bow_icon.png }
+
+#new:Data $WattIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/watt_icon.png }
+
+#new:Data $SushieIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/sushie_icon.png }
+
+#new:Data $LakilesterIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/lakilester_icon.png }
+
+#new:Data $HeartIcon_Palette
+{ ~PaletteFile:CI-4:status_menu/stat_heart.png }

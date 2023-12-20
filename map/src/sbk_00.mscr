@@ -1,0 +1,189 @@
+% Script File: sbk_00.mscr
+% Decoded from: 0 to 820 (sbk_00)
+
+#define .NpcID:Pokey_00             00
+#define .NpcID:Pokey_01             01
+
+#new:Function $Function_80240000
+{
+    0:  MTC1      R0, F0
+    4:  ADDIU     SP, SP, FFE0
+    8:  MFC1      A1, F0
+    C:  CLEAR     A0
+   10:  SW        RA, 18 (SP)
+   14:  SW        R0, 14 (SP)
+   18:  SWC1      F0, 10 (SP)
+   1C:  COPY      A2, A1
+   20:  JAL       ~Func:playFX_82
+   24:  COPY      A3, A1
+   28:  LW        RA, 18 (SP)
+   2C:  LI        V0, 2
+   30:  JR        RA
+   34:  ADDIU     SP, SP, 20
+}
+
+PADDING: 80240038 to 80240040 (00000038 to 00000040)
+00000000 00000000
+
+#new:Function $Function_80240040
+{
+    0:  LW        V1, 148 (A0)
+    4:  LI        V0, 3
+    8:  SB        V0, B5 (V1)
+    C:  JR        RA
+   10:  LI        V0, 2
+}
+
+PADDING: 80240054 to 80240060 (00000054 to 00000060)
+00000000 00000000 00000000
+
+#new:EntryList $EntryList
+{
+	~Vec4f:Entry0 % -475.0    0.0    0.0   90.0
+	~Vec4f:Entry1 %  475.0    0.0    0.0  270.0
+	~Vec4f:Entry2 %    0.0    0.0 -475.0  180.0
+	~Vec4f:Entry3 %    0.0    0.0  475.0    0.0
+}
+
+#new:Header $Header
+{
+	[MainScript]  $Script_Main_EnterWalk
+	[EntryList]   $EntryList
+	[EntryCount]  00000004
+	[Background]  80200000
+	[MapTattle]   00190060
+}
+
+#new:Script $Script_ExitWalk_802400E0
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry1 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240810 00000000 ) % sbk_01
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_ExitWalk_8024013C
+{
+    0:  SetGroup  0000001B
+    C:  Call  UseExitHeading    ( 0000003C ~Entry:Entry3 )
+   20:  Exec  ExitWalk
+   2C:  Call  GotoMap   ( $ASCII_80240818 00000002 ) % sbk_10
+   40:  Wait  100`
+   4C:  Return
+   54:  End
+}
+
+#new:Script $Script_80240198
+{
+    0:  Bind  $Script_ExitWalk_802400E0 .Trigger:FloorAbove ~Collider:deilie 00000001 00000000
+   1C:  Bind  $Script_ExitWalk_8024013C .Trigger:FloorAbove ~Collider:deilis 00000001 00000000
+   38:  Return
+   40:  End
+}
+
+#new:Script_Main $Script_Main_EnterWalk
+{
+    0:  Set   *GB_WorldLocation  .Location:DryDryDesert
+   10:  Call  SetSpriteShading  ( .Shading:None )
+   20:  If  *GB_StoryProgress  ==  .Story:Ch2_GotPulseStone % FFFFFFC1
+   30:  	Call  DisablePulseStone ( .False )
+   40:  EndIf
+   48:  Call  SetCamPerspective ( .Cam:Default 00000003  25`  16`  4096` )
+   68:  Call  SetCamBGColor ( .Cam:Default  0`  0`  0` )
+   84:  Call  SetCamEnabled ( .Cam:Default .True )
+   98:  Call  SetCamLeadPlayer  ( .Cam:Default .False )
+   AC:  Call  MakeNpcs      ( .False $NpcGroupList_80240768 )
+   C0:  ExecWait  $Script_MakeEntities
+   CC:  Call  $Function_80240000 ( )
+   D8:  Call  SetMusicTrack ( 00000000 .Song:DryDryDesert 00000000 00000008 )
+   F4:  Set   *Var0  $Script_80240198
+  104:  Exec  EnterWalk
+  110:  Return
+  118:  End
+}
+
+#new:AISettings $AISettings_80240300
+{
+    1.8 % move speed
+    50` % move time
+    10` % wait time
+  250.0 % alert radius
+    0.0
+    2`
+    3.5 % chase speed
+    45`
+    6`
+  300.0 % chase radius
+    0.0
+    1`
+}
+
+#new:Script $Script_NpcAI_80240330
+{
+    0:  Call  $Function_80240040 ( )
+    C:  Call  DoBasicAI ( $AISettings_80240300 )
+   1C:  Return
+   24:  End
+}
+
+#new:NpcSettings $NpcSettings_8024035C
+{
+	00000000 0048000F 00000000 00000000 $Script_NpcAI_80240330 80077F70 00000000 8007809C
+	00000000 00000000 00090000
+}
+
+#new:NpcGroup $NpcGroup_80240388
+{
+	.NpcID:NPC_Pokey_00 $NpcSettings_8024035C ~Vec3f:NPC_Pokey_00 % -40 0 160
+	00000800 00000000 00000000 00000000 0000005A
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_00
+	~AnimationTable:NPC_Pokey_00 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroup $NpcGroup_80240578
+{
+	.NpcID:NPC_Pokey_01 $NpcSettings_8024035C ~Vec3f:NPC_Pokey_01 % 245 0 75
+	00000800 00000000 00000000 00000000 0000010E
+	~Items:15:DriedFruit:9:TastyTonic:1
+	~HP:Standard:2 ~FP:Standard:2 ~CoinBonus:0:1
+	~Movement:NPC_Pokey_01
+	~AnimationTable:NPC_Pokey_01 % .Sprite:Pokey
+	00000001 00000000 00000000 00000000 % no tattle string
+}
+
+#new:NpcGroupList $NpcGroupList_80240768
+{
+	00000001 $NpcGroup_80240388 0A000001
+	00000001 $NpcGroup_80240578 0A010001
+	00000000 00000000 00000000
+}
+
+PADDING: 8024078C to 80240790 (0000078C to 00000790)
+00000000
+
+#new:Script $Script_MakeEntities
+{
+    0:  Call  MakeEntity        ( .Entity:YellowBlock ~Vec4d:Entity80240790 .Item:FrightJar 80000000 )
+   28:  Call  AssignBlockFlag   ( *GF_SBK00_ItemBlock_FrightJar )
+   38:  Call  MakeEntity        ( .Entity:YellowBlock ~Vec4d:Entity802407C8 .Item:Coin 80000000 )
+   60:  Call  AssignBlockFlag   ( *GF_SBK00_ItemBlock_Coin )
+   70:  Return
+   78:  End
+}
+
+#new:ASCII $ASCII_80240810
+{
+	"sbk_01"
+}
+
+#new:ASCII $ASCII_80240818
+{
+	"sbk_10"
+}
+
