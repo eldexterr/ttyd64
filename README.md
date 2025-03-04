@@ -20,7 +20,7 @@ And much more!
 4.  Get an emulator, if you have one already, then load the patched ROM file and play!
 
 # How to compile
-1. Create a completely new dump folder and dump assets there (with **Star Rod 0.5.X**)
+1. Create a completely new dump folder and dump assets there (with **Star Rod 0.5.4** or below)
 2. In your dump folder, go to `battle/formation/raw` and delete all files
 3. Unzip [dump.zip](https://github.com/eldexterr/ttyd64/files/13772711/dump.zip) in that same folder
 4. In _Star Rod's Mod Manager_ go to: _Options (Compile) > Options tab > And check `Allow Conflicting Patches`_
